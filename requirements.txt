@@ -1,0 +1,10 @@
+flask
+flask-sqlalchemy
+scikit-learn
+xgboost
+imbalanced-learn
+pandas
+numpy
+anthropic
+plotly
+gunicorn
