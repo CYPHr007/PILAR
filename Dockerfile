@@ -3,4 +3,4 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 COPY . .
-CMD ["gunicorn", "etape7:app", "--bind", "0.0.0.0:$PORT"]
+CMD gunicorn etape7:app --bind 0.0.0.0:${PORT:-5000}
