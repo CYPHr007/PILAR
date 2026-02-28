@@ -1,16 +1,22 @@
-from flask import Flask, request, jsonify, render_template_string
+import logging
+import os
 import pickle
-import threading
 import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from flask_sqlalchemy import SQLAlchemy
+import threading
 from datetime import datetime, timedelta
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+
+import anthropic
 import numpy as np
 import pandas as pd
-import json
-import warnings
-warnings.filterwarnings('ignore')
+from flask import Flask, request, jsonify, render_template_string
+from flask_sqlalchemy import SQLAlchemy
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+)
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///pilar.db'
@@ -41,20 +47,21 @@ with open("scaler.pkl", "rb") as f:
 with open("modeles_zones.pkl", "rb") as f:
     modeles_zones = pickle.load(f)
 
-zones = {
-    'TWF': 'Tool Wear Failure',
-    'HDF': 'Heat Dissipation Failure',
-    'PWF': 'Power Failure',
-    'OSF': 'Overstrain Failure',
-    'RNF': 'Random Failure'
+FAILURE_ZONES = {
+    "TWF": "Tool Wear Failure",
+    "HDF": "Heat Dissipation Failure",
+    "PWF": "Power Failure",
+    "OSF": "Overstrain Failure",
+    "RNF": "Random Failure",
 }
 
 COLONNES = ['Type', 'Air temperature [K]', 'Process temperature [K]',
             'Rotational speed [rpm]', 'Torque [Nm]', 'Tool wear [min]', 'ecart_temp']
 
-GMAIL = "guenbourali77@gmail.com"
-GMAIL_PWD = "gmzo nvjv tsxt pmel"
-responsable_email = {'email': ''}
+GMAIL = os.getenv("PILAR_GMAIL", "")
+GMAIL_PWD = os.getenv("PILAR_GMAIL_PWD", "")
+responsable_email: dict[str, str] = {"email": ""}
+_email_lock = threading.Lock()
 
 # ──────────────────────────────────────────────
 # MAIN HTML
@@ -79,7 +86,7 @@ HTML = """
     .sep { color: var(--border); }
     .page-title { color: var(--muted); font-size: 13px; letter-spacing: 1px; }
     .nav-links { margin-left: auto; display: flex; gap: 8px; }
-    .nav-link { padding: 7px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; color: var(--label); font-size: 12px; text-decoration: none; transition: all 0.15s; }
+    .nav-link { padding: 7px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; color: var(--label); font-size: 12px; text-decoration: none; transition: all 0.15s; display: inline-flex; align-items: center; gap: 5px; }
     .nav-link:hover { border-color: var(--teal); color: var(--teal-light); }
     main { display: grid; grid-template-columns: 320px 1fr 300px; flex: 1; overflow: hidden; }
     .panel { border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
@@ -173,8 +180,8 @@ HTML = """
   <span class="sep">/</span>
   <span class="page-title">Machine Monitor — Anomaly Detection</span>
   <div class="nav-links">
-    <a class="nav-link" href="/twin">🔮 Digital Twin</a>
-    <a class="nav-link" href="/history">📊 History</a>
+    <a class="nav-link" href="/twin"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.29 7 12 12 20.71 7"/><line x1="12" y1="22" x2="12" y2="12"/></svg> Digital Twin</a>
+    <a class="nav-link" href="/history"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> History</a>
   </div>
 </header>
 <main>
@@ -229,28 +236,50 @@ HTML = """
         <div class="range-labels"><span>0</span><span>250 min</span></div>
       </div>
       <button class="btn-analyze" id="btn" onclick="analyser()">Run Analysis</button>
-      <div class="mail-notif" id="mail-notif">📧 Alert sent to responsible!</div>
+      <div class="mail-notif" id="mail-notif">Alert dispatched to responsible</div>
     </div>
   </div>
 
   <div class="panel">
     <div class="panel-body" id="panel-results">
       <div class="idle-msg">
-        <span class="big">No data yet</span>
-        <span class="small">Run the analysis to see results</span>
+        <svg width="200" height="150" viewBox="0 0 200 150" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-bottom:8px">
+          <line x1="100" y1="52" x2="100" y2="29" stroke="#1e293b" stroke-width="1" stroke-dasharray="3,3"/>
+          <line x1="122" y1="65" x2="148" y2="40" stroke="#1e293b" stroke-width="1" stroke-dasharray="3,3"/>
+          <line x1="122" y1="85" x2="148" y2="110" stroke="#1e293b" stroke-width="1" stroke-dasharray="3,3"/>
+          <line x1="78" y1="85" x2="52" y2="110" stroke="#1e293b" stroke-width="1" stroke-dasharray="3,3"/>
+          <line x1="78" y1="65" x2="52" y2="40" stroke="#1e293b" stroke-width="1" stroke-dasharray="3,3"/>
+          <rect x="74" y="52" width="52" height="46" rx="4" stroke="#2d3748" stroke-width="1.5" fill="#111827"/>
+          <rect x="81" y="60" width="38" height="4" rx="1" fill="#1e293b"/>
+          <rect x="81" y="68" width="24" height="4" rx="1" fill="#1e293b"/>
+          <rect x="81" y="76" width="30" height="4" rx="1" fill="#1e293b"/>
+          <rect x="81" y="84" width="16" height="4" rx="1" fill="#1e293b"/>
+          <rect x="78" y="11" width="44" height="18" rx="3" stroke="#2d3748" stroke-width="1.5" fill="#0b0f1a"/>
+          <text x="100" y="23" text-anchor="middle" fill="#374151" font-size="7" font-family="monospace">AIR TEMP</text>
+          <rect x="148" y="29" width="44" height="18" rx="3" stroke="#2d3748" stroke-width="1.5" fill="#0b0f1a"/>
+          <text x="170" y="41" text-anchor="middle" fill="#374151" font-size="7" font-family="monospace">SPEED</text>
+          <rect x="148" y="103" width="44" height="18" rx="3" stroke="#2d3748" stroke-width="1.5" fill="#0b0f1a"/>
+          <text x="170" y="115" text-anchor="middle" fill="#374151" font-size="7" font-family="monospace">TORQUE</text>
+          <rect x="8" y="103" width="44" height="18" rx="3" stroke="#2d3748" stroke-width="1.5" fill="#0b0f1a"/>
+          <text x="30" y="115" text-anchor="middle" fill="#374151" font-size="7" font-family="monospace">WEAR</text>
+          <rect x="8" y="29" width="44" height="18" rx="3" stroke="#2d3748" stroke-width="1.5" fill="#0b0f1a"/>
+          <text x="30" y="41" text-anchor="middle" fill="#374151" font-size="7" font-family="monospace">PROC TEMP</text>
+        </svg>
+        <span class="big">Awaiting input</span>
+        <span class="small">Configure sensor parameters and run analysis</span>
       </div>
     </div>
   </div>
 
   <div class="chat-panel">
     <div class="chat-header">
-      <div class="chat-title">Pilar Assistant</div>
-      <div class="chat-subtitle">Powered by Claude Haiku</div>
+      <div class="chat-title">Diagnostic Console</div>
+      <div class="chat-subtitle">Maintenance intelligence</div>
     </div>
     <div class="chat-messages" id="chat-messages">
       <div class="msg bot">
         <span class="msg-sender">Pilar</span>
-        <div class="msg-bubble">Hello! I'm Pilar, your industrial AI assistant. Run an analysis or ask me anything about machine maintenance.</div>
+        <div class="msg-bubble">System online. Run an analysis or ask about machine parameters, failure modes, and maintenance procedures.</div>
       </div>
     </div>
     <div class="chat-input-area">
@@ -400,7 +429,7 @@ TWIN_HTML = """
     .sep { color: var(--border); }
     .page-title { color: var(--muted); font-size: 13px; letter-spacing: 1px; }
     .nav-links { margin-left: auto; display: flex; gap: 8px; }
-    .nav-link { padding: 7px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; color: var(--label); font-size: 12px; text-decoration: none; transition: all 0.15s; }
+    .nav-link { padding: 7px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; color: var(--label); font-size: 12px; text-decoration: none; transition: all 0.15s; display: inline-flex; align-items: center; gap: 5px; }
     .nav-link:hover { border-color: var(--teal); color: var(--teal-light); }
     .content { padding: 28px 32px; }
     .top-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
@@ -428,7 +457,7 @@ TWIN_HTML = """
     .prediction-banner.safe { background: rgba(16,185,129,0.05); border-color: var(--green); }
     .prediction-banner.warning { background: rgba(245,158,11,0.05); border-color: var(--amber); }
     .prediction-banner.danger { background: rgba(239,68,68,0.05); border-color: var(--red); }
-    .banner-icon { font-size: 28px; }
+    .banner-icon { display: flex; align-items: center; flex-shrink: 0; }
     .banner-title { font-size: 15px; font-weight: 700; }
     .banner-sub { font-size: 12px; color: var(--muted); margin-top: 3px; }
     .banner-title.safe { color: var(--green); }
@@ -445,8 +474,8 @@ TWIN_HTML = """
   <span class="sep">/</span>
   <span class="page-title">Digital Twin — Predictive Simulation</span>
   <div class="nav-links">
-    <a class="nav-link" href="/">← Monitor</a>
-    <a class="nav-link" href="/history">📊 History</a>
+    <a class="nav-link" href="/"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg> Monitor</a>
+    <a class="nav-link" href="/history"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> History</a>
   </div>
 </header>
 
@@ -465,7 +494,14 @@ TWIN_HTML = """
     if (!d.has_data) {
       document.getElementById('main-content').innerHTML = `
         <div class="no-data">
-          <span style="font-size:40px">🔮</span>
+          <svg width="56" height="56" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="8" y="20" width="28" height="28" stroke="#2d3748" stroke-width="1.5"/>
+            <rect x="20" y="8" width="28" height="28" stroke="#1e293b" stroke-width="1.5"/>
+            <line x1="8" y1="20" x2="20" y2="8" stroke="#2d3748" stroke-width="1.5"/>
+            <line x1="36" y1="20" x2="48" y2="8" stroke="#1e293b" stroke-width="1.5"/>
+            <line x1="8" y1="48" x2="20" y2="36" stroke="#2d3748" stroke-width="1.5"/>
+            <line x1="36" y1="48" x2="48" y2="36" stroke="#2d3748" stroke-width="1.5"/>
+          </svg>
           <span class="big">No data yet</span>
           <span class="small">Run at least one analysis on the Monitor page first</span>
           <a href="/" style="margin-top:12px;padding:10px 20px;background:var(--teal);color:#fff;border-radius:7px;text-decoration:none;font-size:13px;font-weight:600;">Go to Monitor</a>
@@ -474,7 +510,12 @@ TWIN_HTML = """
     }
 
     const bannerCls = d.failure_hours === null ? 'safe' : d.failure_hours < 6 ? 'danger' : 'warning';
-    const bannerIcon = d.failure_hours === null ? '✅' : d.failure_hours < 6 ? '🔴' : '⚠️';
+    const BANNER_ICONS = {
+      safe:    `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
+      danger:  `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`,
+      warning: `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`
+    };
+    const bannerIcon = BANNER_ICONS[bannerCls];
     const bannerTitle = d.failure_hours === null
       ? 'Machine healthy — No failure predicted in next 24h'
       : d.failure_hours < 6
@@ -529,7 +570,7 @@ TWIN_HTML = """
       </div>
 
       <div class="whatif-card">
-        <div class="whatif-title">⚡ What-If Simulator — Test future scenarios</div>
+        <div class="whatif-title">What-If Simulator — Test future scenarios</div>
         <div class="whatif-grid">
           <div class="whatif-field">
             <label class="whatif-label">Machine type</label>
@@ -679,7 +720,7 @@ HISTORY_HTML = """
     .sep { color: var(--border); }
     .page-title { color: var(--muted); font-size: 13px; letter-spacing: 1px; }
     .nav-links { margin-left: auto; display: flex; gap: 8px; }
-    .nav-link { padding: 7px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; color: var(--label); font-size: 12px; text-decoration: none; }
+    .nav-link { padding: 7px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; color: var(--label); font-size: 12px; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; }
     .nav-link:hover { border-color: var(--teal); color: var(--teal-light); }
     .content { padding: 30px 32px; }
     .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
@@ -706,8 +747,8 @@ HISTORY_HTML = """
   <span class="sep">/</span>
   <span class="page-title">Analysis History</span>
   <div class="nav-links">
-    <a class="nav-link" href="/twin">🔮 Digital Twin</a>
-    <a class="nav-link" href="/">← Monitor</a>
+    <a class="nav-link" href="/twin"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.29 7 12 12 20.71 7"/><line x1="12" y1="22" x2="12" y2="12"/></svg> Digital Twin</a>
+    <a class="nav-link" href="/"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg> Monitor</a>
   </div>
 </header>
 <div class="content">
@@ -734,7 +775,7 @@ HISTORY_HTML = """
         <td>{{ a.risk }}%</td>
         <td><span class="badge {{ 'alert' if a.prediction else 'ok' }}">{{ 'Anomaly' if a.prediction else 'Normal' }}</span></td>
         <td>{{ a.zones or '—' }}</td>
-        <td>{% if a.mail_sent %}<span class="mail-badge">📧 Sent</span>{% else %}—{% endif %}</td>
+        <td>{% if a.mail_sent %}<span class="mail-badge">Sent</span>{% else %}—{% endif %}</td>
       </tr>
       {% endfor %}
     </tbody>
@@ -758,7 +799,7 @@ def predict_risk(params):
     prediction = 1 if probabilite >= 22 else 0
     zones_risque = []
     if prediction == 1:
-        for col, nom in zones.items():
+        for col, nom in FAILURE_ZONES.items():
             if col in modeles_zones:
                 pz = round(float(modeles_zones[col].predict_proba(donnees_scaled)[0][1]) * 100, 1)
                 if pz >= 30:
@@ -772,14 +813,14 @@ def envoyer_alerte(email_to, probabilite, zones_risque, data):
     zones_html = "".join(f"<li style='padding:5px 0;'>{z['nom']} — <strong>{z['proba']}%</strong></li>" for z in zones_risque) or "<li>Zone not identified</li>"
     html = f"""
     <div style="font-family:Arial;max-width:600px;margin:0 auto;background:#0b0f1a;color:#f1f5f9;padding:30px;border-radius:12px;">
-        <h1 style="color:#ef4444;margin-bottom:5px;">🔴 FAILURE ALERT</h1>
-        <p style="color:#64748b;margin-bottom:25px;">Pilar System — Predictive Maintenance</p>
+        <h1 style="color:#ef4444;margin-bottom:5px;letter-spacing:2px;">FAILURE ALERT</h1>
+        <p style="color:#64748b;margin-bottom:25px;">Pilar — Industrial Predictive Maintenance</p>
         <div style="background:#111827;border:1px solid #1f2937;border-radius:10px;padding:20px;margin-bottom:20px;">
-            <h2 style="color:#f59e0b;font-size:16px;margin-bottom:10px;">📊 Risk detected</h2>
+            <h2 style="color:#f59e0b;font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">Risk Score</h2>
             <p style="font-size:48px;font-weight:800;color:#ef4444;margin:0;">{probabilite}%</p>
         </div>
         <div style="background:#111827;border:1px solid #1f2937;border-radius:10px;padding:20px;margin-bottom:20px;">
-            <h2 style="color:#f59e0b;font-size:16px;margin-bottom:15px;">🔧 Machine parameters</h2>
+            <h2 style="color:#f59e0b;font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-bottom:15px;">Machine Parameters</h2>
             <table style="width:100%;border-collapse:collapse;">
                 <tr><td style="color:#64748b;padding:6px 0;">Type</td><td style="color:#f1f5f9;font-weight:600;">{mtype}</td></tr>
                 <tr><td style="color:#64748b;padding:6px 0;">Air temp</td><td style="color:#f1f5f9;font-weight:600;">{data.get('temp_air')} K</td></tr>
@@ -789,23 +830,23 @@ def envoyer_alerte(email_to, probabilite, zones_risque, data):
             </table>
         </div>
         <div style="background:#111827;border:1px solid #1f2937;border-radius:10px;padding:20px;margin-bottom:20px;">
-            <h2 style="color:#f59e0b;font-size:16px;margin-bottom:10px;">📍 Failure zones</h2>
+            <h2 style="color:#f59e0b;font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">Failure Zones</h2>
             <ul style="color:#f1f5f9;padding-left:20px;">{zones_html}</ul>
         </div>
         <p style="color:#64748b;font-size:11px;text-align:center;">Pilar — Industrial Predictive Maintenance System</p>
     </div>"""
     msg = MIMEMultipart('alternative')
-    msg['Subject'] = f"🔴 PILAR ALERT — Failure risk {probabilite}%"
+    msg["Subject"] = f"[PILAR ALERT] Failure risk: {probabilite}%"
     msg['From'] = GMAIL
     msg['To'] = email_to
     msg.attach(MIMEText(html, 'html'))
     try:
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
             smtp.login(GMAIL, GMAIL_PWD)
             smtp.sendmail(GMAIL, email_to, msg.as_string())
-        print(f"✅ Alert email sent to {email_to}")
+        logging.info("Alert email sent to %s", email_to)
     except Exception as e:
-        print(f"❌ Email error: {e}")
+        logging.error("Failed to send alert email to %s: %s", email_to, e)
 
 # ──────────────────────────────────────────────
 # ROUTES
@@ -915,35 +956,56 @@ def api_whatif():
         message = 'These parameters will likely lead to failure. Reduce tool wear or torque.'
     return jsonify({'risk': risk, 'status': status, 'message': message, 'zones': zones_risque})
 
-@app.route('/set_email', methods=['POST'])
+@app.route("/set_email", methods=["POST"])
 def set_email():
-    data = request.json
-    responsable_email['email'] = data.get('email', '')
-    print(f"✅ Responsible email set: {responsable_email['email']}")
-    return jsonify({'status': 'ok'})
+    data = request.get_json(silent=True) or {}
+    with _email_lock:
+        responsable_email["email"] = data.get("email", "")
+    logging.info("Responsible email set: %s", responsable_email["email"])
+    return jsonify({"status": "ok"})
 
-@app.route('/predire', methods=['POST'])
+@app.route("/predire", methods=["POST"])
 def predire():
-    data = request.json
+    data = request.get_json(silent=True)
+    if not data:
+        return jsonify({"error": "Invalid JSON payload"}), 400
+
+    required = {"type", "temp_air", "temp_process", "vitesse", "couple", "usure"}
+    missing = required - data.keys()
+    if missing:
+        return jsonify({"error": f"Missing fields: {', '.join(sorted(missing))}"}), 400
+
     probabilite, prediction, zones_risque = predict_risk(data)
 
     mail_envoye = False
-    if probabilite >= 50 and responsable_email['email']:
-        threading.Thread(target=envoyer_alerte, args=(responsable_email['email'], probabilite, zones_risque, data), daemon=True).start()
+    with _email_lock:
+        recipient = responsable_email["email"]
+    if probabilite >= 50 and recipient:
+        threading.Thread(
+            target=envoyer_alerte,
+            args=(recipient, probabilite, zones_risque, data),
+            daemon=True,
+        ).start()
         mail_envoye = True
 
-    machine_types = {0: 'Low', 1: 'Medium', 2: 'High'}
-    zones_str = ', '.join([z['nom'] for z in zones_risque]) if zones_risque else ''
+    machine_types = {0: "Low", 1: "Medium", 2: "High"}
+    zones_str = ", ".join(z["nom"] for z in zones_risque)
     analysis = Analysis(
-        machine_type=machine_types.get(data['type'], 'Unknown'),
-        temp_air=data['temp_air'], temp_process=data['temp_process'],
-        vitesse=data['vitesse'], couple=data['couple'], usure=data['usure'],
-        risk=probabilite, prediction=prediction, zones=zones_str, mail_sent=mail_envoye
+        machine_type=machine_types.get(data["type"], "Unknown"),
+        temp_air=data["temp_air"],
+        temp_process=data["temp_process"],
+        vitesse=data["vitesse"],
+        couple=data["couple"],
+        usure=data["usure"],
+        risk=probabilite,
+        prediction=prediction,
+        zones=zones_str,
+        mail_sent=mail_envoye,
     )
     db.session.add(analysis)
     db.session.commit()
 
-    return jsonify({'prediction': prediction, 'probabilite': probabilite, 'zones': zones_risque, 'mail_envoye': mail_envoye})
+    return jsonify({"prediction": prediction, "probabilite": probabilite, "zones": zones_risque, "mail_envoye": mail_envoye})
 
 @app.route('/chat', methods=['POST'])
 def chat():
@@ -978,19 +1040,24 @@ Instructions:
     messages.append({"role": "user", "content": message})
 
     try:
-        import anthropic
         client = anthropic.Anthropic()
         response = client.messages.create(
             model="claude-haiku-4-5-20251001",
-            max_tokens=400, system=system_prompt, messages=messages
+            max_tokens=400,
+            system=system_prompt,
+            messages=messages,
         )
         reply = response.content[0].text
     except Exception as e:
-        print(f"Claude API error: {e}")
-        reply = "I'm here to help with any questions about machine maintenance and predictive analytics." if not context else f"Machine is at {context['risk']}% failure risk."
+        logging.error("Claude API error: %s", e)
+        reply = (
+            "I'm here to help with any questions about machine maintenance and predictive analytics."
+            if not context
+            else f"Machine is at {context['risk']}% failure risk."
+        )
 
     return jsonify({'reply': reply})
 
-if __name__ == '__main__':
-    print("✅ Pilar server started on http://localhost:5000")
-    app.run(debug=True)
+if __name__ == "__main__":
+    logging.info("Pilar server starting on http://localhost:5000")
+    app.run(debug=os.getenv("FLASK_DEBUG", "0") == "1")
