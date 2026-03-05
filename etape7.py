@@ -75,9 +75,8 @@ def set_setting(key, value):
     except Exception as e:
         print(f"Settings error: {e}")
 
-FAVICON_TAG = '<link rel="icon" type="image/png" href="data:image/png;base64,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">'
-
-CSS_COMMON = FAVICON_TAG + """
+CSS_COMMON = """
+<head><meta charset="UTF-8"><link rel="icon" type="image/png" href="data:image/png;base64,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"></head>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -96,6 +95,7 @@ CSS_COMMON = FAVICON_TAG + """
   .nav-links { margin-left: auto; display: flex; gap: 6px; }
   .nav-link { padding: 6px 14px; background: transparent; border: 1px solid var(--border2); border-radius: 4px; color: var(--text3); font-size: 11px; text-decoration: none; transition: all 0.15s; }
   .nav-link:hover { border-color: var(--teal); color: var(--teal-light); }
+  .logo { font-size: 13px; font-weight: 700; letter-spacing: 4px; color: #14b8a6; text-transform: uppercase; }
   .notif-btn { padding: 6px 14px; background: transparent; border: 1px solid var(--border2); border-radius: 4px; color: var(--text3); font-size: 11px; cursor: pointer; transition: all 0.15s; }
   .notif-btn.enabled { border-color: var(--green); color: var(--green); }
   .notif-btn.denied { border-color: var(--red); color: var(--red); }
@@ -187,6 +187,7 @@ HTML = CSS_COMMON + """
   .btn-send:disabled { background: var(--border2); color: var(--text3); cursor: not-allowed; }
 </style>
 <header>
+  <span class="logo">PILAR</span>
   <div class="header-divider"></div>
   <span class="header-sub">Predictive Maintenance System</span>
   <div class="nav-links">
@@ -283,6 +284,7 @@ TWIN_HTML = CSS_COMMON + """
   .no-data .l1{font-size:13px;letter-spacing:1px;}.no-data .l2{font-size:11px;}
 </style>
 <header>
+  <span class="logo">PILAR</span>
   <div class="header-divider"></div>
   <span class="header-sub">Digital Twin &mdash; Predictive Simulation</span>
   <div class="nav-links">
@@ -349,6 +351,7 @@ HISTORY_HTML = CSS_COMMON + """
   .mail-badge{padding:2px 8px;border-radius:3px;font-size:10px;background:rgba(13,148,136,0.12);color:var(--teal-light);}
 </style>
 <header>
+  <span class="logo">PILAR</span>
   <div class="header-divider"></div>
   <span class="header-sub">Analysis History</span>
   <div class="nav-links">
