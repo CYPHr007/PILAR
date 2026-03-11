@@ -39,7 +39,7 @@ with open("scaler.pkl","rb") as f: scaler = pickle.load(f)
 with open("modeles_zones.pkl","rb") as f: modeles_zones = pickle.load(f)
 
 FAILURE_ZONES = {"TWF":"Tool Wear Failure","HDF":"Heat Dissipation Failure","PWF":"Power Failure","OSF":"Overstrain Failure","RNF":"Random Failure"}
-COLONNES = ["Type","Air temperature [K]","Process temperature [K]","Rotational speed [rpm]","Torque [Nm]","Tool wear [min]","ecart_temp"]
+COLONNES = ["Type","Air temperature [K]","Process temperature [K]","Rotational speed [rpm]","Torque [Nm]","Tool wear [min]","ecart_temp","puissance"]
 GMAIL = "guenbourali77@gmail.com"
 GMAIL_PWD = "lpxm bplq znnx sbcx"
 FAVICON = "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"
@@ -167,14 +167,120 @@ tr:last-child td{border-bottom:none;}
 .nb.on{border-color:var(--green);color:var(--green);}
 .idle{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;gap:8px;color:var(--text3);text-align:center;}
 .idle .l1{font-size:13px;}.idle .l2{font-size:11px;}
-</style></head>"""
+.lcard{flex:1;padding:14px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;cursor:pointer;text-align:center;transition:all 0.15s;}
+.lcard.lactive{border-color:var(--teal);background:var(--teal-dim);}
+.lcard .flag{font-size:26px;display:block;margin-bottom:6px;}
+.lcard .lname{font-size:11px;font-weight:600;color:var(--text2);}
+.lcard.lactive .lname{color:var(--teal-light);}
+</style>
+<script>
+const T={
+fr:{nav_monitor:'Monitor',nav_twin:'Twin',nav_history:'Historique',nav_assistant:'Assistant',nav_settings:'Réglages',
+page_monitor:'Monitor',page_twin:'Jumeau Numérique',page_history:'Historique',page_assistant:'Assistant IA',page_settings:'Réglages',
+idle_l1:'Aucune analyse',idle_l2:'Configurez ci-dessous et lancez',
+machine_class:'Classe machine',sensor_params:'Paramètres capteurs',
+air_temp:'Température air',proc_temp:'Température process',rot_speed:'Vitesse rotation',torque:'Couple',tool_wear:'Usure outil',
+run_btn:"Lancer l'analyse",zone_title:'Analyse zones de panne',
+status_ok:'Fonctionnement normal',status_alert:'Anomalie détectée',failure_prob:'Prob. panne',
+u_temp:'°C',u_speed:'tr/min',u_torque:'N·m',u_wear:'h',
+r_ta_min:'21.9°C',r_ta_max:'31.9°C',r_tp_min:'31.9°C',r_tp_max:'41.9°C',
+r_v_min:'1000',r_v_max:'3000',r_c_min:'3',r_c_max:'80N·m',r_u_min:'0',r_u_max:'4.17h',
+bot_hello:"Bonjour\u00a0! Je suis Pilar, votre assistant IA industriel.<br><br>Je peux vous aider avec\u00a0:<br>\u2022 Analyse de pannes machine<br>\u2022 Interprétation des données capteurs<br>\u2022 Recommandations de maintenance<br>\u2022 Toute question technique ou générale<br><br>Comment puis-je vous aider\u00a0?",
+chat_ph:'Posez une question...',send_btn:'Envoyer',
+twin_loading:'Chargement simulation...',twin_no_data:'Aucune donnée',twin_no_data2:"Lancez d'abord une analyse dans Monitor",twin_go:'Aller à Monitor',
+twin_healthy:'Système sain',twin_failure:'Panne dans ~',twin_trend:'Tendance\u00a0:',twin_cur_risk:'Risque actuel',twin_avg:'Risque moyen',twin_anom:"Taux d'anomalie",
+twin_c_risk:'Risque — Historique + Simulation 24h',twin_c_wear:'Projection usure outil',twin_c_temp:'Température process',twin_c_sim:'Simulateur de scénario',
+twin_speed:'Vitesse (tr/min)',twin_torque:'Couple (N·m)',twin_wear:'Usure outil (h)',twin_airtemp:'Temp. air (°C)',twin_sim:'Simuler',twin_sim_r:'Risque simulé',
+hist_total:'Total',hist_anom:'Anomalies',hist_avg:'Risque moy.',hist_alerts:'Alertes envoyées',
+hist_time:'Heure',hist_class:'Classe',hist_risk:'Risque',hist_status:'Statut',hist_zones:'Zones',hist_alert:'Alerte',
+hist_anomaly:'Anomalie',hist_ok:'OK',hist_sent:'Envoyé',
+set_email:"Email d'alerte",set_email_lbl:'Adresse destinataire',set_email_ph:'maintenance@entreprise.com',set_email_btn:'Enregistrer',set_saved:'Enregistré',
+set_notif:'Notifications navigateur',set_notif_desc:'Recevez des alertes quand le risque dépasse 50%.',set_notif_btn:'Activer les notifications',set_notif_on:'Notifications activées',set_notif_blocked:'Bloqué — Activez dans les réglages',
+set_sys:'Infos système',set_version:'Version',set_aimodel:'Modèle IA',set_db:'Base de données',set_lang:'Langue'},
+en:{nav_monitor:'Monitor',nav_twin:'Twin',nav_history:'History',nav_assistant:'Assistant',nav_settings:'Settings',
+page_monitor:'Monitor',page_twin:'Digital Twin',page_history:'History',page_assistant:'AI Assistant',page_settings:'Settings',
+idle_l1:'No analysis yet',idle_l2:'Configure below and run',
+machine_class:'Machine class',sensor_params:'Sensor parameters',
+air_temp:'Air temperature',proc_temp:'Process temperature',rot_speed:'Rotational speed',torque:'Torque',tool_wear:'Tool wear',
+run_btn:'Run Analysis',zone_title:'Failure zone analysis',
+status_ok:'Normal Operation',status_alert:'Anomaly Detected',failure_prob:'Failure prob.',
+u_temp:'K',u_speed:'rpm',u_torque:'Nm',u_wear:'min',
+r_ta_min:'295K',r_ta_max:'305K',r_tp_min:'305K',r_tp_max:'315K',
+r_v_min:'1000',r_v_max:'3000',r_c_min:'3',r_c_max:'80Nm',r_u_min:'0',r_u_max:'250',
+bot_hello:'Hello! I am Pilar, your industrial AI assistant.<br><br>I can help you with:<br>\u2022 Machine failure analysis<br>\u2022 Sensor data interpretation<br>\u2022 Maintenance recommendations<br>\u2022 Any technical or general question<br><br>What can I help you with?',
+chat_ph:'Ask anything...',send_btn:'Send',
+twin_loading:'Loading simulation...',twin_no_data:'No data yet',twin_no_data2:'Run an analysis on Monitor first',twin_go:'Go to Monitor',
+twin_healthy:'System Healthy',twin_failure:'Failure in ~',twin_trend:'Trend:',twin_cur_risk:'Current risk',twin_avg:'Avg risk',twin_anom:'Anomaly rate',
+twin_c_risk:'Risk \u2014 History + 24h Simulation',twin_c_wear:'Tool wear projection',twin_c_temp:'Process temperature',twin_c_sim:'Scenario Simulator',
+twin_speed:'Speed (rpm)',twin_torque:'Torque (Nm)',twin_wear:'Tool wear (min)',twin_airtemp:'Air temp (K)',twin_sim:'Simulate',twin_sim_r:'Simulated risk',
+hist_total:'Total',hist_anom:'Anomalies',hist_avg:'Avg risk',hist_alerts:'Alerts sent',
+hist_time:'Time',hist_class:'Class',hist_risk:'Risk',hist_status:'Status',hist_zones:'Zones',hist_alert:'Alert',
+hist_anomaly:'Anomaly',hist_ok:'OK',hist_sent:'Sent',
+set_email:'Alert email',set_email_lbl:'Recipient address',set_email_ph:'maintenance@company.com',set_email_btn:'Save Email',set_saved:'Saved',
+set_notif:'Browser notifications',set_notif_desc:'Receive alerts when failure risk exceeds 50%.',set_notif_btn:'Enable Notifications',set_notif_on:'Notifications Enabled',set_notif_blocked:'Blocked \u2014 Enable in Browser Settings',
+set_sys:'System info',set_version:'Version',set_aimodel:'AI Model',set_db:'Database',set_lang:'Language'}
+};
+let LANG=localStorage.getItem('pilar_lang')||'en';
+function t(k){return(T[LANG]&&T[LANG][k])||(T.en[k])||k;}
+function setLang(l){LANG=l;localStorage.setItem('pilar_lang',l);applyLang();}
+function applyLang(){
+  document.querySelectorAll('[data-i18n]').forEach(function(el){
+    var k=el.getAttribute('data-i18n');
+    if(el.tagName==='INPUT'){el.placeholder=t(k);}else{el.textContent=t(k);}
+  });
+  document.querySelectorAll('[data-i18n-html]').forEach(function(el){el.innerHTML=t(el.getAttribute('data-i18n-html'));});
+  document.querySelectorAll('.lcard').forEach(function(c){c.classList.toggle('lactive',c.dataset.lang===LANG);});
+  document.querySelectorAll('td .badge.alert').forEach(function(el){el.textContent=t('hist_anomaly');});
+  document.querySelectorAll('td .badge.ok').forEach(function(el){el.textContent=t('hist_ok');});
+  document.querySelectorAll('td .mb').forEach(function(el){el.textContent=t('hist_sent');});
+  if(document.getElementById('nta'))updateSensorUnits();
+}
+function toDisplay(raw,type){
+  if(LANG!=='fr')return raw;
+  if(type==='temp')return+(raw-273.15).toFixed(2);
+  if(type==='wear')return+(raw/60).toFixed(3);
+  return raw;
+}
+function toRaw(disp,type){
+  if(LANG!=='fr')return disp;
+  if(type==='temp')return+(disp+273.15).toFixed(2);
+  if(type==='wear')return+(disp*60).toFixed(1);
+  return disp;
+}
+function updateSensorUnits(){
+  var fr=LANG==='fr';
+  var nta=document.getElementById('nta'),ntp=document.getElementById('ntp'),nu=document.getElementById('nu');
+  if(!nta)return;
+  var ta_raw=parseFloat(nta.dataset.raw)||300;
+  var tp_raw=parseFloat(ntp.dataset.raw)||310;
+  var u_raw=parseFloat(nu.dataset.raw)||100;
+  var ta_min=fr?21.85:295,ta_max=fr?31.85:305;
+  document.getElementById('sta').min=ta_min;document.getElementById('sta').max=ta_max;
+  nta.min=ta_min;nta.max=ta_max;
+  var ta_d=toDisplay(ta_raw,'temp');nta.value=ta_d;document.getElementById('sta').value=ta_d;
+  var tp_min=fr?31.85:305,tp_max=fr?41.85:315;
+  document.getElementById('stp').min=tp_min;document.getElementById('stp').max=tp_max;
+  ntp.min=tp_min;ntp.max=tp_max;
+  var tp_d=toDisplay(tp_raw,'temp');ntp.value=tp_d;document.getElementById('stp').value=tp_d;
+  var u_max=fr?+(250/60).toFixed(3):250,u_step=fr?0.001:1;
+  document.getElementById('su').min=0;document.getElementById('su').max=u_max;document.getElementById('su').step=u_step;
+  nu.min=0;nu.max=u_max;
+  var u_d=toDisplay(u_raw,'wear');nu.value=u_d;document.getElementById('su').value=u_d;
+  var ids={'vu-ta':t('u_temp'),'vu-tp':t('u_temp'),'vu-v':t('u_speed'),'vu-c':t('u_torque'),'vu-u':t('u_wear'),
+    'rl-ta-min':t('r_ta_min'),'rl-ta-max':t('r_ta_max'),'rl-tp-min':t('r_tp_min'),'rl-tp-max':t('r_tp_max'),
+    'rl-v-min':t('r_v_min'),'rl-v-max':t('r_v_max'),'rl-c-min':t('r_c_min'),'rl-c-max':t('r_c_max'),
+    'rl-u-min':t('r_u_min'),'rl-u-max':t('r_u_max')};
+  Object.keys(ids).forEach(function(id){var e=document.getElementById(id);if(e)e.textContent=ids[id];});
+}
+document.addEventListener('DOMContentLoaded',applyLang);
+</script></head>"""
 
 _NAV = """<nav class="bottom-nav">
-<a href="/" class="ni {m}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>Monitor</a>
-<a href="/twin" class="ni {t}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>Twin</a>
-<a href="/history" class="ni {h}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>History</a>
-<a href="/assistant" class="ni {a}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>Assistant</a>
-<a href="/settings" class="ni {s}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>Settings</a>
+<a href="/" class="ni {m}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg><span data-i18n="nav_monitor">Monitor</span></a>
+<a href="/twin" class="ni {t}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg><span data-i18n="nav_twin">Twin</span></a>
+<a href="/history" class="ni {h}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg><span data-i18n="nav_history">History</span></a>
+<a href="/assistant" class="ni {a}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg><span data-i18n="nav_assistant">Assistant</span></a>
+<a href="/settings" class="ni {s}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg><span data-i18n="nav_settings">Settings</span></a>
 </nav>"""
 
 def nav(active):
@@ -186,25 +292,25 @@ def nav(active):
 # ── MONITOR ───────────────────────────────────────────────────────────────────
 HTML = _HEAD.replace("{FAV}","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") + """
 <body>
-<header><span class="logo">PILAR</span><div class="hd"></div><span class="hsub">Monitor</span>
+<header><span class="logo">PILAR</span><div class="hd"></div><span class="hsub" data-i18n="page_monitor">Monitor</span>
 <div class="hright"><button class="nb" id="nb" onclick="toggleN()">Notifs</button></div></header>
 <div class="page pad">
   <div class="ab" id="abn">Alert dispatched</div>
-  <div id="res"><div class="idle"><span class="l1">No analysis yet</span><span class="l2">Configure below and run</span></div></div>
+  <div id="res"><div class="idle"><span class="l1" data-i18n="idle_l1">No analysis yet</span><span class="l2" data-i18n="idle_l2">Configure below and run</span></div></div>
   <div class="card">
-    <div class="ctitle">Machine class</div>
+    <div class="ctitle" data-i18n="machine_class">Machine class</div>
     <div class="tgrid">
       <div class="tbtn on" data-val="0" onclick="selT(this)">L — Low</div>
       <div class="tbtn" data-val="1" onclick="selT(this)">M — Med</div>
       <div class="tbtn" data-val="2" onclick="selT(this)">H — High</div>
     </div>
-    <div class="ctitle">Sensor parameters</div>
-    <div class="sensor"><div class="srow"><span class="sname">Air temperature</span><div class="vwrap"><input class="vi" type="number" id="nta" value="300" min="295" max="305" step="0.1" oninput="si('sta','nta')"><span class="vu">K</span></div></div><input type="range" id="sta" min="295" max="305" step="0.1" value="300" oninput="ss('sta','nta',1)"><div class="rl"><span>295K</span><span>305K</span></div></div>
-    <div class="sensor"><div class="srow"><span class="sname">Process temperature</span><div class="vwrap"><input class="vi" type="number" id="ntp" value="310" min="305" max="315" step="0.1" oninput="si('stp','ntp')"><span class="vu">K</span></div></div><input type="range" id="stp" min="305" max="315" step="0.1" value="310" oninput="ss('stp','ntp',1)"><div class="rl"><span>305K</span><span>315K</span></div></div>
-    <div class="sensor"><div class="srow"><span class="sname">Rotational speed</span><div class="vwrap"><input class="vi" type="number" id="nv" value="1500" min="1000" max="3000" step="10" oninput="si('sv','nv')"><span class="vu">rpm</span></div></div><input type="range" id="sv" min="1000" max="3000" step="10" value="1500" oninput="ss('sv','nv',0)"><div class="rl"><span>1000</span><span>3000</span></div></div>
-    <div class="sensor"><div class="srow"><span class="sname">Torque</span><div class="vwrap"><input class="vi" type="number" id="nc" value="40" min="3" max="80" step="0.1" oninput="si('sc','nc')"><span class="vu">Nm</span></div></div><input type="range" id="sc" min="3" max="80" step="0.1" value="40" oninput="ss('sc','nc',1)"><div class="rl"><span>3</span><span>80Nm</span></div></div>
-    <div class="sensor"><div class="srow"><span class="sname">Tool wear</span><div class="vwrap"><input class="vi" type="number" id="nu" value="100" min="0" max="250" step="1" oninput="si('su','nu')"><span class="vu">min</span></div></div><input type="range" id="su" min="0" max="250" step="1" value="100" oninput="ss('su','nu',0)"><div class="rl"><span>0</span><span>250</span></div></div>
-    <button class="btn" id="btn" onclick="analyse()">Run Analysis</button>
+    <div class="ctitle" data-i18n="sensor_params">Sensor parameters</div>
+    <div class="sensor"><div class="srow"><span class="sname" data-i18n="air_temp">Air temperature</span><div class="vwrap"><input class="vi" type="number" id="nta" value="300" min="295" max="305" step="0.1" data-raw="300" oninput="si('sta','nta','temp')"><span class="vu" id="vu-ta">K</span></div></div><input type="range" id="sta" min="295" max="305" step="0.1" value="300" oninput="ss('sta','nta',1,'temp')"><div class="rl"><span id="rl-ta-min">295K</span><span id="rl-ta-max">305K</span></div></div>
+    <div class="sensor"><div class="srow"><span class="sname" data-i18n="proc_temp">Process temperature</span><div class="vwrap"><input class="vi" type="number" id="ntp" value="310" min="305" max="315" step="0.1" data-raw="310" oninput="si('stp','ntp','temp')"><span class="vu" id="vu-tp">K</span></div></div><input type="range" id="stp" min="305" max="315" step="0.1" value="310" oninput="ss('stp','ntp',1,'temp')"><div class="rl"><span id="rl-tp-min">305K</span><span id="rl-tp-max">315K</span></div></div>
+    <div class="sensor"><div class="srow"><span class="sname" data-i18n="rot_speed">Rotational speed</span><div class="vwrap"><input class="vi" type="number" id="nv" value="1500" min="1000" max="3000" step="10" oninput="si('sv','nv',null)"><span class="vu" id="vu-v">rpm</span></div></div><input type="range" id="sv" min="1000" max="3000" step="10" value="1500" oninput="ss('sv','nv',0,null)"><div class="rl"><span id="rl-v-min">1000</span><span id="rl-v-max">3000</span></div></div>
+    <div class="sensor"><div class="srow"><span class="sname" data-i18n="torque">Torque</span><div class="vwrap"><input class="vi" type="number" id="nc" value="40" min="3" max="80" step="0.1" oninput="si('sc','nc',null)"><span class="vu" id="vu-c">Nm</span></div></div><input type="range" id="sc" min="3" max="80" step="0.1" value="40" oninput="ss('sc','nc',1,null)"><div class="rl"><span id="rl-c-min">3</span><span id="rl-c-max">80Nm</span></div></div>
+    <div class="sensor"><div class="srow"><span class="sname" data-i18n="tool_wear">Tool wear</span><div class="vwrap"><input class="vi" type="number" id="nu" value="100" min="0" max="250" step="1" data-raw="100" oninput="si('su','nu','wear')"><span class="vu" id="vu-u">min</span></div></div><input type="range" id="su" min="0" max="250" step="1" value="100" oninput="ss('su','nu',0,'wear')"><div class="rl"><span id="rl-u-min">0</span><span id="rl-u-max">250</span></div></div>
+    <button class="btn" id="btn" onclick="analyse()" data-i18n="run_btn">Run Analysis</button>
   </div>
 </div>""" + nav("m") + """
 <script>
@@ -214,25 +320,36 @@ async function toggleN(){if(Notification.permission==='granted')return;await Not
 function sendN(risk,zones){if(Notification.permission!=='granted')return;new Notification('Pilar — Risk: '+risk+'%',{body:zones.length?'Zones: '+zones.map(z=>z.nom).join(', '):'No specific zone',requireInteraction:true,tag:'pilar'});}
 updN();
 function selT(el){document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('on'));el.classList.add('on');mT=parseInt(el.dataset.val);}
-function ss(s,n,d){document.getElementById(n).value=parseFloat(document.getElementById(s).value).toFixed(d);}
-function si(s,n){const v=parseFloat(document.getElementById(n).value);if(!isNaN(v))document.getElementById(s).value=v;}
+function ss(s,n,d,type){
+  var v=parseFloat(document.getElementById(s).value);
+  document.getElementById(n).value=v.toFixed(d);
+  if(type){document.getElementById(n).dataset.raw=toRaw(v,type);}
+}
+function si(s,n,type){
+  var v=parseFloat(document.getElementById(n).value);
+  if(!isNaN(v)){document.getElementById(s).value=v;if(type){document.getElementById(n).dataset.raw=toRaw(v,type);}}
+}
 function gv(id){return parseFloat(document.getElementById(id).value);}
 async function analyse(){
-  const btn=document.getElementById('btn');btn.disabled=true;btn.textContent='Analyzing...';
-  lastD={type:mT,temp_air:gv('nta'),temp_process:gv('ntp'),vitesse:gv('nv'),couple:gv('nc'),usure:gv('nu')};
+  const btn=document.getElementById('btn');btn.disabled=true;btn.textContent=t('run_btn')+'\u2026';
+  lastD={type:mT,
+    temp_air:toRaw(gv('nta'),'temp'),
+    temp_process:toRaw(gv('ntp'),'temp'),
+    vitesse:gv('nv'),couple:gv('nc'),
+    usure:toRaw(gv('nu'),'wear')};
   const res=await fetch('/predire',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(lastD)});
   lastR=await res.json();
   sessionStorage.setItem('lr',JSON.stringify(lastR));
   sessionStorage.setItem('ld',JSON.stringify(lastD));
   render(lastR);
   if(lastR.probabilite>=50){sendN(lastR.probabilite,lastR.zones);const a=document.getElementById('abn');a.style.display='block';setTimeout(()=>a.style.display='none',4000);}
-  btn.disabled=false;btn.textContent='Run Analysis';
+  btn.disabled=false;btn.textContent=t('run_btn');
 }
 function render(r){
-  const al=r.prediction===1,cls=al?'alert':'ok',st=al?'Anomaly Detected':'Normal Operation';
+  const al=r.prediction===1,cls=al?'alert':'ok',st=al?t('status_alert'):t('status_ok');
   let zH='';
-  if(al&&r.zones.length>0){zH='<div class="card"><div class="ctitle">Failure zone analysis</div>'+r.zones.map(z=>'<div class="zrow"><span class="zname">'+z.nom+'</span><div class="zbw"><div class="zbf" style="width:'+z.proba+'%"></div></div><span class="zp">'+z.proba+'%</span></div>').join('')+'</div>';}
-  document.getElementById('res').innerHTML='<div class="rh '+cls+'"><div><div class="sb '+cls+'"><span class="dot '+cls+'"></span>'+st+'</div><div style="font-size:10px;color:var(--text3);margin-top:4px">'+new Date().toLocaleString('en-GB')+'</div></div><div><div class="rnum '+cls+'">'+r.probabilite+'<span class="runit">%</span></div><div class="rlbl">Failure prob.</div></div></div>'+zH;
+  if(al&&r.zones.length>0){zH='<div class="card"><div class="ctitle">'+t('zone_title')+'</div>'+r.zones.map(z=>'<div class="zrow"><span class="zname">'+z.nom+'</span><div class="zbw"><div class="zbf" style="width:'+z.proba+'%"></div></div><span class="zp">'+z.proba+'%</span></div>').join('')+'</div>';}
+  document.getElementById('res').innerHTML='<div class="rh '+cls+'"><div><div class="sb '+cls+'"><span class="dot '+cls+'"></span>'+st+'</div><div style="font-size:10px;color:var(--text3);margin-top:4px">'+new Date().toLocaleString('en-GB')+'</div></div><div><div class="rnum '+cls+'">'+r.probabilite+'<span class="runit">%</span></div><div class="rlbl">'+t('failure_prob')+'</div></div></div>'+zH;
 }
 </script></body></html>"""
 
@@ -240,14 +357,14 @@ function render(r){
 # ── ASSISTANT ─────────────────────────────────────────────────────────────────
 ASSISTANT_HTML = _HEAD.replace("{FAV}","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") + """
 <body style="overflow:hidden;">
-<header><span class="logo">PILAR</span><div class="hd"></div><span class="hsub">AI Assistant</span><div class="hright" style="font-size:9px;color:var(--text3)">Claude Haiku</div></header>
+<header><span class="logo">PILAR</span><div class="hd"></div><span class="hsub" data-i18n="page_assistant">AI Assistant</span><div class="hright" style="font-size:9px;color:var(--text3)">Claude Haiku</div></header>
 <div class="page cw">
   <div class="cm" id="cm">
-    <div class="msg bot"><span class="ms">Pilar</span><div class="mb2">Hello! I am Pilar, your industrial AI assistant.<br><br>I can help you with:<br>• Machine failure analysis<br>• Sensor data interpretation<br>• Maintenance recommendations<br>• Any technical or general question<br><br>What can I help you with?</div></div>
+    <div class="msg bot"><span class="ms">Pilar</span><div class="mb2" data-i18n-html="bot_hello">Hello! I am Pilar, your industrial AI assistant.<br><br>I can help you with:<br>• Machine failure analysis<br>• Sensor data interpretation<br>• Maintenance recommendations<br>• Any technical or general question<br><br>What can I help you with?</div></div>
   </div>
   <div class="cia">
-    <textarea class="cta" id="ci" placeholder="Ask anything..." rows="1" oninput="ar(this)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();send();}"></textarea>
-    <button class="bsend" id="bs" onclick="send()">Send</button>
+    <textarea class="cta" id="ci" placeholder="Ask anything..." data-i18n="chat_ph" rows="1" oninput="ar(this)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();send();}"></textarea>
+    <button class="bsend" id="bs" onclick="send()" data-i18n="send_btn">Send</button>
   </div>
 </div>""" + nav("a") + """
 <script>
@@ -280,30 +397,32 @@ async function send(){
 TWIN_HTML = _HEAD.replace("{FAV}","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") + """
 <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
 <body>
-<header><span class="logo">PILAR</span><div class="hd"></div><span class="hsub">Digital Twin</span></header>
-<div class="page pad" id="tc"><div class="idle"><span class="l1">Loading simulation...</span></div></div>""" + nav("t") + """
+<header><span class="logo">PILAR</span><div class="hd"></div><span class="hsub" data-i18n="page_twin">Digital Twin</span></header>
+<div class="page pad" id="tc"><div class="idle"><span class="l1" data-i18n="twin_loading">Loading simulation...</span></div></div>""" + nav("t") + """
 <script>
 const PL={paper_bgcolor:'transparent',plot_bgcolor:'transparent',font:{color:'#64748b',size:10},margin:{t:8,b:36,l:40,r:8},xaxis:{gridcolor:'#1e2433',linecolor:'#1e2433',tickfont:{size:9}},yaxis:{gridcolor:'#1e2433',linecolor:'#1e2433',tickfont:{size:9}},legend:{bgcolor:'transparent',font:{size:9}},hovermode:'x unified'};
 const PC={responsive:true,displayModeBar:false};
 async function load(){
   const res=await fetch('/api/twin');const d=await res.json();
-  if(!d.has_data){document.getElementById('tc').innerHTML='<div class="idle"><span class="l1">No data yet</span><span class="l2">Run an analysis on Monitor first</span><a href="/" style="margin-top:16px;padding:12px 20px;background:var(--teal);color:#fff;border-radius:6px;text-decoration:none;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;">Go to Monitor</a></div>';return;}
+  if(!d.has_data){document.getElementById('tc').innerHTML='<div class="idle"><span class="l1">'+t('twin_no_data')+'</span><span class="l2">'+t('twin_no_data2')+'</span><a href="/" style="margin-top:16px;padding:12px 20px;background:var(--teal);color:#fff;border-radius:6px;text-decoration:none;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;">'+t('twin_go')+'</a></div>';return;}
   const bCls=d.failure_hours===null?'ok':d.failure_hours<6?'alert':'amber';
-  const bT=d.failure_hours===null?'System Healthy':'Failure in ~'+d.failure_hours+'h';
+  const bT=d.failure_hours===null?t('twin_healthy'):t('twin_failure')+d.failure_hours+'h';
+  const wta_disp=toDisplay(d.last_params.temp_air,'temp');
+  const wu_disp=toDisplay(d.last_params.usure,'wear');
   document.getElementById('tc').innerHTML=`
-    <div class="rh ${bCls}"><div><div class="sb ${bCls}"><span class="dot ${bCls}"></span>${bT}</div><div style="font-size:10px;color:var(--text3);margin-top:4px">Trend: ${d.trend}</div></div><div><div class="rnum ${bCls}">${d.current_risk}<span class="runit">%</span></div><div class="rlbl">Current risk</div></div></div>
-    <div class="kgrid"><div class="kc"><div class="kv amber">${d.avg_risk_24h}%</div><div class="kl">Avg risk</div></div><div class="kc"><div class="kv ${d.anomaly_rate>=30?'alert':'ok'}">${d.anomaly_rate}%</div><div class="kl">Anomaly rate</div></div></div>
-    <div class="card"><div class="ctitle">Risk — History + 24h Simulation</div><div id="cr" style="height:220px"></div></div>
-    <div class="card"><div class="ctitle">Tool wear projection</div><div id="cw" style="height:180px"></div></div>
-    <div class="card"><div class="ctitle">Process temperature</div><div id="ct" style="height:180px"></div></div>
-    <div class="card"><div class="ctitle">Scenario Simulator</div>
+    <div class="rh ${bCls}"><div><div class="sb ${bCls}"><span class="dot ${bCls}"></span>${bT}</div><div style="font-size:10px;color:var(--text3);margin-top:4px">${t('twin_trend')} ${d.trend}</div></div><div><div class="rnum ${bCls}">${d.current_risk}<span class="runit">%</span></div><div class="rlbl">${t('twin_cur_risk')}</div></div></div>
+    <div class="kgrid"><div class="kc"><div class="kv amber">${d.avg_risk_24h}%</div><div class="kl">${t('twin_avg')}</div></div><div class="kc"><div class="kv ${d.anomaly_rate>=30?'alert':'ok'}">${d.anomaly_rate}%</div><div class="kl">${t('twin_anom')}</div></div></div>
+    <div class="card"><div class="ctitle">${t('twin_c_risk')}</div><div id="cr" style="height:220px"></div></div>
+    <div class="card"><div class="ctitle">${t('twin_c_wear')}</div><div id="cw" style="height:180px"></div></div>
+    <div class="card"><div class="ctitle">${t('twin_c_temp')}</div><div id="ct" style="height:180px"></div></div>
+    <div class="card"><div class="ctitle">${t('twin_c_sim')}</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
-        <div><label class="flbl">Speed (rpm)</label><input class="fi" type="number" id="wv" value="${d.last_params.vitesse}" step="10"></div>
-        <div><label class="flbl">Torque (Nm)</label><input class="fi" type="number" id="wc" value="${d.last_params.couple}" step="0.1"></div>
-        <div><label class="flbl">Tool wear (min)</label><input class="fi" type="number" id="wu" value="${d.last_params.usure}" step="1"></div>
-        <div><label class="flbl">Air temp (K)</label><input class="fi" type="number" id="wta" value="${d.last_params.temp_air}" step="0.1"></div>
+        <div><label class="flbl">${t('twin_speed')}</label><input class="fi" type="number" id="wv" value="${d.last_params.vitesse}" step="10"></div>
+        <div><label class="flbl">${t('twin_torque')}</label><input class="fi" type="number" id="wc" value="${d.last_params.couple}" step="0.1"></div>
+        <div><label class="flbl">${t('twin_wear')}</label><input class="fi" type="number" id="wu" value="${wu_disp}" step="0.001" data-raw="${d.last_params.usure}"></div>
+        <div><label class="flbl">${t('twin_airtemp')}</label><input class="fi" type="number" id="wta" value="${wta_disp}" step="0.1" data-raw="${d.last_params.temp_air}"></div>
       </div>
-      <button class="btn" onclick="sim()">Simulate</button>
+      <button class="btn" onclick="sim()">${t('twin_sim')}</button>
       <div id="wr" style="margin-top:12px"></div>
     </div>`;
   Plotly.newPlot('cr',[{x:d.history_times,y:d.history_risks,name:'History',type:'scatter',mode:'lines+markers',line:{color:'#14b8a6',width:2},marker:{size:5}},{x:d.future_times,y:d.future_risks,name:'Simulated',type:'scatter',mode:'lines',line:{color:'#7c3aed',width:2,dash:'dot'},fill:'tozeroy',fillcolor:'rgba(124,58,237,0.04)'},{x:[...d.history_times,...d.future_times],y:Array(d.history_times.length+d.future_times.length).fill(50),name:'Threshold',type:'scatter',mode:'lines',line:{color:'#dc2626',width:1,dash:'dash'}}],{...PL,yaxis:{...PL.yaxis,range:[0,105]}},PC);
@@ -311,10 +430,12 @@ async function load(){
   Plotly.newPlot('ct',[{x:d.history_times,y:d.history_temp,name:'Actual',type:'scatter',mode:'lines',line:{color:'#dc2626',width:2}},{x:d.future_times,y:d.future_temp,name:'Projected',type:'scatter',mode:'lines',line:{color:'#dc2626',width:2,dash:'dot'}}],PL,PC);
 }
 async function sim(){
-  const p={type:1,temp_air:parseFloat(document.getElementById('wta').value),temp_process:parseFloat(document.getElementById('wta').value)+10,vitesse:parseFloat(document.getElementById('wv').value),couple:parseFloat(document.getElementById('wc').value),usure:parseFloat(document.getElementById('wu').value)};
+  const wta_raw=parseFloat(document.getElementById('wta').dataset.raw)||toRaw(parseFloat(document.getElementById('wta').value),'temp');
+  const wu_raw=parseFloat(document.getElementById('wu').dataset.raw)||toRaw(parseFloat(document.getElementById('wu').value),'wear');
+  const p={type:1,temp_air:wta_raw,temp_process:wta_raw+10,vitesse:parseFloat(document.getElementById('wv').value),couple:parseFloat(document.getElementById('wc').value),usure:wu_raw};
   const res=await fetch('/api/whatif',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});
   const d=await res.json();const c={ok:'#059669',amber:'#d97706',alert:'#dc2626'};const cls=d.risk>=50?'alert':d.risk>=22?'amber':'ok';
-  document.getElementById('wr').innerHTML='<div style="padding:14px;background:var(--bg);border:1px solid '+c[cls]+';border-radius:6px"><div style="font-size:9px;letter-spacing:1.5px;color:var(--text3);text-transform:uppercase">Simulated risk</div><div style="font-size:32px;font-weight:800;color:'+c[cls]+';margin:4px 0">'+d.risk+'%</div><div style="font-size:12px;font-weight:600;color:'+c[cls]+'">'+d.status+'</div><div style="font-size:11px;color:var(--text3);margin-top:3px">'+d.message+'</div>'+(d.zones.length?'<div style="font-size:10px;color:var(--amber);margin-top:6px">Zones: '+d.zones.map(z=>z.nom+' '+z.proba+'%').join(' · ')+'</div>':'')+'</div>';
+  document.getElementById('wr').innerHTML='<div style="padding:14px;background:var(--bg);border:1px solid '+c[cls]+';border-radius:6px"><div style="font-size:9px;letter-spacing:1.5px;color:var(--text3);text-transform:uppercase">'+t('twin_sim_r')+'</div><div style="font-size:32px;font-weight:800;color:'+c[cls]+';margin:4px 0">'+d.risk+'%</div><div style="font-size:12px;font-weight:600;color:'+c[cls]+'">'+d.status+'</div><div style="font-size:11px;color:var(--text3);margin-top:3px">'+d.message+'</div>'+(d.zones.length?'<div style="font-size:10px;color:var(--amber);margin-top:6px">Zones: '+d.zones.map(z=>z.nom+' '+z.proba+'%').join(' · ')+'</div>':'')+'</div>';
 }
 load();
 </script></body></html>"""
@@ -322,17 +443,17 @@ load();
 # ── HISTORY ───────────────────────────────────────────────────────────────────
 HISTORY_HTML = _HEAD.replace("{FAV}","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") + """
 <body>
-<header><span class="logo">PILAR</span><div class="hd"></div><span class="hsub">History</span></header>
+<header><span class="logo">PILAR</span><div class="hd"></div><span class="hsub" data-i18n="page_history">History</span></header>
 <div class="page pad">
   <div class="kgrid">
-    <div class="kc"><div class="kv">{{ total }}</div><div class="kl">Total</div></div>
-    <div class="kc"><div class="kv alert">{{ anomalies }}</div><div class="kl">Anomalies</div></div>
-    <div class="kc"><div class="kv amber">{{ avg_risk }}%</div><div class="kl">Avg risk</div></div>
-    <div class="kc"><div class="kv ok">{{ mails }}</div><div class="kl">Alerts sent</div></div>
+    <div class="kc"><div class="kv">{{ total }}</div><div class="kl" data-i18n="hist_total">Total</div></div>
+    <div class="kc"><div class="kv alert">{{ anomalies }}</div><div class="kl" data-i18n="hist_anom">Anomalies</div></div>
+    <div class="kc"><div class="kv amber">{{ avg_risk }}%</div><div class="kl" data-i18n="hist_avg">Avg risk</div></div>
+    <div class="kc"><div class="kv ok">{{ mails }}</div><div class="kl" data-i18n="hist_alerts">Alerts sent</div></div>
   </div>
   <div class="tw">
     <table>
-      <thead><tr><th>Time</th><th>Class</th><th>Risk</th><th>Status</th><th>Zones</th><th>Alert</th></tr></thead>
+      <thead><tr><th data-i18n="hist_time">Time</th><th data-i18n="hist_class">Class</th><th data-i18n="hist_risk">Risk</th><th data-i18n="hist_status">Status</th><th data-i18n="hist_zones">Zones</th><th data-i18n="hist_alert">Alert</th></tr></thead>
       <tbody>
       {% for a in analyses %}
       <tr><td>{{ a.timestamp.strftime('%d/%m %H:%M') }}</td><td>{{ a.machine_type }}</td><td>{{ a.risk }}%</td>
@@ -348,32 +469,43 @@ HISTORY_HTML = _HEAD.replace("{FAV}","iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+
 # ── SETTINGS ──────────────────────────────────────────────────────────────────
 SETTINGS_HTML = _HEAD.replace("{FAV}","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") + """
 <body>
-<header><span class="logo">PILAR</span><div class="hd"></div><span class="hsub">Settings</span></header>
+<header><span class="logo">PILAR</span><div class="hd"></div><span class="hsub" data-i18n="page_settings">Settings</span></header>
 <div class="page pad">
   <div class="card">
-    <div class="ctitle">Alert email</div>
-    <label class="flbl">Recipient address</label>
-    <input class="fi" type="email" id="em" placeholder="maintenance@company.com">
-    <div style="font-size:10px;color:var(--green);margin-top:6px;display:none" id="sv">Saved</div>
-    <button class="btn" style="margin-top:12px" onclick="saveEmail()">Save Email</button>
+    <div class="ctitle" data-i18n="set_lang">Language</div>
+    <div style="display:flex;gap:10px">
+      <div class="lcard lactive" data-lang="en" onclick="setLang('en')">
+        <span class="flag">🇬🇧</span><span class="lname">English</span>
+      </div>
+      <div class="lcard" data-lang="fr" onclick="setLang('fr')">
+        <span class="flag">🇫🇷</span><span class="lname">Français</span>
+      </div>
+    </div>
   </div>
   <div class="card">
-    <div class="ctitle">Browser notifications</div>
-    <p style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.6">Receive alerts when failure risk exceeds 50%.</p>
-    <button class="btn" id="nb" onclick="toggleN()" style="background:var(--purple)">Enable Notifications</button>
+    <div class="ctitle" data-i18n="set_email">Alert email</div>
+    <label class="flbl" data-i18n="set_email_lbl">Recipient address</label>
+    <input class="fi" type="email" id="em" placeholder="maintenance@company.com" data-i18n="set_email_ph">
+    <div style="font-size:10px;color:var(--green);margin-top:6px;display:none" id="sv" data-i18n="set_saved">Saved</div>
+    <button class="btn" style="margin-top:12px" onclick="saveEmail()" data-i18n="set_email_btn">Save Email</button>
   </div>
   <div class="card">
-    <div class="ctitle">System info</div>
+    <div class="ctitle" data-i18n="set_notif">Browser notifications</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.6" data-i18n="set_notif_desc">Receive alerts when failure risk exceeds 50%.</p>
+    <button class="btn" id="nb" onclick="toggleN()" style="background:var(--purple)" data-i18n="set_notif_btn">Enable Notifications</button>
+  </div>
+  <div class="card">
+    <div class="ctitle" data-i18n="set_sys">System info</div>
     <div style="display:flex;flex-direction:column;gap:8px">
-      <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--text3)">Version</span><span>Pilar v2.0</span></div>
-      <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--text3)">AI Model</span><span>Claude Haiku</span></div>
-      <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--text3)">Database</span><span>SQLite</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--text3)" data-i18n="set_version">Version</span><span>Pilar v2.0</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--text3)" data-i18n="set_aimodel">AI Model</span><span>Claude Haiku</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--text3)" data-i18n="set_db">Database</span><span>SQLite</span></div>
     </div>
   </div>
 </div>""" + nav("s") + """
 <script>
 async function saveEmail(){const e=document.getElementById('em').value;if(!e)return;await fetch('/set_email',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e})});const s=document.getElementById('sv');s.style.display='block';setTimeout(()=>s.style.display='none',3000);}
-function updN(){const b=document.getElementById('nb');if(!b)return;const p=Notification.permission;if(p==='granted'){b.textContent='Notifications Enabled';b.style.background='var(--green)';}else if(p==='denied'){b.textContent='Blocked — Enable in Browser Settings';b.style.background='var(--red)';}}
+function updN(){const b=document.getElementById('nb');if(!b)return;const p=Notification.permission;if(p==='granted'){b.textContent=t('set_notif_on');b.style.background='var(--green)';}else if(p==='denied'){b.textContent=t('set_notif_blocked');b.style.background='var(--red)';}else{b.textContent=t('set_notif_btn');b.style.background='var(--purple)';}}
 async function toggleN(){if(Notification.permission==='granted')return;await Notification.requestPermission();updN();}
 updN();
 </script></body></html>"""
@@ -382,8 +514,9 @@ updN();
 # ── BACKEND ───────────────────────────────────────────────────────────────────
 def predict_risk(params):
     ecart_temp = params['temp_process'] - params['temp_air']
+    puissance = params['vitesse'] * params['couple']
     donnees = pd.DataFrame([[params['type'], params['temp_air'], params['temp_process'],
-        params['vitesse'], params['couple'], params['usure'], ecart_temp]], columns=COLONNES)
+        params['vitesse'], params['couple'], params['usure'], ecart_temp, puissance]], columns=COLONNES)
     donnees_scaled = scaler.transform(donnees)
     probabilite = round(float(model.predict_proba(donnees_scaled)[0][1]) * 100, 1)
     prediction = 1 if probabilite >= 22 else 0

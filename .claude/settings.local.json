@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(curl -s http://localhost:5000/ -o /dev/null -w \"%{http_code}\" 2>&1)"
     ]
   }
 }
