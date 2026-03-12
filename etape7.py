@@ -1,5 +1,7 @@
-from flask import Flask, request, jsonify, render_template_string
-import pickle, threading, smtplib
+from flask import Flask, request, jsonify, render_template_string, session, redirect, url_for, g
+import pickle, threading, smtplib, secrets as _secrets
+from functools import wraps
+from werkzeug.security import generate_password_hash, check_password_hash
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from flask_sqlalchemy import SQLAlchemy
@@ -14,12 +16,26 @@ if db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
 app.config["SQLALCHEMY_DATABASE_URI"] = db_url
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "pilar-dev-secret-change-in-prod")
 db = SQLAlchemy(app)
 
+# ── MODÈLES ───────────────────────────────────────────────────────────────────
+class User(db.Model):
+    id             = db.Column(db.Integer, primary_key=True)
+    email          = db.Column(db.String(200), unique=True, nullable=False)
+    password_hash  = db.Column(db.String(256), nullable=False)
+    email_verified = db.Column(db.Boolean, default=False)
+    verify_token   = db.Column(db.String(64))
+    api_key        = db.Column(db.String(64), unique=True)
+    plan           = db.Column(db.String(20), default='free')
+    is_admin       = db.Column(db.Boolean, default=False)
+    created_at     = db.Column(db.DateTime, default=datetime.utcnow)
+
 class Settings(db.Model):
-    id    = db.Column(db.Integer, primary_key=True)
-    key   = db.Column(db.String(100), unique=True)
-    value = db.Column(db.String(500))
+    id      = db.Column(db.Integer, primary_key=True)
+    key     = db.Column(db.String(120))
+    value   = db.Column(db.String(500))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
 
 class Analysis(db.Model):
     id           = db.Column(db.Integer, primary_key=True)
@@ -34,9 +50,21 @@ class Analysis(db.Model):
     prediction   = db.Column(db.Integer)
     zones        = db.Column(db.String(500))
     mail_sent    = db.Column(db.Boolean, default=False)
+    user_id      = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
 
 with app.app_context():
     db.create_all()
+    # Migration : ajoute user_id si les tables existaient déjà sans cette colonne
+    for sql in [
+        "ALTER TABLE analysis ADD COLUMN IF NOT EXISTS user_id INTEGER",
+        "ALTER TABLE settings ADD COLUMN IF NOT EXISTS user_id INTEGER",
+        "ALTER TABLE settings DROP CONSTRAINT IF EXISTS settings_key_key",
+    ]:
+        try:
+            db.session.execute(db.text(sql))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
 
 with open("modele_pannes.pkl","rb") as f: model = pickle.load(f)
 with open("scaler.pkl","rb") as f: scaler = pickle.load(f)
@@ -48,20 +76,211 @@ GMAIL = "guenbourali77@gmail.com"
 GMAIL_PWD = "lpxm bplq znnx sbcx"
 FAVICON = "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"
 
-def get_setting(key, default=""):
+def current_uid():
+    return session.get('user_id')
+
+def get_setting(key, default="", uid=None):
     try:
-        s = Settings.query.filter_by(key=key).first()
+        uid = uid or current_uid()
+        s = Settings.query.filter_by(key=key, user_id=uid).first()
         return s.value if s else default
     except: return default
 
-def set_setting(key, value):
+def set_setting(key, value, uid=None):
     try:
-        s = Settings.query.filter_by(key=key).first()
+        uid = uid or current_uid()
+        s = Settings.query.filter_by(key=key, user_id=uid).first()
         if s: s.value = value
-        else: db.session.add(Settings(key=key, value=value))
+        else: db.session.add(Settings(key=key, value=value, user_id=uid))
         db.session.commit()
     except Exception as e: print(f"Settings error: {e}")
 
+# ── AUTH HELPERS ──────────────────────────────────────────────────────────────
+def login_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not current_uid():
+            return redirect('/login')
+        return f(*args, **kwargs)
+    return decorated
+
+def api_or_login_required(f):
+    """Accepte session Flask OU header X-Api-Key pour les endpoints API."""
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        api_key = request.headers.get('X-Api-Key') or request.args.get('api_key')
+        if api_key:
+            user = User.query.filter_by(api_key=api_key).first()
+            if user:
+                session['user_id'] = user.id
+                return f(*args, **kwargs)
+            return jsonify({'error': 'Invalid API key'}), 401
+        if not current_uid():
+            return jsonify({'error': 'Authentication required'}), 401
+        return f(*args, **kwargs)
+    return decorated
+
+def admin_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        uid = current_uid()
+        if not uid:
+            return redirect('/login')
+        user = User.query.get(uid)
+        if not user or not user.is_admin:
+            return "Accès refusé", 403
+        return f(*args, **kwargs)
+    return decorated
+
+def send_verify_email(email, token):
+    base = os.environ.get("APP_URL", "http://localhost:5000")
+    link = f"{base}/verify-email/{token}"
+    html = f"""<div style="font-family:sans-serif;background:#07090f;color:#e2e8f0;padding:40px;border-radius:8px">
+<h2 style="color:#14b8a6;letter-spacing:3px">PILAR</h2>
+<p>Confirmez votre adresse email pour activer votre compte.</p>
+<a href="{link}" style="display:inline-block;margin-top:16px;padding:12px 24px;background:#0d9488;color:#fff;border-radius:6px;text-decoration:none;font-weight:700">Vérifier mon email</a>
+<p style="margin-top:24px;color:#64748b;font-size:12px">Lien valide 24h. Si vous n'avez pas créé de compte, ignorez cet email.</p>
+</div>"""
+    msg = MIMEMultipart('alternative')
+    msg['Subject'] = "Pilar — Vérifiez votre email"
+    msg['From'] = f"Pilar <{GMAIL}>"
+    msg['To'] = email
+    msg.attach(MIMEText(html, 'html'))
+    try:
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+            smtp.login(GMAIL, GMAIL_PWD)
+            smtp.sendmail(GMAIL, email, msg.as_string())
+        print(f"[Pilar/auth] Verification email sent to {email}")
+    except Exception as e:
+        print(f"[Pilar/auth] Email error: {e}")
+
+
+# ── AUTH PAGES ────────────────────────────────────────────────────────────────
+_AUTH_HEAD = """<!DOCTYPE html><html lang="fr"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0e1118"><title>Pilar</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#07090f;color:#e2e8f0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+.ac{width:100%;max-width:380px;}
+.logo{font-size:13px;font-weight:700;letter-spacing:4px;color:#14b8a6;text-transform:uppercase;text-align:center;margin-bottom:32px;}
+.card{background:#0e1118;border:1px solid #1e2433;border-radius:10px;padding:28px;}
+.ctitle{font-size:9px;letter-spacing:2px;color:#64748b;text-transform:uppercase;margin-bottom:20px;}
+.flbl{font-size:9px;letter-spacing:2px;color:#64748b;text-transform:uppercase;margin-bottom:7px;display:block;margin-top:14px;}
+.fi{width:100%;padding:11px 14px;background:#141820;border:1px solid #252d3d;border-radius:6px;color:#e2e8f0;font-size:13px;outline:none;transition:border-color 0.15s;}
+.fi:focus{border-color:#0d9488;}
+.fi::placeholder{color:#475569;}
+.btn{width:100%;padding:13px;background:#0d9488;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;margin-top:20px;transition:background 0.15s;}
+.btn:hover{background:#14b8a6;}
+.err{padding:10px 14px;background:rgba(220,38,38,0.1);border:1px solid #dc2626;border-radius:6px;font-size:12px;color:#dc2626;margin-top:14px;display:none;}
+.ok{padding:10px 14px;background:rgba(5,150,105,0.1);border:1px solid #059669;border-radius:6px;font-size:12px;color:#34d399;margin-top:14px;display:none;}
+.link{text-align:center;margin-top:18px;font-size:11px;color:#64748b;}
+.link a{color:#14b8a6;text-decoration:none;}
+.badge{padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;}
+.badge.ok{background:rgba(5,150,105,0.12);color:#059669;}
+.badge.free{background:rgba(13,148,136,0.12);color:#14b8a6;}
+table{width:100%;border-collapse:collapse;font-size:12px;margin-top:12px;}
+th{text-align:left;padding:8px 10px;color:#64748b;font-size:9px;letter-spacing:1px;border-bottom:1px solid #1e2433;text-transform:uppercase;}
+td{padding:8px 10px;border-bottom:1px solid #1e2433;color:#94a3b8;}
+tr:last-child td{border-bottom:none;}
+.kgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:16px 0;}
+.kc{background:#141820;border:1px solid #1e2433;border-radius:8px;padding:14px;}
+.kv{font-size:22px;font-weight:800;color:#14b8a6;}
+.kl{font-size:9px;color:#64748b;letter-spacing:1px;text-transform:uppercase;margin-top:3px;}
+</style></head><body>"""
+
+LOGIN_HTML = _AUTH_HEAD + """
+<div class="ac">
+  <div class="logo">PILAR</div>
+  <div class="card">
+    <div class="ctitle">Connexion</div>
+    <div class="err" id="err"></div>
+    <label class="flbl" for="em">Email</label>
+    <input class="fi" type="email" id="em" placeholder="vous@entreprise.com" autocomplete="email">
+    <label class="flbl" for="pw">Mot de passe</label>
+    <input class="fi" type="password" id="pw" placeholder="••••••••" autocomplete="current-password">
+    <button class="btn" onclick="login()">Se connecter</button>
+  </div>
+  <div class="link">Pas encore de compte ? <a href="/register">Créer un compte</a></div>
+</div>
+<script>
+async function login(){
+  const e=document.getElementById('em').value.trim(),p=document.getElementById('pw').value;
+  if(!e||!p){showErr('Remplissez tous les champs.');return;}
+  const res=await fetch('/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p})});
+  const d=await res.json();
+  if(d.ok){window.location='/';}else{showErr(d.error||'Erreur de connexion.');}
+}
+function showErr(m){const el=document.getElementById('err');el.textContent=m;el.style.display='block';}
+document.addEventListener('keydown',function(e){if(e.key==='Enter')login();});
+</script></body></html>"""
+
+REGISTER_HTML = _AUTH_HEAD + """
+<div class="ac">
+  <div class="logo">PILAR</div>
+  <div class="card">
+    <div class="ctitle">Créer un compte</div>
+    <div class="err" id="err"></div>
+    <div class="ok" id="ok"></div>
+    <label class="flbl" for="em">Email professionnel</label>
+    <input class="fi" type="email" id="em" placeholder="vous@entreprise.com" autocomplete="email">
+    <label class="flbl" for="pw">Mot de passe</label>
+    <input class="fi" type="password" id="pw" placeholder="8 caractères minimum" autocomplete="new-password">
+    <label class="flbl" for="pw2">Confirmer le mot de passe</label>
+    <input class="fi" type="password" id="pw2" placeholder="••••••••" autocomplete="new-password">
+    <button class="btn" onclick="register()">Créer mon compte</button>
+  </div>
+  <div class="link">Déjà un compte ? <a href="/login">Se connecter</a></div>
+</div>
+<script>
+async function register(){
+  const e=document.getElementById('em').value.trim(),p=document.getElementById('pw').value,p2=document.getElementById('pw2').value;
+  if(!e||!p||!p2){showErr('Remplissez tous les champs.');return;}
+  if(p!==p2){showErr('Les mots de passe ne correspondent pas.');return;}
+  if(p.length<8){showErr('Mot de passe trop court (8 caractères minimum).');return;}
+  const res=await fetch('/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p})});
+  const d=await res.json();
+  if(d.ok){
+    document.getElementById('err').style.display='none';
+    const ok=document.getElementById('ok');ok.textContent=d.message||'Compte créé ! Vérifiez votre email.';ok.style.display='block';
+    setTimeout(()=>window.location='/login',3000);
+  }else{showErr(d.error||'Erreur inscription.');}
+}
+function showErr(m){const el=document.getElementById('err');el.textContent=m;el.style.display='block';}
+</script></body></html>"""
+
+ADMIN_HTML = _AUTH_HEAD + """
+<div style="width:100%;max-width:800px;">
+  <div class="logo">PILAR — Admin</div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="ctitle">Vue d'ensemble</div>
+    <div class="kgrid">
+      <div class="kc"><div class="kv">{{ total_users }}</div><div class="kl">Utilisateurs</div></div>
+      <div class="kc"><div class="kv">{{ total_analyses }}</div><div class="kl">Analyses</div></div>
+      <div class="kc"><div class="kv" style="color:#d97706">{{ unverified }}</div><div class="kl">Non vérifiés</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ctitle">Utilisateurs</div>
+    <table>
+      <thead><tr><th>Email</th><th>Plan</th><th>Vérifié</th><th>Inscrit</th><th>Analyses</th><th>Actions</th></tr></thead>
+      <tbody>
+      {% for u in users %}
+      <tr>
+        <td>{{ u.email }}{% if u.is_admin %} <span class="badge ok">admin</span>{% endif %}</td>
+        <td><span class="badge free">{{ u.plan }}</span></td>
+        <td>{% if u.email_verified %}<span class="badge ok">✓</span>{% else %}<span style="color:#dc2626">✗</span>{% endif %}</td>
+        <td>{{ u.created_at.strftime('%d/%m/%Y') }}</td>
+        <td>{{ u.analysis_count }}</td>
+        <td><a href="/admin/impersonate/{{ u.id }}" style="color:#14b8a6;font-size:11px">Voir</a></td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="link" style="margin-top:16px"><a href="/">← Retour à l'app</a> · <a href="/logout">Déconnexion</a></div>
+</div>
+</body></html>"""
 
 # ── CSS & HEAD ────────────────────────────────────────────────────────────────
 _HEAD = """<!DOCTYPE html><html lang="en"><head>
@@ -381,25 +600,44 @@ ASSISTANT_HTML = _HEAD.replace("{FAV}","iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAl
 <script>
 let hist=[],mid=0;
 function ar(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,100)+'px';}
-function addMsg(role,text,typing=false){
+function addMsg(role,text,typing){
   const id='m'+(++mid),d=document.createElement('div');d.className='msg '+role;d.id=id;
-  const esc=text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
-  d.innerHTML='<span class="ms">'+(role==='user'?'You':'Pilar')+'</span><div class="mb2'+(typing?' typing':'')+'">'+esc+'</div>';
+  const esc=(text||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+  const sender=role==='user'?(LANG==='fr'?'Vous':'You'):'Pilar';
+  d.innerHTML='<span class="ms">'+sender+'</span><div class="mb2'+(typing?' typing':'')+'">'+esc+'</div>';
   const c=document.getElementById('cm');c.appendChild(d);c.scrollTop=c.scrollHeight;return id;
 }
 function rmMsg(id){const el=document.getElementById(id);if(el)el.remove();}
+function errMsg(){return LANG==='fr'?'Erreur\u00a0: impossible de contacter l\'assistant. Vérifiez la configuration sur Railway.':'Error: could not reach assistant. Check Railway configuration.';}
+function thinkMsg(){return LANG==='fr'?'Analyse en cours\u2026':'Thinking\u2026';}
 async function send(){
   const inp=document.getElementById('ci');const msg=inp.value.trim();if(!msg)return;
   hist.push({role:'user',content:msg});addMsg('user',msg);
   inp.value='';inp.style.height='auto';
-  const tid=addMsg('bot','Thinking...',true);
+  const tid=addMsg('bot',thinkMsg(),true);
   document.getElementById('bs').disabled=true;
   let ctx=null;
   try{const lr=sessionStorage.getItem('lr');const ld=sessionStorage.getItem('ld');if(lr&&ld)ctx={result:JSON.parse(lr),data:JSON.parse(ld)};}catch(e){}
-  const res=await fetch('/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg,context:ctx,history:hist.slice(-20)})});
-  const data=await res.json();
-  hist.push({role:'assistant',content:data.reply});
-  rmMsg(tid);addMsg('bot',data.reply);
+  try{
+    const res=await fetch('/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg,context:ctx,history:hist.slice(-20)})});
+    const data=await res.json();
+    rmMsg(tid);
+    if(data.reply){
+      hist.push({role:'assistant',content:data.reply});
+      addMsg('bot',data.reply);
+    } else {
+      const code=res.status;
+      let err=LANG==='fr'?'Erreur assistant':'Assistant error';
+      if(code===503)err=LANG==='fr'?'Clé API non configurée (ANTHROPIC_API_KEY manquante sur Railway).':'API key not configured (ANTHROPIC_API_KEY missing on Railway).';
+      else if(code===401)err=LANG==='fr'?'Clé API invalide.':'Invalid API key.';
+      else if(code===429)err=LANG==='fr'?'Limite de requêtes atteinte. Réessayez dans quelques secondes.':'Rate limit reached. Try again shortly.';
+      addMsg('bot',err);
+    }
+  }catch(e){
+    rmMsg(tid);
+    addMsg('bot',errMsg());
+    console.error('[Pilar/chat]',e);
+  }
   document.getElementById('bs').disabled=false;
 }
 </script></body></html>"""
@@ -575,18 +813,109 @@ def envoyer_alerte(email_to, probabilite, zones_risque, data):
     except Exception as e:
         print(f"Email error: {e}")
 
+# ── ROUTES AUTH ───────────────────────────────────────────────────────────────
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'GET':
+        if current_uid(): return redirect('/')
+        return render_template_string(REGISTER_HTML)
+    data = request.json or {}
+    email = (data.get('email') or '').strip().lower()
+    password = data.get('password', '')
+    if not email or not password:
+        return jsonify({'error': 'Email et mot de passe requis'}), 400
+    if len(password) < 8:
+        return jsonify({'error': 'Mot de passe trop court (8 caractères minimum)'}), 400
+    if User.query.filter_by(email=email).first():
+        return jsonify({'error': 'Un compte existe déjà avec cet email'}), 409
+    token = _secrets.token_urlsafe(32)
+    api_key = 'pk_' + _secrets.token_hex(24)
+    is_admin = (email == os.environ.get('ADMIN_EMAIL', '').lower()) or (User.query.count() == 0)
+    user = User(email=email, password_hash=generate_password_hash(password),
+                verify_token=token, api_key=api_key, is_admin=is_admin)
+    db.session.add(user)
+    db.session.commit()
+    threading.Thread(target=send_verify_email, args=(email, token), daemon=True).start()
+    print(f"[Pilar/auth] New user: {email} (admin={is_admin})")
+    return jsonify({'ok': True, 'message': 'Compte créé ! Vérifiez votre email pour l\'activer.'})
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'GET':
+        if current_uid(): return redirect('/')
+        return render_template_string(LOGIN_HTML)
+    data = request.json or {}
+    email = (data.get('email') or '').strip().lower()
+    password = data.get('password', '')
+    user = User.query.filter_by(email=email).first()
+    if not user or not check_password_hash(user.password_hash, password):
+        return jsonify({'error': 'Email ou mot de passe incorrect'}), 401
+    session['user_id'] = user.id
+    session.permanent = True
+    print(f"[Pilar/auth] Login: {email}")
+    return jsonify({'ok': True})
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect('/login')
+
+@app.route('/verify-email/<token>')
+def verify_email(token):
+    user = User.query.filter_by(verify_token=token).first()
+    if not user:
+        return "<h2 style='font-family:sans-serif;color:#dc2626;padding:40px'>Lien invalide ou expiré.</h2>"
+    user.email_verified = True
+    user.verify_token = None
+    db.session.commit()
+    session['user_id'] = user.id
+    return redirect('/')
+
+@app.route('/profile/api-key', methods=['GET', 'POST'])
+@login_required
+def api_key_page():
+    user = User.query.get(current_uid())
+    if request.method == 'POST':
+        user.api_key = 'pk_' + _secrets.token_hex(24)
+        db.session.commit()
+    return jsonify({'api_key': user.api_key})
+
+@app.route('/admin')
+@admin_required
+def admin():
+    users = User.query.order_by(User.created_at.desc()).all()
+    for u in users:
+        u.analysis_count = Analysis.query.filter_by(user_id=u.id).count()
+    total_users = len(users)
+    total_analyses = Analysis.query.count()
+    unverified = sum(1 for u in users if not u.email_verified)
+    return render_template_string(ADMIN_HTML, users=users, total_users=total_users,
+                                  total_analyses=total_analyses, unverified=unverified)
+
+@app.route('/admin/impersonate/<int:uid>')
+@admin_required
+def impersonate(uid):
+    session['user_id'] = uid
+    return redirect('/')
+
+# ── ROUTES PAGES ──────────────────────────────────────────────────────────────
 @app.route('/')
+@login_required
 def index(): return render_template_string(HTML)
 
 @app.route('/assistant')
+@login_required
 def assistant(): return render_template_string(ASSISTANT_HTML)
 
 @app.route('/twin')
+@login_required
 def twin(): return render_template_string(TWIN_HTML)
 
 @app.route('/history')
+@login_required
 def history():
-    analyses = Analysis.query.order_by(Analysis.timestamp.desc()).all()
+    uid = current_uid()
+    analyses = Analysis.query.filter_by(user_id=uid).order_by(Analysis.timestamp.desc()).all()
     total = len(analyses)
     anomalies = sum(1 for a in analyses if a.prediction)
     avg_risk = round(sum(a.risk for a in analyses) / total, 1) if total > 0 else 0
@@ -595,14 +924,17 @@ def history():
                                    anomalies=anomalies, avg_risk=avg_risk, mails=mails)
 
 @app.route('/settings')
+@login_required
 def settings(): return render_template_string(SETTINGS_HTML)
 
 @app.route('/set_email', methods=['POST'])
+@login_required
 def set_email():
     set_setting('responsible_email', request.json.get('email', ''))
     return jsonify({'status': 'ok'})
 
 @app.route('/predire', methods=['POST'])
+@api_or_login_required
 def predire():
     data = request.json
     probabilite, prediction, zones_risque = predict_risk(data)
@@ -616,14 +948,17 @@ def predire():
     db.session.add(Analysis(machine_type=machine_types.get(data['type'], 'Unknown'),
         temp_air=data['temp_air'], temp_process=data['temp_process'],
         vitesse=data['vitesse'], couple=data['couple'], usure=data['usure'],
-        risk=probabilite, prediction=prediction, zones=zones_str, mail_sent=mail_envoye))
+        risk=probabilite, prediction=prediction, zones=zones_str, mail_sent=mail_envoye,
+        user_id=current_uid()))
     db.session.commit()
     return jsonify({'prediction': prediction, 'probabilite': probabilite,
                     'zones': zones_risque, 'mail_envoye': mail_envoye})
 
 @app.route('/api/twin')
+@api_or_login_required
 def api_twin():
-    analyses = Analysis.query.order_by(Analysis.timestamp.asc()).all()
+    uid = current_uid()
+    analyses = Analysis.query.filter_by(user_id=uid).order_by(Analysis.timestamp.asc()).all()
     if not analyses: return jsonify({'has_data': False})
     last = analyses[-1]
     history_times = [a.timestamp.strftime('%H:%M') for a in analyses]
@@ -654,6 +989,7 @@ def api_twin():
         'last_params':{'temp_air':last.temp_air,'vitesse':last.vitesse,'couple':last.couple,'usure':last.usure}})
 
 @app.route('/api/whatif', methods=['POST'])
+@api_or_login_required
 def api_whatif():
     params = request.json
     params['temp_process'] = params['temp_air'] + 10
@@ -664,45 +1000,80 @@ def api_whatif():
     return jsonify({'risk':risk,'status':status,'message':message,'zones':zones})
 
 @app.route('/chat', methods=['POST'])
+@api_or_login_required
 def chat():
+    import anthropic as _anthropic
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        print("[Pilar/chat] ANTHROPIC_API_KEY manquante — configurez-la sur Railway")
+        return jsonify({'reply': None, 'error': 'API key not configured'}), 503
+
     data = request.json
-    message = data.get('message', '')
+    message = (data.get('message') or '').strip()
+    if not message:
+        return jsonify({'reply': '', 'error': 'Empty message'}), 400
+
     context = data.get('context')
     chat_history = data.get('history', [])
-    ctx_block = ""
+
+    # ── Bloc contexte machine ────────────────────────────────────────────────
     if context:
         r = context.get('result', {})
         d = context.get('data', {})
-        machine_types = {0:'Low',1:'Medium',2:'High'}
-        mtype = machine_types.get(d.get('type',0),'Unknown')
-        zones_str = ', '.join([f"{z['nom']} ({z['proba']}%)" for z in r.get('zones',[])]) or 'none'
+        machine_types = {0: 'Low (L)', 1: 'Medium (M)', 2: 'High (H)'}
+        mtype = machine_types.get(d.get('type', 0), 'Unknown')
+        zones_str = ', '.join([f"{z['nom']} ({z['proba']}%)" for z in r.get('zones', [])]) or 'aucune zone identifiée'
+        status_str = 'ANOMALIE DÉTECTÉE' if r.get('prediction') else 'Fonctionnement normal'
         ctx_block = f"""
-Current machine state (last analysis):
-- Status: {'ANOMALY' if r.get('prediction') else 'Normal'} | Risk: {r.get('probabilite')}% | Class: {mtype}
-- Air temp: {d.get('temp_air')} K | Process: {d.get('temp_process')} K | Speed: {d.get('vitesse')} rpm | Torque: {d.get('couple')} Nm | Wear: {d.get('usure')} min
-- Failure zones: {zones_str}
+=== DERNIÈRE ANALYSE MACHINE ===
+Statut      : {status_str}
+Risque      : {r.get('probabilite')}%
+Classe      : {mtype}
+Temp. air   : {d.get('temp_air')} K  |  Temp. process : {d.get('temp_process')} K
+Vitesse     : {d.get('vitesse')} rpm |  Couple         : {d.get('couple')} Nm
+Usure outil : {d.get('usure')} min
+Zones risque: {zones_str}
+================================
 """
-    system_prompt = f"""You are Pilar, an advanced AI assistant embedded in an industrial predictive maintenance platform.
+    else:
+        ctx_block = "\n[Aucune analyse machine disponible. Si l'utilisateur pose une question sur sa machine, invite-le à lancer une analyse depuis l'onglet Monitor.]\n"
+
+    # ── System prompt expert maintenance ─────────────────────────────────────
+    system_prompt = f"""Tu es Pilar, un assistant IA expert en maintenance prédictive industrielle, intégré dans une plateforme SaaS B2B pour PME industrielles.
 {ctx_block}
-You are a fully capable AI assistant — answer ANY question the user asks, not just maintenance topics.
-- Answer the user's actual question directly and completely
-- If asked about machine data, analyze it specifically using the context above
-- If asked general questions (coding, science, math, history, etc.), answer fully
-- Be conversational, helpful, and detailed
-- Respond in the same language as the user (French if they write French, English if English)
-- Do not deflect or give vague responses — always give a real, useful answer"""
+Directives :
+- Tu es un expert technique : capteurs, thermique, vibrations, usure, défaillances mécaniques et électriques
+- Si des données d'analyse sont disponibles, analyse-les précisément et donne des recommandations concrètes et actionnables
+- Si l'utilisateur décrit un symptôme machine, propose un diagnostic différentiel et des actions correctives priorisées
+- Réponds en français si l'utilisateur écrit en français, en anglais sinon — détecte automatiquement la langue
+- Réponses concises, structurées et techniques — ton ingénieur de maintenance expérimenté
+- Ne dis jamais que tu ne peux pas répondre — donne toujours une réponse utile et directe
+- Pour les questions hors maintenance, réponds quand même de façon complète"""
+
+    # ── Historique : chat_history inclut le message courant en dernier ────────
     messages = [{"role": h['role'], "content": h['content']} for h in chat_history[:-1]]
     messages.append({"role": "user", "content": message})
+
     try:
-        import anthropic
-        client = anthropic.Anthropic()
-        response = client.messages.create(model="claude-haiku-4-5-20251001", max_tokens=1024,
-            system=system_prompt, messages=messages)
+        client = _anthropic.Anthropic(api_key=api_key)
+        response = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=1024,
+            system=system_prompt,
+            messages=messages
+        )
         reply = response.content[0].text
+        print(f"[Pilar/chat] OK — {len(reply)} chars")
+        return jsonify({'reply': reply})
+    except _anthropic.AuthenticationError as e:
+        print(f"[Pilar/chat] Auth error: {e}")
+        return jsonify({'reply': None, 'error': 'Invalid API key'}), 401
+    except _anthropic.RateLimitError as e:
+        print(f"[Pilar/chat] Rate limit: {e}")
+        return jsonify({'reply': None, 'error': 'Rate limit reached'}), 429
     except Exception as e:
-        print(f"Claude API error: {e}")
-        reply = "Désolé, une erreur s'est produite. / Sorry, an error occurred."
-    return jsonify({'reply': reply})
+        print(f"[Pilar/chat] Error {type(e).__name__}: {e}")
+        return jsonify({'reply': None, 'error': str(e)}), 500
 
 
 # ── PWA ───────────────────────────────────────────────────────────────────────
