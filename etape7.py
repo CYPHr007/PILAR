@@ -11,9 +11,12 @@ warnings.filterwarnings("ignore")
 
 app = Flask(__name__)
 import os
-db_url = os.environ.get("DATABASE_URL", "sqlite:///pilar.db")
+db_url = (os.environ.get("DATABASE_URL")
+          or os.environ.get("DATABASE_PUBLIC_URL")
+          or "sqlite:///pilar.db")
 if db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
+print(f"[Pilar] DB: {db_url[:40]}...")
 app.config["SQLALCHEMY_DATABASE_URI"] = db_url
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "pilar-dev-secret-change-in-prod")
