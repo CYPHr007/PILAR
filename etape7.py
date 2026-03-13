@@ -465,6 +465,12 @@ tr:last-child td{border-bottom:none;}
 .lcard .flag{font-size:26px;display:block;margin-bottom:6px;}
 .lcard .lname{font-size:11px;font-weight:600;color:var(--text2);}
 .lcard.lactive .lname{color:var(--teal-light);}
+@keyframes slideInRight{from{transform:translateX(40px);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes slideInLeft{from{transform:translateX(-40px);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes slideInUp{from{transform:translateY(18px);opacity:0}to{transform:translateY(0);opacity:1}}
+.slide-right{animation:slideInRight 0.22s cubic-bezier(0.25,0.46,0.45,0.94)}
+.slide-left{animation:slideInLeft 0.22s cubic-bezier(0.25,0.46,0.45,0.94)}
+.slide-up{animation:slideInUp 0.2s cubic-bezier(0.25,0.46,0.45,0.94)}
 </style>
 <script>
 const T={
@@ -611,6 +617,44 @@ function localTime(utcStr,opts){
 function localTimeNow(){
   return new Date().toLocaleString(undefined,{timeZone:_tz});
 }
+
+// ── PAGE TRANSITIONS ─────────────────────────────────────────────────────────
+var _PAGE_ORDER={'/':0,'/tutorial':1,'/history':2,'/account':3,'/settings':4};
+var _curPage=window.location.pathname;
+var _prevIdx=parseInt(sessionStorage.getItem('pilar_page_idx')||'0');
+var _curIdx=_PAGE_ORDER[_curPage]!==undefined?_PAGE_ORDER[_curPage]:_prevIdx;
+sessionStorage.setItem('pilar_page_idx',_curIdx);
+window.addEventListener('DOMContentLoaded',function(){
+  var page=document.querySelector('.page');
+  if(page&&_curIdx!==_prevIdx){
+    page.classList.add(_curIdx>_prevIdx?'slide-right':'slide-left');
+  }
+});
+document.querySelectorAll('.ni').forEach(function(link){
+  link.addEventListener('click',function(e){
+    var href=link.getAttribute('href');
+    if(!href||href==='/javascript:void(0)')return;
+    var toIdx=_PAGE_ORDER[href];
+    if(toIdx===undefined)return;
+    sessionStorage.setItem('pilar_page_idx',_curIdx);
+  });
+});
+
+// ── SLIDER NUMBER ANIMATION ───────────────────────────────────────────────────
+function animateNum(el,from,to,decimals,duration){
+  var start=null;
+  from=parseFloat(from);to=parseFloat(to);
+  function step(ts){
+    if(!start)start=ts;
+    var p=Math.min((ts-start)/duration,1);
+    var ease=1-Math.pow(1-p,3);
+    var val=from+(to-from)*ease;
+    el.value=val.toFixed(decimals);
+    if(p<1)requestAnimationFrame(step);
+    else el.value=to.toFixed(decimals);
+  }
+  requestAnimationFrame(step);
+}
 </script></head>"""
 
 _NAV = """<nav class="bottom-nav">
@@ -692,9 +736,11 @@ function sendN(risk,zones){if(Notification.permission!=='granted')return;new Not
 updN();
 function selT(el){document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('on'));el.classList.add('on');mT=parseInt(el.dataset.val);}
 function ss(s,n,d,type){
+  var el=document.getElementById(n);
+  var from=parseFloat(el.value)||0;
   var v=parseFloat(document.getElementById(s).value);
-  document.getElementById(n).value=v.toFixed(d);
-  if(type){document.getElementById(n).dataset.raw=toRaw(v,type);}
+  if(type){el.dataset.raw=toRaw(v,type);}
+  animateNum(el,from,v,d===null?0:d,120);
 }
 function si(s,n,type){
   var v=parseFloat(document.getElementById(n).value);
@@ -1719,7 +1765,6 @@ def set_email():
     return jsonify({'status': 'ok'})
 
 @app.route('/predire', methods=['POST'])
-@api_or_login_required
 def predire():
     try:
         data = request.json
