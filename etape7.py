@@ -97,15 +97,25 @@ with app.app_context():
         print("[Pilar] Tables créées/vérifiées")
     except Exception as e:
         print(f"[Pilar] db.create_all() error: {e}")
-    for sql in [
-        "ALTER TABLE analysis ADD COLUMN IF NOT EXISTS user_id INTEGER",
-        "ALTER TABLE settings ADD COLUMN IF NOT EXISTS user_id INTEGER",
-        "ALTER TABLE settings DROP CONSTRAINT IF EXISTS settings_key_key",
-        'ALTER TABLE "user" ADD COLUMN IF NOT EXISTS team_id INTEGER',
-    ]:
+    _is_sqlite = db_url.startswith('sqlite')
+    if _is_sqlite:
+        _migrations = [
+            "ALTER TABLE analysis ADD COLUMN user_id INTEGER",
+            "ALTER TABLE settings ADD COLUMN user_id INTEGER",
+            "ALTER TABLE user ADD COLUMN team_id INTEGER",
+        ]
+    else:
+        _migrations = [
+            "ALTER TABLE analysis ADD COLUMN IF NOT EXISTS user_id INTEGER",
+            "ALTER TABLE settings ADD COLUMN IF NOT EXISTS user_id INTEGER",
+            "ALTER TABLE settings DROP CONSTRAINT IF EXISTS settings_key_key",
+            'ALTER TABLE "user" ADD COLUMN IF NOT EXISTS team_id INTEGER',
+        ]
+    for sql in _migrations:
         try:
             db.session.execute(db.text(sql))
             db.session.commit()
+            print(f"[Pilar] Migration OK: {sql[:50]}")
         except Exception as e:
             db.session.rollback()
             print(f"[Pilar] Migration skip ({sql[:40]}): {e}")
@@ -787,7 +797,16 @@ TWIN_HTML = _HEAD.replace("{FAV}","iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJA
 const PL={paper_bgcolor:'transparent',plot_bgcolor:'transparent',font:{color:'#64748b',size:10},margin:{t:8,b:36,l:40,r:8},xaxis:{gridcolor:'#1e2433',linecolor:'#1e2433',tickfont:{size:9}},yaxis:{gridcolor:'#1e2433',linecolor:'#1e2433',tickfont:{size:9}},legend:{bgcolor:'transparent',font:{size:9}},hovermode:'x unified'};
 const PC={responsive:true,displayModeBar:false};
 async function load(){
-  const res=await fetch('/api/twin');const d=await res.json();
+  let d;
+  try{
+    const res=await fetch('/api/twin');
+    try{d=await res.json();}catch(je){
+      document.getElementById('tc').innerHTML='<div class="idle"><span class="l1" style="color:#dc2626">Erreur serveur (code '+res.status+')</span><span class="l2">Vérifiez les logs Railway</span></div>';return;
+    }
+    if(d.error){document.getElementById('tc').innerHTML='<div class="idle"><span class="l1" style="color:#dc2626">'+d.error+'</span></div>';return;}
+  }catch(err){
+    document.getElementById('tc').innerHTML='<div class="idle"><span class="l1" style="color:#dc2626">Erreur réseau: '+err.message+'</span></div>';return;
+  }
   if(!d.has_data){document.getElementById('tc').innerHTML='<div class="idle"><span class="l1">'+t('twin_no_data')+'</span><span class="l2">'+t('twin_no_data2')+'</span><a href="/" style="margin-top:16px;padding:12px 20px;background:var(--teal);color:#fff;border-radius:6px;text-decoration:none;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;">'+t('twin_go')+'</a></div>';return;}
   const bCls=d.failure_hours===null?'ok':d.failure_hours<6?'alert':'amber';
   const bT=d.failure_hours===null?t('twin_healthy'):t('twin_failure')+d.failure_hours+'h';
@@ -1137,46 +1156,56 @@ def predire():
 
 @app.route('/api/twin')
 def api_twin():
-    uid = current_uid()
-    analyses = Analysis.query.filter_by(user_id=uid).order_by(Analysis.timestamp.asc()).all()
-    if not analyses: return jsonify({'has_data': False})
-    last = analyses[-1]
-    history_times = [a.timestamp.strftime('%H:%M') for a in analyses]
-    history_risks = [a.risk for a in analyses]
-    history_wear  = [a.usure for a in analyses]
-    history_temp  = [a.temp_process for a in analyses]
-    future_times, future_risks, future_wear, future_temp = [], [], [], []
-    now = datetime.utcnow()
-    cu, ctp = last.usure, last.temp_process
-    failure_hours = None
-    for h in range(1, 25):
-        cu = min(cu + 1.5, 250); ctp = min(ctp + 0.05, 315)
-        risk, pred, _ = predict_risk({'type':1,'temp_air':last.temp_air,'temp_process':ctp,'vitesse':last.vitesse,'couple':last.couple,'usure':cu})
-        future_times.append((now + timedelta(hours=h)).strftime('%H:%M'))
-        future_risks.append(risk); future_wear.append(round(cu,1)); future_temp.append(round(ctp,2))
-        if failure_hours is None and risk >= 50: failure_hours = h
-    total = len(analyses)
-    avg_risk = round(sum(a.risk for a in analyses) / total, 1)
-    anomaly_rate = round(sum(1 for a in analyses if a.prediction) / total * 100, 1)
-    trend = 'Stable'
-    if len(history_risks) >= 3:
-        diff = history_risks[-1] - history_risks[-3]
-        trend = 'Increasing' if diff > 2 else 'Decreasing' if diff < -2 else 'Stable'
-    return jsonify({'has_data':True,'current_risk':last.risk,'avg_risk_24h':avg_risk,
-        'anomaly_rate':anomaly_rate,'total_analyses':total,'failure_hours':failure_hours,'trend':trend,
-        'history_times':history_times,'history_risks':history_risks,'history_wear':history_wear,'history_temp':history_temp,
-        'future_times':future_times,'future_risks':future_risks,'future_wear':future_wear,'future_temp':future_temp,
-        'last_params':{'temp_air':last.temp_air,'vitesse':last.vitesse,'couple':last.couple,'usure':last.usure}})
+    try:
+        uid = current_uid()
+        analyses = Analysis.query.filter_by(user_id=uid).order_by(Analysis.timestamp.asc()).all()
+        if not analyses: return jsonify({'has_data': False})
+        last = analyses[-1]
+        history_times = [a.timestamp.strftime('%H:%M') for a in analyses]
+        history_risks = [a.risk for a in analyses]
+        history_wear  = [a.usure for a in analyses]
+        history_temp  = [a.temp_process for a in analyses]
+        future_times, future_risks, future_wear, future_temp = [], [], [], []
+        now = datetime.utcnow()
+        cu, ctp = last.usure, last.temp_process
+        failure_hours = None
+        for h in range(1, 25):
+            cu = min(cu + 1.5, 250); ctp = min(ctp + 0.05, 315)
+            risk, pred, _ = predict_risk({'type':1,'temp_air':last.temp_air,'temp_process':ctp,'vitesse':last.vitesse,'couple':last.couple,'usure':cu})
+            future_times.append((now + timedelta(hours=h)).strftime('%H:%M'))
+            future_risks.append(risk); future_wear.append(round(cu,1)); future_temp.append(round(ctp,2))
+            if failure_hours is None and risk >= 50: failure_hours = h
+        total = len(analyses)
+        avg_risk = round(sum(a.risk for a in analyses) / total, 1)
+        anomaly_rate = round(sum(1 for a in analyses if a.prediction) / total * 100, 1)
+        trend = 'Stable'
+        if len(history_risks) >= 3:
+            diff = history_risks[-1] - history_risks[-3]
+            trend = 'Increasing' if diff > 2 else 'Decreasing' if diff < -2 else 'Stable'
+        return jsonify({'has_data':True,'current_risk':last.risk,'avg_risk_24h':avg_risk,
+            'anomaly_rate':anomaly_rate,'total_analyses':total,'failure_hours':failure_hours,'trend':trend,
+            'history_times':history_times,'history_risks':history_risks,'history_wear':history_wear,'history_temp':history_temp,
+            'future_times':future_times,'future_risks':future_risks,'future_wear':future_wear,'future_temp':future_temp,
+            'last_params':{'temp_air':last.temp_air,'vitesse':last.vitesse,'couple':last.couple,'usure':last.usure}})
+    except Exception as e:
+        import traceback
+        print(f"[Pilar/api_twin] ERROR: {type(e).__name__}: {e}\n{traceback.format_exc()}")
+        return jsonify({'error': f'{type(e).__name__}: {str(e)}'}), 500
 
 @app.route('/api/whatif', methods=['POST'])
 def api_whatif():
-    params = request.json
-    params['temp_process'] = params['temp_air'] + 10
-    risk, pred, zones = predict_risk(params)
-    if pred == 0: status, message = 'Normal Operation', 'No failure predicted under these conditions.'
-    elif risk < 50: status, message = 'Low Risk', 'Minor anomaly. Continue monitoring.'
-    else: status, message = 'High Failure Risk', 'Reduce tool wear or torque immediately.'
-    return jsonify({'risk':risk,'status':status,'message':message,'zones':zones})
+    try:
+        params = request.json
+        if not params: return jsonify({'error': 'Données manquantes'}), 400
+        params['temp_process'] = params['temp_air'] + 10
+        risk, pred, zones = predict_risk(params)
+        if pred == 0: status, message = 'Normal Operation', 'No failure predicted under these conditions.'
+        elif risk < 50: status, message = 'Low Risk', 'Minor anomaly. Continue monitoring.'
+        else: status, message = 'High Failure Risk', 'Reduce tool wear or torque immediately.'
+        return jsonify({'risk':risk,'status':status,'message':message,'zones':zones})
+    except Exception as e:
+        print(f"[Pilar/api_whatif] ERROR: {type(e).__name__}: {e}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/chat', methods=['POST'])
 def chat():
