@@ -23,15 +23,29 @@ app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "pilar-dev-secret-change
 db = SQLAlchemy(app)
 
 # ── MODÈLES ───────────────────────────────────────────────────────────────────
+class Team(db.Model):
+    id         = db.Column(db.Integer, primary_key=True)
+    name       = db.Column(db.String(200), default='My Team')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class TeamMember(db.Model):
+    id        = db.Column(db.Integer, primary_key=True)
+    team_id   = db.Column(db.Integer, nullable=False)
+    user_id   = db.Column(db.Integer, nullable=False)
+    role      = db.Column(db.String(20), default='member')  # 'leader' or 'member'
+    is_kicked = db.Column(db.Boolean, default=False)
+    joined_at = db.Column(db.DateTime, default=datetime.utcnow)
+
 class User(db.Model):
     id             = db.Column(db.Integer, primary_key=True)
     email          = db.Column(db.String(200), unique=True, nullable=False)
     password_hash  = db.Column(db.String(256), nullable=False)
-    email_verified = db.Column(db.Boolean, default=False)
+    email_verified = db.Column(db.Boolean, default=True)
     verify_token   = db.Column(db.String(64))
     api_key        = db.Column(db.String(64), unique=True)
     plan           = db.Column(db.String(20), default='free')
     is_admin       = db.Column(db.Boolean, default=False)
+    team_id        = db.Column(db.Integer, nullable=True)
     created_at     = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Settings(db.Model):
@@ -62,6 +76,7 @@ with app.app_context():
         "ALTER TABLE analysis ADD COLUMN IF NOT EXISTS user_id INTEGER",
         "ALTER TABLE settings ADD COLUMN IF NOT EXISTS user_id INTEGER",
         "ALTER TABLE settings DROP CONSTRAINT IF EXISTS settings_key_key",
+        'ALTER TABLE "user" ADD COLUMN IF NOT EXISTS team_id INTEGER',
     ]:
         try:
             db.session.execute(db.text(sql))
@@ -104,6 +119,13 @@ def login_required(f):
     def decorated(*args, **kwargs):
         if not current_uid():
             return redirect('/login')
+        return f(*args, **kwargs)
+    return decorated
+
+def auth_optional(f):
+    """Allow access without login — guest mode."""
+    @wraps(f)
+    def decorated(*args, **kwargs):
         return f(*args, **kwargs)
     return decorated
 
@@ -203,6 +225,7 @@ LOGIN_HTML = _AUTH_HEAD + """
     <label class="flbl" for="pw">Mot de passe</label>
     <input class="fi" type="password" id="pw" placeholder="••••••••" autocomplete="current-password">
     <button class="btn" onclick="login()">Se connecter</button>
+    <button class="btn" onclick="window.location='/'" style="background:transparent;border:1px solid #252d3d;color:#64748b;margin-top:8px">Continuer sans compte</button>
   </div>
   <div class="link">Pas encore de compte ? <a href="/register">Créer un compte</a></div>
 </div>
@@ -245,8 +268,8 @@ async function register(){
   const d=await res.json();
   if(d.ok){
     document.getElementById('err').style.display='none';
-    const ok=document.getElementById('ok');ok.textContent=d.message||'Compte créé ! Vérifiez votre email.';ok.style.display='block';
-    setTimeout(()=>window.location='/login',3000);
+    const ok=document.getElementById('ok');ok.textContent=d.message||'Compte créé !';ok.style.display='block';
+    setTimeout(()=>window.location='/',1500);
   }else{showErr(d.error||'Erreur inscription.');}
 }
 function showErr(m){const el=document.getElementById('err');el.textContent=m;el.style.display='block';}
@@ -401,8 +424,8 @@ tr:last-child td{border-bottom:none;}
 </style>
 <script>
 const T={
-fr:{nav_monitor:'Monitor',nav_twin:'Twin',nav_history:'Historique',nav_assistant:'Assistant',nav_settings:'Réglages',
-page_monitor:'Monitor',page_twin:'Jumeau Numérique',page_history:'Historique',page_assistant:'Assistant IA',page_settings:'Réglages',
+fr:{nav_monitor:'Monitor',nav_twin:'Twin',nav_history:'Historique',nav_account:'Compte',nav_settings:'Réglages',
+page_monitor:'Monitor',page_twin:'Jumeau Numérique',page_history:'Historique',page_account:'Compte',page_settings:'Réglages',
 idle_l1:'Aucune analyse',idle_l2:'Configurez ci-dessous et lancez',
 machine_class:'Classe machine',sensor_params:'Paramètres capteurs',
 air_temp:'Température air',proc_temp:'Température process',rot_speed:'Vitesse rotation',torque:'Couple',tool_wear:'Usure outil',
@@ -411,8 +434,6 @@ status_ok:'Fonctionnement normal',status_alert:'Anomalie détectée',failure_pro
 u_temp:'°C',u_speed:'tr/min',u_torque:'N·m',u_wear:'h',
 r_ta_min:'21.9°C',r_ta_max:'31.9°C',r_tp_min:'31.9°C',r_tp_max:'41.9°C',
 r_v_min:'1000',r_v_max:'3000',r_c_min:'3',r_c_max:'80N·m',r_u_min:'0',r_u_max:'4.17h',
-bot_hello:"Bonjour\u00a0! Je suis Pilar, votre assistant IA industriel.<br><br>Je peux vous aider avec\u00a0:<br>\u2022 Analyse de pannes machine<br>\u2022 Interprétation des données capteurs<br>\u2022 Recommandations de maintenance<br>\u2022 Toute question technique ou générale<br><br>Comment puis-je vous aider\u00a0?",
-chat_ph:'Posez une question...',send_btn:'Envoyer',
 twin_loading:'Chargement simulation...',twin_no_data:'Aucune donnée',twin_no_data2:"Lancez d'abord une analyse dans Monitor",twin_go:'Aller à Monitor',
 twin_healthy:'Système sain',twin_failure:'Panne dans ~',twin_trend:'Tendance\u00a0:',twin_cur_risk:'Risque actuel',twin_avg:'Risque moyen',twin_anom:"Taux d'anomalie",
 twin_c_risk:'Risque — Historique + Simulation 24h',twin_c_wear:'Projection usure outil',twin_c_temp:'Température process',twin_c_sim:'Simulateur de scénario',
@@ -423,8 +444,8 @@ hist_anomaly:'Anomalie',hist_ok:'OK',hist_sent:'Envoyé',
 set_email:"Email d'alerte",set_email_lbl:'Adresse destinataire',set_email_ph:'maintenance@entreprise.com',set_email_btn:'Enregistrer',set_saved:'Enregistré',
 set_notif:'Notifications navigateur',set_notif_desc:'Recevez des alertes quand le risque dépasse 50%.',set_notif_btn:'Activer les notifications',set_notif_on:'Notifications activées',set_notif_blocked:'Bloqué — Activez dans les réglages',
 set_sys:'Infos système',set_version:'Version',set_aimodel:'Modèle IA',set_db:'Base de données',set_lang:'Langue'},
-en:{nav_monitor:'Monitor',nav_twin:'Twin',nav_history:'History',nav_assistant:'Assistant',nav_settings:'Settings',
-page_monitor:'Monitor',page_twin:'Digital Twin',page_history:'History',page_assistant:'AI Assistant',page_settings:'Settings',
+en:{nav_monitor:'Monitor',nav_twin:'Twin',nav_history:'History',nav_account:'Account',nav_settings:'Settings',
+page_monitor:'Monitor',page_twin:'Digital Twin',page_history:'History',page_account:'Account',page_settings:'Settings',
 idle_l1:'No analysis yet',idle_l2:'Configure below and run',
 machine_class:'Machine class',sensor_params:'Sensor parameters',
 air_temp:'Air temperature',proc_temp:'Process temperature',rot_speed:'Rotational speed',torque:'Torque',tool_wear:'Tool wear',
@@ -433,8 +454,6 @@ status_ok:'Normal Operation',status_alert:'Anomaly Detected',failure_prob:'Failu
 u_temp:'K',u_speed:'rpm',u_torque:'Nm',u_wear:'min',
 r_ta_min:'295K',r_ta_max:'305K',r_tp_min:'305K',r_tp_max:'315K',
 r_v_min:'1000',r_v_max:'3000',r_c_min:'3',r_c_max:'80Nm',r_u_min:'0',r_u_max:'250',
-bot_hello:'Hello! I am Pilar, your industrial AI assistant.<br><br>I can help you with:<br>\u2022 Machine failure analysis<br>\u2022 Sensor data interpretation<br>\u2022 Maintenance recommendations<br>\u2022 Any technical or general question<br><br>What can I help you with?',
-chat_ph:'Ask anything...',send_btn:'Send',
 twin_loading:'Loading simulation...',twin_no_data:'No data yet',twin_no_data2:'Run an analysis on Monitor first',twin_go:'Go to Monitor',
 twin_healthy:'System Healthy',twin_failure:'Failure in ~',twin_trend:'Trend:',twin_cur_risk:'Current risk',twin_avg:'Avg risk',twin_anom:'Anomaly rate',
 twin_c_risk:'Risk \u2014 History + 24h Simulation',twin_c_wear:'Tool wear projection',twin_c_temp:'Process temperature',twin_c_sim:'Scenario Simulator',
@@ -512,7 +531,7 @@ _NAV = """<nav class="bottom-nav">
 <a href="/" class="ni {m}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg><span data-i18n="nav_monitor">Monitor</span></a>
 <a href="/twin" class="ni {t}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg><span data-i18n="nav_twin">Twin</span></a>
 <a href="/history" class="ni {h}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg><span data-i18n="nav_history">History</span></a>
-<a href="/assistant" class="ni {a}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg><span data-i18n="nav_assistant">Assistant</span></a>
+<a href="/account" class="ni {a}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z"/></svg><span data-i18n="nav_account">Account</span></a>
 <a href="/settings" class="ni {s}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg><span data-i18n="nav_settings">Settings</span></a>
 </nav>"""
 
@@ -587,61 +606,125 @@ function render(r){
 </script></body></html>"""
 
 
-# ── ASSISTANT ─────────────────────────────────────────────────────────────────
-ASSISTANT_HTML = _HEAD.replace("{FAV}","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") + """
-<body style="overflow:hidden;">
-<header><span class="logo">PILAR</span><div class="hd"></div><span class="hsub" data-i18n="page_assistant">AI Assistant</span><div class="hright" style="font-size:9px;color:var(--text3)">Claude Haiku</div></header>
-<div class="page cw">
-  <div class="cm" id="cm">
-    <div class="msg bot"><span class="ms">Pilar</span><div class="mb2" data-i18n-html="bot_hello">Hello! I am Pilar, your industrial AI assistant.<br><br>I can help you with:<br>• Machine failure analysis<br>• Sensor data interpretation<br>• Maintenance recommendations<br>• Any technical or general question<br><br>What can I help you with?</div></div>
+# ── ACCOUNT ───────────────────────────────────────────────────────────────────
+FAV_B64 = "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAHxUlEQVR4nO2Za4wT1xXHz713PLbHj8Xe2V17H973C3YXNgQKIWlE2rJSFDWCqlUkmoeafilVUrWVKqVqxIe0EoqqNIqqqEraokStRBIR2kDDpoFNgeUN5rE89gVre9/s+v0az8y9tx9MUSlSpNiTOkj+f7Vn7vndc+45555BnHO4n4VLbUCxKgOUWmWAUqsMcI/+z3m57IF7hBAy/J2fo7IHSq0yQKklGPs6zvnnp1GEkLGnHN3v7bRhHuAcAPhEcGY5EjMJwl2O4AAACIGmUdld0dHcAMZlW8MAGGOE4OP+kXf3Dq5wOChj//UjRwghhOPJ1DNbt3S2+ChlhHyVADjnGKNYMjU1s1AluzWdEwKEYH577xGlDCGQ5crQ3GIylbbbJM65IU4wBoAxTgh+ffcHr779gd0mbVi9srvFG01kzKIJAOU0ze2wXRoL+K/f/Me/ThPB9KsdTxvlBCOzEKVMIKKSo51NtVs2PTA2NSuaBIyxklNXtjaoOj1+YVQQRKpTAxc1Jgvl42F+KfzL377dWO+VLKblaCKr6ACIYGCAHBaz7HZGE6m5W8u/+fkPaypdRoWQYQCM80+Pn9u0tschSb//677RqZlwJC5gwWQSVF1b4XD2dzQ+/9QTiWTy1KWxb25aiwxKRAaEEGMcY3Ru5JpHdjkkCQDSioZz6c0dVVUuGyAUiWcvBpZimSzn3Olw1MgVl66N96/qzD9Y5OoGtBIYI0ppOqOs6W5XUrFkJmvOxQb6W5tX9sxMB65dverr6NncW19r44qqZTLJnraGcCyhalrx1kPxIcQ5p5SevXw9mkh2tzUtBG/MxZQ6Gz0ZSA4fGtz+1Danzb5797u9D20e6PMGYrytXvZ53KGYbhVNbY31vOhAMiCEOKDL4wGft2opmrRU+Tw0EM3k5sdHHnl4/Ww0O72U2rhpw8TElekG1zce7HHWNAKAC5ZvLUcBIc54kQehWACE0Gxg4uLhD70DW1qbXIoS1SrI6aHD69eur27u9Pv9lEPf2nUNtZ7Jc8N9dRWpRBxjnEsl4xNj8xL3NLYXaUCxAIzzWl/zIwPb2nu7K+qa3BilFkOuxq7J8bGcIGlgooxN3QxFgqPe9t6UjjDYgbLlTGaBVG2saShydTDgEHMQRfOaNT0OlzubWJ4Khk5cC6zuaZ9RzMcOHujvaunvbPF/NjiVFNubG89Nzk+FQqlkLJ7VzTY7MZmKByj+EANCML+4FJhbXNvVGImnMxoMDf69wec7fXXWmp0XBRwmlQ/3tcyFgg9963HZit2yyz863e6rddhtxZez4s8AcM69NVUjYzc0ED0eBwDsCiQjsavrulqRKnFGRXvFGf+FUEZ8rrEOAOKpzMKtcH93O+McF13LDOuF+rpbj5zxP/7oRs65xSxGsO2t/aeavJUY4+Dclda2Douo5C0ePn95XW8nQrfvCUXKgEKGEOKce6qq6jzV/xw+CwDprMKoblshh7M8qmLJWcm5nlYUBPDJsTM+b031V60XAoD87o6M31CyuY8ODS9GEppGMcEYI13NWSxSTaVzy6Nfc9qkno4WQ4InL8NCCCPEGOvtaL0RCK72mHW5wiSYKKMCIgiBpmlEFLyVFc2+BsYYxoZNQ4ydSiAA+Ntnp0/4A06HnVLKGUMIYYwxwrFkcpGf37HdgNx/15JGhRCljBD8uz+//4f3Pna7nbqq5dsczhniCACZTEI4lnjh6Sd//P2tlFJCiCHrFuiBO0OHO209QsA42/jAKqfDbhZN/9Mq58dBSi7X19UCAAjje99QmAzwQPH5pJiLwRf2QL703gpHUhlFVVVMUEdTIwBMzy9qOrWazQ67dX4pDAAe2S1ZrBx4PuPruq6qms0mEYwppcG5BQCUzmTqPdWuCmdh1kNBdYADgKrp33th57FzF/cePLLj5dcopdcnA99+/qWlSIxg/Mob7+x68y8EY4SAEAKABEL27B/a+fofCcaargPA/kMnfvCLXcHZxe0/+/WBoeMAwO4aJX1pAPloqfdUW0XxwVUrX/rRM/sGjwZn5vq626xWsaWh1mqx1MqyV3ZLVivjHOWvbIxdGr9x+NTVaDwhEEIIaWnwWkXzE49t6u1q/9P7H8Pt2d6XD5BXPu5jqfT+oZNtrT5PtZxIZTAW8rurc67z2/+jjCGEzl8Ze/KxjT1tvvcODOW3QKdUUbVjZy8vLsVefO67BR+kwguKxWKeuxXWNG3PGzslq1XX6Z3yhDkngBnnhBCCMQAcOeUfnQytcNo/OnwS/tMEWSzChWsTN0PTmzes4QCFJYICARBC8US63itvG/h6XXUlAJgEklFyBBMAUDlTqI4RWliOnPCPRONxIpi2bx3Y+ZNnA7MLR09fRAA6pbpOX3z2O3KFY8fLr2FUYD78wgD5ZSaDs5WyPBmcUzVN1ykAjAZmK2XXeDCUTKdzOo0l0u/sPfjqW3sYhw8/Pc4BOWySZDX3dbXuOzQciceWokmzVQrNL775yk+XwrF9nxzFGBfAUCC3klNF0ZTLqRazmI/djJKzmEVV1QjB+W4nnVFE0SRZzJlsDmNkMYuqphOCKaUAwDkIAlE1zWo2A0Aqk7VL1gIsKf0HjrwBBZfC0gMUqfv+I18ZoNQqA5RaZYBSqwxQapUBSq0yQKl13wP8GxwKx1pBe9uwAAAAAElFTkSuQmCC"
+
+ACCOUNT_HTML = _HEAD.replace("{FAV}", FAV_B64) + """
+<body>
+<header><span class="logo">PILAR</span><div class="hd"></div><span class="hsub" data-i18n="page_account">Account</span></header>
+<div class="page pad">
+
+{% if not user %}
+<div class="card" style="text-align:center;padding:28px">
+  <div style="font-size:32px;margin-bottom:12px">👤</div>
+  <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px">Mode invité</div>
+  <div style="font-size:11px;color:var(--text3);line-height:1.7;margin-bottom:20px">Connectez-vous pour sauvegarder vos données,<br>rejoindre une équipe et accéder à la collaboration.</div>
+  <a href="/login" style="display:block;padding:13px;background:var(--teal);color:#fff;border-radius:6px;text-decoration:none;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px">Se connecter</a>
+  <a href="/register" style="display:block;padding:13px;background:transparent;border:1px solid var(--border2);color:var(--text3);border-radius:6px;text-decoration:none;font-size:12px;letter-spacing:1px;text-transform:uppercase">Créer un compte</a>
+</div>
+
+{% else %}
+<div class="card">
+  <div class="ctitle">Compte</div>
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <div>
+      <div style="font-size:13px;font-weight:600;color:var(--text)">{{ user.email }}</div>
+      <div style="display:flex;gap:6px;margin-top:5px;align-items:center">
+        <span style="padding:2px 8px;border-radius:3px;font-size:9px;font-weight:700;background:rgba(13,148,136,0.12);color:var(--teal-light);text-transform:uppercase">{{ user.plan }}</span>
+        {% if my_role %}<span style="padding:2px 8px;border-radius:3px;font-size:9px;font-weight:700;background:rgba(124,58,237,0.12);color:#a78bfa;text-transform:uppercase">{{ my_role }}</span>{% endif %}
+      </div>
+    </div>
+    <a href="/logout" style="padding:8px 14px;background:transparent;border:1px solid var(--border2);color:var(--text3);border-radius:6px;text-decoration:none;font-size:11px;font-weight:600;white-space:nowrap">Déconnexion</a>
   </div>
-  <div class="cia">
-    <textarea class="cta" id="ci" placeholder="Ask anything..." data-i18n="chat_ph" rows="1" oninput="ar(this)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();send();}"></textarea>
-    <button class="bsend" id="bs" onclick="send()" data-i18n="send_btn">Send</button>
+</div>
+
+{% if not team %}
+<div class="card">
+  <div class="ctitle">Équipe</div>
+  <p style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:14px">Créez une équipe pour collaborer avec vos collègues. Jusqu'à 2 responsables peuvent gérer l'équipe.</p>
+  <input class="fi" id="tname" placeholder="Nom de l'équipe (optionnel)" style="margin-bottom:10px">
+  <button class="btn" onclick="createTeam()">Créer une équipe</button>
+</div>
+{% else %}
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+    <div>
+      <div class="ctitle" style="margin-bottom:2px">Équipe</div>
+      <div style="font-size:13px;font-weight:600;color:var(--text)">{{ team.name }}</div>
+    </div>
+    <span style="font-size:9px;color:var(--text3)">{{ members|length }} membre(s)</span>
   </div>
+
+  {% for m in members %}
+  <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
+    <div style="width:32px;height:32px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--teal-light);flex-shrink:0">{{ m.email[0].upper() }}</div>
+    <div style="flex:1;min-width:0">
+      <div style="font-size:12px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ m.email }}</div>
+      <div style="font-size:9px;letter-spacing:1px;text-transform:uppercase;margin-top:2px;color:{% if m.role=='leader' %}var(--teal-light){% else %}var(--text3){% endif %}">{{ 'Responsable' if m.role=='leader' else 'Membre' }}{% if m.id == user.id %} (vous){% endif %}</div>
+    </div>
+    {% if my_role == 'leader' and m.id != user.id %}
+    <div style="display:flex;gap:5px;flex-shrink:0">
+      {% if m.role == 'member' %}
+      <button class="nb" onclick="transfer({{ m.id }},this)" style="font-size:9px">Promouvoir</button>
+      {% endif %}
+      <button class="nb" onclick="kick({{ m.id }},this)" style="font-size:9px;color:var(--red);border-color:rgba(220,38,38,0.3)">Retirer</button>
+    </div>
+    {% endif %}
+  </div>
+  {% endfor %}
+
+  {% if my_role == 'leader' %}
+  <div style="margin-top:16px">
+    <div class="ctitle">Ajouter un membre</div>
+    <div style="display:flex;gap:8px">
+      <input class="fi" id="inv_email" placeholder="email@entreprise.com" type="email" style="flex:1;min-width:0">
+      <button onclick="invite()" style="padding:10px 16px;background:var(--teal);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0">Ajouter</button>
+    </div>
+    <div id="inv_msg" style="font-size:11px;margin-top:6px;display:none"></div>
+  </div>
+  {% endif %}
+
+  <button onclick="leaveTeam()" style="width:100%;margin-top:16px;padding:11px;background:transparent;border:1px solid var(--border2);color:var(--text3);border-radius:6px;font-size:11px;cursor:pointer">Quitter l'équipe</button>
+</div>
+{% endif %}
+{% endif %}
+
 </div>""" + nav("a") + """
 <script>
-let hist=[],mid=0;
-function ar(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,100)+'px';}
-function addMsg(role,text,typing){
-  const id='m'+(++mid),d=document.createElement('div');d.className='msg '+role;d.id=id;
-  const esc=(text||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
-  const sender=role==='user'?(LANG==='fr'?'Vous':'You'):'Pilar';
-  d.innerHTML='<span class="ms">'+sender+'</span><div class="mb2'+(typing?' typing':'')+'">'+esc+'</div>';
-  const c=document.getElementById('cm');c.appendChild(d);c.scrollTop=c.scrollHeight;return id;
+async function createTeam(){
+  const name=document.getElementById('tname').value.trim()||'My Team';
+  const r=await fetch('/team/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});
+  const d=await r.json();
+  if(d.ok)location.reload();else alert(d.error||'Erreur');
 }
-function rmMsg(id){const el=document.getElementById(id);if(el)el.remove();}
-function errMsg(){return LANG==='fr'?'Erreur\u00a0: impossible de contacter l\'assistant. Vérifiez la configuration sur Railway.':'Error: could not reach assistant. Check Railway configuration.';}
-function thinkMsg(){return LANG==='fr'?'Analyse en cours\u2026':'Thinking\u2026';}
-async function send(){
-  const inp=document.getElementById('ci');const msg=inp.value.trim();if(!msg)return;
-  hist.push({role:'user',content:msg});addMsg('user',msg);
-  inp.value='';inp.style.height='auto';
-  const tid=addMsg('bot',thinkMsg(),true);
-  document.getElementById('bs').disabled=true;
-  let ctx=null;
-  try{const lr=sessionStorage.getItem('lr');const ld=sessionStorage.getItem('ld');if(lr&&ld)ctx={result:JSON.parse(lr),data:JSON.parse(ld)};}catch(e){}
-  try{
-    const res=await fetch('/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg,context:ctx,history:hist.slice(-20)})});
-    const data=await res.json();
-    rmMsg(tid);
-    if(data.reply){
-      hist.push({role:'assistant',content:data.reply});
-      addMsg('bot',data.reply);
-    } else {
-      const code=res.status;
-      let err=LANG==='fr'?'Erreur assistant':'Assistant error';
-      if(code===503)err=LANG==='fr'?'Clé API non configurée (ANTHROPIC_API_KEY manquante sur Railway).':'API key not configured (ANTHROPIC_API_KEY missing on Railway).';
-      else if(code===401)err=LANG==='fr'?'Clé API invalide.':'Invalid API key.';
-      else if(code===429)err=LANG==='fr'?'Limite de requêtes atteinte. Réessayez dans quelques secondes.':'Rate limit reached. Try again shortly.';
-      addMsg('bot',err);
-    }
-  }catch(e){
-    rmMsg(tid);
-    addMsg('bot',errMsg());
-    console.error('[Pilar/chat]',e);
-  }
-  document.getElementById('bs').disabled=false;
+async function invite(){
+  const email=document.getElementById('inv_email').value.trim();
+  if(!email)return;
+  const msg=document.getElementById('inv_msg');
+  const r=await fetch('/team/invite',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});
+  const d=await r.json();
+  if(d.ok){msg.style.color='var(--green)';msg.textContent='Membre ajouté !';msg.style.display='block';setTimeout(()=>location.reload(),1200);}
+  else{msg.style.color='var(--red)';msg.textContent=d.error||'Erreur';msg.style.display='block';}
+}
+async function kick(uid,btn){
+  if(!confirm('Retirer ce membre de l\'équipe ?'))return;
+  btn.disabled=true;
+  const r=await fetch('/team/kick/'+uid,{method:'POST'});
+  const d=await r.json();
+  if(d.ok)location.reload();else{alert(d.error||'Erreur');btn.disabled=false;}
+}
+async function transfer(uid,btn){
+  if(!confirm('Promouvoir ce membre au rôle de responsable ?'))return;
+  btn.disabled=true;
+  const r=await fetch('/team/transfer/'+uid,{method:'POST'});
+  const d=await r.json();
+  if(d.ok)location.reload();else{alert(d.error||'Erreur');btn.disabled=false;}
+}
+async function leaveTeam(){
+  if(!confirm('Quitter cette équipe ?'))return;
+  const r=await fetch('/team/leave',{method:'POST'});
+  const d=await r.json();
+  if(d.ok)location.reload();else alert(d.error||'Erreur');
 }
 </script></body></html>"""
 
@@ -835,12 +918,13 @@ def register():
     api_key = 'pk_' + _secrets.token_hex(24)
     is_admin = (email == os.environ.get('ADMIN_EMAIL', '').lower()) or (User.query.count() == 0)
     user = User(email=email, password_hash=generate_password_hash(password),
-                verify_token=token, api_key=api_key, is_admin=is_admin)
+                email_verified=True, api_key=api_key, is_admin=is_admin)
     db.session.add(user)
     db.session.commit()
-    threading.Thread(target=send_verify_email, args=(email, token), daemon=True).start()
+    session['user_id'] = user.id
+    session.permanent = True
     print(f"[Pilar/auth] New user: {email} (admin={is_admin})")
-    return jsonify({'ok': True, 'message': 'Compte créé ! Vérifiez votre email pour l\'activer.'})
+    return jsonify({'ok': True, 'message': 'Compte créé avec succès !'})
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -903,19 +987,35 @@ def impersonate(uid):
 
 # ── ROUTES PAGES ──────────────────────────────────────────────────────────────
 @app.route('/')
-@login_required
 def index(): return render_template_string(HTML)
 
-@app.route('/assistant')
-@login_required
-def assistant(): return render_template_string(ASSISTANT_HTML)
+@app.route('/account')
+def account():
+    uid = current_uid()
+    user = User.query.get(uid) if uid else None
+    team = None
+    members = []
+    my_role = None
+    if user and user.team_id:
+        team = Team.query.get(user.team_id)
+        if team:
+            my_mbr = TeamMember.query.filter_by(team_id=team.id, user_id=uid).first()
+            if my_mbr and not my_mbr.is_kicked:
+                my_role = my_mbr.role
+                for m in TeamMember.query.filter_by(team_id=team.id, is_kicked=False).all():
+                    mu = User.query.get(m.user_id)
+                    if mu:
+                        members.append({'id': mu.id, 'email': mu.email, 'role': m.role})
+            else:
+                user.team_id = None
+                db.session.commit()
+                team = None
+    return render_template_string(ACCOUNT_HTML, user=user, team=team, members=members, my_role=my_role)
 
 @app.route('/twin')
-@login_required
 def twin(): return render_template_string(TWIN_HTML)
 
 @app.route('/history')
-@login_required
 def history():
     uid = current_uid()
     analyses = Analysis.query.filter_by(user_id=uid).order_by(Analysis.timestamp.desc()).all()
@@ -927,7 +1027,6 @@ def history():
                                    anomalies=anomalies, avg_risk=avg_risk, mails=mails)
 
 @app.route('/settings')
-@login_required
 def settings(): return render_template_string(SETTINGS_HTML)
 
 @app.route('/set_email', methods=['POST'])
@@ -937,7 +1036,6 @@ def set_email():
     return jsonify({'status': 'ok'})
 
 @app.route('/predire', methods=['POST'])
-@api_or_login_required
 def predire():
     data = request.json
     probabilite, prediction, zones_risque = predict_risk(data)
@@ -958,7 +1056,6 @@ def predire():
                     'zones': zones_risque, 'mail_envoye': mail_envoye})
 
 @app.route('/api/twin')
-@api_or_login_required
 def api_twin():
     uid = current_uid()
     analyses = Analysis.query.filter_by(user_id=uid).order_by(Analysis.timestamp.asc()).all()
@@ -992,7 +1089,6 @@ def api_twin():
         'last_params':{'temp_air':last.temp_air,'vitesse':last.vitesse,'couple':last.couple,'usure':last.usure}})
 
 @app.route('/api/whatif', methods=['POST'])
-@api_or_login_required
 def api_whatif():
     params = request.json
     params['temp_process'] = params['temp_air'] + 10
@@ -1003,7 +1099,6 @@ def api_whatif():
     return jsonify({'risk':risk,'status':status,'message':message,'zones':zones})
 
 @app.route('/chat', methods=['POST'])
-@api_or_login_required
 def chat():
     import anthropic as _anthropic
     api_key = os.environ.get("ANTHROPIC_API_KEY", "")
@@ -1079,6 +1174,109 @@ Directives :
         return jsonify({'reply': None, 'error': str(e)}), 500
 
 
+# ── TEAM ROUTES ───────────────────────────────────────────────────────────────
+@app.route('/team/create', methods=['POST'])
+@login_required
+def team_create():
+    uid = current_uid()
+    user = User.query.get(uid)
+    if user.team_id:
+        return jsonify({'error': 'Already in a team'}), 400
+    name = (request.json or {}).get('name', 'My Team').strip() or 'My Team'
+    team = Team(name=name)
+    db.session.add(team)
+    db.session.flush()
+    db.session.add(TeamMember(team_id=team.id, user_id=uid, role='leader'))
+    user.team_id = team.id
+    db.session.commit()
+    return jsonify({'ok': True, 'team_id': team.id})
+
+@app.route('/team/invite', methods=['POST'])
+@login_required
+def team_invite():
+    uid = current_uid()
+    user = User.query.get(uid)
+    if not user.team_id:
+        return jsonify({'error': 'Not in a team'}), 400
+    my_mbr = TeamMember.query.filter_by(team_id=user.team_id, user_id=uid).first()
+    if not my_mbr or my_mbr.role != 'leader':
+        return jsonify({'error': 'Leader access required'}), 403
+    email = (request.json or {}).get('email', '').strip().lower()
+    target = User.query.filter_by(email=email).first()
+    if not target:
+        return jsonify({'error': 'Utilisateur introuvable'}), 404
+    existing = TeamMember.query.filter_by(team_id=user.team_id, user_id=target.id).first()
+    if existing:
+        if existing.is_kicked:
+            existing.is_kicked = False
+            existing.role = 'member'
+            target.team_id = user.team_id
+            db.session.commit()
+            return jsonify({'ok': True})
+        return jsonify({'error': 'Déjà membre de l\'équipe'}), 409
+    db.session.add(TeamMember(team_id=user.team_id, user_id=target.id, role='member'))
+    target.team_id = user.team_id
+    db.session.commit()
+    return jsonify({'ok': True})
+
+@app.route('/team/kick/<int:target_uid>', methods=['POST'])
+@login_required
+def team_kick(target_uid):
+    uid = current_uid()
+    user = User.query.get(uid)
+    if not user.team_id:
+        return jsonify({'error': 'Not in a team'}), 400
+    my_mbr = TeamMember.query.filter_by(team_id=user.team_id, user_id=uid).first()
+    if not my_mbr or my_mbr.role != 'leader':
+        return jsonify({'error': 'Leader access required'}), 403
+    t_mbr = TeamMember.query.filter_by(team_id=user.team_id, user_id=target_uid).first()
+    if not t_mbr:
+        return jsonify({'error': 'Member not found'}), 404
+    if t_mbr.role == 'leader':
+        return jsonify({'error': 'Cannot kick a leader'}), 400
+    t_mbr.is_kicked = True
+    target = User.query.get(target_uid)
+    if target:
+        target.team_id = None
+    db.session.commit()
+    return jsonify({'ok': True})
+
+@app.route('/team/transfer/<int:target_uid>', methods=['POST'])
+@login_required
+def team_transfer(target_uid):
+    uid = current_uid()
+    user = User.query.get(uid)
+    if not user.team_id:
+        return jsonify({'error': 'Not in a team'}), 400
+    my_mbr = TeamMember.query.filter_by(team_id=user.team_id, user_id=uid).first()
+    if not my_mbr or my_mbr.role != 'leader':
+        return jsonify({'error': 'Leader access required'}), 403
+    t_mbr = TeamMember.query.filter_by(team_id=user.team_id, user_id=target_uid).first()
+    if not t_mbr or t_mbr.is_kicked:
+        return jsonify({'error': 'Member not found'}), 404
+    if t_mbr.role == 'leader':
+        return jsonify({'error': 'Already a leader'}), 400
+    leaders_count = TeamMember.query.filter_by(team_id=user.team_id, role='leader', is_kicked=False).count()
+    if leaders_count >= 2:
+        my_mbr.role = 'member'
+    t_mbr.role = 'leader'
+    db.session.commit()
+    return jsonify({'ok': True})
+
+@app.route('/team/leave', methods=['POST'])
+@login_required
+def team_leave():
+    uid = current_uid()
+    user = User.query.get(uid)
+    if not user.team_id:
+        return jsonify({'error': 'Not in a team'}), 400
+    mbr = TeamMember.query.filter_by(team_id=user.team_id, user_id=uid).first()
+    if mbr:
+        db.session.delete(mbr)
+    user.team_id = None
+    db.session.commit()
+    return jsonify({'ok': True})
+
 # ── PWA ───────────────────────────────────────────────────────────────────────
 @app.route('/manifest.json')
 def manifest():
@@ -1105,7 +1303,7 @@ def service_worker():
     from flask import Response
     sw = """
 const CACHE = 'pilar-v1';
-const URLS = ['/', '/assistant', '/twin', '/history', '/settings', '/manifest.json'];
+const URLS = ['/', '/account', '/twin', '/history', '/settings', '/manifest.json'];
 self.addEventListener('install', e => e.waitUntil(caches.open(CACHE).then(c => c.addAll(URLS))));
 self.addEventListener('fetch', e => e.respondWith(
   fetch(e.request).catch(() => caches.match(e.request))
