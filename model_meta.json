@@ -1,0 +1,40 @@
+{
+  "model_name": "GradientBoosting",
+  "recall": 98.1,
+  "precision": 89.8,
+  "f1": 93.8,
+  "n_train": 20902,
+  "n_failures": 5441,
+  "failure_rate": 26.0,
+  "source": "pilar_mixed_machine_results.csv",
+  "trained_at": "2026-03-14T06:29:50",
+  "zones": [
+    "TWF",
+    "HDF",
+    "PWF",
+    "OSF",
+    "RNF"
+  ],
+  "feature_ranges": {
+    "temp_air_k": [
+      292.8,
+      423.1
+    ],
+    "temp_process_k": [
+      278.2,
+      370.1
+    ],
+    "vitesse": [
+      0.0,
+      18677.0
+    ],
+    "couple": [
+      4.8,
+      581.4
+    ],
+    "usure": [
+      1.0,
+      18707.0
+    ]
+  }
+}

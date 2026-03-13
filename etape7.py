@@ -160,8 +160,8 @@ except Exception as _e:
 
 FAILURE_ZONES = {"TWF":"Tool Wear Failure","HDF":"Heat Dissipation Failure","PWF":"Power Failure","OSF":"Overstrain Failure","RNF":"Random Failure"}
 COLONNES = ["Type","Air temperature [K]","Process temperature [K]","Rotational speed [rpm]","Torque [Nm]","Tool wear [min]","ecart_temp","puissance"]
-# Médiane AI4I — utilisées pour imputer les features manquantes (analyse partielle)
-FEATURE_MEDIANS = {'type':1.0,'temp_air':300.0,'temp_process':310.0,'vitesse':1500.0,'couple':40.0,'usure':108.0}
+# Médianes données réelles — utilisées pour imputer les features manquantes (analyse partielle)
+FEATURE_MEDIANS = {'type':1.0,'temp_air':377.0,'temp_process':314.6,'vitesse':1298.0,'couple':257.8,'usure':8248.0}
 CORE_FEATURES   = list(FEATURE_MEDIANS.keys())
 OPTIONAL_FIELDS = ['humidite','vibration','pression','courant','tension']
 GMAIL     = os.environ.get("GMAIL_ADDRESS", "")
@@ -2246,7 +2246,13 @@ def api_twin():
 
 @app.route('/api/health')
 def api_health():
-    import os, sys
+    import os, sys, json as _json
+    meta = {}
+    try:
+        with open('model_meta.json') as f:
+            meta = _json.load(f)
+    except Exception:
+        pass
     return jsonify({
         'status': 'ok',
         'model_loaded': model is not None,
@@ -2254,6 +2260,13 @@ def api_health():
         'zones_loaded': len(modeles_zones),
         'python': sys.version.split()[0],
         'commit': os.environ.get('RAILWAY_GIT_COMMIT_SHA', 'local')[:7],
+        'model_name': meta.get('model_name', 'unknown'),
+        'recall': meta.get('recall'),
+        'precision': meta.get('precision'),
+        'f1': meta.get('f1'),
+        'n_train': meta.get('n_train'),
+        'trained_at': meta.get('trained_at'),
+        'source': meta.get('source'),
     })
 
 @app.route('/api/discover', methods=['POST'])
