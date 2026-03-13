@@ -1356,6 +1356,34 @@ self.addEventListener('fetch', e => e.respondWith(
 """
     return Response(sw, mimetype='application/javascript')
 
+# ── GLOBAL ERROR HANDLER ──────────────────────────────────────────────────────
+@app.errorhandler(500)
+def internal_error(e):
+    import traceback
+    tb = traceback.format_exc()
+    print(f"[Pilar] 500 ERROR:\n{tb}")
+    try: db.session.rollback()
+    except: pass
+    wants_json = request.headers.get('Accept','').find('application/json') >= 0 \
+                 or request.headers.get('Content-Type','').find('application/json') >= 0
+    if wants_json:
+        return jsonify({'error': str(e)}), 500
+    return f"""<!DOCTYPE html><html><head><meta charset="UTF-8">
+<style>body{{font-family:sans-serif;background:#07090f;color:#e2e8f0;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;}}
+.c{{max-width:420px;text-align:center;padding:40px;}}.logo{{font-size:13px;letter-spacing:4px;color:#14b8a6;font-weight:700;}}.msg{{color:#94a3b8;font-size:13px;margin:16px 0 24px;line-height:1.7;}}
+a{{padding:12px 24px;background:#0d9488;color:#fff;border-radius:6px;text-decoration:none;font-size:12px;font-weight:700;letter-spacing:2px;}}</style></head>
+<body><div class="c"><div class="logo">PILAR</div><h2 style="margin:20px 0 8px;font-size:18px;">Erreur serveur</h2>
+<p class="msg">Une erreur inattendue s'est produite.<br>Elle a été enregistrée dans les logs.</p>
+<a href="/">Retour</a></div></body></html>""", 500
+
+@app.errorhandler(Exception)
+def unhandled(e):
+    import traceback
+    print(f"[Pilar] Unhandled exception: {type(e).__name__}: {e}\n{traceback.format_exc()}")
+    try: db.session.rollback()
+    except: pass
+    return internal_error(e)
+
 if __name__ == '__main__':
-    print("Pilar v2 — http://localhost:5000")
+    print("Pilar v3 — http://localhost:5000")
     app.run(debug=True, host='0.0.0.0')
