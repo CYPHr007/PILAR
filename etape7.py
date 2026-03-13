@@ -561,7 +561,11 @@ ast_placeholder:'Posez votre question sur la machine...',ast_send:'Envoyer',
 ast_hello:"Bonjour. Je suis votre assistant maintenance prédictive. Partagez vos relevés capteurs ou posez-moi vos questions.",
 csv_detect:'Colonnes détectées',csv_bad:'Colonnes non reconnues',csv_rows:'lignes',
 live_hint:'CSV · noms de colonnes libres · conversion auto',manual_title:'Saisie manuelle',
-partial_analysis:'Analyse partielle',imputed:'estimés',discovered_param:'Paramètre découvert'},
+partial_analysis:'Analyse partielle',imputed:'estimés',discovered_param:'Paramètre découvert',
+page_adapter:'Adaptateur CSV',adp_upload:'Importer CSV',adp_hint:'Tout délimiteur · noms libres · conversion unités incluse',
+adp_change:'Changer',adp_preview:'Aperçu (5 lignes)',adp_download:'Convertir & Télécharger',
+adp_no_map:'Aucun champ mappé',adp_source:'Colonne source',adp_samples:'Exemples',adp_field:'Champ Pilar',adp_unit:'Unité',
+adp_ignore:'(Ignorer)',adp_desc:'Convertissez n\'importe quel CSV au format Pilar'},
 en:{nav_monitor:'Monitor',nav_twin:'Twin',nav_history:'History',nav_account:'Account',nav_settings:'Settings',
 page_monitor:'Monitor',page_twin:'Digital Twin',page_history:'History',page_account:'Account',page_settings:'Settings',
 idle_l1:'No analysis yet',idle_l2:'Configure below and run',
@@ -604,7 +608,11 @@ ast_placeholder:'Ask about your machine...',ast_send:'Send',
 ast_hello:'Hello. I am your predictive maintenance assistant. Share your sensor readings or ask me anything about your machine health.',
 csv_detect:'Columns detected',csv_bad:'Columns not recognized',csv_rows:'rows',
 live_hint:'CSV · any column names · auto unit conversion',manual_title:'Manual Input',
-partial_analysis:'Partial analysis',imputed:'estimated',discovered_param:'Discovered parameter'}
+partial_analysis:'Partial analysis',imputed:'estimated',discovered_param:'Discovered parameter',
+page_adapter:'CSV Adapter',adp_upload:'Upload CSV',adp_hint:'Any delimiter · any column names · unit conversion included',
+adp_change:'Change',adp_preview:'Preview (5 rows)',adp_download:'Convert & Download',
+adp_no_map:'No fields mapped',adp_source:'Source column',adp_samples:'Samples',adp_field:'Pilar field',adp_unit:'Unit',
+adp_ignore:'(Ignore)',adp_desc:'Convert any CSV to Pilar format'}
 };
 let LANG=localStorage.getItem('pilar_lang')||'en';
 function t(k){return(T[LANG]&&T[LANG][k])||(T.en[k])||k;}
@@ -1427,7 +1435,10 @@ TUTORIAL_HTML = _HEAD.replace("{FAV}", FAV_B64) + """
         <tr><td style="color:var(--teal-light)">usure</td><td>min</td><td>0–250</td><td>Tool wear time</td></tr>
       </tbody>
     </table>
-    <button class="btn" style="margin-top:14px;background:transparent;border:1px solid var(--border2);color:var(--text2)" onclick="dlSample()">Download sample CSV</button>
+    <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
+      <button class="btn" style="flex:1;background:transparent;border:1px solid var(--border2);color:var(--text2)" onclick="dlSample()">Download sample CSV</button>
+      <a href="/adapter" class="btn" style="flex:1;text-align:center;text-decoration:none;background:var(--teal);color:#fff">CSV Adapter</a>
+    </div>
   </div>
 
   <!-- IMPORT -->
@@ -1750,6 +1761,175 @@ function stopLive(){
 }
 </script></body></html>"""
 
+# ── CSV ADAPTER ───────────────────────────────────────────────────────────────
+ADAPTER_HTML = _HEAD.replace("{FAV}", FAV_B64) + """
+<body>
+<header>
+  <span class="logo">PILAR</span><div class="hd"></div>
+  <span class="hsub" data-i18n="page_adapter">CSV Adapter</span>
+  <div class="hright"><a href="/tutorial" style="font-size:10px;color:var(--text3);text-decoration:none;letter-spacing:1px">Import</a></div>
+</header>
+<div class="page pad">
+
+  <div id="adpEmpty">
+    <div class="card" style="text-align:center;padding:40px 24px">
+      <div style="font-size:9px;letter-spacing:3px;color:var(--teal);text-transform:uppercase;margin-bottom:10px">CSV Adapter</div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:24px;line-height:1.6" data-i18n="adp_desc">Convert any CSV to Pilar format</div>
+      <label for="adpInput" class="lz-cta" style="display:inline-flex;width:auto;padding:14px 32px">
+        <svg style="width:18px;height:18px;stroke:currentColor;fill:none;flex-shrink:0" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span data-i18n="adp_upload">Upload CSV</span>
+      </label>
+      <input type="file" id="adpInput" accept=".csv" style="display:none" onchange="adpLoad(this)">
+      <div style="margin-top:16px;font-size:10px;color:var(--text3);line-height:1.7" data-i18n="adp_hint">Any delimiter · any column names · unit conversion included</div>
+    </div>
+  </div>
+
+  <div id="adpMain" style="display:none">
+    <div class="card" style="margin-bottom:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <span id="adpFileName" style="font-size:11px;color:var(--text2);font-weight:600">—</span>
+        <button onclick="adpReset()" style="background:none;border:1px solid var(--border);border-radius:5px;padding:5px 12px;color:var(--text3);font-size:10px;cursor:pointer;letter-spacing:1px" data-i18n="adp_change">Change</button>
+      </div>
+      <div id="adpTable"></div>
+    </div>
+    <div class="card" style="margin-bottom:12px">
+      <div class="ctitle" data-i18n="adp_preview">Preview (5 rows)</div>
+      <div id="adpPreview" style="overflow-x:auto;font-size:10px"></div>
+    </div>
+    <button class="btn" onclick="adpDownload()" data-i18n="adp_download">Convert & Download</button>
+  </div>
+</div>""" + nav("") + """
+<script>
+var _adpRaw=null,_adpDelim=',',_adpHdr=[],_adpMap=[];
+var _ADP_KEYS=['type','temp_air','temp_process','vitesse','couple','usure','humidite','vibration','pression','courant','tension'];
+var _ADP_LBL_FR={type:'Type machine',temp_air:'Temp. air',temp_process:'Temp. process',vitesse:'Vitesse (rpm)',couple:'Couple (Nm)',usure:'Usure outil',humidite:'Humidité (%)',vibration:'Vibration (mm/s)',pression:'Pression (bar)',courant:'Courant (A)',tension:'Tension (V)'};
+var _ADP_LBL_EN={type:'Machine type',temp_air:'Air temp',temp_process:'Process temp',vitesse:'Speed (rpm)',couple:'Torque (Nm)',usure:'Tool wear',humidite:'Humidity (%)',vibration:'Vibration (mm/s)',pression:'Pressure (bar)',courant:'Current (A)',tension:'Voltage (V)'};
+var _ADP_OUT={type:'type',temp_air:'air_temperature_k',temp_process:'process_temperature_k',vitesse:'rotational_speed_rpm',couple:'torque_nm',usure:'tool_wear_min',humidite:'humidity_pct',vibration:'vibration_mms',pression:'pressure_bar',courant:'current_a',tension:'voltage_v'};
+
+function adpLoad(inp){
+  var f=inp.files[0];if(!f)return;
+  var rd=new FileReader();
+  rd.onload=function(e){
+    _adpRaw=e.target.result;
+    var lines=_adpRaw.split('\\n').map(function(s){return s.trim();}).filter(function(s){return s.length>0;});
+    if(lines.length<2)return;
+    _adpDelim=_csvDelim(lines[0]);
+    _adpHdr=lines[0].split(_adpDelim).map(function(s){return s.trim();});
+    var autoMap=detectCsvMapping(_adpHdr);
+    _adpMap=_adpHdr.map(function(col,idx){
+      var pf=null,unit=null;
+      _ADP_KEYS.forEach(function(k){if(autoMap[k]&&autoMap[k].idx===idx){pf=k;unit=autoMap[k].unit||null;}});
+      var samples=[];
+      for(var r=1;r<Math.min(4,lines.length);r++){var vs=lines[r].split(_adpDelim);if(idx<vs.length)samples.push(vs[idx].trim());}
+      return {col:col,idx:idx,pf:pf,unit:unit,samples:samples};
+    });
+    var nr=lines.length-1;
+    document.getElementById('adpFileName').textContent=f.name+' — '+_adpHdr.length+' col · '+nr+' rows';
+    document.getElementById('adpEmpty').style.display='none';
+    document.getElementById('adpMain').style.display='block';
+    adpRenderTable();
+    adpRenderPreview(lines.slice(1,6));
+  };
+  rd.readAsText(f);
+}
+
+function adpRenderTable(){
+  var lang=localStorage.getItem('pilar_lang')||'en';
+  var lbl=lang==='fr'?_ADP_LBL_FR:_ADP_LBL_EN;
+  var baseOpts='<option value="">'+t('adp_ignore')+'</option>';
+  _ADP_KEYS.forEach(function(k){baseOpts+='<option value="'+k+'">'+lbl[k]+'</option>';});
+  var tds=function(s,extra){return '<td style="padding:7px 8px;border-bottom:1px solid var(--border)'+(extra||'')+'">'+(s||'')+'</td>';};
+  var html='<table style="width:100%;border-collapse:collapse"><thead><tr>';
+  ['adp_source','adp_samples','adp_field','adp_unit'].forEach(function(k){html+='<th style="text-align:left;padding:7px 8px;color:var(--text3);font-size:9px;letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid var(--border)">'+t(k)+'</th>';});
+  html+='</tr></thead><tbody>';
+  _adpMap.forEach(function(m,i){
+    var dot=m.pf?'<span style="width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block;margin-right:6px;flex-shrink:0"></span>':'<span style="width:7px;height:7px;border-radius:50%;background:var(--border);display:inline-block;margin-right:6px;flex-shrink:0"></span>';
+    var sel=baseOpts.replace('value="'+(m.pf||'')+'"','value="'+(m.pf||'')+'" selected');
+    var selEl='<select onchange="adpSetField('+i+',this.value)" style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:5px 6px;font-size:10px;width:100%">'+sel+'</select>';
+    var unitEl='<span style="font-size:10px;color:var(--text3)">—</span>';
+    if(m.pf==='temp_air'||m.pf==='temp_process'){
+      unitEl='<select id="u'+i+'" onchange="adpSetUnit('+i+',this.value)" style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:5px 6px;font-size:10px">';
+      ['K','°C','°F'].forEach(function(u){unitEl+='<option'+(u===(m.unit||'K')?' selected':'')+'>'+u+'</option>';});
+      unitEl+='</select>';
+    } else if(m.pf==='usure'){
+      unitEl='<select id="u'+i+'" onchange="adpSetUnit('+i+',this.value)" style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:5px 6px;font-size:10px">';
+      ['min','h'].forEach(function(u){unitEl+='<option'+(u===(m.unit||'min')?' selected':'')+'>'+u+'</option>';});
+      unitEl+='</select>';
+    }
+    html+='<tr>'+tds('<span style="display:flex;align-items:center">'+dot+'<strong style="font-size:11px;color:var(--text)">'+m.col+'</strong></span>')+tds('<span style="color:var(--text3);font-size:10px">'+m.samples.slice(0,3).join(', ')+'</span>')+tds(selEl)+tds(unitEl)+'</tr>';
+  });
+  html+='</tbody></table>';
+  document.getElementById('adpTable').innerHTML=html;
+}
+
+function adpSetField(i,val){
+  _adpMap[i].pf=val||null;_adpMap[i].unit=null;
+  adpRenderTable();
+  var lines=_adpRaw.split('\\n').map(function(s){return s.trim();}).filter(function(s){return s.length>0;});
+  adpRenderPreview(lines.slice(1,6));
+}
+function adpSetUnit(i,val){_adpMap[i].unit=val;}
+
+function _adpConv(raw,pf,unit){
+  if(pf==='type'){var s=raw.toLowerCase();return s==='l'||s==='low'?'0':s==='m'||s==='medium'||s==='med'?'1':s==='h'||s==='high'?'2':raw;}
+  var v=parseFloat(raw.replace(',','.'));if(isNaN(v))return '';
+  if(pf==='temp_air'||pf==='temp_process'){var u=unit||(v<200?'°C':'K');if(u==='°C')v+=273.15;else if(u==='°F')v=(v-32)*5/9+273.15;}
+  if(pf==='usure'){var u=unit||(v<20?'h':'min');if(u==='h')v*=60;}
+  return Math.round(v*1000)/1000;
+}
+
+function _adpRowOut(rawVals){
+  var out={};
+  _adpMap.forEach(function(m){
+    if(!m.pf)return;
+    var raw=m.idx<rawVals.length?rawVals[m.idx].trim():'';
+    out[m.pf]=_adpConv(raw,m.pf,m.unit);
+  });
+  return out;
+}
+
+function adpRenderPreview(dataLines){
+  if(!dataLines||!dataLines.length){document.getElementById('adpPreview').innerHTML='';return;}
+  var active=_ADP_KEYS.filter(function(k){return _adpMap.some(function(m){return m.pf===k;});});
+  if(!active.length){document.getElementById('adpPreview').innerHTML='<span style="color:var(--text3)">'+t('adp_no_map')+'</span>';return;}
+  var th=function(s){return '<th style="padding:6px 10px;color:var(--teal);font-size:9px;letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid var(--border);white-space:nowrap">'+s+'</th>';};
+  var td=function(s){return '<td style="padding:6px 10px;border-bottom:1px solid var(--border);color:var(--text2);white-space:nowrap">'+s+'</td>';};
+  var html='<table style="border-collapse:collapse;min-width:100%"><thead><tr>';
+  active.forEach(function(k){html+=th(_ADP_OUT[k]);});
+  html+='</tr></thead><tbody>';
+  dataLines.forEach(function(line){
+    var rv=line.split(_adpDelim);var row=_adpRowOut(rv);
+    html+='<tr>';active.forEach(function(k){html+=td(row[k]!==undefined?row[k]:'');});html+='</tr>';
+  });
+  html+='</tbody></table>';
+  document.getElementById('adpPreview').innerHTML=html;
+}
+
+function adpDownload(){
+  var active=_ADP_KEYS.filter(function(k){return _adpMap.some(function(m){return m.pf===k;});});
+  if(!active.length)return;
+  var lines=_adpRaw.split('\\n').map(function(s){return s.trim();}).filter(function(s){return s.length>0;});
+  var csv=active.map(function(k){return _ADP_OUT[k];}).join(',')+'\\n';
+  for(var i=1;i<lines.length;i++){
+    var rv=lines[i].split(_adpDelim);var row=_adpRowOut(rv);
+    csv+=active.map(function(k){return row[k]!==undefined?String(row[k]):'';}).join(',')+'\\n';
+  }
+  var blob=new Blob([csv],{type:'text/csv'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='pilar_adapted.csv';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+}
+
+function adpReset(){
+  _adpRaw=null;_adpHdr=[];_adpMap=[];
+  document.getElementById('adpInput').value='';
+  document.getElementById('adpEmpty').style.display='block';
+  document.getElementById('adpMain').style.display='none';
+}
+</script></body></html>"""
+
 # ── BACKEND ───────────────────────────────────────────────────────────────────
 def predict_risk(params):
     # Analyse partielle : imputer les features manquantes avec les médianes AI4I
@@ -1945,6 +2125,10 @@ def assistant(): return render_template_string(ASSISTANT_HTML)
 @app.route('/tutorial')
 @login_required
 def tutorial(): return render_template_string(TUTORIAL_HTML)
+
+@app.route('/adapter')
+@auth_optional
+def adapter(): return render_template_string(ADAPTER_HTML)
 
 @app.route('/twin')
 def twin(): return render_template_string(TWIN_HTML)
