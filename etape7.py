@@ -19,7 +19,11 @@ if db_url.startswith("postgres://"):
 print(f"[Pilar] DB: {db_url[:40]}...")
 app.config["SQLALCHEMY_DATABASE_URI"] = db_url
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "pilar-dev-secret-change-in-prod")
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {"pool_pre_ping": True, "pool_recycle": 280}
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "pilar-secret-2024-stable-key")
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=90)
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["SESSION_COOKIE_HTTPONLY"] = True
 db = SQLAlchemy(app)
 
 # ── MODÈLES ───────────────────────────────────────────────────────────────────
@@ -70,8 +74,11 @@ class Analysis(db.Model):
     user_id      = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
 
 with app.app_context():
-    db.create_all()
-    # Migration : ajoute user_id si les tables existaient déjà sans cette colonne
+    try:
+        db.create_all()
+        print("[Pilar] Tables créées/vérifiées")
+    except Exception as e:
+        print(f"[Pilar] db.create_all() error: {e}")
     for sql in [
         "ALTER TABLE analysis ADD COLUMN IF NOT EXISTS user_id INTEGER",
         "ALTER TABLE settings ADD COLUMN IF NOT EXISTS user_id INTEGER",
@@ -81,8 +88,9 @@ with app.app_context():
         try:
             db.session.execute(db.text(sql))
             db.session.commit()
-        except Exception:
+        except Exception as e:
             db.session.rollback()
+            print(f"[Pilar] Migration skip ({sql[:40]}): {e}")
 
 with open("modele_pannes.pkl","rb") as f: model = pickle.load(f)
 with open("scaler.pkl","rb") as f: scaler = pickle.load(f)
@@ -929,42 +937,53 @@ def register():
     if request.method == 'GET':
         if current_uid(): return redirect('/')
         return render_template_string(REGISTER_HTML)
-    data = request.json or {}
-    email = (data.get('email') or '').strip().lower()
-    password = data.get('password', '')
-    if not email or not password:
-        return jsonify({'error': 'Email et mot de passe requis'}), 400
-    if len(password) < 8:
-        return jsonify({'error': 'Mot de passe trop court (8 caractères minimum)'}), 400
-    if User.query.filter_by(email=email).first():
-        return jsonify({'error': 'Un compte existe déjà avec cet email'}), 409
-    token = _secrets.token_urlsafe(32)
-    api_key = 'pk_' + _secrets.token_hex(24)
-    is_admin = (email == os.environ.get('ADMIN_EMAIL', '').lower()) or (User.query.count() == 0)
-    user = User(email=email, password_hash=generate_password_hash(password),
-                email_verified=True, api_key=api_key, is_admin=is_admin)
-    db.session.add(user)
-    db.session.commit()
-    session['user_id'] = user.id
-    session.permanent = True
-    print(f"[Pilar/auth] New user: {email} (admin={is_admin})")
-    return jsonify({'ok': True, 'message': 'Compte créé avec succès !'})
+    try:
+        data = request.json or {}
+        email = (data.get('email') or '').strip().lower()
+        password = data.get('password', '')
+        if not email or not password:
+            return jsonify({'error': 'Email et mot de passe requis'}), 400
+        if len(password) < 8:
+            return jsonify({'error': 'Mot de passe trop court (8 caractères minimum)'}), 400
+        if User.query.filter_by(email=email).first():
+            return jsonify({'error': 'Un compte existe déjà avec cet email'}), 409
+        api_key = 'pk_' + _secrets.token_hex(24)
+        is_admin = (email == os.environ.get('ADMIN_EMAIL', '').lower()) or (User.query.count() == 0)
+        user = User(email=email, password_hash=generate_password_hash(password),
+                    email_verified=True, api_key=api_key, is_admin=is_admin)
+        db.session.add(user)
+        db.session.commit()
+        session['user_id'] = user.id
+        session.permanent = True
+        print(f"[Pilar/auth] New user: {email} (admin={is_admin})")
+        return jsonify({'ok': True, 'message': 'Compte créé avec succès !'})
+    except Exception as e:
+        db.session.rollback()
+        print(f"[Pilar/auth] Register error: {type(e).__name__}: {e}")
+        return jsonify({'error': f'Erreur serveur: {str(e)}'}), 500
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'GET':
         if current_uid(): return redirect('/')
         return render_template_string(LOGIN_HTML)
-    data = request.json or {}
-    email = (data.get('email') or '').strip().lower()
-    password = data.get('password', '')
-    user = User.query.filter_by(email=email).first()
-    if not user or not check_password_hash(user.password_hash, password):
-        return jsonify({'error': 'Email ou mot de passe incorrect'}), 401
-    session['user_id'] = user.id
-    session.permanent = True
-    print(f"[Pilar/auth] Login: {email}")
-    return jsonify({'ok': True})
+    try:
+        data = request.json or {}
+        email = (data.get('email') or '').strip().lower()
+        password = data.get('password', '')
+        if not email or not password:
+            return jsonify({'error': 'Email et mot de passe requis'}), 400
+        user = User.query.filter_by(email=email).first()
+        if not user or not check_password_hash(user.password_hash, password):
+            return jsonify({'error': 'Email ou mot de passe incorrect'}), 401
+        session['user_id'] = user.id
+        session.permanent = True
+        print(f"[Pilar/auth] Login: {email}")
+        return jsonify({'ok': True})
+    except Exception as e:
+        db.session.rollback()
+        print(f"[Pilar/auth] Login error: {type(e).__name__}: {e}")
+        return jsonify({'error': f'Erreur serveur: {str(e)}'}), 500
 
 @app.route('/logout')
 def logout():
