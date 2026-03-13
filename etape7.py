@@ -513,7 +513,8 @@ tut_pause:'Pause',tut_resume:'Reprendre',tut_stop:'Arrêter',tut_done:'Terminé'
 tut_live:'Moniteur fichier live',tut_live_desc:"Connectez un fichier CSV mis à jour par votre SCADA. Pilar détecte les nouvelles lignes automatiquement.",
 tut_connect:'Connecter fichier',tut_no_file:'Aucun fichier connecté',tut_disconnected:'Déconnecté',
 ast_placeholder:'Posez votre question sur la machine...',ast_send:'Envoyer',
-ast_hello:"Bonjour. Je suis votre assistant maintenance prédictive. Partagez vos relevés capteurs ou posez-moi vos questions."},
+ast_hello:"Bonjour. Je suis votre assistant maintenance prédictive. Partagez vos relevés capteurs ou posez-moi vos questions.",
+csv_detect:'Colonnes détectées',csv_bad:'Colonnes non reconnues',csv_rows:'lignes'},
 en:{nav_monitor:'Monitor',nav_twin:'Twin',nav_history:'History',nav_account:'Account',nav_settings:'Settings',
 page_monitor:'Monitor',page_twin:'Digital Twin',page_history:'History',page_account:'Account',page_settings:'Settings',
 idle_l1:'No analysis yet',idle_l2:'Configure below and run',
@@ -553,7 +554,8 @@ tut_pause:'Pause',tut_resume:'Resume',tut_stop:'Stop',tut_done:'Done',
 tut_live:'Live File Monitor',tut_live_desc:'Connect a CSV file updated by your SCADA or system. Pilar detects new rows automatically.',
 tut_connect:'Connect File',tut_no_file:'No file connected',tut_disconnected:'Disconnected',
 ast_placeholder:'Ask about your machine...',ast_send:'Send',
-ast_hello:'Hello. I am your predictive maintenance assistant. Share your sensor readings or ask me anything about your machine health.'}
+ast_hello:'Hello. I am your predictive maintenance assistant. Share your sensor readings or ask me anything about your machine health.',
+csv_detect:'Columns detected',csv_bad:'Columns not recognized',csv_rows:'rows'}
 };
 let LANG=localStorage.getItem('pilar_lang')||'en';
 function t(k){return(T[LANG]&&T[LANG][k])||(T.en[k])||k;}
@@ -654,6 +656,72 @@ function animateNum(el,from,to,decimals,duration){
     else el.value=to.toFixed(decimals);
   }
   requestAnimationFrame(step);
+}
+// ── CSV INTELLIGENT PARSING ───────────────────────────────────────────────
+var _CSV_FIELDS=['type','temp_air','temp_process','vitesse','couple','usure'];
+var _CSV_PATS={
+  type:['type','machine_type','product_type','machine','classe','class','category','categorie'],
+  temp_air:['air_temp','temp_air','temperature_air','air_temperature','t_air','tair','ambient_temp','temp_ambiante','temp_ambiant'],
+  temp_process:['process_temp','temp_process','temperature_process','process_temperature','t_process','tprocess','proc_temp'],
+  vitesse:['speed','vitesse','rpm','rotational_speed','rotation_speed','speed_rpm','rot_speed'],
+  couple:['torque','couple','torque_nm','couple_nm','moment'],
+  usure:['wear','usure','tool_wear','wear_min','tool_wear_min','outil','usure_outil','wear_time']
+};
+function _csvN(s){return s.toLowerCase().trim().replace(/[^a-z0-9]/g,'_').replace(/_+/g,'_').replace(/^_|_$/g,'');}
+function _csvDelim(line){var sc=(line.match(/;/g)||[]).length,cc=(line.match(/,/g)||[]).length;return sc>cc?';':',';}
+function detectCsvMapping(rawHeaders){
+  var norm=rawHeaders.map(_csvN);
+  var origLow=rawHeaders.map(function(h){return h.toLowerCase().trim();});
+  var map={};
+  _CSV_FIELDS.forEach(function(field){
+    var pats=_CSV_PATS[field],best=-1,score=0;
+    for(var j=0;j<norm.length;j++){
+      var h=norm[j],s=0;
+      for(var p=0;p<pats.length;p++){
+        if(h===pats[p]){s=100-p;break;}
+        if(h.indexOf(pats[p])!==-1&&s<70-p)s=70-p;
+      }
+      if(s>score){score=s;best=j;}
+    }
+    if(best!==-1){
+      var orig=origLow[best],unit=null;
+      if(field==='temp_air'||field==='temp_process'){
+        if(orig.indexOf('celsius')!==-1||orig.indexOf('_c')!==-1)unit='C';
+        else if(orig.indexOf('fahrenheit')!==-1||orig.indexOf('_f')!==-1)unit='F';
+        else if(orig.indexOf('kelvin')!==-1||orig.indexOf('_k')!==-1)unit='K';
+      }
+      if(field==='usure'){
+        if(orig.indexOf('hour')!==-1||orig.indexOf('heure')!==-1||orig.endsWith('_h'))unit='h';
+        else if(orig.indexOf('min')!==-1)unit='min';
+      }
+      map[field]={idx:best,unit:unit,col:rawHeaders[best]};
+    }
+  });
+  return map;
+}
+function buildPilarRow(vals,map){
+  var row={};
+  for(var i=0;i<_CSV_FIELDS.length;i++){
+    var f=_CSV_FIELDS[i],m=map[f];
+    if(!m||m.idx>=vals.length)return null;
+    var raw=(vals[m.idx]||'').toString().trim().replace(',','.');
+    if(f==='type'){
+      var sv=raw.toLowerCase();
+      if(sv==='l'||sv==='low')row.type=0;
+      else if(sv==='m'||sv==='medium'||sv==='med')row.type=1;
+      else if(sv==='h'||sv==='high')row.type=2;
+      else{var n=parseFloat(raw);if(isNaN(n))return null;row.type=Math.min(2,Math.max(0,Math.round(n)));}
+    }else{
+      var v=parseFloat(raw);if(isNaN(v))return null;
+      if(f==='temp_air'||f==='temp_process'){
+        var u=m.unit||(v<200?'C':'K');
+        if(u==='C')v+=273.15;else if(u==='F')v=(v-32)*5/9+273.15;
+      }
+      if(f==='usure'){var u=m.unit||(v<20?'h':'min');if(u==='h')v*=60;}
+      row[f]=Math.round(v*100)/100;
+    }
+  }
+  return row;
 }
 </script></head>"""
 
@@ -783,7 +851,7 @@ function render(r){
 }
 
 // ── LIVE FILE MONITOR ─────────────────────────────────────────────────────
-var _lfHandle=null,_lfTimer=null,_lfKnown=0,_lfFail=0,_lfOk=0,_lfHdr=null;
+var _lfHandle=null,_lfTimer=null,_lfKnown=0,_lfFail=0,_lfOk=0,_lfMap=null,_lfDelim=',';
 
 function onLiveFile(inp){
   var f=inp.files[0];if(!f)return;
@@ -839,15 +907,17 @@ async function _lfLoop(){
 async function _lfProcess(text){
   var lines=text.split('\\n').map(function(s){return s.trim();}).filter(function(s){return s.length>0;});
   if(lines.length<2)return;
-  if(!_lfHdr){
-    _lfHdr=lines[0].split(',').map(function(s){return s.trim().toLowerCase();});
-    var needed=['type','temp_air','temp_process','vitesse','couple','usure'];
-    for(var i=0;i<needed.length;i++){
-      if(_lfHdr.indexOf(needed[i])<0){
-        document.getElementById('liveChk').textContent='Error: missing column '+needed[i];
-        stopLiveMonitor();return;
-      }
+  if(!_lfMap){
+    _lfDelim=_csvDelim(lines[0]);
+    var rawHdr=lines[0].split(_lfDelim).map(function(s){return s.trim();});
+    _lfMap=detectCsvMapping(rawHdr);
+    var found=Object.keys(_lfMap).length;
+    if(found<6){
+      var missing=_CSV_FIELDS.filter(function(f){return !_lfMap[f];}).join(', ');
+      document.getElementById('liveChk').textContent=t('csv_bad')+': '+missing;
+      stopLiveMonitor();return;
     }
+    document.getElementById('liveChk').textContent=t('csv_detect')+' ('+found+'/6)';
   }
   var total=lines.length-1;
   document.getElementById('liveRowCount').textContent=total;
@@ -855,10 +925,9 @@ async function _lfProcess(text){
     var newLines=lines.slice(_lfKnown+1);
     var lastRow=null;
     newLines.forEach(function(line){
-      var vals=line.split(',');
-      var obj={};
-      _lfHdr.forEach(function(col,ci){obj[col]=parseFloat(vals[ci]);});
-      if(!isNaN(obj.type)&&!isNaN(obj.temp_air))lastRow=obj;
+      var vals=line.split(_lfDelim);
+      var obj=buildPilarRow(vals,_lfMap);
+      if(obj)lastRow=obj;
     });
     _lfKnown=total;
     if(lastRow){
@@ -885,7 +954,7 @@ function _schedule(){
 }
 
 function stopLiveMonitor(){
-  clearTimeout(_lfTimer);_lfHandle=null;_lfHdr=null;
+  clearTimeout(_lfTimer);_lfHandle=null;_lfMap=null;
   document.getElementById('liveBar').style.display='none';
   document.getElementById('btnFileLbl').textContent=t('live_connect');
   document.getElementById('btnFile').classList.remove('on');
@@ -1356,21 +1425,25 @@ function onFile(inp){
   document.getElementById('fname').textContent=f.name+' (loading...)';
   var rd=new FileReader();
   rd.onload=function(e){
-    var lines=e.target.result.split('\\n').map(s=>s.trim()).filter(s=>s.length>0);
-    if(lines.length<2){alert('File must have at least 2 rows (header + data).');return;}
-    var hdr=lines[0].split(',').map(s=>s.trim().toLowerCase());
-    var needed=['type','temp_air','temp_process','vitesse','couple','usure'];
-    for(var i=0;i<needed.length;i++){
-      if(hdr.indexOf(needed[i])<0){alert('Missing column: '+needed[i]);return;}
+    var text=e.target.result;
+    var lines=text.split('\\n').map(s=>s.trim()).filter(s=>s.length>0);
+    if(lines.length<2){alert(t('csv_bad'));return;}
+    var delim=_csvDelim(lines[0]);
+    var rawHdr=lines[0].split(delim).map(s=>s.trim());
+    var map=detectCsvMapping(rawHdr);
+    var found=Object.keys(map).length;
+    if(found<6){
+      var missing=_CSV_FIELDS.filter(function(field){return !map[field];}).join(', ');
+      alert(t('csv_bad')+': '+missing);return;
     }
     rows=[];
     for(var r=1;r<lines.length;r++){
-      var vals=lines[r].split(',');
-      var obj={};
-      hdr.forEach(function(col,ci){obj[col]=parseFloat(vals[ci]);});
-      if(!isNaN(obj.type)&&!isNaN(obj.temp_air))rows.push(obj);
+      var vals=lines[r].split(delim);
+      var obj=buildPilarRow(vals,map);
+      if(obj)rows.push(obj);
     }
-    document.getElementById('fname').textContent=f.name+' — '+rows.length+' rows loaded';
+    var info=found+'/6 '+t('csv_detect');
+    document.getElementById('fname').textContent=f.name+' — '+rows.length+' '+t('csv_rows')+' ('+info+')';
     document.getElementById('btnStart').disabled=rows.length===0;
   };
   rd.readAsText(f);
@@ -1466,7 +1539,7 @@ function finish(){
 }
 
 // ── LIVE FILE MONITOR ──────────────────────────────────────────────────────
-var liveHandle=null, liveTimer=null, liveKnownRows=0, liveFail=0, liveOk=0;
+var liveHandle=null, liveTimer=null, liveKnownRows=0, liveFail=0, liveOk=0, liveMap=null, liveDelim=',';
 
 async function connectLive(){
   if(!window.showOpenFilePicker){
@@ -1496,20 +1569,26 @@ async function liveCheck(){
     var text=await file.text();
     var lines=text.split('\\n').map(s=>s.trim()).filter(s=>s.length>0);
     if(lines.length<2){liveTimer=setTimeout(liveCheck,parseInt(document.getElementById('liveInterval').value));return;}
-    var hdr=lines[0].split(',').map(s=>s.trim().toLowerCase());
-    var needed=['type','temp_air','temp_process','vitesse','couple','usure'];
-    for(var i=0;i<needed.length;i++){if(hdr.indexOf(needed[i])<0){
-      document.getElementById('liveStatus').textContent='Error: missing column '+needed[i];
-      document.getElementById('liveStatus').style.color='var(--red)';return;
-    }}
+    if(!liveMap){
+      liveDelim=_csvDelim(lines[0]);
+      var rawHdr=lines[0].split(liveDelim).map(s=>s.trim());
+      liveMap=detectCsvMapping(rawHdr);
+      var found=Object.keys(liveMap).length;
+      if(found<6){
+        var missing=_CSV_FIELDS.filter(function(f){return !liveMap[f];}).join(', ');
+        document.getElementById('liveStatus').textContent=t('csv_bad')+': '+missing;
+        document.getElementById('liveStatus').style.color='var(--red)';return;
+      }
+      document.getElementById('liveStatus').textContent=t('csv_detect')+' ('+found+'/6)';
+      document.getElementById('liveStatus').style.color='var(--green)';
+    }
     var total=lines.length-1;
     if(total>liveKnownRows){
       var newLines=lines.slice(liveKnownRows+1);
       for(var r=0;r<newLines.length;r++){
-        var vals=newLines[r].split(',');
-        var obj={};
-        hdr.forEach(function(col,ci){obj[col]=parseFloat(vals[ci]);});
-        if(!isNaN(obj.type)&&!isNaN(obj.temp_air)){
+        var vals=newLines[r].split(liveDelim);
+        var obj=buildPilarRow(vals,liveMap);
+        if(obj){
           (function(row,rowNum){
             fetch('/predire',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(row)})
               .then(function(res){return res.json();})
@@ -1541,7 +1620,7 @@ async function liveCheck(){
 }
 
 function stopLive(){
-  clearTimeout(liveTimer);liveHandle=null;
+  clearTimeout(liveTimer);liveHandle=null;liveMap=null;
   document.getElementById('liveStatus').textContent='Disconnected';
   document.getElementById('liveStatus').style.color='var(--text3)';
   document.getElementById('btnLiveStop').style.display='none';
