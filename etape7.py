@@ -495,7 +495,19 @@ acc_create_ph:"Nom de l'équipe (optionnel)",acc_create_btn:'Créer une équipe'
 acc_role_leader:'Responsable',acc_role_member:'Membre',acc_you:'(vous)',
 acc_promote:'Promouvoir',acc_kick:'Retirer',
 acc_add_title:'Ajouter un membre',acc_add_ph:'email@entreprise.com',acc_add_btn:'Ajouter',acc_added:'Membre ajouté !',
-acc_members:' membre(s)',acc_leave:"Quitter l'équipe"},
+acc_members:' membre(s)',acc_leave:"Quitter l'équipe",
+nav_import:'Import',nav_assistant:'Assistant',
+live_connect:'Connecter fichier',live_on:'Live actif',live_disconnect:'Déconnecter',
+live_rows:'Lignes lues',live_fail:'Pannes',live_ok:'Normal',live_last:'Dernier',
+live_no_api:'Sélectionnez votre fichier CSV. Cliquez Actualiser pour relire les nouvelles lignes.',
+live_refresh:'Actualiser',
+tut_format:'Format CSV',tut_cols:'Colonne',tut_unit:'Unité',tut_range:'Plage',tut_desc:'Description',
+tut_sample:'Télécharger exemple CSV',tut_import:'Importer un fichier',tut_speed:'Vitesse',tut_start:'Démarrer',
+tut_pause:'Pause',tut_resume:'Reprendre',tut_stop:'Arrêter',tut_done:'Terminé',
+tut_live:'Moniteur fichier live',tut_live_desc:"Connectez un fichier CSV mis à jour par votre SCADA. Pilar détecte les nouvelles lignes automatiquement.",
+tut_connect:'Connecter fichier',tut_no_file:'Aucun fichier connecté',tut_disconnected:'Déconnecté',
+ast_placeholder:'Posez votre question sur la machine...',ast_send:'Envoyer',
+ast_hello:"Bonjour. Je suis votre assistant maintenance prédictive. Partagez vos relevés capteurs ou posez-moi vos questions."},
 en:{nav_monitor:'Monitor',nav_twin:'Twin',nav_history:'History',nav_account:'Account',nav_settings:'Settings',
 page_monitor:'Monitor',page_twin:'Digital Twin',page_history:'History',page_account:'Account',page_settings:'Settings',
 idle_l1:'No analysis yet',idle_l2:'Configure below and run',
@@ -523,7 +535,19 @@ acc_create_ph:'Team name (optional)',acc_create_btn:'Create Team',
 acc_role_leader:'Leader',acc_role_member:'Member',acc_you:'(you)',
 acc_promote:'Promote',acc_kick:'Remove',
 acc_add_title:'Add Member',acc_add_ph:'email@company.com',acc_add_btn:'Add',acc_added:'Member added!',
-acc_members:' member(s)',acc_leave:'Leave Team'}
+acc_members:' member(s)',acc_leave:'Leave Team',
+nav_import:'Import',nav_assistant:'Assistant',
+live_connect:'Connect File',live_on:'Live ON',live_disconnect:'Disconnect',
+live_rows:'Rows read',live_fail:'Failures',live_ok:'Normal',live_last:'Last',
+live_no_api:'Select your CSV file. Click Refresh to reload new rows.',
+live_refresh:'Refresh',
+tut_format:'CSV Format',tut_cols:'Column',tut_unit:'Unit',tut_range:'Range',tut_desc:'Description',
+tut_sample:'Download sample CSV',tut_import:'Import File',tut_speed:'Speed',tut_start:'Start',
+tut_pause:'Pause',tut_resume:'Resume',tut_stop:'Stop',tut_done:'Done',
+tut_live:'Live File Monitor',tut_live_desc:'Connect a CSV file updated by your SCADA or system. Pilar detects new rows automatically.',
+tut_connect:'Connect File',tut_no_file:'No file connected',tut_disconnected:'Disconnected',
+ast_placeholder:'Ask about your machine...',ast_send:'Send',
+ast_hello:'Hello. I am your predictive maintenance assistant. Share your sensor readings or ask me anything about your machine health.'}
 };
 let LANG=localStorage.getItem('pilar_lang')||'en';
 function t(k){return(T[LANG]&&T[LANG][k])||(T.en[k])||k;}
@@ -591,9 +615,9 @@ function localTimeNow(){
 
 _NAV = """<nav class="bottom-nav">
 <a href="/" class="ni {m}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg><span data-i18n="nav_monitor">Monitor</span></a>
-<a href="/tutorial" class="ni {tut}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg><span>Import</span></a>
+<a href="/tutorial" class="ni {tut}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg><span data-i18n="nav_import">Import</span></a>
 <a href="/history" class="ni {h}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg><span data-i18n="nav_history">History</span></a>
-<a href="/assistant" class="ni {ai}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg><span>Assistant</span></a>
+<a href="/assistant" class="ni {ai}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg><span data-i18n="nav_assistant">Assistant</span></a>
 <a href="/settings" class="ni {s}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg><span data-i18n="nav_settings">Settings</span></a>
 </nav>"""
 
@@ -610,7 +634,7 @@ HTML = _HEAD.replace("{FAV}","iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAHxU
 <div class="hright">
   <button class="nb" id="btnFile" onclick="connectLiveMonitor()" title="Connect live CSV file">
     <svg style="width:13px;height:13px;vertical-align:middle;stroke:currentColor;fill:none;margin-right:3px" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" stroke-width="2"/></svg>
-    <span id="btnFileLbl">Connect File</span>
+    <span id="btnFileLbl" data-i18n="live_connect">Connect File</span>
   </button>
   <button class="nb" id="nb" onclick="toggleN()">Notifs</button>
 </div></header>
@@ -636,10 +660,12 @@ HTML = _HEAD.replace("{FAV}","iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAHxU
       </div>
     </div>
     <div style="margin-top:8px;display:flex;gap:12px;font-size:10px;color:var(--text3)">
-      <span>Rows read: <strong style="color:var(--text2)" id="liveRowCount">0</strong></span>
-      <span>Failures: <strong style="color:var(--red)" id="liveFailCount">0</strong></span>
-      <span>Normal: <strong style="color:var(--green)" id="liveOkCount">0</strong></span>
+      <span><span data-i18n="live_rows">Rows read</span>: <strong style="color:var(--text2)" id="liveRowCount">0</strong></span>
+      <span><span data-i18n="live_fail">Failures</span>: <strong style="color:var(--red)" id="liveFailCount">0</strong></span>
+      <span><span data-i18n="live_ok">Normal</span>: <strong style="color:var(--green)" id="liveOkCount">0</strong></span>
     </div>
+    <!-- fallback input for Opera/Firefox -->
+    <input type="file" id="lfFallbackInput" accept=".csv" style="display:none" onchange="onFallbackFile(this)">
   </div>
 
   <div id="res"><div class="idle"><span class="l1" data-i18n="idle_l1">No analysis yet</span><span class="l2" data-i18n="idle_l2">Configure below and run</span></div></div>
@@ -712,75 +738,108 @@ function render(r){
 }
 
 // ── LIVE FILE MONITOR ─────────────────────────────────────────────────────
-var _lfHandle=null,_lfTimer=null,_lfKnown=0,_lfFail=0,_lfOk=0,_lfHdr=null;
+var _lfHandle=null,_lfTimer=null,_lfKnown=0,_lfFail=0,_lfOk=0,_lfHdr=null,_lfFallbackFile=null,_lfFallback=false;
 
 async function connectLiveMonitor(){
-  if(_lfHandle){stopLiveMonitor();return;}
-  if(!window.showOpenFilePicker){
-    alert('Live file monitoring requires Chrome or Edge.');return;
+  if(_lfHandle||_lfFallbackFile){stopLiveMonitor();return;}
+  if(window.showOpenFilePicker){
+    try{
+      var picks=await window.showOpenFilePicker({types:[{description:'CSV',accept:{'text/csv':['.csv']}}]});
+      _lfHandle=picks[0];_lfFallback=false;
+      _lfKnown=0;_lfFail=0;_lfOk=0;_lfHdr=null;
+      var fname=(await _lfHandle.getFile()).name;
+      _lfStart(fname);
+    }catch(e){if(e.name!=='AbortError')console.error(e);}
+  }else{
+    // Fallback: Opera GX / Firefox — use classic file input
+    _lfFallback=true;
+    document.getElementById('lfFallbackInput').click();
   }
-  try{
-    var picks=await window.showOpenFilePicker({types:[{description:'CSV',accept:{'text/csv':['.csv']}}]});
-    _lfHandle=picks[0];
-    _lfKnown=0;_lfFail=0;_lfOk=0;_lfHdr=null;
-    var fname=(await _lfHandle.getFile()).name;
-    document.getElementById('liveFileName').textContent=fname;
-    document.getElementById('liveBar').style.display='block';
-    document.getElementById('btnFileLbl').textContent='Live ON';
-    document.getElementById('btnFile').classList.add('on');
-    _lfLoop();
-  }catch(e){if(e.name!=='AbortError')console.error(e);}
 }
 
-function resetLiveTimer(){clearTimeout(_lfTimer);if(_lfHandle)_lfLoop();}
+function onFallbackFile(inp){
+  var f=inp.files[0];if(!f)return;
+  _lfFallbackFile=f;_lfKnown=0;_lfFail=0;_lfOk=0;_lfHdr=null;
+  _lfStart(f.name);
+  // Add refresh button for fallback mode
+  document.getElementById('liveChk').innerHTML='<span data-i18n="live_no_api" style="color:var(--amber)">'+t('live_no_api')+'</span> <button onclick="refreshFallback()" style="padding:3px 8px;background:var(--teal);border:none;border-radius:3px;color:#fff;font-size:10px;cursor:pointer" data-i18n="live_refresh">'+t('live_refresh')+'</button>';
+  _lfLoopFallback();
+}
+
+function refreshFallback(){
+  document.getElementById('lfFallbackInput').click();
+}
+
+function _lfStart(fname){
+  document.getElementById('liveFileName').textContent=fname;
+  document.getElementById('liveBar').style.display='block';
+  document.getElementById('btnFileLbl').textContent=t('live_on');
+  document.getElementById('btnFile').classList.add('on');
+}
+
+function resetLiveTimer(){clearTimeout(_lfTimer);if(_lfHandle)_lfLoop();else if(_lfFallbackFile)_lfLoopFallback();}
+
+async function _lfLoopFallback(){
+  if(!_lfFallbackFile)return;
+  try{
+    var text=await _lfFallbackFile.text();
+    await _lfProcess(text);
+  }catch(e){console.error(e);}
+  // Fallback: no auto-polling (file is a snapshot), just update counter
+  document.getElementById('liveChk').innerHTML='<span style="color:var(--text3)">'+t('live_last')+': '+new Date().toLocaleTimeString()+'</span> <button onclick="refreshFallback()" style="padding:3px 8px;background:var(--teal);border:none;border-radius:3px;color:#fff;font-size:10px;cursor:pointer">'+t('live_refresh')+'</button>';
+}
 
 async function _lfLoop(){
   if(!_lfHandle)return;
   try{
     var file=await _lfHandle.getFile();
     var text=await file.text();
-    var lines=text.split('\n').map(s=>s.trim()).filter(s=>s.length>0);
-    if(lines.length<2){_schedule();return;}
-    if(!_lfHdr){
-      _lfHdr=lines[0].split(',').map(s=>s.trim().toLowerCase());
-      var needed=['type','temp_air','temp_process','vitesse','couple','usure'];
-      for(var i=0;i<needed.length;i++){
-        if(_lfHdr.indexOf(needed[i])<0){
-          document.getElementById('liveChk').textContent='Error: missing column '+needed[i];
-          stopLiveMonitor();return;
-        }
-      }
-    }
-    var total=lines.length-1;
-    document.getElementById('liveRowCount').textContent=total;
-    if(total>_lfKnown){
-      var newLines=lines.slice(_lfKnown+1);
-      var lastRow=null;
-      newLines.forEach(function(line){
-        var vals=line.split(',');
-        var obj={};
-        _lfHdr.forEach(function(col,ci){obj[col]=parseFloat(vals[ci]);});
-        if(!isNaN(obj.type)&&!isNaN(obj.temp_air))lastRow=obj;
-      });
-      _lfKnown=total;
-      if(lastRow){
-        fetch('/predire',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(lastRow)})
-          .then(function(r){return r.json();})
-          .then(function(r){
-            if(!r.error){
-              if(r.prediction===1){_lfFail++;if(r.probabilite>=50){sendN(r.probabilite,r.zones);var a=document.getElementById('abn');a.style.display='block';setTimeout(function(){a.style.display='none';},4000);}}
-              else _lfOk++;
-              document.getElementById('liveFailCount').textContent=_lfFail;
-              document.getElementById('liveOkCount').textContent=_lfOk;
-              lastR=r;render(r);
-              localStorage.setItem('pilar_last_result',JSON.stringify(r));
-            }
-          }).catch(function(){});
-      }
-    }
-    document.getElementById('liveChk').textContent='Last: '+new Date().toLocaleTimeString();
+    await _lfProcess(text);
   }catch(e){console.error('live monitor error',e);}
   _schedule();
+}
+
+async function _lfProcess(text){
+  var lines=text.split('\n').map(function(s){return s.trim();}).filter(function(s){return s.length>0;});
+  if(lines.length<2)return;
+  if(!_lfHdr){
+    _lfHdr=lines[0].split(',').map(function(s){return s.trim().toLowerCase();});
+    var needed=['type','temp_air','temp_process','vitesse','couple','usure'];
+    for(var i=0;i<needed.length;i++){
+      if(_lfHdr.indexOf(needed[i])<0){
+        document.getElementById('liveChk').textContent='Error: missing column '+needed[i];
+        stopLiveMonitor();return;
+      }
+    }
+  }
+  var total=lines.length-1;
+  document.getElementById('liveRowCount').textContent=total;
+  if(total>_lfKnown){
+    var newLines=lines.slice(_lfKnown+1);
+    var lastRow=null;
+    newLines.forEach(function(line){
+      var vals=line.split(',');
+      var obj={};
+      _lfHdr.forEach(function(col,ci){obj[col]=parseFloat(vals[ci]);});
+      if(!isNaN(obj.type)&&!isNaN(obj.temp_air))lastRow=obj;
+    });
+    _lfKnown=total;
+    if(lastRow){
+      try{
+        var res=await fetch('/predire',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(lastRow)});
+        var r=await res.json();
+        if(!r.error){
+          if(r.prediction===1){_lfFail++;if(r.probabilite>=50){sendN(r.probabilite,r.zones);var a=document.getElementById('abn');a.style.display='block';setTimeout(function(){a.style.display='none';},4000);}}
+          else _lfOk++;
+          document.getElementById('liveFailCount').textContent=_lfFail;
+          document.getElementById('liveOkCount').textContent=_lfOk;
+          lastR=r;render(r);
+          localStorage.setItem('pilar_last_result',JSON.stringify(r));
+        }
+      }catch(e){}
+    }
+  }
+  if(!_lfFallback)document.getElementById('liveChk').textContent=t('live_last')+': '+new Date().toLocaleTimeString();
 }
 
 function _schedule(){
@@ -789,10 +848,11 @@ function _schedule(){
 }
 
 function stopLiveMonitor(){
-  clearTimeout(_lfTimer);_lfHandle=null;_lfHdr=null;
+  clearTimeout(_lfTimer);_lfHandle=null;_lfHdr=null;_lfFallbackFile=null;_lfFallback=false;
   document.getElementById('liveBar').style.display='none';
-  document.getElementById('btnFileLbl').textContent='Connect File';
+  document.getElementById('btnFileLbl').textContent=t('live_connect');
   document.getElementById('btnFile').classList.remove('on');
+  document.getElementById('lfFallbackInput').value='';
 }
 </script></body></html>"""
 
@@ -1074,17 +1134,19 @@ ASSISTANT_HTML = _HEAD.replace("{FAV}", FAV_B64) + """
 </header>
 <div class="cw">
   <div class="cm" id="cm">
-    <div class="msg bot"><span class="ms">Pilar AI</span><div class="mb2">Hello. I am your predictive maintenance assistant. Share your sensor readings or ask me anything about your machine health.</div></div>
+    <div class="msg bot"><span class="ms">Pilar AI</span><div class="mb2" id="ast-hello">Hello. I am your predictive maintenance assistant. Share your sensor readings or ask me anything about your machine health.</div></div>
   </div>
   <div class="cia">
-    <textarea class="cta" id="ci" placeholder="Ask about your machine..." rows="1" onkeydown="kd(event)"></textarea>
-    <button class="bsend" id="sb" onclick="send()">Send</button>
+    <textarea class="cta" id="ci" placeholder="Ask about your machine..." rows="1" onkeydown="kd(event)" data-i18n="ast_placeholder"></textarea>
+    <button class="bsend" id="sb" onclick="send()" data-i18n="ast_send">Send</button>
   </div>
 </div>
 """ + nav("ai") + """
 <script>
 var hist=[],lastCtx=null;
 try{var s=localStorage.getItem('pilar_last_result');if(s)lastCtx=JSON.parse(s);}catch(e){}
+document.getElementById('ast-hello').textContent=t('ast_hello');
+applyLang();
 function kd(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}}
 function addMsg(role,txt){
   var d=document.createElement('div');d.className='msg '+role;
