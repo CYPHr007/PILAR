@@ -11,6 +11,8 @@ warnings.filterwarnings("ignore")
 
 # Rate limiting : {ip: [(timestamp, failed_bool), ...]}
 _login_attempts = collections.defaultdict(list)
+# API rate limiting : {api_key: {'count': N, 'day': 'YYYY-MM-DD'}}
+_api_calls = {}
 _RATE_WINDOW = 900   # 15 minutes
 _RATE_MAX    = 10    # max 10 tentatives échouées par fenêtre
 
@@ -97,6 +99,7 @@ class Analysis(db.Model):
     user_id      = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     extra_params = db.Column(db.Text)
     confidence   = db.Column(db.Integer, default=100)
+    machine_id   = db.Column(db.String(100))
 
 class DiscoveredParam(db.Model):
     id           = db.Column(db.Integer, primary_key=True)
@@ -125,6 +128,7 @@ with app.app_context():
             "ALTER TABLE user ADD COLUMN team_id INTEGER",
             "ALTER TABLE analysis ADD COLUMN extra_params TEXT",
             "ALTER TABLE analysis ADD COLUMN confidence INTEGER",
+            "ALTER TABLE analysis ADD COLUMN machine_id VARCHAR(100)",
         ]
     else:
         _migrations = [
@@ -134,6 +138,7 @@ with app.app_context():
             'ALTER TABLE "user" ADD COLUMN IF NOT EXISTS team_id INTEGER',
             "ALTER TABLE analysis ADD COLUMN IF NOT EXISTS extra_params TEXT",
             "ALTER TABLE analysis ADD COLUMN IF NOT EXISTS confidence INTEGER",
+            "ALTER TABLE analysis ADD COLUMN IF NOT EXISTS machine_id VARCHAR(100)",
         ]
     for sql in _migrations:
         try:
@@ -1175,6 +1180,24 @@ ACCOUNT_HTML = _HEAD.replace("{FAV}", FAV_B64) + """
   <button onclick="leaveTeam()" style="width:100%;margin-top:16px;padding:11px;background:transparent;border:1px solid var(--border2);color:var(--text3);border-radius:6px;font-size:11px;cursor:pointer" data-i18n="acc_leave">Leave Team</button>
 </div>
 {% endif %}
+
+{% if user %}
+<div class="card">
+  <div class="ctitle">API</div>
+  <div style="font-size:11px;color:var(--text3);margin-bottom:10px">Use your API key to send sensor data from PLCs or scripts.</div>
+  {% if user.api_key %}
+  <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+    <code style="font-size:11px;color:var(--teal-light);flex:1;word-break:break-all">{{ user.api_key }}</code>
+    <button onclick="navigator.clipboard.writeText('{{ user.api_key }}')" style="background:none;border:1px solid var(--border2);border-radius:4px;padding:3px 10px;color:var(--text3);font-size:10px;cursor:pointer;white-space:nowrap;flex-shrink:0">COPY</button>
+  </div>
+  {% endif %}
+  <div style="display:flex;gap:8px">
+    <button onclick="rotateKey(this)" style="flex:1;padding:10px;background:transparent;border:1px solid var(--border2);color:var(--text3);border-radius:6px;font-size:11px;cursor:pointer">{% if user.api_key %}Regenerate key{% else %}Generate API key{% endif %}</button>
+    <a href="/api/docs" style="flex:1;padding:10px;background:var(--teal);color:#fff;border-radius:6px;font-size:11px;font-weight:700;text-decoration:none;display:flex;align-items:center;justify-content:center;letter-spacing:1px;text-transform:uppercase">API Docs</a>
+  </div>
+</div>
+{% endif %}
+
 {% endif %}
 
 </div>""" + nav("a") + """
@@ -1217,6 +1240,12 @@ async function leaveTeam(){
   const r=await fetch('/team/leave',{method:'POST'});
   const d=await r.json();
   if(d.ok)location.reload();else alert(d.error||'Erreur');
+}
+async function rotateKey(btn){
+  btn.disabled=true;
+  const r=await fetch('/profile/api-key',{method:'POST'});
+  const d=await r.json();
+  if(d.api_key)location.reload();else{alert('Erreur');btn.disabled=false;}
 }
 </script></body></html>"""
 
@@ -1930,6 +1959,241 @@ function adpReset(){
 }
 </script></body></html>"""
 
+# ── API DOCS ──────────────────────────────────────────────────────────────────
+API_DOCS_HTML = _AUTH_HEAD + """
+<div style="width:100%;max-width:860px;margin:0 auto;padding:0 0 60px">
+  <div style="padding:32px 0 24px;border-bottom:1px solid #1e2433;margin-bottom:32px;display:flex;align-items:center;justify-content:space-between">
+    <div>
+      <div style="font-size:11px;font-weight:700;letter-spacing:4px;color:#14b8a6;text-transform:uppercase">PILAR</div>
+      <div style="font-size:22px;font-weight:800;color:#e2e8f0;margin-top:6px">API Reference</div>
+      <div style="font-size:12px;color:#64748b;margin-top:4px">REST API · JSON · Authentication via API key</div>
+    </div>
+    <div style="text-align:right">
+      <a href="/" style="font-size:10px;color:#0d9488;text-decoration:none;letter-spacing:1px">App</a>
+      <span style="color:#1e2433;margin:0 8px">|</span>
+      <a href="/account" style="font-size:10px;color:#0d9488;text-decoration:none;letter-spacing:1px">Account</a>
+    </div>
+  </div>
+
+  <!-- AUTH -->
+  <div style="margin-bottom:32px">
+    <div style="font-size:9px;letter-spacing:2px;color:#64748b;text-transform:uppercase;margin-bottom:12px">Authentication</div>
+    <div style="background:#0e1118;border:1px solid #1e2433;border-radius:8px;padding:20px">
+      <p style="font-size:12px;color:#94a3b8;line-height:1.7;margin-bottom:14px">Every request must include your API key in the <code style="color:#14b8a6;background:#0a0d16;padding:2px 6px;border-radius:3px">X-Api-Key</code> header.</p>
+      {% if api_key %}
+      <div style="background:#0a0d16;border:1px solid #0d9488;border-radius:6px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between">
+        <code style="font-size:12px;color:#14b8a6">{{ api_key }}</code>
+        <button onclick="navigator.clipboard.writeText('{{ api_key }}')" style="background:none;border:1px solid #1e2433;border-radius:4px;padding:4px 10px;color:#64748b;font-size:10px;cursor:pointer;letter-spacing:1px">COPY</button>
+      </div>
+      {% else %}
+      <div style="background:#0a0d16;border:1px solid #1e2433;border-radius:6px;padding:12px 16px">
+        <code style="font-size:12px;color:#475569">pk_your_api_key_here</code>
+        <span style="font-size:10px;color:#64748b;margin-left:12px">→ <a href="/account" style="color:#0d9488">Get your key in Account</a></span>
+      </div>
+      {% endif %}
+      <div style="margin-top:14px;font-size:11px;color:#64748b">Base URL: <code style="color:#94a3b8">https://trypilar.com</code></div>
+    </div>
+  </div>
+
+  <!-- ENDPOINTS -->
+  {% set ak = api_key if api_key else 'pk_your_api_key_here' %}
+
+  <!-- POST /api/v1/analyze -->
+  <div style="margin-bottom:28px">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+      <span style="background:rgba(13,148,136,0.12);border:1px solid #0d9488;border-radius:4px;padding:3px 10px;font-size:10px;font-weight:700;color:#14b8a6;letter-spacing:1px">POST</span>
+      <code style="font-size:14px;color:#e2e8f0;font-weight:700">/api/v1/analyze</code>
+      <span style="font-size:11px;color:#64748b">— Single sensor reading</span>
+    </div>
+    <div style="background:#0e1118;border:1px solid #1e2433;border-radius:8px;overflow:hidden">
+      <div style="display:grid;grid-template-columns:1fr 1fr">
+        <div style="padding:16px;border-right:1px solid #1e2433">
+          <div style="font-size:9px;letter-spacing:1px;color:#64748b;text-transform:uppercase;margin-bottom:10px">Request body</div>
+          <pre style="font-size:11px;color:#94a3b8;line-height:1.7;margin:0;overflow-x:auto">{
+  "type": 1,
+  "temp_air": 377.0,
+  "temp_process": 314.6,
+  "vitesse": 1298,
+  "couple": 257.8,
+  "usure": 8248,
+  "machine_id": "PUMP-01",
+  "humidite": 65
+}</pre>
+        </div>
+        <div style="padding:16px">
+          <div style="font-size:9px;letter-spacing:1px;color:#64748b;text-transform:uppercase;margin-bottom:10px">Response</div>
+          <pre style="font-size:11px;color:#94a3b8;line-height:1.7;margin:0;overflow-x:auto">{
+  "ok": true,
+  "analysis_id": 142,
+  "timestamp": "2026-03-14T10:30:00Z",
+  "machine_id": "PUMP-01",
+  "prediction": 0,
+  "risk": 12.4,
+  "alert": false,
+  "confidence": 100,
+  "imputed": [],
+  "zones": []
+}</pre>
+        </div>
+      </div>
+      <div style="padding:14px 16px;border-top:1px solid #1e2433;background:#0a0d16">
+        <div style="font-size:9px;letter-spacing:1px;color:#64748b;text-transform:uppercase;margin-bottom:8px">cURL</div>
+        <pre style="font-size:11px;color:#14b8a6;margin:0;overflow-x:auto;white-space:pre-wrap">curl -X POST https://trypilar.com/api/v1/analyze \
+  -H "X-Api-Key: {{ ak }}" \
+  -H "Content-Type: application/json" \
+  -d '{"type":1,"temp_air":377,"temp_process":314,"vitesse":1298,"couple":258,"usure":8248}'</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- POST /api/v1/analyze/batch -->
+  <div style="margin-bottom:28px">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+      <span style="background:rgba(13,148,136,0.12);border:1px solid #0d9488;border-radius:4px;padding:3px 10px;font-size:10px;font-weight:700;color:#14b8a6;letter-spacing:1px">POST</span>
+      <code style="font-size:14px;color:#e2e8f0;font-weight:700">/api/v1/analyze/batch</code>
+      <span style="font-size:11px;color:#64748b">— Up to 100 readings</span>
+    </div>
+    <div style="background:#0e1118;border:1px solid #1e2433;border-radius:8px;overflow:hidden">
+      <div style="display:grid;grid-template-columns:1fr 1fr">
+        <div style="padding:16px;border-right:1px solid #1e2433">
+          <div style="font-size:9px;letter-spacing:1px;color:#64748b;text-transform:uppercase;margin-bottom:10px">Request body</div>
+          <pre style="font-size:11px;color:#94a3b8;line-height:1.7;margin:0;overflow-x:auto">{
+  "readings": [
+    {"machine_id":"M1","temp_air":377,
+     "vitesse":1300,"couple":260},
+    {"machine_id":"M2","temp_air":390,
+     "vitesse":850,"couple":420}
+  ]
+}</pre>
+        </div>
+        <div style="padding:16px">
+          <div style="font-size:9px;letter-spacing:1px;color:#64748b;text-transform:uppercase;margin-bottom:10px">Response</div>
+          <pre style="font-size:11px;color:#94a3b8;line-height:1.7;margin:0;overflow-x:auto">{
+  "ok": true,
+  "count": 2,
+  "results": [
+    {"index":0,"ok":true,
+     "risk":8.1,"alert":false},
+    {"index":1,"ok":true,
+     "risk":67.3,"alert":true}
+  ]
+}</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GET /api/v1/history -->
+  <div style="margin-bottom:28px">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+      <span style="background:rgba(99,102,241,0.12);border:1px solid #6366f1;border-radius:4px;padding:3px 10px;font-size:10px;font-weight:700;color:#818cf8;letter-spacing:1px">GET</span>
+      <code style="font-size:14px;color:#e2e8f0;font-weight:700">/api/v1/history</code>
+      <span style="font-size:11px;color:#64748b">— Recent analyses</span>
+    </div>
+    <div style="background:#0e1118;border:1px solid #1e2433;border-radius:8px;padding:16px">
+      <div style="font-size:11px;color:#94a3b8;line-height:2">
+        <code style="color:#14b8a6">?limit=50</code> — Number of results (max 500)<br>
+        <code style="color:#14b8a6">?machine_id=PUMP-01</code> — Filter by machine
+      </div>
+      <div style="margin-top:12px;padding:10px 14px;background:#0a0d16;border-radius:6px">
+        <pre style="font-size:11px;color:#14b8a6;margin:0">curl "https://trypilar.com/api/v1/history?limit=10&machine_id=PUMP-01" \
+  -H "X-Api-Key: {{ ak }}"</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- GET /api/v1/status -->
+  <div style="margin-bottom:32px">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+      <span style="background:rgba(99,102,241,0.12);border:1px solid #6366f1;border-radius:4px;padding:3px 10px;font-size:10px;font-weight:700;color:#818cf8;letter-spacing:1px">GET</span>
+      <code style="font-size:14px;color:#e2e8f0;font-weight:700">/api/v1/status</code>
+      <span style="font-size:11px;color:#64748b">— Model info &amp; health</span>
+    </div>
+    <div style="background:#0e1118;border:1px solid #1e2433;border-radius:8px;padding:16px">
+      <pre style="font-size:11px;color:#94a3b8;line-height:1.7;margin:0">{"ok":true,"model_name":"GradientBoosting","recall":98.1,"precision":89.8,"f1":93.8,"n_train":20902,"trained_at":"2026-03-14T06:29:50","plan":"free"}</pre>
+    </div>
+  </div>
+
+  <!-- PARAMETERS TABLE -->
+  <div style="margin-bottom:32px">
+    <div style="font-size:9px;letter-spacing:2px;color:#64748b;text-transform:uppercase;margin-bottom:14px">Parameters reference</div>
+    <div style="background:#0e1118;border:1px solid #1e2433;border-radius:8px;overflow:hidden">
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr style="border-bottom:1px solid #1e2433">
+          <th style="padding:10px 14px;text-align:left;color:#64748b;font-size:9px;letter-spacing:1px;text-transform:uppercase">Field</th>
+          <th style="padding:10px 14px;text-align:left;color:#64748b;font-size:9px;letter-spacing:1px;text-transform:uppercase">Unit</th>
+          <th style="padding:10px 14px;text-align:left;color:#64748b;font-size:9px;letter-spacing:1px;text-transform:uppercase">Example</th>
+          <th style="padding:10px 14px;text-align:left;color:#64748b;font-size:9px;letter-spacing:1px;text-transform:uppercase">Required</th>
+        </tr></thead>
+        <tbody>
+          <tr style="border-bottom:1px solid #1e2433"><td style="padding:9px 14px;color:#14b8a6"><code>type</code></td><td style="padding:9px 14px;color:#94a3b8">0/1/2 or L/M/H</td><td style="padding:9px 14px;color:#64748b">1</td><td style="padding:9px 14px;color:#64748b">optional</td></tr>
+          <tr style="border-bottom:1px solid #1e2433"><td style="padding:9px 14px;color:#14b8a6"><code>temp_air</code></td><td style="padding:9px 14px;color:#94a3b8">K</td><td style="padding:9px 14px;color:#64748b">377.0</td><td style="padding:9px 14px;color:#64748b">optional</td></tr>
+          <tr style="border-bottom:1px solid #1e2433"><td style="padding:9px 14px;color:#14b8a6"><code>temp_air_c</code></td><td style="padding:9px 14px;color:#94a3b8">°C (auto-converted)</td><td style="padding:9px 14px;color:#64748b">103.85</td><td style="padding:9px 14px;color:#64748b">optional</td></tr>
+          <tr style="border-bottom:1px solid #1e2433"><td style="padding:9px 14px;color:#14b8a6"><code>temp_process</code></td><td style="padding:9px 14px;color:#94a3b8">K</td><td style="padding:9px 14px;color:#64748b">314.6</td><td style="padding:9px 14px;color:#64748b">optional</td></tr>
+          <tr style="border-bottom:1px solid #1e2433"><td style="padding:9px 14px;color:#14b8a6"><code>vitesse</code></td><td style="padding:9px 14px;color:#94a3b8">rpm</td><td style="padding:9px 14px;color:#64748b">1298</td><td style="padding:9px 14px;color:#64748b">optional</td></tr>
+          <tr style="border-bottom:1px solid #1e2433"><td style="padding:9px 14px;color:#14b8a6"><code>couple</code></td><td style="padding:9px 14px;color:#94a3b8">Nm</td><td style="padding:9px 14px;color:#64748b">257.8</td><td style="padding:9px 14px;color:#64748b">optional</td></tr>
+          <tr style="border-bottom:1px solid #1e2433"><td style="padding:9px 14px;color:#14b8a6"><code>usure</code></td><td style="padding:9px 14px;color:#94a3b8">min</td><td style="padding:9px 14px;color:#64748b">8248</td><td style="padding:9px 14px;color:#64748b">optional</td></tr>
+          <tr style="border-bottom:1px solid #1e2433"><td style="padding:9px 14px;color:#14b8a6"><code>machine_id</code></td><td style="padding:9px 14px;color:#94a3b8">string</td><td style="padding:9px 14px;color:#64748b">"PUMP-01"</td><td style="padding:9px 14px;color:#64748b">optional</td></tr>
+          <tr style="border-bottom:1px solid #1e2433"><td style="padding:9px 14px;color:#14b8a6"><code>humidite</code></td><td style="padding:9px 14px;color:#94a3b8">%</td><td style="padding:9px 14px;color:#64748b">65</td><td style="padding:9px 14px;color:#94a3b8">optional+</td></tr>
+          <tr style="border-bottom:1px solid #1e2433"><td style="padding:9px 14px;color:#14b8a6"><code>vibration</code></td><td style="padding:9px 14px;color:#94a3b8">mm/s</td><td style="padding:9px 14px;color:#64748b">2.1</td><td style="padding:9px 14px;color:#94a3b8">optional+</td></tr>
+          <tr style="border-bottom:1px solid #1e2433"><td style="padding:9px 14px;color:#14b8a6"><code>pression</code></td><td style="padding:9px 14px;color:#94a3b8">bar</td><td style="padding:9px 14px;color:#64748b">4.8</td><td style="padding:9px 14px;color:#94a3b8">optional+</td></tr>
+          <tr style="border-bottom:1px solid #1e2433"><td style="padding:9px 14px;color:#14b8a6"><code>courant</code></td><td style="padding:9px 14px;color:#94a3b8">A</td><td style="padding:9px 14px;color:#64748b">12.4</td><td style="padding:9px 14px;color:#94a3b8">optional+</td></tr>
+          <tr><td style="padding:9px 14px;color:#14b8a6"><code>tension</code></td><td style="padding:9px 14px;color:#94a3b8">V</td><td style="padding:9px 14px;color:#64748b">380</td><td style="padding:9px 14px;color:#94a3b8">optional+</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="margin-top:10px;font-size:11px;color:#64748b">At least one sensor field required. Missing core fields are imputed with dataset medians.</div>
+  </div>
+
+  <!-- PYTHON EXAMPLE -->
+  <div style="margin-bottom:32px">
+    <div style="font-size:9px;letter-spacing:2px;color:#64748b;text-transform:uppercase;margin-bottom:14px">Python example</div>
+    <div style="background:#0e1118;border:1px solid #1e2433;border-radius:8px;padding:20px;position:relative">
+      <button onclick="navigator.clipboard.writeText(document.getElementById('pyex').innerText)" style="position:absolute;top:12px;right:12px;background:none;border:1px solid #1e2433;border-radius:4px;padding:4px 10px;color:#64748b;font-size:10px;cursor:pointer;letter-spacing:1px">COPY</button>
+      <pre id="pyex" style="font-size:11px;color:#94a3b8;line-height:1.8;margin:0;overflow-x:auto">import requests
+
+API_KEY = "{{ ak }}"
+BASE    = "https://trypilar.com"
+
+# Single reading
+resp = requests.post(f"{BASE}/api/v1/analyze",
+    headers={"X-Api-Key": API_KEY},
+    json={"machine_id": "PUMP-01", "temp_air": 377, "vitesse": 1298,
+          "couple": 258, "usure": 8248}
+)
+print(resp.json())
+
+# Batch (PLC loop)
+readings = [{"machine_id": f"M{i}", "vitesse": 1200+i*50, "couple": 250+i*10}
+            for i in range(5)]
+resp = requests.post(f"{BASE}/api/v1/analyze/batch",
+    headers={"X-Api-Key": API_KEY},
+    json={"readings": readings}
+)
+for r in resp.json()["results"]:
+    print(f"M{r['index']+1} — risk {r['risk']}% alert={r['alert']}")</pre>
+    </div>
+  </div>
+
+  <!-- RATE LIMITS -->
+  <div style="background:#0e1118;border:1px solid #1e2433;border-radius:8px;padding:20px">
+    <div style="font-size:9px;letter-spacing:2px;color:#64748b;text-transform:uppercase;margin-bottom:12px">Rate limits</div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <tr style="border-bottom:1px solid #1e2433">
+        <td style="padding:8px 0;color:#94a3b8">Free plan</td>
+        <td style="padding:8px 0;color:#e2e8f0;text-align:right;font-weight:700">1 000 requests / day</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;color:#94a3b8">Paid plan</td>
+        <td style="padding:8px 0;color:#14b8a6;text-align:right;font-weight:700">50 000 requests / day</td>
+      </tr>
+    </table>
+    <div style="margin-top:10px;font-size:11px;color:#64748b">Resets at midnight UTC. HTTP 429 returned when exceeded.</div>
+  </div>
+
+</div>
+</body></html>"""
+
 # ── BACKEND ───────────────────────────────────────────────────────────────────
 def predict_risk(params):
     # Analyse partielle : imputer les features manquantes avec les médianes AI4I
@@ -2323,6 +2587,215 @@ def api_discover():
     except Exception as e:
         db.session.rollback()
         return jsonify({'ok': False, 'error': str(e)})
+
+# ── API v1 ────────────────────────────────────────────────────────────────────
+def _api_rate_check(api_key, plan='free'):
+    """Retourne (allowed, count, limit)."""
+    today = datetime.utcnow().date().isoformat()
+    rec = _api_calls.get(api_key, {'count': 0, 'day': ''})
+    if rec['day'] != today:
+        rec = {'count': 0, 'day': today}
+    rec['count'] += 1
+    _api_calls[api_key] = rec
+    limit = 50000 if plan != 'free' else 1000
+    return rec['count'] <= limit, rec['count'], limit
+
+def _resolve_api_user():
+    """Retourne (user, error_response). Accepte X-Api-Key header ou session."""
+    api_key = request.headers.get('X-Api-Key') or request.args.get('api_key')
+    if api_key:
+        user = User.query.filter_by(api_key=api_key).first()
+        if not user:
+            return None, (jsonify({'error': 'Invalid API key', 'code': 'AUTH_FAILED'}), 401)
+        allowed, count, limit = _api_rate_check(api_key, user.plan)
+        if not allowed:
+            return None, (jsonify({'error': 'Rate limit exceeded', 'limit': limit,
+                                   'reset': 'midnight UTC', 'code': 'RATE_LIMIT'}), 429)
+        return user, None
+    uid = current_uid()
+    if uid:
+        return db.session.get(User, uid), None
+    return None, (jsonify({'error': 'Authentication required — pass X-Api-Key header', 'code': 'AUTH_REQUIRED'}), 401)
+
+def _parse_sensor_input(data):
+    """Parse et convertit les champs capteurs. Retourne (params, extra, machine_id, err)."""
+    import json as _json
+    if not data:
+        return None, None, None, (jsonify({'error': 'Empty JSON body', 'code': 'BAD_REQUEST'}), 400)
+    # Support Celsius alternative keys
+    if 'temp_air_c' in data:
+        data['temp_air'] = float(data['temp_air_c']) + 273.15
+    if 'temp_process_c' in data:
+        data['temp_process'] = float(data['temp_process_c']) + 273.15
+    machine_id = str(data.get('machine_id', '') or '')[:100] or None
+    for field in CORE_FEATURES:
+        if field in data and data[field] is not None:
+            try:
+                data[field] = float(data[field])
+            except (TypeError, ValueError):
+                data[field] = None
+        else:
+            data[field] = None
+    if all(data.get(f) is None for f in CORE_FEATURES):
+        return None, None, None, (jsonify({'error': 'At least one sensor field required',
+                                           'code': 'NO_FIELDS'}), 400)
+    extra = {}
+    for field in OPTIONAL_FIELDS:
+        if field in data and data[field] is not None:
+            try:
+                extra[field] = round(float(data[field]), 3)
+            except (TypeError, ValueError):
+                pass
+    return data, extra, machine_id, None
+
+@app.route('/api/v1/analyze', methods=['POST'])
+def api_v1_analyze():
+    user, err = _resolve_api_user()
+    if err: return err
+    if model is None:
+        return jsonify({'error': 'Model not loaded', 'code': 'MODEL_UNAVAILABLE'}), 503
+    import json as _json
+    data, extra, machine_id, err = _parse_sensor_input(request.json)
+    if err: return err
+    try:
+        probabilite, prediction, zones_risque, confidence, imputed = predict_risk(data)
+        mail_envoye = False
+        email = get_setting('responsible_email', uid=user.id if user else None)
+        if probabilite >= 50 and email:
+            threading.Thread(target=envoyer_alerte, args=(email, probabilite, zones_risque, data), daemon=True).start()
+            mail_envoye = True
+        machine_types = {0: 'Low', 1: 'Medium', 2: 'High'}
+        zones_str = ', '.join([z['nom'] for z in zones_risque]) if zones_risque else ''
+        a = Analysis(machine_type=machine_types.get(int(data.get('type') or 1), 'Unknown'),
+            temp_air=data.get('temp_air'), temp_process=data.get('temp_process'),
+            vitesse=data.get('vitesse'), couple=data.get('couple'), usure=data.get('usure'),
+            risk=probabilite, prediction=prediction, zones=zones_str, mail_sent=mail_envoye,
+            extra_params=_json.dumps(extra) if extra else None, confidence=confidence,
+            machine_id=machine_id, user_id=user.id if user else None)
+        db.session.add(a)
+        db.session.commit()
+        return jsonify({
+            'ok': True,
+            'analysis_id': a.id,
+            'timestamp': a.timestamp.isoformat() + 'Z',
+            'machine_id': machine_id,
+            'prediction': prediction,
+            'risk': probabilite,
+            'alert': probabilite >= 50,
+            'confidence': confidence,
+            'imputed': imputed,
+            'zones': [{'code': z['nom'].split()[0], 'name': z['nom'], 'probability': z['proba']}
+                      for z in zones_risque],
+            'mail_sent': mail_envoye,
+        })
+    except Exception as e:
+        db.session.rollback()
+        import traceback
+        print(f"[Pilar/api_v1_analyze] {type(e).__name__}: {e}\n{traceback.format_exc()}")
+        return jsonify({'error': str(e), 'code': 'INTERNAL_ERROR'}), 500
+
+@app.route('/api/v1/analyze/batch', methods=['POST'])
+def api_v1_batch():
+    user, err = _resolve_api_user()
+    if err: return err
+    if model is None:
+        return jsonify({'error': 'Model not loaded', 'code': 'MODEL_UNAVAILABLE'}), 503
+    import json as _json
+    body = request.json
+    if not body or 'readings' not in body:
+        return jsonify({'error': 'Expected {"readings": [...]}', 'code': 'BAD_REQUEST'}), 400
+    readings = body['readings']
+    if not isinstance(readings, list) or len(readings) == 0:
+        return jsonify({'error': 'readings must be a non-empty array', 'code': 'BAD_REQUEST'}), 400
+    if len(readings) > 100:
+        return jsonify({'error': 'Max 100 readings per batch', 'code': 'LIMIT_EXCEEDED'}), 400
+    results = []
+    for i, raw in enumerate(readings):
+        try:
+            data, extra, machine_id, err2 = _parse_sensor_input(dict(raw) if isinstance(raw, dict) else {})
+            if err2:
+                results.append({'index': i, 'ok': False, 'error': 'Invalid input'})
+                continue
+            probabilite, prediction, zones_risque, confidence, imputed = predict_risk(data)
+            a = Analysis(machine_type={0:'Low',1:'Medium',2:'High'}.get(int(data.get('type') or 1),'Unknown'),
+                temp_air=data.get('temp_air'), temp_process=data.get('temp_process'),
+                vitesse=data.get('vitesse'), couple=data.get('couple'), usure=data.get('usure'),
+                risk=probabilite, prediction=prediction,
+                zones=', '.join([z['nom'] for z in zones_risque]) if zones_risque else '',
+                extra_params=_json.dumps(extra) if extra else None, confidence=confidence,
+                machine_id=machine_id, user_id=user.id if user else None)
+            db.session.add(a)
+            results.append({'index': i, 'ok': True, 'analysis_id': None,
+                            'prediction': prediction, 'risk': probabilite,
+                            'alert': probabilite >= 50, 'confidence': confidence,
+                            'machine_id': machine_id, 'imputed': imputed,
+                            'zones': [{'code': z['nom'].split()[0], 'name': z['nom'],
+                                       'probability': z['proba']} for z in zones_risque]})
+        except Exception as e:
+            results.append({'index': i, 'ok': False, 'error': str(e)})
+    try:
+        db.session.flush()
+        for j, r in enumerate(results):
+            if r.get('ok') and db.session.new:
+                pass
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+    return jsonify({'ok': True, 'count': len(readings), 'results': results})
+
+@app.route('/api/v1/status', methods=['GET'])
+def api_v1_status():
+    user, err = _resolve_api_user()
+    if err: return err
+    import json as _json
+    meta = {}
+    try:
+        with open('model_meta.json') as f:
+            meta = _json.load(f)
+    except Exception:
+        pass
+    return jsonify({
+        'ok': True,
+        'model_loaded': model is not None,
+        'model_name': meta.get('model_name', 'unknown'),
+        'recall': meta.get('recall'),
+        'precision': meta.get('precision'),
+        'f1': meta.get('f1'),
+        'n_train': meta.get('n_train'),
+        'trained_at': meta.get('trained_at'),
+        'zones': meta.get('zones', []),
+        'plan': user.plan if user else 'guest',
+    })
+
+@app.route('/api/v1/history', methods=['GET'])
+def api_v1_history():
+    user, err = _resolve_api_user()
+    if err: return err
+    uid = user.id if user else None
+    limit  = min(int(request.args.get('limit', 50)), 500)
+    machine = request.args.get('machine_id')
+    q = Analysis.query.filter_by(user_id=uid)
+    if machine:
+        q = q.filter_by(machine_id=machine)
+    rows = q.order_by(Analysis.timestamp.desc()).limit(limit).all()
+    return jsonify({'ok': True, 'count': len(rows), 'analyses': [
+        {'id': a.id, 'timestamp': a.timestamp.isoformat() + 'Z',
+         'machine_id': a.machine_id, 'machine_type': a.machine_type,
+         'risk': a.risk, 'prediction': a.prediction, 'confidence': a.confidence,
+         'zones': a.zones, 'temp_air': a.temp_air, 'temp_process': a.temp_process,
+         'vitesse': a.vitesse, 'couple': a.couple, 'usure': a.usure}
+        for a in rows
+    ]})
+
+@app.route('/api/docs')
+def api_docs():
+    uid = current_uid()
+    api_key = ''
+    if uid:
+        user = db.session.get(User, uid)
+        if user and user.api_key:
+            api_key = user.api_key
+    return render_template_string(API_DOCS_HTML, api_key=api_key, ak=api_key)
 
 @app.route('/api/whatif', methods=['POST'])
 @api_or_login_required
