@@ -591,14 +591,14 @@ function localTimeNow(){
 
 _NAV = """<nav class="bottom-nav">
 <a href="/" class="ni {m}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg><span data-i18n="nav_monitor">Monitor</span></a>
-<a href="/twin" class="ni {t}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg><span data-i18n="nav_twin">Twin</span></a>
+<a href="/tutorial" class="ni {tut}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg><span>Import</span></a>
 <a href="/history" class="ni {h}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg><span data-i18n="nav_history">History</span></a>
-<a href="/account" class="ni {a}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z"/></svg><span data-i18n="nav_account">Account</span></a>
+<a href="/assistant" class="ni {ai}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg><span>Assistant</span></a>
 <a href="/settings" class="ni {s}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg><span data-i18n="nav_settings">Settings</span></a>
 </nav>"""
 
 def nav(active):
-    keys = {"m":"","t":"","h":"","a":"","s":""}
+    keys = {"m":"","tut":"","h":"","ai":"","s":""}
     keys[active] = "on"
     return _NAV.format(**keys)
 
@@ -928,9 +928,17 @@ SETTINGS_HTML = _HEAD.replace("{FAV}","iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC
   <div class="card">
     <div class="ctitle" data-i18n="set_sys">System info</div>
     <div style="display:flex;flex-direction:column;gap:8px">
-      <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--text3)" data-i18n="set_version">Version</span><span>Pilar v2.0</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--text3)" data-i18n="set_version">Version</span><span>Pilar v3.0</span></div>
       <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--text3)" data-i18n="set_aimodel">AI Model</span><span>Claude Haiku</span></div>
-      <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--text3)" data-i18n="set_db">Database</span><span>SQLite</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--text3)">Domain</span><span>trypilar.com</span></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ctitle">Navigation</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <a href="/account" style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2);text-decoration:none;padding:8px 0;border-bottom:1px solid var(--border)"><span>Account &amp; Team</span><span style="color:var(--teal-light)">›</span></a>
+      <a href="/history" style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2);text-decoration:none;padding:8px 0;border-bottom:1px solid var(--border)"><span>Analysis History</span><span style="color:var(--teal-light)">›</span></a>
+      <a href="/twin" style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2);text-decoration:none;padding:8px 0"><span>Digital Twin Simulation</span><span style="color:var(--teal-light)">›</span></a>
     </div>
   </div>
 </div>""" + nav("s") + """
@@ -941,6 +949,269 @@ async function toggleN(){if(Notification.permission==='granted')return;await Not
 updN();
 </script></body></html>"""
 
+
+# ── ASSISTANT ─────────────────────────────────────────────────────────────────
+ASSISTANT_HTML = _HEAD.replace("{FAV}", FAV_B64) + """
+<body>
+<header><span class="logo">PILAR</span><div class="hd"></div><span class="hsub">Assistant</span>
+<div class="hright"><a href="/account" style="font-size:10px;color:var(--text3);text-decoration:none;letter-spacing:1px">Account</a></div>
+</header>
+<div class="cw">
+  <div class="cm" id="cm">
+    <div class="msg bot"><span class="ms">Pilar AI</span><div class="mb2">Hello. I am your predictive maintenance assistant. Share your sensor readings or ask me anything about your machine health.</div></div>
+  </div>
+  <div class="cia">
+    <textarea class="cta" id="ci" placeholder="Ask about your machine..." rows="1" onkeydown="kd(event)"></textarea>
+    <button class="bsend" id="sb" onclick="send()">Send</button>
+  </div>
+</div>
+""" + nav("ai") + """
+<script>
+var hist=[],lastCtx=null;
+try{var s=localStorage.getItem('pilar_last_result');if(s)lastCtx=JSON.parse(s);}catch(e){}
+function kd(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}}
+function addMsg(role,txt){
+  var d=document.createElement('div');d.className='msg '+role;
+  var s=document.createElement('span');s.className='ms';s.textContent=role==='user'?'You':'Pilar AI';
+  var b=document.createElement('div');b.className='mb2';b.textContent=txt;
+  d.appendChild(s);d.appendChild(b);
+  document.getElementById('cm').appendChild(d);
+  document.getElementById('cm').scrollTop=999999;
+  return b;
+}
+async function send(){
+  var ci=document.getElementById('ci'),sb=document.getElementById('sb');
+  var msg=ci.value.trim();if(!msg)return;
+  ci.value='';sb.disabled=true;
+  addMsg('user',msg);
+  hist.push({role:'user',content:msg});
+  var tb=addMsg('bot','...');tb.classList.add('typing');
+  try{
+    var res=await fetch('/chat',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({message:msg,context:lastCtx,history:hist})});
+    var r=await res.json();
+    tb.classList.remove('typing');
+    if(r.error){tb.textContent='Error: '+r.error;}
+    else{tb.textContent=r.reply;hist.push({role:'assistant',content:r.reply});}
+  }catch(e){tb.classList.remove('typing');tb.textContent='Network error. Please retry.';}
+  sb.disabled=false;ci.focus();
+}
+</script></body></html>"""
+
+# ── TUTORIAL ───────────────────────────────────────────────────────────────────
+TUTORIAL_HTML = _HEAD.replace("{FAV}", FAV_B64) + """
+<body>
+<header><span class="logo">PILAR</span><div class="hd"></div><span class="hsub">Import & Run</span>
+<div class="hright"><a href="/twin" style="font-size:10px;color:var(--text3);text-decoration:none;letter-spacing:1px">Twin</a></div>
+</header>
+<div class="page pad">
+
+  <!-- CSV FORMAT GUIDE -->
+  <div class="card">
+    <div class="ctitle">CSV Format</div>
+    <p style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:12px">Your CSV must contain these columns (order does not matter):</p>
+    <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:12px;overflow-x:auto;margin-bottom:12px">
+      <code style="font-size:11px;color:var(--teal-light);white-space:nowrap">type, temp_air, temp_process, vitesse, couple, usure</code>
+    </div>
+    <table style="font-size:11px;margin-top:0">
+      <thead><tr><th>Column</th><th>Unit</th><th>Range</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td style="color:var(--teal-light)">type</td><td>—</td><td>0, 1 or 2</td><td>Machine class (L=0, M=1, H=2)</td></tr>
+        <tr><td style="color:var(--teal-light)">temp_air</td><td>K</td><td>295–310</td><td>Air temperature (Kelvin)</td></tr>
+        <tr><td style="color:var(--teal-light)">temp_process</td><td>K</td><td>305–320</td><td>Process temperature (Kelvin)</td></tr>
+        <tr><td style="color:var(--teal-light)">vitesse</td><td>rpm</td><td>1000–3000</td><td>Rotational speed</td></tr>
+        <tr><td style="color:var(--teal-light)">couple</td><td>Nm</td><td>3–80</td><td>Torque</td></tr>
+        <tr><td style="color:var(--teal-light)">usure</td><td>min</td><td>0–250</td><td>Tool wear time</td></tr>
+      </tbody>
+    </table>
+    <button class="btn" style="margin-top:14px;background:transparent;border:1px solid var(--border2);color:var(--text2)" onclick="dlSample()">Download sample CSV</button>
+  </div>
+
+  <!-- IMPORT -->
+  <div class="card">
+    <div class="ctitle">Import File</div>
+    <label for="csvf" style="display:block;padding:24px;border:1px dashed var(--border2);border-radius:6px;text-align:center;cursor:pointer;background:var(--surface2);transition:border-color 0.15s" id="dropz">
+      <svg style="width:32px;height:32px;stroke:var(--text3);margin-bottom:8px" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+      <div style="font-size:12px;color:var(--text3)">Click to select a CSV file</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:4px" id="fname">No file selected</div>
+    </label>
+    <input type="file" id="csvf" accept=".csv" style="display:none" onchange="onFile(this)">
+    <div style="display:flex;align-items:center;gap:10px;margin-top:14px">
+      <div style="font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase">Speed</div>
+      <select id="spd" class="fi" style="flex:1;padding:8px 10px">
+        <option value="500">Fast — 0.5s per row</option>
+        <option value="1000" selected>Normal — 1s per row</option>
+        <option value="2000">Slow — 2s per row</option>
+        <option value="5000">Real-time — 5s per row</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn" id="btnStart" style="flex:1" onclick="startRun()" disabled>Start</button>
+      <button class="btn" id="btnPause" style="flex:1;background:var(--amber);display:none" onclick="togglePause()">Pause</button>
+      <button class="btn" id="btnStop" style="flex:1;background:var(--red);display:none" onclick="stopRun()">Stop</button>
+    </div>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="card" id="progCard" style="display:none">
+    <div class="ctitle">Progress</div>
+    <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:8px">
+      <span id="progLbl">Row 0 / 0</span>
+      <span id="progPct">0%</span>
+    </div>
+    <div style="height:4px;background:var(--border2);border-radius:2px;overflow:hidden">
+      <div id="progBar" style="height:100%;width:0%;background:var(--teal);border-radius:2px;transition:width 0.3s"></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:12px">
+      <div style="flex:1;background:var(--surface2);border-radius:6px;padding:10px;text-align:center">
+        <div style="font-size:18px;font-weight:800;color:var(--red)" id="cntFail">0</div>
+        <div style="font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-top:2px">Failures</div>
+      </div>
+      <div style="flex:1;background:var(--surface2);border-radius:6px;padding:10px;text-align:center">
+        <div style="font-size:18px;font-weight:800;color:var(--green)" id="cntOk">0</div>
+        <div style="font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-top:2px">Normal</div>
+      </div>
+      <div style="flex:1;background:var(--surface2);border-radius:6px;padding:10px;text-align:center">
+        <div style="font-size:18px;font-weight:800;color:var(--amber)" id="cntAvg">—</div>
+        <div style="font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-top:2px">Avg Risk</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIVE RESULT -->
+  <div id="liveRes"></div>
+
+</div>
+""" + nav("tut") + """
+<script>
+var rows=[],idx=0,timer=null,paused=false,nFail=0,nOk=0,sumRisk=0;
+
+function dlSample(){
+  var csv='type,temp_air,temp_process,vitesse,couple,usure\\n'+
+    '0,300.1,310.5,1500,40.2,45\\n'+
+    '1,301.3,311.8,1800,55.0,120\\n'+
+    '2,299.7,309.2,2200,65.3,200\\n'+
+    '0,302.0,312.1,1200,30.5,210\\n'+
+    '1,300.5,310.9,1600,48.0,80\\n';
+  var a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='pilar_sample.csv';a.click();
+}
+
+function onFile(inp){
+  var f=inp.files[0];if(!f)return;
+  document.getElementById('fname').textContent=f.name+' (loading...)';
+  var rd=new FileReader();
+  rd.onload=function(e){
+    var lines=e.target.result.split('\\n').map(s=>s.trim()).filter(s=>s.length>0);
+    if(lines.length<2){alert('File must have at least 2 rows (header + data).');return;}
+    var hdr=lines[0].split(',').map(s=>s.trim().toLowerCase());
+    var needed=['type','temp_air','temp_process','vitesse','couple','usure'];
+    for(var i=0;i<needed.length;i++){
+      if(hdr.indexOf(needed[i])<0){alert('Missing column: '+needed[i]);return;}
+    }
+    rows=[];
+    for(var r=1;r<lines.length;r++){
+      var vals=lines[r].split(',');
+      var obj={};
+      hdr.forEach(function(col,ci){obj[col]=parseFloat(vals[ci]);});
+      if(!isNaN(obj.type)&&!isNaN(obj.temp_air))rows.push(obj);
+    }
+    document.getElementById('fname').textContent=f.name+' — '+rows.length+' rows loaded';
+    document.getElementById('btnStart').disabled=rows.length===0;
+  };
+  rd.readAsText(f);
+}
+
+function startRun(){
+  if(rows.length===0)return;
+  idx=0;nFail=0;nOk=0;sumRisk=0;paused=false;
+  document.getElementById('progCard').style.display='block';
+  document.getElementById('btnStart').style.display='none';
+  document.getElementById('btnPause').style.display='block';
+  document.getElementById('btnStop').style.display='block';
+  document.getElementById('liveRes').innerHTML='';
+  runNext();
+}
+
+function runNext(){
+  if(idx>=rows.length){finish();return;}
+  if(paused)return;
+  var row=rows[idx];
+  var total=rows.length;
+  var pct=Math.round(idx/total*100);
+  document.getElementById('progLbl').textContent='Row '+(idx+1)+' / '+total;
+  document.getElementById('progPct').textContent=pct+'%';
+  document.getElementById('progBar').style.width=pct+'%';
+  fetch('/predire',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(row)})
+    .then(function(r){return r.json();})
+    .then(function(r){
+      if(r.error){showRow(idx,row,null,r.error);}
+      else{
+        sumRisk+=r.probabilite;
+        if(r.prediction===1)nFail++;else nOk++;
+        document.getElementById('cntFail').textContent=nFail;
+        document.getElementById('cntOk').textContent=nOk;
+        document.getElementById('cntAvg').textContent=Math.round(sumRisk/(idx+1))+'%';
+        showRow(idx,row,r,null);
+      }
+      idx++;
+      timer=setTimeout(runNext,parseInt(document.getElementById('spd').value));
+    })
+    .catch(function(e){
+      showRow(idx,row,null,'Network error');
+      idx++;
+      timer=setTimeout(runNext,parseInt(document.getElementById('spd').value));
+    });
+}
+
+function showRow(i,row,r,err){
+  var div=document.createElement('div');
+  var cls='ok',pct=0,label='Normal';
+  if(err){cls='amber';label='Error';}
+  else if(r.prediction===1){cls='alert';pct=r.probabilite;label='Failure Risk';}
+  else{pct=r.probabilite;label='Normal';}
+  div.style.cssText='background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:10px';
+  var left='<div style="font-size:10px;color:var(--text3)">#'+(i+1)+'</div>';
+  left+='<div style="font-size:12px;color:var(--text2);margin-top:2px">'+
+    'Type '+(row.type===0?'L':row.type===1?'M':'H')+
+    ' | '+row.vitesse+'rpm | '+row.usure+'min wear</div>';
+  var col=err?'var(--amber)':r.prediction===1?'var(--red)':'var(--green)';
+  var right='<div style="text-align:right"><div style="font-size:20px;font-weight:800;color:'+col+'">'+(err?'—':pct+'%')+'</div>';
+  right+='<div style="font-size:9px;color:'+col+';letter-spacing:1px;text-transform:uppercase">'+label+'</div></div>';
+  div.innerHTML='<div>'+left+'</div>'+right;
+  var lr=document.getElementById('liveRes');
+  lr.insertBefore(div,lr.firstChild);
+}
+
+function togglePause(){
+  paused=!paused;
+  document.getElementById('btnPause').textContent=paused?'Resume':'Pause';
+  if(!paused)runNext();
+}
+
+function stopRun(){
+  clearTimeout(timer);paused=false;
+  document.getElementById('btnStart').style.display='block';
+  document.getElementById('btnStart').disabled=false;
+  document.getElementById('btnPause').style.display='none';
+  document.getElementById('btnStop').style.display='none';
+  document.getElementById('btnPause').textContent='Pause';
+  finish();
+}
+
+function finish(){
+  clearTimeout(timer);
+  document.getElementById('progLbl').textContent='Done — '+rows.length+' rows';
+  document.getElementById('progPct').textContent='100%';
+  document.getElementById('progBar').style.width='100%';
+  document.getElementById('btnStart').style.display='block';
+  document.getElementById('btnStart').textContent='Run Again';
+  document.getElementById('btnStart').disabled=false;
+  document.getElementById('btnPause').style.display='none';
+  document.getElementById('btnStop').style.display='none';
+}
+</script></body></html>"""
 
 # ── BACKEND ───────────────────────────────────────────────────────────────────
 def predict_risk(params):
@@ -1124,6 +1395,14 @@ def account():
                 db.session.commit()
                 team = None
     return render_template_string(ACCOUNT_HTML, user=user, team=team, members=members, my_role=my_role)
+
+@app.route('/assistant')
+@login_required
+def assistant(): return render_template_string(ASSISTANT_HTML)
+
+@app.route('/tutorial')
+@login_required
+def tutorial(): return render_template_string(TUTORIAL_HTML)
 
 @app.route('/twin')
 def twin(): return render_template_string(TWIN_HTML)
