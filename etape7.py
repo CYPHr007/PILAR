@@ -6,8 +6,24 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta
-import pandas as pd, warnings
+import pandas as pd, warnings, time, collections
 warnings.filterwarnings("ignore")
+
+# Rate limiting : {ip: [(timestamp, failed_bool), ...]}
+_login_attempts = collections.defaultdict(list)
+_RATE_WINDOW = 900   # 15 minutes
+_RATE_MAX    = 10    # max 10 tentatives échouées par fenêtre
+
+def _check_rate_limit(ip):
+    """Retourne True si l'IP est bloquée."""
+    now = time.time()
+    attempts = _login_attempts[ip]
+    # Nettoyer les vieilles entrées
+    _login_attempts[ip] = [t for t in attempts if now - t < _RATE_WINDOW]
+    return len(_login_attempts[ip]) >= _RATE_MAX
+
+def _record_failed_login(ip):
+    _login_attempts[ip].append(time.time())
 
 app = Flask(__name__)
 import os
@@ -24,6 +40,8 @@ app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "pilar-secret-2024-stabl
 app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=90)
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_HTTPONLY"] = True
+# HTTPS only en production (Railway), désactivé en local pour dev
+app.config["SESSION_COOKIE_SECURE"] = os.environ.get("RAILWAY_ENVIRONMENT") is not None
 db = SQLAlchemy(app)
 
 # ── MODÈLES ───────────────────────────────────────────────────────────────────
@@ -923,6 +941,10 @@ def register():
     if request.method == 'GET':
         if current_uid(): return redirect('/')
         return render_template_string(REGISTER_HTML, error=None)
+    ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
+    if _check_rate_limit(ip):
+        print(f"[Pilar/auth] Rate limit register IP={ip}")
+        return render_template_string(REGISTER_HTML, error='Trop de tentatives. Réessayez dans 15 minutes.')
     try:
         email = (request.form.get('email') or '').strip().lower()
         password = request.form.get('password', '')
@@ -934,27 +956,32 @@ def register():
         if password != password2:
             return render_template_string(REGISTER_HTML, error='Les mots de passe ne correspondent pas')
         if User.query.filter_by(email=email).first():
+            _record_failed_login(ip)
             return render_template_string(REGISTER_HTML, error='Un compte existe déjà avec cet email')
         api_key = 'pk_' + _secrets.token_hex(24)
         is_admin = (email == os.environ.get('ADMIN_EMAIL', '').lower()) or (User.query.count() == 0)
-        user = User(email=email, password_hash=generate_password_hash(password),
+        user = User(email=email, password_hash=generate_password_hash(password, method='pbkdf2:sha256:600000'),
                     email_verified=True, api_key=api_key, is_admin=is_admin)
         db.session.add(user)
         db.session.commit()
         session['user_id'] = user.id
         session.permanent = True
-        print(f"[Pilar/auth] New user: {email} (admin={is_admin})")
+        print(f"[Pilar/auth] New user: {email} (admin={is_admin}) IP={ip}")
         return redirect('/')
     except Exception as e:
         db.session.rollback()
         print(f"[Pilar/auth] Register error: {type(e).__name__}: {e}")
-        return render_template_string(REGISTER_HTML, error=f'Erreur serveur: {str(e)}')
+        return render_template_string(REGISTER_HTML, error='Erreur serveur. Veuillez réessayer.')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'GET':
         if current_uid(): return redirect('/')
         return render_template_string(LOGIN_HTML, error=None)
+    ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
+    if _check_rate_limit(ip):
+        print(f"[Pilar/auth] Rate limit login IP={ip}")
+        return render_template_string(LOGIN_HTML, error='Trop de tentatives. Réessayez dans 15 minutes.')
     try:
         email = (request.form.get('email') or '').strip().lower()
         password = request.form.get('password', '')
@@ -962,15 +989,17 @@ def login():
             return render_template_string(LOGIN_HTML, error='Email et mot de passe requis')
         user = User.query.filter_by(email=email).first()
         if not user or not check_password_hash(user.password_hash, password):
+            _record_failed_login(ip)
+            print(f"[Pilar/auth] Failed login: {email} IP={ip}")
             return render_template_string(LOGIN_HTML, error='Email ou mot de passe incorrect')
         session['user_id'] = user.id
         session.permanent = True
-        print(f"[Pilar/auth] Login: {email}")
+        print(f"[Pilar/auth] Login OK: {email} IP={ip}")
         return redirect('/')
     except Exception as e:
         db.session.rollback()
         print(f"[Pilar/auth] Login error: {type(e).__name__}: {e}")
-        return render_template_string(LOGIN_HTML, error=f'Erreur serveur: {str(e)}')
+        return render_template_string(LOGIN_HTML, error='Erreur serveur. Veuillez réessayer.')
 
 @app.route('/logout')
 def logout():
