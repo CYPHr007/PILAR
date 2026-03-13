@@ -232,18 +232,23 @@ LOGIN_HTML = _AUTH_HEAD + """
     <input class="fi" type="email" id="em" placeholder="vous@entreprise.com" autocomplete="email">
     <label class="flbl" for="pw">Mot de passe</label>
     <input class="fi" type="password" id="pw" placeholder="••••••••" autocomplete="current-password">
-    <button class="btn" onclick="login()">Se connecter</button>
-    <button class="btn" onclick="window.location='/'" style="background:transparent;border:1px solid #252d3d;color:#64748b;margin-top:8px">Continuer sans compte</button>
+    <button type="button" class="btn" id="lbtn" onclick="login()">Se connecter</button>
+    <button type="button" class="btn" onclick="window.location.href='/'" style="background:transparent;border:1px solid #252d3d;color:#64748b;margin-top:8px">Continuer sans compte</button>
   </div>
   <div class="link">Pas encore de compte ? <a href="/register">Créer un compte</a></div>
 </div>
 <script>
 async function login(){
+  const btn=document.getElementById('lbtn');
   const e=document.getElementById('em').value.trim(),p=document.getElementById('pw').value;
   if(!e||!p){showErr('Remplissez tous les champs.');return;}
-  const res=await fetch('/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p})});
-  const d=await res.json();
-  if(d.ok){window.location='/';}else{showErr(d.error||'Erreur de connexion.');}
+  btn.disabled=true;btn.textContent='...';
+  try{
+    const res=await fetch('/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p})});
+    let d;
+    try{d=await res.json();}catch(je){showErr('Erreur serveur (réponse invalide). Code: '+res.status);btn.disabled=false;btn.textContent='Se connecter';return;}
+    if(d.ok){window.location.href='/';}else{showErr(d.error||'Erreur de connexion.');btn.disabled=false;btn.textContent='Se connecter';}
+  }catch(err){showErr('Erreur réseau. Vérifiez votre connexion.');btn.disabled=false;btn.textContent='Se connecter';}
 }
 function showErr(m){const el=document.getElementById('err');el.textContent=m;el.style.display='block';}
 document.addEventListener('keydown',function(e){if(e.key==='Enter')login();});
@@ -262,23 +267,28 @@ REGISTER_HTML = _AUTH_HEAD + """
     <input class="fi" type="password" id="pw" placeholder="8 caractères minimum" autocomplete="new-password">
     <label class="flbl" for="pw2">Confirmer le mot de passe</label>
     <input class="fi" type="password" id="pw2" placeholder="••••••••" autocomplete="new-password">
-    <button class="btn" onclick="register()">Créer mon compte</button>
+    <button type="button" class="btn" id="rbtn" onclick="register()">Créer mon compte</button>
   </div>
   <div class="link">Déjà un compte ? <a href="/login">Se connecter</a></div>
 </div>
 <script>
 async function register(){
+  const btn=document.getElementById('rbtn');
   const e=document.getElementById('em').value.trim(),p=document.getElementById('pw').value,p2=document.getElementById('pw2').value;
   if(!e||!p||!p2){showErr('Remplissez tous les champs.');return;}
   if(p!==p2){showErr('Les mots de passe ne correspondent pas.');return;}
   if(p.length<8){showErr('Mot de passe trop court (8 caractères minimum).');return;}
-  const res=await fetch('/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p})});
-  const d=await res.json();
-  if(d.ok){
-    document.getElementById('err').style.display='none';
-    const ok=document.getElementById('ok');ok.textContent=d.message||'Compte créé !';ok.style.display='block';
-    setTimeout(()=>window.location='/',1500);
-  }else{showErr(d.error||'Erreur inscription.');}
+  btn.disabled=true;btn.textContent='...';
+  try{
+    const res=await fetch('/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p})});
+    let d;
+    try{d=await res.json();}catch(je){showErr('Erreur serveur (réponse invalide). Code: '+res.status);btn.disabled=false;btn.textContent='Créer mon compte';return;}
+    if(d.ok){
+      document.getElementById('err').style.display='none';
+      const ok=document.getElementById('ok');ok.textContent=d.message||'Compte créé !';ok.style.display='block';
+      setTimeout(()=>window.location.href='/',1500);
+    }else{showErr(d.error||'Erreur inscription.');btn.disabled=false;btn.textContent='Créer mon compte';}
+  }catch(err){showErr('Erreur réseau. Vérifiez votre connexion.');btn.disabled=false;btn.textContent='Créer mon compte';}
 }
 function showErr(m){const el=document.getElementById('err');el.textContent=m;el.style.display='block';}
 </script></body></html>"""
@@ -1347,12 +1357,16 @@ def manifest():
 def service_worker():
     from flask import Response
     sw = """
-const CACHE = 'pilar-v1';
+const CACHE = 'pilar-v2';
 const URLS = ['/', '/account', '/twin', '/history', '/settings', '/manifest.json'];
 self.addEventListener('install', e => e.waitUntil(caches.open(CACHE).then(c => c.addAll(URLS))));
-self.addEventListener('fetch', e => e.respondWith(
-  fetch(e.request).catch(() => caches.match(e.request))
+self.addEventListener('activate', e => e.waitUntil(
+  caches.keys().then(keys => Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k))))
 ));
+self.addEventListener('fetch', e => {
+  if(e.request.method !== 'GET') return;
+  e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+});
 """
     return Response(sw, mimetype='application/javascript')
 
@@ -1378,6 +1392,8 @@ a{{padding:12px 24px;background:#0d9488;color:#fff;border-radius:6px;text-decora
 
 @app.errorhandler(Exception)
 def unhandled(e):
+    from werkzeug.exceptions import HTTPException
+    if isinstance(e, HTTPException): return e  # laisser Flask gérer 404, 405, etc.
     import traceback
     print(f"[Pilar] Unhandled exception: {type(e).__name__}: {e}\n{traceback.format_exc()}")
     try: db.session.rollback()
