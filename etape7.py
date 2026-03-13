@@ -151,7 +151,7 @@ def admin_required(f):
         uid = current_uid()
         if not uid:
             return redirect('/login')
-        user = User.query.get(uid)
+        user = db.session.get(User, uid)
         if not user or not user.is_admin:
             return "Accès refusé", 403
         return f(*args, **kwargs)
@@ -443,7 +443,15 @@ hist_time:'Heure',hist_class:'Classe',hist_risk:'Risque',hist_status:'Statut',hi
 hist_anomaly:'Anomalie',hist_ok:'OK',hist_sent:'Envoyé',
 set_email:"Email d'alerte",set_email_lbl:'Adresse destinataire',set_email_ph:'maintenance@entreprise.com',set_email_btn:'Enregistrer',set_saved:'Enregistré',
 set_notif:'Notifications navigateur',set_notif_desc:'Recevez des alertes quand le risque dépasse 50%.',set_notif_btn:'Activer les notifications',set_notif_on:'Notifications activées',set_notif_blocked:'Bloqué — Activez dans les réglages',
-set_sys:'Infos système',set_version:'Version',set_aimodel:'Modèle IA',set_db:'Base de données',set_lang:'Langue'},
+set_sys:'Infos système',set_version:'Version',set_aimodel:'Modèle IA',set_db:'Base de données',set_lang:'Langue',
+acc_guest_title:'Mode invité',acc_guest_desc:"Connectez-vous pour sauvegarder vos données,<br>rejoindre une équipe et accéder à la collaboration.",
+acc_signin:'Se connecter',acc_register:'Créer un compte',acc_card_title:'Compte',acc_signout:'Déconnexion',
+acc_team_title:'Équipe',acc_no_team_desc:"Créez une équipe pour collaborer. Jusqu'à 2 responsables peuvent gérer l'équipe.",
+acc_create_ph:"Nom de l'équipe (optionnel)",acc_create_btn:'Créer une équipe',
+acc_role_leader:'Responsable',acc_role_member:'Membre',acc_you:'(vous)',
+acc_promote:'Promouvoir',acc_kick:'Retirer',
+acc_add_title:'Ajouter un membre',acc_add_ph:'email@entreprise.com',acc_add_btn:'Ajouter',acc_added:'Membre ajouté !',
+acc_members:' membre(s)',acc_leave:"Quitter l'équipe"},
 en:{nav_monitor:'Monitor',nav_twin:'Twin',nav_history:'History',nav_account:'Account',nav_settings:'Settings',
 page_monitor:'Monitor',page_twin:'Digital Twin',page_history:'History',page_account:'Account',page_settings:'Settings',
 idle_l1:'No analysis yet',idle_l2:'Configure below and run',
@@ -463,7 +471,15 @@ hist_time:'Time',hist_class:'Class',hist_risk:'Risk',hist_status:'Status',hist_z
 hist_anomaly:'Anomaly',hist_ok:'OK',hist_sent:'Sent',
 set_email:'Alert email',set_email_lbl:'Recipient address',set_email_ph:'maintenance@company.com',set_email_btn:'Save Email',set_saved:'Saved',
 set_notif:'Browser notifications',set_notif_desc:'Receive alerts when failure risk exceeds 50%.',set_notif_btn:'Enable Notifications',set_notif_on:'Notifications Enabled',set_notif_blocked:'Blocked \u2014 Enable in Browser Settings',
-set_sys:'System info',set_version:'Version',set_aimodel:'AI Model',set_db:'Database',set_lang:'Language'}
+set_sys:'System info',set_version:'Version',set_aimodel:'AI Model',set_db:'Database',set_lang:'Language',
+acc_guest_title:'Guest Mode',acc_guest_desc:'Sign in to save your data,<br>join a team and access collaboration.',
+acc_signin:'Sign In',acc_register:'Create Account',acc_card_title:'Account',acc_signout:'Sign Out',
+acc_team_title:'Team',acc_no_team_desc:'Create a team to collaborate with colleagues. Up to 2 leaders can manage the team.',
+acc_create_ph:'Team name (optional)',acc_create_btn:'Create Team',
+acc_role_leader:'Leader',acc_role_member:'Member',acc_you:'(you)',
+acc_promote:'Promote',acc_kick:'Remove',
+acc_add_title:'Add Member',acc_add_ph:'email@company.com',acc_add_btn:'Add',acc_added:'Member added!',
+acc_members:' member(s)',acc_leave:'Leave Team'}
 };
 let LANG=localStorage.getItem('pilar_lang')||'en';
 function t(k){return(T[LANG]&&T[LANG][k])||(T.en[k])||k;}
@@ -479,6 +495,8 @@ function applyLang(){
   document.querySelectorAll('td .badge.ok').forEach(function(el){el.textContent=t('hist_ok');});
   document.querySelectorAll('td .mb').forEach(function(el){el.textContent=t('hist_sent');});
   if(document.getElementById('nta'))updateSensorUnits();
+  document.querySelectorAll('.acc-role').forEach(function(el){el.textContent=t(el.dataset.role==='leader'?'acc_role_leader':'acc_role_member');});
+  document.querySelectorAll('[data-i18n-count]').forEach(function(el){var n=el.dataset.icount||'0';el.textContent=n+t(el.getAttribute('data-i18n-count'));});
 }
 function toDisplay(raw,type){
   if(LANG!=='fr')return raw;
@@ -617,42 +635,42 @@ ACCOUNT_HTML = _HEAD.replace("{FAV}", FAV_B64) + """
 {% if not user %}
 <div class="card" style="text-align:center;padding:28px">
   <div style="font-size:32px;margin-bottom:12px">👤</div>
-  <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px">Mode invité</div>
-  <div style="font-size:11px;color:var(--text3);line-height:1.7;margin-bottom:20px">Connectez-vous pour sauvegarder vos données,<br>rejoindre une équipe et accéder à la collaboration.</div>
-  <a href="/login" style="display:block;padding:13px;background:var(--teal);color:#fff;border-radius:6px;text-decoration:none;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px">Se connecter</a>
-  <a href="/register" style="display:block;padding:13px;background:transparent;border:1px solid var(--border2);color:var(--text3);border-radius:6px;text-decoration:none;font-size:12px;letter-spacing:1px;text-transform:uppercase">Créer un compte</a>
+  <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px" data-i18n="acc_guest_title">Guest Mode</div>
+  <div style="font-size:11px;color:var(--text3);line-height:1.7;margin-bottom:20px" data-i18n-html="acc_guest_desc">Sign in to save your data.</div>
+  <a href="/login" style="display:block;padding:13px;background:var(--teal);color:#fff;border-radius:6px;text-decoration:none;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px" data-i18n="acc_signin">Sign In</a>
+  <a href="/register" style="display:block;padding:13px;background:transparent;border:1px solid var(--border2);color:var(--text3);border-radius:6px;text-decoration:none;font-size:12px;letter-spacing:1px;text-transform:uppercase" data-i18n="acc_register">Create Account</a>
 </div>
 
 {% else %}
 <div class="card">
-  <div class="ctitle">Compte</div>
+  <div class="ctitle" data-i18n="acc_card_title">Account</div>
   <div style="display:flex;justify-content:space-between;align-items:center">
     <div>
       <div style="font-size:13px;font-weight:600;color:var(--text)">{{ user.email }}</div>
       <div style="display:flex;gap:6px;margin-top:5px;align-items:center">
         <span style="padding:2px 8px;border-radius:3px;font-size:9px;font-weight:700;background:rgba(13,148,136,0.12);color:var(--teal-light);text-transform:uppercase">{{ user.plan }}</span>
-        {% if my_role %}<span style="padding:2px 8px;border-radius:3px;font-size:9px;font-weight:700;background:rgba(124,58,237,0.12);color:#a78bfa;text-transform:uppercase">{{ my_role }}</span>{% endif %}
+        {% if my_role %}<span class="acc-role" data-role="{{ my_role }}" style="padding:2px 8px;border-radius:3px;font-size:9px;font-weight:700;background:rgba(124,58,237,0.12);color:#a78bfa;text-transform:uppercase">{{ my_role }}</span>{% endif %}
       </div>
     </div>
-    <a href="/logout" style="padding:8px 14px;background:transparent;border:1px solid var(--border2);color:var(--text3);border-radius:6px;text-decoration:none;font-size:11px;font-weight:600;white-space:nowrap">Déconnexion</a>
+    <a href="/logout" style="padding:8px 14px;background:transparent;border:1px solid var(--border2);color:var(--text3);border-radius:6px;text-decoration:none;font-size:11px;font-weight:600;white-space:nowrap" data-i18n="acc_signout">Sign Out</a>
   </div>
 </div>
 
 {% if not team %}
 <div class="card">
-  <div class="ctitle">Équipe</div>
-  <p style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:14px">Créez une équipe pour collaborer avec vos collègues. Jusqu'à 2 responsables peuvent gérer l'équipe.</p>
-  <input class="fi" id="tname" placeholder="Nom de l'équipe (optionnel)" style="margin-bottom:10px">
-  <button class="btn" onclick="createTeam()">Créer une équipe</button>
+  <div class="ctitle" data-i18n="acc_team_title">Team</div>
+  <p style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:14px" data-i18n="acc_no_team_desc">Create a team to collaborate with colleagues.</p>
+  <input class="fi" id="tname" placeholder="Team name (optional)" data-i18n="acc_create_ph" style="margin-bottom:10px">
+  <button class="btn" onclick="createTeam()" data-i18n="acc_create_btn">Create Team</button>
 </div>
 {% else %}
 <div class="card">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
     <div>
-      <div class="ctitle" style="margin-bottom:2px">Équipe</div>
+      <div class="ctitle" style="margin-bottom:2px" data-i18n="acc_team_title">Team</div>
       <div style="font-size:13px;font-weight:600;color:var(--text)">{{ team.name }}</div>
     </div>
-    <span style="font-size:9px;color:var(--text3)">{{ members|length }} membre(s)</span>
+    <span style="font-size:9px;color:var(--text3)" data-i18n-count="acc_members" data-icount="{{ members|length }}">{{ members|length }} member(s)</span>
   </div>
 
   {% for m in members %}
@@ -660,14 +678,16 @@ ACCOUNT_HTML = _HEAD.replace("{FAV}", FAV_B64) + """
     <div style="width:32px;height:32px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--teal-light);flex-shrink:0">{{ m.email[0].upper() }}</div>
     <div style="flex:1;min-width:0">
       <div style="font-size:12px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ m.email }}</div>
-      <div style="font-size:9px;letter-spacing:1px;text-transform:uppercase;margin-top:2px;color:{% if m.role=='leader' %}var(--teal-light){% else %}var(--text3){% endif %}">{{ 'Responsable' if m.role=='leader' else 'Membre' }}{% if m.id == user.id %} (vous){% endif %}</div>
+      <div style="font-size:9px;letter-spacing:1px;text-transform:uppercase;margin-top:2px;color:{% if m.role=='leader' %}var(--teal-light){% else %}var(--text3){% endif %}">
+        <span class="acc-role" data-role="{{ m.role }}">{{ m.role }}</span>{% if m.id == user.id %} <span data-i18n="acc_you">(you)</span>{% endif %}
+      </div>
     </div>
     {% if my_role == 'leader' and m.id != user.id %}
     <div style="display:flex;gap:5px;flex-shrink:0">
       {% if m.role == 'member' %}
-      <button class="nb" onclick="transfer({{ m.id }},this)" style="font-size:9px">Promouvoir</button>
+      <button class="nb" onclick="transfer({{ m.id }},this)" style="font-size:9px" data-i18n="acc_promote">Promote</button>
       {% endif %}
-      <button class="nb" onclick="kick({{ m.id }},this)" style="font-size:9px;color:var(--red);border-color:rgba(220,38,38,0.3)">Retirer</button>
+      <button class="nb" onclick="kick({{ m.id }},this)" style="font-size:9px;color:var(--red);border-color:rgba(220,38,38,0.3)" data-i18n="acc_kick">Remove</button>
     </div>
     {% endif %}
   </div>
@@ -675,16 +695,16 @@ ACCOUNT_HTML = _HEAD.replace("{FAV}", FAV_B64) + """
 
   {% if my_role == 'leader' %}
   <div style="margin-top:16px">
-    <div class="ctitle">Ajouter un membre</div>
+    <div class="ctitle" data-i18n="acc_add_title">Add Member</div>
     <div style="display:flex;gap:8px">
-      <input class="fi" id="inv_email" placeholder="email@entreprise.com" type="email" style="flex:1;min-width:0">
-      <button onclick="invite()" style="padding:10px 16px;background:var(--teal);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0">Ajouter</button>
+      <input class="fi" id="inv_email" placeholder="email@company.com" data-i18n="acc_add_ph" type="email" style="flex:1;min-width:0">
+      <button onclick="invite()" style="padding:10px 16px;background:var(--teal);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0" data-i18n="acc_add_btn">Add</button>
     </div>
     <div id="inv_msg" style="font-size:11px;margin-top:6px;display:none"></div>
   </div>
   {% endif %}
 
-  <button onclick="leaveTeam()" style="width:100%;margin-top:16px;padding:11px;background:transparent;border:1px solid var(--border2);color:var(--text3);border-radius:6px;font-size:11px;cursor:pointer">Quitter l'équipe</button>
+  <button onclick="leaveTeam()" style="width:100%;margin-top:16px;padding:11px;background:transparent;border:1px solid var(--border2);color:var(--text3);border-radius:6px;font-size:11px;cursor:pointer" data-i18n="acc_leave">Leave Team</button>
 </div>
 {% endif %}
 {% endif %}
@@ -692,10 +712,14 @@ ACCOUNT_HTML = _HEAD.replace("{FAV}", FAV_B64) + """
 </div>""" + nav("a") + """
 <script>
 async function createTeam(){
+  const btn=event.target;btn.disabled=true;
   const name=document.getElementById('tname').value.trim()||'My Team';
-  const r=await fetch('/team/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});
-  const d=await r.json();
-  if(d.ok)location.reload();else alert(d.error||'Erreur');
+  try{
+    const r=await fetch('/team/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});
+    if(!r.ok&&r.status===302){window.location='/login';return;}
+    const d=await r.json();
+    if(d.ok)location.reload();else{alert(d.error||'Erreur');btn.disabled=false;}
+  }catch(e){alert('Erreur réseau');btn.disabled=false;}
 }
 async function invite(){
   const email=document.getElementById('inv_email').value.trim();
@@ -703,25 +727,25 @@ async function invite(){
   const msg=document.getElementById('inv_msg');
   const r=await fetch('/team/invite',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});
   const d=await r.json();
-  if(d.ok){msg.style.color='var(--green)';msg.textContent='Membre ajouté !';msg.style.display='block';setTimeout(()=>location.reload(),1200);}
+  if(d.ok){msg.style.color='var(--green)';msg.textContent=t('acc_added');msg.style.display='block';setTimeout(()=>location.reload(),1200);}
   else{msg.style.color='var(--red)';msg.textContent=d.error||'Erreur';msg.style.display='block';}
 }
 async function kick(uid,btn){
-  if(!confirm('Retirer ce membre de l\'équipe ?'))return;
+  if(!confirm(LANG==='fr'?'Retirer ce membre ?':'Remove this member?'))return;
   btn.disabled=true;
   const r=await fetch('/team/kick/'+uid,{method:'POST'});
   const d=await r.json();
   if(d.ok)location.reload();else{alert(d.error||'Erreur');btn.disabled=false;}
 }
 async function transfer(uid,btn){
-  if(!confirm('Promouvoir ce membre au rôle de responsable ?'))return;
+  if(!confirm(LANG==='fr'?'Promouvoir ce membre responsable ?':'Promote this member to leader?'))return;
   btn.disabled=true;
   const r=await fetch('/team/transfer/'+uid,{method:'POST'});
   const d=await r.json();
   if(d.ok)location.reload();else{alert(d.error||'Erreur');btn.disabled=false;}
 }
 async function leaveTeam(){
-  if(!confirm('Quitter cette équipe ?'))return;
+  if(!confirm(LANG==='fr'?'Quitter cette équipe ?':'Leave this team?'))return;
   const r=await fetch('/team/leave',{method:'POST'});
   const d=await r.json();
   if(d.ok)location.reload();else alert(d.error||'Erreur');
@@ -961,7 +985,7 @@ def verify_email(token):
 @app.route('/profile/api-key', methods=['GET', 'POST'])
 @login_required
 def api_key_page():
-    user = User.query.get(current_uid())
+    user = db.session.get(User, current_uid())
     if request.method == 'POST':
         user.api_key = 'pk_' + _secrets.token_hex(24)
         db.session.commit()
@@ -992,7 +1016,7 @@ def index(): return render_template_string(HTML)
 @app.route('/account')
 def account():
     uid = current_uid()
-    user = User.query.get(uid) if uid else None
+    user = db.session.get(User, uid) if uid else None
     team = None
     members = []
     my_role = None
@@ -1003,7 +1027,7 @@ def account():
             if my_mbr and not my_mbr.is_kicked:
                 my_role = my_mbr.role
                 for m in TeamMember.query.filter_by(team_id=team.id, is_kicked=False).all():
-                    mu = User.query.get(m.user_id)
+                    mu = db.session.get(User, m.user_id)
                     if mu:
                         members.append({'id': mu.id, 'email': mu.email, 'role': m.role})
             else:
@@ -1179,13 +1203,15 @@ Directives :
 @login_required
 def team_create():
     uid = current_uid()
-    user = User.query.get(uid)
+    user = db.session.get(User, uid)
+    if not user:
+        return jsonify({'error': 'Not authenticated'}), 401
     if user.team_id:
         return jsonify({'error': 'Already in a team'}), 400
     name = (request.json or {}).get('name', 'My Team').strip() or 'My Team'
     team = Team(name=name)
     db.session.add(team)
-    db.session.flush()
+    db.session.commit()
     db.session.add(TeamMember(team_id=team.id, user_id=uid, role='leader'))
     user.team_id = team.id
     db.session.commit()
@@ -1195,7 +1221,7 @@ def team_create():
 @login_required
 def team_invite():
     uid = current_uid()
-    user = User.query.get(uid)
+    user = db.session.get(User, uid)
     if not user.team_id:
         return jsonify({'error': 'Not in a team'}), 400
     my_mbr = TeamMember.query.filter_by(team_id=user.team_id, user_id=uid).first()
@@ -1223,7 +1249,7 @@ def team_invite():
 @login_required
 def team_kick(target_uid):
     uid = current_uid()
-    user = User.query.get(uid)
+    user = db.session.get(User, uid)
     if not user.team_id:
         return jsonify({'error': 'Not in a team'}), 400
     my_mbr = TeamMember.query.filter_by(team_id=user.team_id, user_id=uid).first()
@@ -1235,7 +1261,7 @@ def team_kick(target_uid):
     if t_mbr.role == 'leader':
         return jsonify({'error': 'Cannot kick a leader'}), 400
     t_mbr.is_kicked = True
-    target = User.query.get(target_uid)
+    target = db.session.get(User, target_uid)
     if target:
         target.team_id = None
     db.session.commit()
@@ -1245,7 +1271,7 @@ def team_kick(target_uid):
 @login_required
 def team_transfer(target_uid):
     uid = current_uid()
-    user = User.query.get(uid)
+    user = db.session.get(User, uid)
     if not user.team_id:
         return jsonify({'error': 'Not in a team'}), 400
     my_mbr = TeamMember.query.filter_by(team_id=user.team_id, user_id=uid).first()
@@ -1267,7 +1293,7 @@ def team_transfer(target_uid):
 @login_required
 def team_leave():
     uid = current_uid()
-    user = User.query.get(uid)
+    user = db.session.get(User, uid)
     if not user.team_id:
         return jsonify({'error': 'Not in a team'}), 400
     mbr = TeamMember.query.filter_by(team_id=user.team_id, user_id=uid).first()
