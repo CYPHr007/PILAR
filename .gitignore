@@ -5,6 +5,5 @@ instance/
 *.db
 *.sqlite
 .env
-*.pkl
 *.log
 .DS_Store
