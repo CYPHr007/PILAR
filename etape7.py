@@ -227,71 +227,39 @@ LOGIN_HTML = _AUTH_HEAD + """
   <div class="logo">PILAR</div>
   <div class="card">
     <div class="ctitle">Connexion</div>
-    <div class="err" id="err"></div>
-    <label class="flbl" for="em">Email</label>
-    <input class="fi" type="email" id="em" placeholder="vous@entreprise.com" autocomplete="email">
-    <label class="flbl" for="pw">Mot de passe</label>
-    <input class="fi" type="password" id="pw" placeholder="••••••••" autocomplete="current-password">
-    <button type="button" class="btn" id="lbtn" onclick="login()">Se connecter</button>
-    <button type="button" class="btn" onclick="window.location.href='/'" style="background:transparent;border:1px solid #252d3d;color:#64748b;margin-top:8px">Continuer sans compte</button>
+    {% if error %}<div class="err" style="display:block">{{ error }}</div>{% endif %}
+    <form method="POST" action="/login">
+      <label class="flbl" for="em">Email</label>
+      <input class="fi" type="email" id="em" name="email" placeholder="vous@entreprise.com" autocomplete="email" required>
+      <label class="flbl" for="pw">Mot de passe</label>
+      <input class="fi" type="password" id="pw" name="password" placeholder="••••••••" autocomplete="current-password" required>
+      <button type="submit" class="btn">Se connecter</button>
+    </form>
+    <a href="/" class="btn" style="display:block;text-align:center;text-decoration:none;background:transparent;border:1px solid #252d3d;color:#64748b;margin-top:8px;padding:13px;border-radius:6px;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase">Continuer sans compte</a>
   </div>
   <div class="link">Pas encore de compte ? <a href="/register">Créer un compte</a></div>
 </div>
-<script>
-async function login(){
-  const btn=document.getElementById('lbtn');
-  const e=document.getElementById('em').value.trim(),p=document.getElementById('pw').value;
-  if(!e||!p){showErr('Remplissez tous les champs.');return;}
-  btn.disabled=true;btn.textContent='...';
-  try{
-    const res=await fetch('/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p})});
-    let d;
-    try{d=await res.json();}catch(je){showErr('Erreur serveur (réponse invalide). Code: '+res.status);btn.disabled=false;btn.textContent='Se connecter';return;}
-    if(d.ok){window.location.href='/';}else{showErr(d.error||'Erreur de connexion.');btn.disabled=false;btn.textContent='Se connecter';}
-  }catch(err){showErr('Erreur réseau. Vérifiez votre connexion.');btn.disabled=false;btn.textContent='Se connecter';}
-}
-function showErr(m){const el=document.getElementById('err');el.textContent=m;el.style.display='block';}
-document.addEventListener('keydown',function(e){if(e.key==='Enter')login();});
-</script></body></html>"""
+</body></html>"""
 
 REGISTER_HTML = _AUTH_HEAD + """
 <div class="ac">
   <div class="logo">PILAR</div>
   <div class="card">
     <div class="ctitle">Créer un compte</div>
-    <div class="err" id="err"></div>
-    <div class="ok" id="ok"></div>
-    <label class="flbl" for="em">Email professionnel</label>
-    <input class="fi" type="email" id="em" placeholder="vous@entreprise.com" autocomplete="email">
-    <label class="flbl" for="pw">Mot de passe</label>
-    <input class="fi" type="password" id="pw" placeholder="8 caractères minimum" autocomplete="new-password">
-    <label class="flbl" for="pw2">Confirmer le mot de passe</label>
-    <input class="fi" type="password" id="pw2" placeholder="••••••••" autocomplete="new-password">
-    <button type="button" class="btn" id="rbtn" onclick="register()">Créer mon compte</button>
+    {% if error %}<div class="err" style="display:block">{{ error }}</div>{% endif %}
+    <form method="POST" action="/register">
+      <label class="flbl" for="em">Email professionnel</label>
+      <input class="fi" type="email" id="em" name="email" placeholder="vous@entreprise.com" autocomplete="email" required>
+      <label class="flbl" for="pw">Mot de passe</label>
+      <input class="fi" type="password" id="pw" name="password" placeholder="8 caractères minimum" autocomplete="new-password" required minlength="8">
+      <label class="flbl" for="pw2">Confirmer le mot de passe</label>
+      <input class="fi" type="password" id="pw2" name="password2" placeholder="••••••••" autocomplete="new-password" required>
+      <button type="submit" class="btn">Créer mon compte</button>
+    </form>
   </div>
   <div class="link">Déjà un compte ? <a href="/login">Se connecter</a></div>
 </div>
-<script>
-async function register(){
-  const btn=document.getElementById('rbtn');
-  const e=document.getElementById('em').value.trim(),p=document.getElementById('pw').value,p2=document.getElementById('pw2').value;
-  if(!e||!p||!p2){showErr('Remplissez tous les champs.');return;}
-  if(p!==p2){showErr('Les mots de passe ne correspondent pas.');return;}
-  if(p.length<8){showErr('Mot de passe trop court (8 caractères minimum).');return;}
-  btn.disabled=true;btn.textContent='...';
-  try{
-    const res=await fetch('/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p})});
-    let d;
-    try{d=await res.json();}catch(je){showErr('Erreur serveur (réponse invalide). Code: '+res.status);btn.disabled=false;btn.textContent='Créer mon compte';return;}
-    if(d.ok){
-      document.getElementById('err').style.display='none';
-      const ok=document.getElementById('ok');ok.textContent=d.message||'Compte créé !';ok.style.display='block';
-      setTimeout(()=>window.location.href='/',1500);
-    }else{showErr(d.error||'Erreur inscription.');btn.disabled=false;btn.textContent='Créer mon compte';}
-  }catch(err){showErr('Erreur réseau. Vérifiez votre connexion.');btn.disabled=false;btn.textContent='Créer mon compte';}
-}
-function showErr(m){const el=document.getElementById('err');el.textContent=m;el.style.display='block';}
-</script></body></html>"""
+</body></html>"""
 
 ADMIN_HTML = _AUTH_HEAD + """
 <div style="width:100%;max-width:800px;">
@@ -946,17 +914,19 @@ def envoyer_alerte(email_to, probabilite, zones_risque, data):
 def register():
     if request.method == 'GET':
         if current_uid(): return redirect('/')
-        return render_template_string(REGISTER_HTML)
+        return render_template_string(REGISTER_HTML, error=None)
     try:
-        data = request.json or {}
-        email = (data.get('email') or '').strip().lower()
-        password = data.get('password', '')
+        email = (request.form.get('email') or '').strip().lower()
+        password = request.form.get('password', '')
+        password2 = request.form.get('password2', '')
         if not email or not password:
-            return jsonify({'error': 'Email et mot de passe requis'}), 400
+            return render_template_string(REGISTER_HTML, error='Email et mot de passe requis')
         if len(password) < 8:
-            return jsonify({'error': 'Mot de passe trop court (8 caractères minimum)'}), 400
+            return render_template_string(REGISTER_HTML, error='Mot de passe trop court (8 caractères minimum)')
+        if password != password2:
+            return render_template_string(REGISTER_HTML, error='Les mots de passe ne correspondent pas')
         if User.query.filter_by(email=email).first():
-            return jsonify({'error': 'Un compte existe déjà avec cet email'}), 409
+            return render_template_string(REGISTER_HTML, error='Un compte existe déjà avec cet email')
         api_key = 'pk_' + _secrets.token_hex(24)
         is_admin = (email == os.environ.get('ADMIN_EMAIL', '').lower()) or (User.query.count() == 0)
         user = User(email=email, password_hash=generate_password_hash(password),
@@ -966,34 +936,33 @@ def register():
         session['user_id'] = user.id
         session.permanent = True
         print(f"[Pilar/auth] New user: {email} (admin={is_admin})")
-        return jsonify({'ok': True, 'message': 'Compte créé avec succès !'})
+        return redirect('/')
     except Exception as e:
         db.session.rollback()
         print(f"[Pilar/auth] Register error: {type(e).__name__}: {e}")
-        return jsonify({'error': f'Erreur serveur: {str(e)}'}), 500
+        return render_template_string(REGISTER_HTML, error=f'Erreur serveur: {str(e)}')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'GET':
         if current_uid(): return redirect('/')
-        return render_template_string(LOGIN_HTML)
+        return render_template_string(LOGIN_HTML, error=None)
     try:
-        data = request.json or {}
-        email = (data.get('email') or '').strip().lower()
-        password = data.get('password', '')
+        email = (request.form.get('email') or '').strip().lower()
+        password = request.form.get('password', '')
         if not email or not password:
-            return jsonify({'error': 'Email et mot de passe requis'}), 400
+            return render_template_string(LOGIN_HTML, error='Email et mot de passe requis')
         user = User.query.filter_by(email=email).first()
         if not user or not check_password_hash(user.password_hash, password):
-            return jsonify({'error': 'Email ou mot de passe incorrect'}), 401
+            return render_template_string(LOGIN_HTML, error='Email ou mot de passe incorrect')
         session['user_id'] = user.id
         session.permanent = True
         print(f"[Pilar/auth] Login: {email}")
-        return jsonify({'ok': True})
+        return redirect('/')
     except Exception as e:
         db.session.rollback()
         print(f"[Pilar/auth] Login error: {type(e).__name__}: {e}")
-        return jsonify({'error': f'Erreur serveur: {str(e)}'}), 500
+        return render_template_string(LOGIN_HTML, error=f'Erreur serveur: {str(e)}')
 
 @app.route('/logout')
 def logout():
