@@ -632,10 +632,11 @@ HTML = _HEAD.replace("{FAV}","iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAHxU
 <body>
 <header><span class="logo">PILAR</span><div class="hd"></div><span class="hsub" data-i18n="page_monitor">Monitor</span>
 <div class="hright">
-  <button class="nb" id="btnFile" onclick="connectLiveMonitor()" title="Connect live CSV file">
+  <label for="lfInput" class="nb" id="btnFile" style="cursor:pointer">
     <svg style="width:13px;height:13px;vertical-align:middle;stroke:currentColor;fill:none;margin-right:3px" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" stroke-width="2"/></svg>
     <span id="btnFileLbl" data-i18n="live_connect">Connect File</span>
-  </button>
+  </label>
+  <input type="file" id="lfInput" accept=".csv" style="display:none" onchange="onLiveFile(this)">
   <button class="nb" id="nb" onclick="toggleN()">Notifs</button>
 </div></header>
 <div class="page pad">
@@ -664,8 +665,6 @@ HTML = _HEAD.replace("{FAV}","iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAHxU
       <span><span data-i18n="live_fail">Failures</span>: <strong style="color:var(--red)" id="liveFailCount">0</strong></span>
       <span><span data-i18n="live_ok">Normal</span>: <strong style="color:var(--green)" id="liveOkCount">0</strong></span>
     </div>
-    <!-- fallback input for Opera/Firefox -->
-    <input type="file" id="lfFallbackInput" accept=".csv" style="display:none" onchange="onFallbackFile(this)">
   </div>
 
   <div id="res"><div class="idle"><span class="l1" data-i18n="idle_l1">No analysis yet</span><span class="l2" data-i18n="idle_l2">Configure below and run</span></div></div>
@@ -738,60 +737,47 @@ function render(r){
 }
 
 // ── LIVE FILE MONITOR ─────────────────────────────────────────────────────
-var _lfHandle=null,_lfTimer=null,_lfKnown=0,_lfFail=0,_lfOk=0,_lfHdr=null,_lfFallbackFile=null,_lfFallback=false;
+var _lfHandle=null,_lfTimer=null,_lfKnown=0,_lfFail=0,_lfOk=0,_lfHdr=null;
 
-function connectLiveMonitor(){
-  if(_lfHandle||_lfFallbackFile){stopLiveMonitor();return;}
-  if(!window.showOpenFilePicker){
-    // Fallback sync — must stay synchronous for .click() to work in all browsers
-    _lfFallback=true;
-    document.getElementById('lfFallbackInput').click();
-    return;
-  }
-  _connectWithAPI();
-}
-
-async function _connectWithAPI(){
-  try{
-    var picks=await window.showOpenFilePicker({types:[{description:'CSV',accept:{'text/csv':['.csv']}}]});
-    _lfHandle=picks[0];_lfFallback=false;
-    _lfKnown=0;_lfFail=0;_lfOk=0;_lfHdr=null;
-    var fname=(await _lfHandle.getFile()).name;
-    _lfStart(fname);
-    _lfLoop();
-  }catch(e){if(e.name!=='AbortError')console.error(e);}
-}
-
-function onFallbackFile(inp){
+function onLiveFile(inp){
   var f=inp.files[0];if(!f)return;
-  _lfFallbackFile=f;_lfKnown=0;_lfFail=0;_lfOk=0;_lfHdr=null;
-  _lfStart(f.name);
-  // Add refresh button for fallback mode
-  document.getElementById('liveChk').innerHTML='<span data-i18n="live_no_api" style="color:var(--amber)">'+t('live_no_api')+'</span> <button onclick="refreshFallback()" style="padding:3px 8px;background:var(--teal);border:none;border-radius:3px;color:#fff;font-size:10px;cursor:pointer" data-i18n="live_refresh">'+t('live_refresh')+'</button>';
-  _lfLoopFallback();
-}
-
-function refreshFallback(){
-  document.getElementById('lfFallbackInput').click();
-}
-
-function _lfStart(fname){
-  document.getElementById('liveFileName').textContent=fname;
+  _lfKnown=0;_lfFail=0;_lfOk=0;_lfHdr=null;clearTimeout(_lfTimer);
+  document.getElementById('liveFileName').textContent=f.name;
   document.getElementById('liveBar').style.display='block';
   document.getElementById('btnFileLbl').textContent=t('live_on');
   document.getElementById('btnFile').classList.add('on');
+  document.getElementById('liveRowCount').textContent='0';
+  document.getElementById('liveFailCount').textContent='0';
+  document.getElementById('liveOkCount').textContent='0';
+  // Try to get a live handle for auto-polling (Chrome/Edge)
+  if(window.showOpenFilePicker){
+    _connectWithAPI(f.name);
+  }else{
+    // Fallback: read snapshot + show refresh button
+    _readSnapshot(f);
+    _showRefreshBtn();
+  }
 }
 
-function resetLiveTimer(){clearTimeout(_lfTimer);if(_lfHandle)_lfLoop();else if(_lfFallbackFile)_lfLoopFallback();}
-
-async function _lfLoopFallback(){
-  if(!_lfFallbackFile)return;
+async function _connectWithAPI(targetName){
   try{
-    var text=await _lfFallbackFile.text();
-    await _lfProcess(text);
-  }catch(e){console.error(e);}
-  // Fallback: no auto-polling (file is a snapshot), just update counter
-  document.getElementById('liveChk').innerHTML='<span style="color:var(--text3)">'+t('live_last')+': '+new Date().toLocaleTimeString()+'</span> <button onclick="refreshFallback()" style="padding:3px 8px;background:var(--teal);border:none;border-radius:3px;color:#fff;font-size:10px;cursor:pointer">'+t('live_refresh')+'</button>';
+    var picks=await window.showOpenFilePicker({types:[{description:'CSV',accept:{'text/csv':['.csv']}}]});
+    _lfHandle=picks[0];
+    _lfLoop();
+  }catch(e){
+    // User dismissed or blocked — fall back to snapshot mode
+    _showRefreshBtn();
+  }
+}
+
+function _showRefreshBtn(){
+  document.getElementById('liveChk').innerHTML='<label for="lfInput" style="padding:3px 10px;background:var(--teal);border-radius:3px;color:#fff;font-size:10px;cursor:pointer">'+t('live_refresh')+'</label>';
+}
+
+function resetLiveTimer(){clearTimeout(_lfTimer);if(_lfHandle)_lfLoop();}
+
+async function _readSnapshot(f){
+  try{var text=await f.text();await _lfProcess(text);}catch(e){console.error(e);}
 }
 
 async function _lfLoop(){
@@ -853,11 +839,11 @@ function _schedule(){
 }
 
 function stopLiveMonitor(){
-  clearTimeout(_lfTimer);_lfHandle=null;_lfHdr=null;_lfFallbackFile=null;_lfFallback=false;
+  clearTimeout(_lfTimer);_lfHandle=null;_lfHdr=null;
   document.getElementById('liveBar').style.display='none';
   document.getElementById('btnFileLbl').textContent=t('live_connect');
   document.getElementById('btnFile').classList.remove('on');
-  document.getElementById('lfFallbackInput').value='';
+  document.getElementById('lfInput').value='';
 }
 </script></body></html>"""
 
