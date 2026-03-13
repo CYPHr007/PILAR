@@ -619,12 +619,25 @@ async function analyse(){
     temp_process:toRaw(gv('ntp'),'temp'),
     vitesse:gv('nv'),couple:gv('nc'),
     usure:toRaw(gv('nu'),'wear')};
-  const res=await fetch('/predire',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(lastD)});
-  lastR=await res.json();
-  sessionStorage.setItem('lr',JSON.stringify(lastR));
-  sessionStorage.setItem('ld',JSON.stringify(lastD));
-  render(lastR);
-  if(lastR.probabilite>=50){sendN(lastR.probabilite,lastR.zones);const a=document.getElementById('abn');a.style.display='block';setTimeout(()=>a.style.display='none',4000);}
+  try{
+    const res=await fetch('/predire',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(lastD)});
+    let r;
+    try{r=await res.json();}catch(je){
+      document.getElementById('res').innerHTML='<div class="idle"><span class="l1" style="color:#dc2626">Erreur serveur (réponse non-JSON, code '+res.status+')</span></div>';
+      btn.disabled=false;btn.textContent=t('run_btn');return;
+    }
+    if(r.error){
+      document.getElementById('res').innerHTML='<div class="idle"><span class="l1" style="color:#dc2626">'+r.error+'</span></div>';
+      btn.disabled=false;btn.textContent=t('run_btn');return;
+    }
+    lastR=r;
+    sessionStorage.setItem('lr',JSON.stringify(lastR));
+    sessionStorage.setItem('ld',JSON.stringify(lastD));
+    render(lastR);
+    if(lastR.probabilite>=50){sendN(lastR.probabilite,lastR.zones);const a=document.getElementById('abn');a.style.display='block';setTimeout(()=>a.style.display='none',4000);}
+  }catch(err){
+    document.getElementById('res').innerHTML='<div class="idle"><span class="l1" style="color:#dc2626">Erreur réseau: '+err.message+'</span></div>';
+  }
   btn.disabled=false;btn.textContent=t('run_btn');
 }
 function render(r){
@@ -1096,23 +1109,31 @@ def set_email():
 
 @app.route('/predire', methods=['POST'])
 def predire():
-    data = request.json
-    probabilite, prediction, zones_risque = predict_risk(data)
-    mail_envoye = False
-    email = get_setting('responsible_email')
-    if probabilite >= 50 and email:
-        threading.Thread(target=envoyer_alerte, args=(email, probabilite, zones_risque, data), daemon=True).start()
-        mail_envoye = True
-    machine_types = {0: 'Low', 1: 'Medium', 2: 'High'}
-    zones_str = ', '.join([z['nom'] for z in zones_risque]) if zones_risque else ''
-    db.session.add(Analysis(machine_type=machine_types.get(data['type'], 'Unknown'),
-        temp_air=data['temp_air'], temp_process=data['temp_process'],
-        vitesse=data['vitesse'], couple=data['couple'], usure=data['usure'],
-        risk=probabilite, prediction=prediction, zones=zones_str, mail_sent=mail_envoye,
-        user_id=current_uid()))
-    db.session.commit()
-    return jsonify({'prediction': prediction, 'probabilite': probabilite,
-                    'zones': zones_risque, 'mail_envoye': mail_envoye})
+    try:
+        data = request.json
+        if not data:
+            return jsonify({'error': 'Données manquantes (JSON invalide)'}), 400
+        probabilite, prediction, zones_risque = predict_risk(data)
+        mail_envoye = False
+        email = get_setting('responsible_email')
+        if probabilite >= 50 and email:
+            threading.Thread(target=envoyer_alerte, args=(email, probabilite, zones_risque, data), daemon=True).start()
+            mail_envoye = True
+        machine_types = {0: 'Low', 1: 'Medium', 2: 'High'}
+        zones_str = ', '.join([z['nom'] for z in zones_risque]) if zones_risque else ''
+        db.session.add(Analysis(machine_type=machine_types.get(data['type'], 'Unknown'),
+            temp_air=data['temp_air'], temp_process=data['temp_process'],
+            vitesse=data['vitesse'], couple=data['couple'], usure=data['usure'],
+            risk=probabilite, prediction=prediction, zones=zones_str, mail_sent=mail_envoye,
+            user_id=current_uid()))
+        db.session.commit()
+        return jsonify({'prediction': prediction, 'probabilite': probabilite,
+                        'zones': zones_risque, 'mail_envoye': mail_envoye})
+    except Exception as e:
+        db.session.rollback()
+        import traceback
+        print(f"[Pilar/predire] ERROR: {type(e).__name__}: {e}\n{traceback.format_exc()}")
+        return jsonify({'error': f'Erreur modèle: {type(e).__name__}: {str(e)}'}), 500
 
 @app.route('/api/twin')
 def api_twin():
