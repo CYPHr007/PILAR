@@ -220,6 +220,13 @@ def send_verify_email(email, token):
 _AUTH_HEAD = """<!DOCTYPE html><html lang="fr"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#0e1118"><title>Pilar</title>
+<script>
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.getRegistrations().then(function(regs){
+    regs.forEach(function(r){r.unregister();});
+  });
+}
+</script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Segoe UI',system-ui,sans-serif;background:#07090f;color:#e2e8f0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
@@ -360,7 +367,7 @@ header{height:52px;border-bottom:1px solid var(--border);display:flex;align-item
 .ni svg{width:20px;height:20px;stroke-width:1.8;}
 .page{flex:1;overflow-y:auto;overflow-x:hidden;}
 .page::-webkit-scrollbar{width:0;}
-.pad{padding:16px;}
+.pad{padding:16px;padding-bottom:80px;}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:12px;}
 .ctitle{font-size:9px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:12px;}
 .rh{display:flex;align-items:center;justify-content:space-between;padding:18px;border-radius:8px;border:1px solid var(--border);background:var(--surface);margin-bottom:12px;}
