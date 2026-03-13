@@ -740,21 +740,26 @@ function render(r){
 // ── LIVE FILE MONITOR ─────────────────────────────────────────────────────
 var _lfHandle=null,_lfTimer=null,_lfKnown=0,_lfFail=0,_lfOk=0,_lfHdr=null,_lfFallbackFile=null,_lfFallback=false;
 
-async function connectLiveMonitor(){
+function connectLiveMonitor(){
   if(_lfHandle||_lfFallbackFile){stopLiveMonitor();return;}
-  if(window.showOpenFilePicker){
-    try{
-      var picks=await window.showOpenFilePicker({types:[{description:'CSV',accept:{'text/csv':['.csv']}}]});
-      _lfHandle=picks[0];_lfFallback=false;
-      _lfKnown=0;_lfFail=0;_lfOk=0;_lfHdr=null;
-      var fname=(await _lfHandle.getFile()).name;
-      _lfStart(fname);
-    }catch(e){if(e.name!=='AbortError')console.error(e);}
-  }else{
-    // Fallback: Opera GX / Firefox — use classic file input
+  if(!window.showOpenFilePicker){
+    // Fallback sync — must stay synchronous for .click() to work in all browsers
     _lfFallback=true;
     document.getElementById('lfFallbackInput').click();
+    return;
   }
+  _connectWithAPI();
+}
+
+async function _connectWithAPI(){
+  try{
+    var picks=await window.showOpenFilePicker({types:[{description:'CSV',accept:{'text/csv':['.csv']}}]});
+    _lfHandle=picks[0];_lfFallback=false;
+    _lfKnown=0;_lfFail=0;_lfOk=0;_lfHdr=null;
+    var fname=(await _lfHandle.getFile()).name;
+    _lfStart(fname);
+    _lfLoop();
+  }catch(e){if(e.name!=='AbortError')console.error(e);}
 }
 
 function onFallbackFile(inp){
