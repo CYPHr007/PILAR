@@ -23,10 +23,10 @@ print("PILAR — Entraînement Ensemble Model")
 print("=" * 60)
 
 # ── 1. CHARGEMENT DES DONNÉES ─────────────────────────────────
-print("\n📦 Chargement des données...")
+print("\n[1/9] Chargement des données...")
 url = "https://archive.ics.uci.edu/ml/machine-learning-databases/00601/ai4i2020.csv"
 df = pd.read_csv(url)
-print(f"✅ {len(df)} lignes chargées | {df['Machine failure'].sum()} pannes ({df['Machine failure'].mean()*100:.1f}%)")
+print(f"     {len(df)} lignes | {df['Machine failure'].sum()} pannes ({df['Machine failure'].mean()*100:.1f}%)")
 
 # ── 2. PRÉPARATION ────────────────────────────────────────────
 df = df.drop(columns=['UDI', 'Product ID'])
@@ -53,10 +53,10 @@ X_train, X_test, y_train, y_test = train_test_split(
 
 # SMOTE pour équilibrer
 X_train_bal, y_train_bal = SMOTE(random_state=42).fit_resample(X_train, y_train)
-print(f"✅ Données équilibrées avec SMOTE : {dict(pd.Series(y_train_bal).value_counts())}")
+print(f"     SMOTE : {dict(pd.Series(y_train_bal).value_counts())}")
 
 # ── 3. DÉFINIR LES MODÈLES ────────────────────────────────────
-print("\n🔧 Définition des modèles...")
+print("\n[3/9] Definition des modeles...")
 
 rf = RandomForestClassifier(n_estimators=200, max_depth=10, random_state=42, n_jobs=-1)
 xgb = XGBClassifier(n_estimators=200, max_depth=6, learning_rate=0.05, random_state=42, eval_metric='logloss')
@@ -65,7 +65,7 @@ svm = SVC(probability=True, kernel='rbf', C=1.0, random_state=42)
 lr = LogisticRegression(max_iter=1000, random_state=42)
 
 # ── 4. TESTER CHAQUE MODÈLE ───────────────────────────────────
-print("\n📊 Comparaison des modèles...")
+print("\n[4/9] Comparaison des modeles...")
 print("-" * 50)
 
 results = {}
@@ -80,7 +80,7 @@ for name, m in models.items():
     print(f"{name:20s} | Recall: {recall*100:.1f}% | F1: {f1*100:.1f}%")
 
 # ── 5. VOTING CLASSIFIER ──────────────────────────────────────
-print("\n🗳️  Entraînement VotingClassifier...")
+print("\n[5/9] VotingClassifier...")
 voting = VotingClassifier(
     estimators=[('rf', rf), ('xgb', xgb), ('gb', gb)],
     voting='soft'
@@ -92,7 +92,7 @@ f1_v = f1_score(y_test, y_pred_v)
 print(f"{'VotingClassifier':20s} | Recall: {recall_v*100:.1f}% | F1: {f1_v*100:.1f}%")
 
 # ── 6. STACKING CLASSIFIER ────────────────────────────────────
-print("\n🏆 Entraînement StackingClassifier...")
+print("\n[6/9] StackingClassifier...")
 stacking = StackingClassifier(
     estimators=[('rf', RandomForestClassifier(n_estimators=200, random_state=42)),
                 ('xgb', XGBClassifier(n_estimators=200, random_state=42, eval_metric='logloss')),
@@ -123,19 +123,19 @@ best_model = all_models[best_name]
 best_recall = all_results[best_name]
 
 print("\n" + "=" * 60)
-print(f"🏆 MEILLEUR MODÈLE : {best_name}")
-print(f"   Recall : {best_recall*100:.1f}%")
+print(f"MEILLEUR MODELE : {best_name}")
+print(f"Recall : {best_recall*100:.1f}%")
 print("=" * 60)
 
 # Rapport détaillé du meilleur
 y_pred_best = best_model.predict(X_test)
-print("\n📋 Rapport détaillé :")
+print("\nRapport detaille :")
 print(classification_report(y_test, y_pred_best, target_names=['Normal', 'Panne']))
 print("Matrice de confusion :")
 print(confusion_matrix(y_test, y_pred_best))
 
 # ── 8. ENTRAÎNER LES MODÈLES ZONES ───────────────────────────
-print("\n🔍 Entraînement des modèles de zones de panne...")
+print("\n[8/9] Modeles zones de panne...")
 modeles_zones = {}
 ZONE_NAMES = {'TWF': 'Tool Wear Failure', 'HDF': 'Heat Dissipation Failure',
               'PWF': 'Power Failure', 'OSF': 'Overstrain Failure', 'RNF': 'Random Failure'}
@@ -158,7 +158,7 @@ for zone in ZONES:
         print(f"  {ZONE_NAMES[zone]:30s} | Recall: {recall_score(y_z_test, y_z_pred)*100:.1f}%")
 
 # ── 9. SAUVEGARDER ───────────────────────────────────────────
-print("\n💾 Sauvegarde des fichiers...")
+print("\n[9/9] Sauvegarde...")
 
 with open("modele_pannes.pkl", "wb") as f:
     pickle.dump(best_model, f)
@@ -169,8 +169,6 @@ with open("scaler.pkl", "wb") as f:
 with open("modeles_zones.pkl", "wb") as f:
     pickle.dump(modeles_zones, f)
 
-print("✅ modele_pannes.pkl  — meilleur modèle sauvegardé")
-print("✅ scaler.pkl         — scaler sauvegardé")
-print("✅ modeles_zones.pkl  — modèles zones sauvegardés")
-print("\n🚀 Remplace les anciens .pkl dans ton projet par ces nouveaux !")
-print("   Sur PythonAnywhere : Files → PILAR → upload les 3 fichiers")
+print("     modele_pannes.pkl  OK")
+print("     scaler.pkl         OK")
+print("     modeles_zones.pkl  OK")
