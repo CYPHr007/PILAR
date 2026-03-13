@@ -95,6 +95,21 @@ class Analysis(db.Model):
     zones        = db.Column(db.String(500))
     mail_sent    = db.Column(db.Boolean, default=False)
     user_id      = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    extra_params = db.Column(db.Text)
+    confidence   = db.Column(db.Integer, default=100)
+
+class DiscoveredParam(db.Model):
+    id           = db.Column(db.Integer, primary_key=True)
+    name         = db.Column(db.String(100))
+    label        = db.Column(db.String(200))
+    unit_guess   = db.Column(db.String(20))
+    impact       = db.Column(db.Float, default=0.0)
+    n_samples    = db.Column(db.Integer, default=0)
+    samples_json = db.Column(db.Text)
+    risks_json   = db.Column(db.Text)
+    created_at   = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at   = db.Column(db.DateTime, default=datetime.utcnow)
+    user_id      = db.Column(db.Integer, nullable=True)
 
 with app.app_context():
     try:
@@ -108,6 +123,8 @@ with app.app_context():
             "ALTER TABLE analysis ADD COLUMN user_id INTEGER",
             "ALTER TABLE settings ADD COLUMN user_id INTEGER",
             "ALTER TABLE user ADD COLUMN team_id INTEGER",
+            "ALTER TABLE analysis ADD COLUMN extra_params TEXT",
+            "ALTER TABLE analysis ADD COLUMN confidence INTEGER",
         ]
     else:
         _migrations = [
@@ -115,6 +132,8 @@ with app.app_context():
             "ALTER TABLE settings ADD COLUMN IF NOT EXISTS user_id INTEGER",
             "ALTER TABLE settings DROP CONSTRAINT IF EXISTS settings_key_key",
             'ALTER TABLE "user" ADD COLUMN IF NOT EXISTS team_id INTEGER',
+            "ALTER TABLE analysis ADD COLUMN IF NOT EXISTS extra_params TEXT",
+            "ALTER TABLE analysis ADD COLUMN IF NOT EXISTS confidence INTEGER",
         ]
     for sql in _migrations:
         try:
@@ -141,6 +160,10 @@ except Exception as _e:
 
 FAILURE_ZONES = {"TWF":"Tool Wear Failure","HDF":"Heat Dissipation Failure","PWF":"Power Failure","OSF":"Overstrain Failure","RNF":"Random Failure"}
 COLONNES = ["Type","Air temperature [K]","Process temperature [K]","Rotational speed [rpm]","Torque [Nm]","Tool wear [min]","ecart_temp","puissance"]
+# Médiane AI4I — utilisées pour imputer les features manquantes (analyse partielle)
+FEATURE_MEDIANS = {'type':1.0,'temp_air':300.0,'temp_process':310.0,'vitesse':1500.0,'couple':40.0,'usure':108.0}
+CORE_FEATURES   = list(FEATURE_MEDIANS.keys())
+OPTIONAL_FIELDS = ['humidite','vibration','pression','courant','tension']
 GMAIL     = os.environ.get("GMAIL_ADDRESS", "")
 GMAIL_PWD = os.environ.get("GMAIL_APP_PASSWORD", "")
 FAVICON = "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"
@@ -537,7 +560,8 @@ tut_connect:'Connecter fichier',tut_no_file:'Aucun fichier connecté',tut_discon
 ast_placeholder:'Posez votre question sur la machine...',ast_send:'Envoyer',
 ast_hello:"Bonjour. Je suis votre assistant maintenance prédictive. Partagez vos relevés capteurs ou posez-moi vos questions.",
 csv_detect:'Colonnes détectées',csv_bad:'Colonnes non reconnues',csv_rows:'lignes',
-live_hint:'CSV · noms de colonnes libres · conversion auto',manual_title:'Saisie manuelle'},
+live_hint:'CSV · noms de colonnes libres · conversion auto',manual_title:'Saisie manuelle',
+partial_analysis:'Analyse partielle',imputed:'estimés',discovered_param:'Paramètre découvert'},
 en:{nav_monitor:'Monitor',nav_twin:'Twin',nav_history:'History',nav_account:'Account',nav_settings:'Settings',
 page_monitor:'Monitor',page_twin:'Digital Twin',page_history:'History',page_account:'Account',page_settings:'Settings',
 idle_l1:'No analysis yet',idle_l2:'Configure below and run',
@@ -579,7 +603,8 @@ tut_connect:'Connect File',tut_no_file:'No file connected',tut_disconnected:'Dis
 ast_placeholder:'Ask about your machine...',ast_send:'Send',
 ast_hello:'Hello. I am your predictive maintenance assistant. Share your sensor readings or ask me anything about your machine health.',
 csv_detect:'Columns detected',csv_bad:'Columns not recognized',csv_rows:'rows',
-live_hint:'CSV · any column names · auto unit conversion',manual_title:'Manual Input'}
+live_hint:'CSV · any column names · auto unit conversion',manual_title:'Manual Input',
+partial_analysis:'Partial analysis',imputed:'estimated',discovered_param:'Discovered parameter'}
 };
 let LANG=localStorage.getItem('pilar_lang')||'en';
 function t(k){return(T[LANG]&&T[LANG][k])||(T.en[k])||k;}
@@ -683,6 +708,7 @@ function animateNum(el,from,to,decimals,duration){
 }
 // ── CSV INTELLIGENT PARSING ───────────────────────────────────────────────
 var _CSV_FIELDS=['type','temp_air','temp_process','vitesse','couple','usure'];
+var _CSV_OPT_FIELDS=['humidite','vibration','pression','courant','tension'];
 var _CSV_PATS={
   type:['type','machine_type','product_type','machine','classe','class','category','categorie'],
   temp_air:['air_temp','temp_air','temperature_air','air_temperature','t_air','tair','ambient_temp','temp_ambiante','temp_ambiant'],
@@ -691,15 +717,24 @@ var _CSV_PATS={
   couple:['torque','couple','torque_nm','couple_nm','moment'],
   usure:['wear','usure','tool_wear','wear_min','tool_wear_min','outil','usure_outil','wear_time']
 };
+var _CSV_OPT_PATS={
+  humidite:['humidity','humidite','humid','rh','relative_humidity','moisture','humidite_relative','humidity_pct'],
+  vibration:['vibration','vib','vibration_mm','vib_mms','vibration_mmps','accel','acceleration'],
+  pression:['pressure','pression','pres','bar','press','pression_bar','pressure_bar'],
+  courant:['current','courant','ampere','amp','current_a','courant_a','intensite'],
+  tension:['voltage','tension','volt','v_in','tension_v','voltage_v','alimentation']
+};
 function _csvN(s){return s.toLowerCase().trim().replace(/[^a-z0-9]/g,'_').replace(/_+/g,'_').replace(/^_|_$/g,'');}
 function _csvDelim(line){var sc=(line.match(/;/g)||[]).length,cc=(line.match(/,/g)||[]).length;return sc>cc?';':',';}
 function detectCsvMapping(rawHeaders){
   var norm=rawHeaders.map(_csvN);
   var origLow=rawHeaders.map(function(h){return h.toLowerCase().trim();});
   var map={};
-  _CSV_FIELDS.forEach(function(field){
-    var pats=_CSV_PATS[field],best=-1,score=0;
+  var usedIdx=new Set();
+  function matchField(field,pats){
+    var best=-1,score=0;
     for(var j=0;j<norm.length;j++){
+      if(usedIdx.has(j))continue;
       var h=norm[j],s=0;
       for(var p=0;p<pats.length;p++){
         if(h===pats[p]){s=100-p;break;}
@@ -719,24 +754,32 @@ function detectCsvMapping(rawHeaders){
         else if(orig.indexOf('min')!==-1)unit='min';
       }
       map[field]={idx:best,unit:unit,col:rawHeaders[best]};
+      usedIdx.add(best);
     }
-  });
+  }
+  _CSV_FIELDS.forEach(function(f){matchField(f,_CSV_PATS[f]);});
+  _CSV_OPT_FIELDS.forEach(function(f){matchField(f,_CSV_OPT_PATS[f]);});
+  var unknown=[];
+  for(var i=0;i<rawHeaders.length;i++){
+    if(!usedIdx.has(i))unknown.push({idx:i,col:rawHeaders[i]});
+  }
+  map._unknown=unknown;
   return map;
 }
 function buildPilarRow(vals,map){
   var row={};
   for(var i=0;i<_CSV_FIELDS.length;i++){
     var f=_CSV_FIELDS[i],m=map[f];
-    if(!m||m.idx>=vals.length)return null;
+    if(!m||m.idx>=vals.length){row[f]=null;continue;}
     var raw=(vals[m.idx]||'').toString().trim().replace(',','.');
     if(f==='type'){
       var sv=raw.toLowerCase();
       if(sv==='l'||sv==='low')row.type=0;
       else if(sv==='m'||sv==='medium'||sv==='med')row.type=1;
       else if(sv==='h'||sv==='high')row.type=2;
-      else{var n=parseFloat(raw);if(isNaN(n))return null;row.type=Math.min(2,Math.max(0,Math.round(n)));}
+      else{var n=parseFloat(raw);if(isNaN(n)){row.type=null;continue;}row.type=Math.min(2,Math.max(0,Math.round(n)));}
     }else{
-      var v=parseFloat(raw);if(isNaN(v))return null;
+      var v=parseFloat(raw);if(isNaN(v)){row[f]=null;continue;}
       if(f==='temp_air'||f==='temp_process'){
         var u=m.unit||(v<200?'C':'K');
         if(u==='C')v+=273.15;else if(u==='F')v=(v-32)*5/9+273.15;
@@ -745,6 +788,25 @@ function buildPilarRow(vals,map){
       row[f]=Math.round(v*100)/100;
     }
   }
+  var hasAny=_CSV_FIELDS.some(function(f){return row[f]!==null;});
+  if(!hasAny)return null;
+  var extra={};
+  _CSV_OPT_FIELDS.forEach(function(f){
+    var m=map[f];if(!m||m.idx>=vals.length)return;
+    var raw=(vals[m.idx]||'').toString().trim().replace(',','.');
+    var v=parseFloat(raw);if(!isNaN(v))extra[f]=Math.round(v*100)/100;
+  });
+  row._extra=extra;
+  var unknown={};
+  if(map._unknown){
+    map._unknown.forEach(function(uc){
+      if(uc.idx<vals.length){
+        var raw=(vals[uc.idx]||'').toString().trim().replace(',','.');
+        var v=parseFloat(raw);if(!isNaN(v))unknown[uc.col]=v;
+      }
+    });
+  }
+  row._unknown=unknown;
   return row;
 }
 </script></head>"""
@@ -880,13 +942,18 @@ async function analyse(){
 }
 function render(r){
   const al=r.prediction===1,cls=al?'alert':'ok',st=al?t('status_alert'):t('status_ok');
+  let confH='';
+  if(r.confidence!==undefined&&r.confidence<100){
+    var imp=r.imputed&&r.imputed.length?r.imputed.join(', '):'';
+    confH='<div style="margin-top:8px;padding:6px 10px;background:rgba(234,179,8,0.08);border:1px solid rgba(234,179,8,0.25);border-radius:6px;font-size:10px;color:#ca8a04;display:flex;align-items:center;gap:6px"><svg style="width:12px;height:12px;fill:none;stroke:currentColor;flex-shrink:0" viewBox="0 0 24 24"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'+t('partial_analysis')+' — '+r.confidence+'%'+(imp?' ('+t('imputed')+': '+imp+')':'')+'</div>';
+  }
   let zH='';
-  if(al&&r.zones.length>0){zH='<div class="card"><div class="ctitle">'+t('zone_title')+'</div>'+r.zones.map(z=>'<div class="zrow"><span class="zname">'+z.nom+'</span><div class="zbw"><div class="zbf" style="width:'+z.proba+'%"></div></div><span class="zp">'+z.proba+'%</span></div>').join('')+'</div>';}
-  document.getElementById('res').innerHTML='<div class="rh '+cls+'"><div><div class="sb '+cls+'"><span class="dot '+cls+'"></span>'+st+'</div><div style="font-size:10px;color:var(--text3);margin-top:4px">'+localTimeNow()+'</div></div><div><div class="rnum '+cls+'">'+r.probabilite+'<span class="runit">%</span></div><div class="rlbl">'+t('failure_prob')+'</div></div></div>'+zH;
+  if(al&&r.zones&&r.zones.length>0){zH='<div class="card"><div class="ctitle">'+t('zone_title')+'</div>'+r.zones.map(z=>'<div class="zrow"><span class="zname">'+z.nom+'</span><div class="zbw"><div class="zbf" style="width:'+z.proba+'%"></div></div><span class="zp">'+z.proba+'%</span></div>').join('')+'</div>';}
+  document.getElementById('res').innerHTML='<div class="rh '+cls+'"><div><div class="sb '+cls+'"><span class="dot '+cls+'"></span>'+st+'</div><div style="font-size:10px;color:var(--text3);margin-top:4px">'+localTimeNow()+'</div>'+confH+'</div><div><div class="rnum '+cls+'">'+r.probabilite+'<span class="runit">%</span></div><div class="rlbl">'+t('failure_prob')+'</div></div></div>'+zH;
 }
 
 // ── LIVE FILE MONITOR ─────────────────────────────────────────────────────
-var _lfHandle=null,_lfTimer=null,_lfKnown=0,_lfFail=0,_lfOk=0,_lfMap=null,_lfDelim=',',_lfFallback=false;
+var _lfHandle=null,_lfTimer=null,_lfKnown=0,_lfFail=0,_lfOk=0,_lfMap=null,_lfDelim=',',_lfFallback=false,_lfUnknown={};
 
 function onLiveFile(inp){
   var f=inp.files[0];if(!f)return;
@@ -945,13 +1012,17 @@ async function _lfProcess(text){
     _lfDelim=_csvDelim(lines[0]);
     var rawHdr=lines[0].split(_lfDelim).map(function(s){return s.trim();});
     _lfMap=detectCsvMapping(rawHdr);
-    var found=Object.keys(_lfMap).length;
-    if(found<6){
-      var missing=_CSV_FIELDS.filter(function(f){return !_lfMap[f];}).join(', ');
-      document.getElementById('liveChk').textContent=t('csv_bad')+': '+missing;
+    var found=_CSV_FIELDS.filter(function(f){return !!_lfMap[f];}).length;
+    var optFound=_CSV_OPT_FIELDS.filter(function(f){return !!_lfMap[f];}).length;
+    var ukCount=(_lfMap._unknown||[]).length;
+    if(found<1){
+      document.getElementById('liveChk').textContent=t('csv_bad')+': '+_CSV_FIELDS.filter(function(f){return !_lfMap[f];}).join(', ');
       stopLiveMonitor();return;
     }
-    document.getElementById('liveChk').textContent=t('csv_detect')+' ('+found+'/6)';
+    var hint=t('csv_detect')+' ('+found+'/6)';
+    if(optFound>0)hint+=' +'+optFound+' opt';
+    if(ukCount>0)hint+=' +'+ukCount+' ?';
+    document.getElementById('liveChk').textContent=hint;
   }
   var total=lines.length-1;
   document.getElementById('liveRowCount').textContent=total;
@@ -966,7 +1037,10 @@ async function _lfProcess(text){
     _lfKnown=total;
     if(lastRow){
       try{
-        var res=await fetch('/predire',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(lastRow)});
+        var payload=Object.assign({},lastRow);
+        if(lastRow._extra)Object.assign(payload,lastRow._extra);
+        delete payload._extra;delete payload._unknown;
+        var res=await fetch('/predire',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
         var r=await res.json();
         if(!r.error){
           if(r.prediction===1){_lfFail++;if(r.probabilite>=50){sendN(r.probabilite,r.zones);var a=document.getElementById('abn');a.style.display='block';setTimeout(function(){a.style.display='none';},4000);}}
@@ -975,6 +1049,20 @@ async function _lfProcess(text){
           document.getElementById('liveOkCount').textContent=_lfOk;
           lastR=r;render(r);
           localStorage.setItem('pilar_last_result',JSON.stringify(r));
+          if(lastRow._unknown){
+            Object.keys(lastRow._unknown).forEach(function(colName){
+              var val=lastRow._unknown[colName];
+              if(!_lfUnknown[colName])_lfUnknown[colName]={vals:[],risks:[]};
+              _lfUnknown[colName].vals.push(val);
+              _lfUnknown[colName].risks.push(r.probabilite);
+              if(_lfUnknown[colName].vals.length>=20){
+                var disc=_lfUnknown[colName];
+                _lfUnknown[colName]={vals:[],risks:[]};
+                fetch('/api/discover',{method:'POST',headers:{'Content-Type':'application/json'},
+                  body:JSON.stringify({name:colName,values:disc.vals,risks:disc.risks})}).catch(function(){});
+              }
+            });
+          }
         }
       }catch(e){}
     }
@@ -1664,6 +1752,11 @@ function stopLive(){
 
 # ── BACKEND ───────────────────────────────────────────────────────────────────
 def predict_risk(params):
+    # Analyse partielle : imputer les features manquantes avec les médianes AI4I
+    missing_keys = [k for k in CORE_FEATURES if params.get(k) is None]
+    for k in missing_keys:
+        params[k] = FEATURE_MEDIANS[k]
+    confidence = round((len(CORE_FEATURES) - len(missing_keys)) / len(CORE_FEATURES) * 100)
     ecart_temp = params['temp_process'] - params['temp_air']
     puissance = params['vitesse'] * params['couple']
     donnees = pd.DataFrame([[params['type'], params['temp_air'], params['temp_process'],
@@ -1679,7 +1772,7 @@ def predict_risk(params):
                 if pz >= 30:
                     zones_risque.append({'nom': nom, 'proba': pz})
         zones_risque.sort(key=lambda x: x['proba'], reverse=True)
-    return probabilite, prediction, zones_risque
+    return probabilite, prediction, zones_risque, confidence, missing_keys
 
 def envoyer_alerte(email_to, probabilite, zones_risque, data):
     machine_types = {0: 'Low', 1: 'Medium', 2: 'High'}
@@ -1884,15 +1977,27 @@ def predire():
             return jsonify({'error': 'Données manquantes (JSON invalide)'}), 400
         if model is None:
             return jsonify({'error': 'Modele ML non chargé — contactez l\'administrateur'}), 503
-        required = ['type', 'temp_air', 'temp_process', 'vitesse', 'couple', 'usure']
-        for field in required:
-            if field not in data:
-                return jsonify({'error': f'Champ manquant: {field}'}), 400
-            try:
-                data[field] = float(data[field])
-            except (TypeError, ValueError):
-                return jsonify({'error': f'Valeur invalide pour {field}: doit etre numerique'}), 400
-        probabilite, prediction, zones_risque = predict_risk(data)
+        # Champs core optionnels — None → imputé par predict_risk
+        for field in CORE_FEATURES:
+            if field in data and data[field] is not None:
+                try:
+                    data[field] = float(data[field])
+                except (TypeError, ValueError):
+                    data[field] = None
+            else:
+                data[field] = None
+        if all(data.get(f) is None for f in CORE_FEATURES):
+            return jsonify({'error': 'Au moins un paramètre requis'}), 400
+        # Champs optionnels connus
+        import json as _json
+        extra_params = {}
+        for field in OPTIONAL_FIELDS:
+            if field in data and data[field] is not None:
+                try:
+                    extra_params[field] = round(float(data[field]), 3)
+                except (TypeError, ValueError):
+                    pass
+        probabilite, prediction, zones_risque, confidence, imputed = predict_risk(data)
         mail_envoye = False
         email = get_setting('responsible_email')
         if probabilite >= 50 and email:
@@ -1900,14 +2005,16 @@ def predire():
             mail_envoye = True
         machine_types = {0: 'Low', 1: 'Medium', 2: 'High'}
         zones_str = ', '.join([z['nom'] for z in zones_risque]) if zones_risque else ''
-        db.session.add(Analysis(machine_type=machine_types.get(data['type'], 'Unknown'),
-            temp_air=data['temp_air'], temp_process=data['temp_process'],
-            vitesse=data['vitesse'], couple=data['couple'], usure=data['usure'],
+        extra_json = _json.dumps(extra_params) if extra_params else None
+        db.session.add(Analysis(machine_type=machine_types.get(int(data.get('type') or 1), 'Unknown'),
+            temp_air=data.get('temp_air'), temp_process=data.get('temp_process'),
+            vitesse=data.get('vitesse'), couple=data.get('couple'), usure=data.get('usure'),
             risk=probabilite, prediction=prediction, zones=zones_str, mail_sent=mail_envoye,
-            user_id=current_uid()))
+            extra_params=extra_json, confidence=confidence, user_id=current_uid()))
         db.session.commit()
         return jsonify({'prediction': prediction, 'probabilite': probabilite,
-                        'zones': zones_risque, 'mail_envoye': mail_envoye})
+                        'zones': zones_risque, 'mail_envoye': mail_envoye,
+                        'confidence': confidence, 'imputed': imputed})
     except Exception as e:
         db.session.rollback()
         import traceback
@@ -1932,7 +2039,7 @@ def api_twin():
         failure_hours = None
         for h in range(1, 25):
             cu = min(cu + 1.5, 250); ctp = min(ctp + 0.05, 315)
-            risk, pred, _ = predict_risk({'type':1,'temp_air':last.temp_air,'temp_process':ctp,'vitesse':last.vitesse,'couple':last.couple,'usure':cu})
+            risk, pred, _, _, _ = predict_risk({'type':1,'temp_air':last.temp_air,'temp_process':ctp,'vitesse':last.vitesse,'couple':last.couple,'usure':cu})
             future_times.append((now + timedelta(hours=h)).strftime('%H:%M'))
             future_risks.append(risk); future_wear.append(round(cu,1)); future_temp.append(round(ctp,2))
             if failure_hours is None and risk >= 50: failure_hours = h
@@ -1965,6 +2072,61 @@ def api_health():
         'commit': os.environ.get('RAILWAY_GIT_COMMIT_SHA', 'local')[:7],
     })
 
+@app.route('/api/discover', methods=['POST'])
+@auth_optional
+def api_discover():
+    try:
+        import json as _json, math
+        data = request.json
+        if not data:
+            return jsonify({'ok': False})
+        col_name = str(data.get('name', ''))[:100]
+        values   = data.get('values', [])
+        risks    = data.get('risks', [])
+        if not col_name or not values:
+            return jsonify({'ok': False})
+        norm = ''.join(c if c.isalnum() else '_' for c in col_name.lower().strip()).strip('_')[:80]
+        cl = col_name.lower()
+        unit_guess = ''
+        if '%' in cl or 'percent' in cl or 'humid' in cl: unit_guess = '%'
+        elif 'bar' in cl or 'pres' in cl: unit_guess = 'bar'
+        elif 'mm' in cl and ('vib' in cl or '/s' in cl): unit_guess = 'mm/s'
+        elif 'volt' in cl or cl.endswith('_v'): unit_guess = 'V'
+        elif 'amp' in cl or 'curr' in cl or cl.endswith('_a'): unit_guess = 'A'
+        elif 'rpm' in cl or 'speed' in cl: unit_guess = 'rpm'
+        elif 'temp' in cl or 'heat' in cl: unit_guess = 'K'
+        uid = current_uid()
+        dp = DiscoveredParam.query.filter_by(name=norm, user_id=uid).first()
+        try:
+            new_vals  = [float(v) for v in values if v is not None]
+            new_risks = [float(r) for r in risks  if r is not None]
+        except Exception:
+            return jsonify({'ok': False})
+        if not dp:
+            dp = DiscoveredParam(name=norm, label=col_name, unit_guess=unit_guess, user_id=uid)
+            db.session.add(dp)
+        existing_vals  = _json.loads(dp.samples_json or '[]')
+        existing_risks = _json.loads(dp.risks_json   or '[]')
+        all_vals  = (existing_vals  + new_vals) [-500:]
+        all_risks = (existing_risks + new_risks)[-500:]
+        dp.samples_json = _json.dumps(all_vals)
+        dp.risks_json   = _json.dumps(all_risks)
+        dp.n_samples    = len(all_vals)
+        dp.updated_at   = datetime.utcnow()
+        if len(all_vals) >= 10:
+            n = min(len(all_vals), len(all_risks))
+            xv = all_vals[:n]; yr = all_risks[:n]
+            mx = sum(xv)/n; my = sum(yr)/n
+            num = sum((xv[i]-mx)*(yr[i]-my) for i in range(n))
+            sx  = math.sqrt(sum((x-mx)**2 for x in xv) or 1)
+            sy  = math.sqrt(sum((y-my)**2 for y in yr) or 1)
+            dp.impact = round(num/(sx*sy), 3) if sx*sy > 0 else 0.0
+        db.session.commit()
+        return jsonify({'ok': True, 'impact': dp.impact, 'n_samples': dp.n_samples, 'label': dp.label})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'ok': False, 'error': str(e)})
+
 @app.route('/api/whatif', methods=['POST'])
 @api_or_login_required
 def api_whatif():
@@ -1972,7 +2134,7 @@ def api_whatif():
         params = request.json
         if not params: return jsonify({'error': 'Données manquantes'}), 400
         params['temp_process'] = params['temp_air'] + 10
-        risk, pred, zones = predict_risk(params)
+        risk, pred, zones, _, _ = predict_risk(params)
         if pred == 0: status, message = 'Normal Operation', 'No failure predicted under these conditions.'
         elif risk < 50: status, message = 'Low Risk', 'Minor anomaly. Continue monitoring.'
         else: status, message = 'High Failure Risk', 'Reduce tool wear or torque immediately.'
