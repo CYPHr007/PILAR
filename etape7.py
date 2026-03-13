@@ -306,7 +306,15 @@ _HEAD = """<!DOCTYPE html><html lang="en"><head>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Pilar">
-<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js');}</script>
+<script>
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.getRegistrations().then(function(regs){
+    return Promise.all(regs.map(function(r){return r.unregister();}));
+  }).then(function(){
+    navigator.serviceWorker.register('/sw.js');
+  });
+}
+</script>
 
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
@@ -1340,7 +1348,9 @@ self.addEventListener('fetch', e => {
   e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
 });
 """
-    return Response(sw, mimetype='application/javascript')
+    resp = Response(sw, mimetype='application/javascript')
+    resp.headers['Cache-Control'] = 'no-store'
+    return resp
 
 # ── GLOBAL ERROR HANDLER ──────────────────────────────────────────────────────
 @app.errorhandler(500)
