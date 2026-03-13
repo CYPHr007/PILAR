@@ -471,6 +471,28 @@ tr:last-child td{border-bottom:none;}
 .slide-right{animation:slideInRight 0.22s cubic-bezier(0.25,0.46,0.45,0.94)}
 .slide-left{animation:slideInLeft 0.22s cubic-bezier(0.25,0.46,0.45,0.94)}
 .slide-up{animation:slideInUp 0.2s cubic-bezier(0.25,0.46,0.45,0.94)}
+.lz-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:12px;}
+.lz-empty{display:flex;flex-direction:column;align-items:center;padding:36px 24px;gap:14px;}
+.lz-cta{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:16px;background:var(--teal);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:background 0.15s;}
+.lz-cta:hover{background:#0f766e;}
+.lz-hint{font-size:10px;color:var(--text3);letter-spacing:0.5px;text-align:center;line-height:1.7;}
+.lz-conn{padding:16px;}
+.lz-ch{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+.lz-dot{width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0;animation:blink 1.5s infinite;}
+.lz-fname{font-size:12px;color:var(--teal-light);font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.lz-disc{padding:5px 12px;background:transparent;border:1px solid var(--border2);border-radius:4px;color:var(--text3);font-size:10px;cursor:pointer;transition:border-color 0.15s;white-space:nowrap;}
+.lz-disc:hover{border-color:var(--red);color:var(--red);}
+.lz-sg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
+.lz-si{background:var(--surface2);border-radius:8px;padding:12px 8px;text-align:center;}
+.lz-sv{display:block;font-size:26px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--text);}
+.lz-sl{font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-top:2px;display:block;}
+.lz-si.alert .lz-sv{color:var(--red);}
+.lz-si.ok .lz-sv{color:var(--green);}
+.lz-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+.lz-ck{font-size:10px;color:var(--text3);flex:1;}
+.lz-sel{background:var(--surface2);border:1px solid var(--border2);border-radius:4px;color:var(--text2);font-size:10px;padding:4px 8px;outline:none;}
+.man-hdr{display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;margin-bottom:0;}
+.man-chv{width:14px;height:14px;stroke:var(--text3);fill:none;flex-shrink:0;transition:transform 0.2s;}
 </style>
 <script>
 const T={
@@ -514,7 +536,8 @@ tut_live:'Moniteur fichier live',tut_live_desc:"Connectez un fichier CSV mis à 
 tut_connect:'Connecter fichier',tut_no_file:'Aucun fichier connecté',tut_disconnected:'Déconnecté',
 ast_placeholder:'Posez votre question sur la machine...',ast_send:'Envoyer',
 ast_hello:"Bonjour. Je suis votre assistant maintenance prédictive. Partagez vos relevés capteurs ou posez-moi vos questions.",
-csv_detect:'Colonnes détectées',csv_bad:'Colonnes non reconnues',csv_rows:'lignes'},
+csv_detect:'Colonnes détectées',csv_bad:'Colonnes non reconnues',csv_rows:'lignes',
+live_hint:'CSV · noms de colonnes libres · conversion auto',manual_title:'Saisie manuelle'},
 en:{nav_monitor:'Monitor',nav_twin:'Twin',nav_history:'History',nav_account:'Account',nav_settings:'Settings',
 page_monitor:'Monitor',page_twin:'Digital Twin',page_history:'History',page_account:'Account',page_settings:'Settings',
 idle_l1:'No analysis yet',idle_l2:'Configure below and run',
@@ -555,7 +578,8 @@ tut_live:'Live File Monitor',tut_live_desc:'Connect a CSV file updated by your S
 tut_connect:'Connect File',tut_no_file:'No file connected',tut_disconnected:'Disconnected',
 ast_placeholder:'Ask about your machine...',ast_send:'Send',
 ast_hello:'Hello. I am your predictive maintenance assistant. Share your sensor readings or ask me anything about your machine health.',
-csv_detect:'Columns detected',csv_bad:'Columns not recognized',csv_rows:'rows'}
+csv_detect:'Columns detected',csv_bad:'Columns not recognized',csv_rows:'rows',
+live_hint:'CSV · any column names · auto unit conversion',manual_title:'Manual Input'}
 };
 let LANG=localStorage.getItem('pilar_lang')||'en';
 function t(k){return(T[LANG]&&T[LANG][k])||(T.en[k])||k;}
@@ -743,61 +767,72 @@ def nav(active):
 HTML = _HEAD.replace("{FAV}","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") + """
 <body>
 <header><span class="logo">PILAR</span><div class="hd"></div><span class="hsub" data-i18n="page_monitor">Monitor</span>
-<div class="hright">
-  <label for="lfInput" class="nb" id="btnFile" style="cursor:pointer">
-    <svg style="width:13px;height:13px;vertical-align:middle;stroke:currentColor;fill:none;margin-right:3px" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" stroke-width="2"/></svg>
-    <span id="btnFileLbl" data-i18n="live_connect">Connect File</span>
-  </label>
-  <input type="file" id="lfInput" accept=".csv" style="display:none" onchange="onLiveFile(this)">
-  <button class="nb" id="nb" onclick="toggleN()">Notifs</button>
-</div></header>
+<div class="hright"><button class="nb" id="nb" onclick="toggleN()">Notifs</button></div></header>
 <div class="page pad">
-  <div class="ab" id="abn">Alert dispatched</div>
+  <div class="ab" id="abn" data-i18n="status_alert">Anomaly Detected</div>
 
-  <!-- LIVE FILE STATUS BAR -->
-  <div id="liveBar" style="display:none;background:var(--surface);border:1px solid var(--teal);border-radius:8px;padding:12px 14px;margin-bottom:12px">
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
-      <div style="display:flex;align-items:center;gap:8px">
-        <span style="width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;animation:blink 1.5s infinite"></span>
-        <span style="font-size:11px;color:var(--teal-light);font-weight:600" id="liveFileName">—</span>
+  <!-- RESULT — hero -->
+  <div id="res"><div class="idle"><span class="l1" data-i18n="idle_l1">No analysis yet</span><span class="l2" data-i18n="idle_l2">Connect a file or use manual input</span></div></div>
+
+  <!-- LIVE FILE ZONE — primary -->
+  <div class="lz-wrap">
+    <input type="file" id="lfInput" accept=".csv" style="display:none" onchange="onLiveFile(this)">
+    <div id="lzEmpty" class="lz-empty">
+      <label for="lfInput" class="lz-cta">
+        <svg style="width:18px;height:18px;stroke:currentColor;fill:none;flex-shrink:0" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span data-i18n="live_connect">Connect File</span>
+      </label>
+      <span class="lz-hint" data-i18n="live_hint">CSV · any column names · auto unit conversion</span>
+    </div>
+    <div id="lzConn" class="lz-conn" style="display:none">
+      <div class="lz-ch">
+        <span class="lz-dot"></span>
+        <span class="lz-fname" id="liveFileName">—</span>
+        <button class="lz-disc" onclick="stopLiveMonitor()" data-i18n="live_disconnect">Disconnect</button>
       </div>
-      <div style="display:flex;align-items:center;gap:8px">
-        <select id="liveIntv" style="background:var(--surface2);border:1px solid var(--border2);border-radius:4px;color:var(--text2);font-size:10px;padding:4px 6px;outline:none" onchange="resetLiveTimer()">
+      <div class="lz-sg">
+        <div class="lz-si"><span class="lz-sv" id="liveRowCount">0</span><span class="lz-sl" data-i18n="live_rows">Rows</span></div>
+        <div class="lz-si alert"><span class="lz-sv" id="liveFailCount">0</span><span class="lz-sl" data-i18n="live_fail">Failures</span></div>
+        <div class="lz-si ok"><span class="lz-sv" id="liveOkCount">0</span><span class="lz-sl" data-i18n="live_ok">Normal</span></div>
+      </div>
+      <div class="lz-foot">
+        <span class="lz-ck" id="liveChk"></span>
+        <select id="liveIntv" class="lz-sel" onchange="resetLiveTimer()">
           <option value="2000">2s</option>
           <option value="5000" selected>5s</option>
           <option value="10000">10s</option>
           <option value="30000">30s</option>
         </select>
-        <span style="font-size:10px;color:var(--text3)" id="liveChk"></span>
-        <button onclick="stopLiveMonitor()" style="padding:4px 10px;background:transparent;border:1px solid var(--border2);border-radius:4px;color:var(--text3);font-size:10px;cursor:pointer">Disconnect</button>
       </div>
-    </div>
-    <div style="margin-top:8px;display:flex;gap:12px;font-size:10px;color:var(--text3)">
-      <span><span data-i18n="live_rows">Rows read</span>: <strong style="color:var(--text2)" id="liveRowCount">0</strong></span>
-      <span><span data-i18n="live_fail">Failures</span>: <strong style="color:var(--red)" id="liveFailCount">0</strong></span>
-      <span><span data-i18n="live_ok">Normal</span>: <strong style="color:var(--green)" id="liveOkCount">0</strong></span>
     </div>
   </div>
 
-  <div id="res"><div class="idle"><span class="l1" data-i18n="idle_l1">No analysis yet</span><span class="l2" data-i18n="idle_l2">Configure below and run</span></div></div>
+  <!-- MANUAL INPUT — secondary, collapsible -->
   <div class="card">
-    <div class="ctitle" data-i18n="machine_class">Machine class</div>
-    <div class="tgrid">
-      <div class="tbtn on" data-val="0" onclick="selT(this)">L — Low</div>
-      <div class="tbtn" data-val="1" onclick="selT(this)">M — Med</div>
-      <div class="tbtn" data-val="2" onclick="selT(this)">H — High</div>
+    <div class="man-hdr" onclick="toggleManual()">
+      <span class="ctitle" style="margin-bottom:0" data-i18n="manual_title">Manual Input</span>
+      <svg class="man-chv" id="manChv" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </div>
-    <div class="ctitle" data-i18n="sensor_params">Sensor parameters</div>
-    <div class="sensor"><div class="srow"><span class="sname" data-i18n="air_temp">Air temperature</span><div class="vwrap"><input class="vi" type="number" id="nta" value="300" min="295" max="305" step="0.1" data-raw="300" oninput="si('sta','nta','temp')"><span class="vu" id="vu-ta">K</span></div></div><input type="range" id="sta" min="295" max="305" step="0.1" value="300" oninput="ss('sta','nta',1,'temp')"><div class="rl"><span id="rl-ta-min">295K</span><span id="rl-ta-max">305K</span></div></div>
-    <div class="sensor"><div class="srow"><span class="sname" data-i18n="proc_temp">Process temperature</span><div class="vwrap"><input class="vi" type="number" id="ntp" value="310" min="305" max="315" step="0.1" data-raw="310" oninput="si('stp','ntp','temp')"><span class="vu" id="vu-tp">K</span></div></div><input type="range" id="stp" min="305" max="315" step="0.1" value="310" oninput="ss('stp','ntp',1,'temp')"><div class="rl"><span id="rl-tp-min">305K</span><span id="rl-tp-max">315K</span></div></div>
-    <div class="sensor"><div class="srow"><span class="sname" data-i18n="rot_speed">Rotational speed</span><div class="vwrap"><input class="vi" type="number" id="nv" value="1500" min="1000" max="3000" step="10" oninput="si('sv','nv',null)"><span class="vu" id="vu-v">rpm</span></div></div><input type="range" id="sv" min="1000" max="3000" step="10" value="1500" oninput="ss('sv','nv',0,null)"><div class="rl"><span id="rl-v-min">1000</span><span id="rl-v-max">3000</span></div></div>
-    <div class="sensor"><div class="srow"><span class="sname" data-i18n="torque">Torque</span><div class="vwrap"><input class="vi" type="number" id="nc" value="40" min="3" max="80" step="0.1" oninput="si('sc','nc',null)"><span class="vu" id="vu-c">Nm</span></div></div><input type="range" id="sc" min="3" max="80" step="0.1" value="40" oninput="ss('sc','nc',1,null)"><div class="rl"><span id="rl-c-min">3</span><span id="rl-c-max">80Nm</span></div></div>
-    <div class="sensor"><div class="srow"><span class="sname" data-i18n="tool_wear">Tool wear</span><div class="vwrap"><input class="vi" type="number" id="nu" value="100" min="0" max="250" step="1" data-raw="100" oninput="si('su','nu','wear')"><span class="vu" id="vu-u">min</span></div></div><input type="range" id="su" min="0" max="250" step="1" value="100" oninput="ss('su','nu',0,'wear')"><div class="rl"><span id="rl-u-min">0</span><span id="rl-u-max">250</span></div></div>
-    <button class="btn" id="btn" onclick="analyse()" data-i18n="run_btn">Run Analysis</button>
+    <div id="manBody" style="display:none;margin-top:14px">
+      <div class="ctitle" data-i18n="machine_class">Machine class</div>
+      <div class="tgrid">
+        <div class="tbtn on" data-val="0" onclick="selT(this)">L — Low</div>
+        <div class="tbtn" data-val="1" onclick="selT(this)">M — Med</div>
+        <div class="tbtn" data-val="2" onclick="selT(this)">H — High</div>
+      </div>
+      <div class="ctitle" data-i18n="sensor_params">Sensor parameters</div>
+      <div class="sensor"><div class="srow"><span class="sname" data-i18n="air_temp">Air temperature</span><div class="vwrap"><input class="vi" type="number" id="nta" value="300" min="295" max="305" step="0.1" data-raw="300" oninput="si('sta','nta','temp')"><span class="vu" id="vu-ta">K</span></div></div><input type="range" id="sta" min="295" max="305" step="0.1" value="300" oninput="ss('sta','nta',1,'temp')"><div class="rl"><span id="rl-ta-min">295K</span><span id="rl-ta-max">305K</span></div></div>
+      <div class="sensor"><div class="srow"><span class="sname" data-i18n="proc_temp">Process temperature</span><div class="vwrap"><input class="vi" type="number" id="ntp" value="310" min="305" max="315" step="0.1" data-raw="310" oninput="si('stp','ntp','temp')"><span class="vu" id="vu-tp">K</span></div></div><input type="range" id="stp" min="305" max="315" step="0.1" value="310" oninput="ss('stp','ntp',1,'temp')"><div class="rl"><span id="rl-tp-min">305K</span><span id="rl-tp-max">315K</span></div></div>
+      <div class="sensor"><div class="srow"><span class="sname" data-i18n="rot_speed">Rotational speed</span><div class="vwrap"><input class="vi" type="number" id="nv" value="1500" min="1000" max="3000" step="10" oninput="si('sv','nv',null)"><span class="vu" id="vu-v">rpm</span></div></div><input type="range" id="sv" min="1000" max="3000" step="10" value="1500" oninput="ss('sv','nv',0,null)"><div class="rl"><span id="rl-v-min">1000</span><span id="rl-v-max">3000</span></div></div>
+      <div class="sensor"><div class="srow"><span class="sname" data-i18n="torque">Torque</span><div class="vwrap"><input class="vi" type="number" id="nc" value="40" min="3" max="80" step="0.1" oninput="si('sc','nc',null)"><span class="vu" id="vu-c">Nm</span></div></div><input type="range" id="sc" min="3" max="80" step="0.1" value="40" oninput="ss('sc','nc',1,null)"><div class="rl"><span id="rl-c-min">3</span><span id="rl-c-max">80Nm</span></div></div>
+      <div class="sensor"><div class="srow"><span class="sname" data-i18n="tool_wear">Tool wear</span><div class="vwrap"><input class="vi" type="number" id="nu" value="100" min="0" max="250" step="1" data-raw="100" oninput="si('su','nu','wear')"><span class="vu" id="vu-u">min</span></div></div><input type="range" id="su" min="0" max="250" step="1" value="100" oninput="ss('su','nu',0,'wear')"><div class="rl"><span id="rl-u-min">0</span><span id="rl-u-max">250</span></div></div>
+      <button class="btn" id="btn" onclick="analyse()" data-i18n="run_btn">Run Analysis</button>
+    </div>
   </div>
 </div>""" + nav("m") + """
 <script>
 let mT=0,lastR=null,lastD=null;
+function toggleManual(){var b=document.getElementById('manBody'),c=document.getElementById('manChv'),o=b.style.display==='block';b.style.display=o?'none':'block';c.style.transform=o?'':'rotate(180deg)';}
 function updN(){const b=document.getElementById('nb');if(!b)return;const p=Notification.permission;if(p==='granted'){b.textContent='Notifs ON';b.className='nb on';}else{b.textContent='Enable Notifs';b.className='nb';}}
 async function toggleN(){if(Notification.permission==='granted')return;await Notification.requestPermission();updN();}
 function sendN(risk,zones){if(Notification.permission!=='granted')return;new Notification('Pilar — Risk: '+risk+'%',{body:zones.length?'Zones: '+zones.map(z=>z.nom).join(', '):'No specific zone',requireInteraction:true,tag:'pilar'});}
@@ -826,7 +861,7 @@ async function analyse(){
     const res=await fetch('/predire',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(lastD)});
     let r;
     try{r=await res.json();}catch(je){
-      document.getElementById('res').innerHTML='<div class="idle"><span class="l1" style="color:#dc2626">Erreur serveur (réponse non-JSON, code '+res.status+')</span></div>';
+      document.getElementById('res').innerHTML='<div class="idle"><span class="l1" style="color:#dc2626">Server error ('+res.status+')</span></div>';
       btn.disabled=false;btn.textContent=t('run_btn');return;
     }
     if(r.error){
@@ -839,7 +874,7 @@ async function analyse(){
     render(lastR);
     if(lastR.probabilite>=50){sendN(lastR.probabilite,lastR.zones);const a=document.getElementById('abn');a.style.display='block';setTimeout(()=>a.style.display='none',4000);}
   }catch(err){
-    document.getElementById('res').innerHTML='<div class="idle"><span class="l1" style="color:#dc2626">Erreur réseau: '+err.message+'</span></div>';
+    document.getElementById('res').innerHTML='<div class="idle"><span class="l1" style="color:#dc2626">Network error: '+err.message+'</span></div>';
   }
   btn.disabled=false;btn.textContent=t('run_btn');
 }
@@ -851,23 +886,22 @@ function render(r){
 }
 
 // ── LIVE FILE MONITOR ─────────────────────────────────────────────────────
-var _lfHandle=null,_lfTimer=null,_lfKnown=0,_lfFail=0,_lfOk=0,_lfMap=null,_lfDelim=',';
+var _lfHandle=null,_lfTimer=null,_lfKnown=0,_lfFail=0,_lfOk=0,_lfMap=null,_lfDelim=',',_lfFallback=false;
 
 function onLiveFile(inp){
   var f=inp.files[0];if(!f)return;
-  _lfKnown=0;_lfFail=0;_lfOk=0;_lfHdr=null;clearTimeout(_lfTimer);
+  _lfKnown=0;_lfFail=0;_lfOk=0;_lfMap=null;_lfFallback=false;clearTimeout(_lfTimer);
   document.getElementById('liveFileName').textContent=f.name;
-  document.getElementById('liveBar').style.display='block';
-  document.getElementById('btnFileLbl').textContent=t('live_on');
-  document.getElementById('btnFile').classList.add('on');
+  document.getElementById('lzEmpty').style.display='none';
+  document.getElementById('lzConn').style.display='block';
   document.getElementById('liveRowCount').textContent='0';
   document.getElementById('liveFailCount').textContent='0';
   document.getElementById('liveOkCount').textContent='0';
-  // Try to get a live handle for auto-polling (Chrome/Edge)
+  document.getElementById('liveChk').textContent='';
   if(window.showOpenFilePicker){
     _connectWithAPI(f.name);
   }else{
-    // Fallback: read snapshot + show refresh button
+    _lfFallback=true;
     _readSnapshot(f);
     _showRefreshBtn();
   }
@@ -879,7 +913,7 @@ async function _connectWithAPI(targetName){
     _lfHandle=picks[0];
     _lfLoop();
   }catch(e){
-    // User dismissed or blocked — fall back to snapshot mode
+    _lfFallback=true;
     _showRefreshBtn();
   }
 }
@@ -955,9 +989,8 @@ function _schedule(){
 
 function stopLiveMonitor(){
   clearTimeout(_lfTimer);_lfHandle=null;_lfMap=null;
-  document.getElementById('liveBar').style.display='none';
-  document.getElementById('btnFileLbl').textContent=t('live_connect');
-  document.getElementById('btnFile').classList.remove('on');
+  document.getElementById('lzEmpty').style.display='flex';
+  document.getElementById('lzConn').style.display='none';
   document.getElementById('lfInput').value='';
 }
 </script></body></html>"""
