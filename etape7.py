@@ -1841,6 +1841,18 @@ def api_twin():
         print(f"[Pilar/api_twin] ERROR: {type(e).__name__}: {e}\n{traceback.format_exc()}")
         return jsonify({'error': f'{type(e).__name__}: {str(e)}'}), 500
 
+@app.route('/api/health')
+def api_health():
+    import os, sys
+    return jsonify({
+        'status': 'ok',
+        'model_loaded': model is not None,
+        'scaler_loaded': scaler is not None,
+        'zones_loaded': len(modeles_zones),
+        'python': sys.version.split()[0],
+        'commit': os.environ.get('RAILWAY_GIT_COMMIT_SHA', 'local')[:7],
+    })
+
 @app.route('/api/whatif', methods=['POST'])
 @api_or_login_required
 def api_whatif():
