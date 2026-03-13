@@ -1081,6 +1081,46 @@ TUTORIAL_HTML = _HEAD.replace("{FAV}", FAV_B64) + """
   <!-- LIVE RESULT -->
   <div id="liveRes"></div>
 
+  <!-- LIVE FILE MONITOR -->
+  <div class="card" style="margin-top:8px">
+    <div class="ctitle">Live File Monitor</div>
+    <p style="font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:14px">Connect a CSV file that your SCADA or system updates continuously. Pilar detects new rows and analyses them automatically.</p>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div>
+        <div style="font-size:12px;color:var(--text2)" id="liveName">No file connected</div>
+        <div style="font-size:10px;margin-top:3px" id="liveStatus" style="color:var(--text3)">Disconnected</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div style="font-size:10px;color:var(--text3)" id="liveTotalRows"></div>
+        <button class="btn" id="btnLiveConnect" onclick="connectLive()" style="width:auto;padding:10px 16px;margin-top:0">Connect File</button>
+        <button class="btn" id="btnLiveStop" onclick="stopLive()" style="width:auto;padding:10px 16px;margin-top:0;background:var(--red);display:none">Disconnect</button>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <div style="font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;white-space:nowrap">Check every</div>
+      <select id="liveInterval" class="fi" style="flex:1;padding:8px 10px">
+        <option value="2000">2 seconds</option>
+        <option value="5000" selected>5 seconds</option>
+        <option value="10000">10 seconds</option>
+        <option value="30000">30 seconds</option>
+        <option value="60000">1 minute</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:10px;margin-bottom:12px">
+      <div style="flex:1;background:var(--surface2);border-radius:6px;padding:10px;text-align:center">
+        <div style="font-size:18px;font-weight:800;color:var(--red)" id="liveFail">0</div>
+        <div style="font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-top:2px">Failures</div>
+      </div>
+      <div style="flex:1;background:var(--surface2);border-radius:6px;padding:10px;text-align:center">
+        <div style="font-size:18px;font-weight:800;color:var(--green)" id="liveOk">0</div>
+        <div style="font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-top:2px">Normal</div>
+      </div>
+    </div>
+    <div style="font-size:10px;color:var(--text3);margin-bottom:8px" id="liveLastCheck"></div>
+    <div id="liveLog" style="max-height:200px;overflow-y:auto"></div>
+    <p style="font-size:10px;color:var(--text3);margin-top:10px;line-height:1.5">Requires Chrome or Edge. The file stays on your machine — only new rows are sent to Pilar.</p>
+  </div>
+
 </div>
 """ + nav("tut") + """
 <script>
@@ -1210,6 +1250,90 @@ function finish(){
   document.getElementById('btnStart').disabled=false;
   document.getElementById('btnPause').style.display='none';
   document.getElementById('btnStop').style.display='none';
+}
+
+// ── LIVE FILE MONITOR ──────────────────────────────────────────────────────
+var liveHandle=null, liveTimer=null, liveKnownRows=0, liveFail=0, liveOk=0;
+
+async function connectLive(){
+  if(!window.showOpenFilePicker){
+    alert('Live file monitoring requires Chrome or Edge browser.');return;
+  }
+  try{
+    var handles=await window.showOpenFilePicker({types:[{description:'CSV',accept:{'text/csv':['.csv']}}]});
+    liveHandle=handles[0];
+    var fname=(await liveHandle.getFile()).name;
+    document.getElementById('liveName').textContent=fname;
+    document.getElementById('liveStatus').textContent='Connected';
+    document.getElementById('liveStatus').style.color='var(--green)';
+    document.getElementById('btnLiveStop').style.display='inline-block';
+    document.getElementById('btnLiveConnect').style.display='none';
+    document.getElementById('liveLog').innerHTML='';
+    liveKnownRows=0;liveFail=0;liveOk=0;
+    document.getElementById('liveFail').textContent='0';
+    document.getElementById('liveOk').textContent='0';
+    liveCheck();
+  }catch(e){if(e.name!=='AbortError')console.error(e);}
+}
+
+async function liveCheck(){
+  if(!liveHandle)return;
+  try{
+    var file=await liveHandle.getFile();
+    var text=await file.text();
+    var lines=text.split('\n').map(s=>s.trim()).filter(s=>s.length>0);
+    if(lines.length<2){liveTimer=setTimeout(liveCheck,parseInt(document.getElementById('liveInterval').value));return;}
+    var hdr=lines[0].split(',').map(s=>s.trim().toLowerCase());
+    var needed=['type','temp_air','temp_process','vitesse','couple','usure'];
+    for(var i=0;i<needed.length;i++){if(hdr.indexOf(needed[i])<0){
+      document.getElementById('liveStatus').textContent='Error: missing column '+needed[i];
+      document.getElementById('liveStatus').style.color='var(--red)';return;
+    }}
+    var total=lines.length-1;
+    if(total>liveKnownRows){
+      var newLines=lines.slice(liveKnownRows+1);
+      for(var r=0;r<newLines.length;r++){
+        var vals=newLines[r].split(',');
+        var obj={};
+        hdr.forEach(function(col,ci){obj[col]=parseFloat(vals[ci]);});
+        if(!isNaN(obj.type)&&!isNaN(obj.temp_air)){
+          (function(row,rowNum){
+            fetch('/predire',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(row)})
+              .then(function(res){return res.json();})
+              .then(function(r){
+                if(!r.error){
+                  if(r.prediction===1)liveFail++;else liveOk++;
+                  document.getElementById('liveFail').textContent=liveFail;
+                  document.getElementById('liveOk').textContent=liveOk;
+                  var col=r.prediction===1?'var(--red)':'var(--green)';
+                  var label=r.prediction===1?'FAILURE '+r.probabilite+'%':'Normal '+r.probabilite+'%';
+                  var ts=new Date().toLocaleTimeString();
+                  var li=document.createElement('div');
+                  li.style.cssText='display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:11px';
+                  li.innerHTML='<span style="color:var(--text3)">'+ts+' · Row '+rowNum+'</span><span style="color:'+col+';font-weight:700">'+label+'</span>';
+                  var log=document.getElementById('liveLog');
+                  log.insertBefore(li,log.firstChild);
+                  if(log.children.length>50)log.removeChild(log.lastChild);
+                }
+              }).catch(function(){});
+          })(obj, liveKnownRows+r+1);
+        }
+      }
+      liveKnownRows=total;
+      document.getElementById('liveTotalRows').textContent=total+' rows';
+    }
+    document.getElementById('liveLastCheck').textContent='Last check: '+new Date().toLocaleTimeString();
+  }catch(e){console.error('liveCheck error',e);}
+  liveTimer=setTimeout(liveCheck,parseInt(document.getElementById('liveInterval').value));
+}
+
+function stopLive(){
+  clearTimeout(liveTimer);liveHandle=null;
+  document.getElementById('liveStatus').textContent='Disconnected';
+  document.getElementById('liveStatus').style.color='var(--text3)';
+  document.getElementById('btnLiveStop').style.display='none';
+  document.getElementById('btnLiveConnect').style.display='inline-block';
+  document.getElementById('liveName').textContent='No file connected';
 }
 </script></body></html>"""
 
