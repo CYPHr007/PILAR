@@ -837,7 +837,7 @@ async function _lfLoop(){
 }
 
 async function _lfProcess(text){
-  var lines=text.split('\n').map(function(s){return s.trim();}).filter(function(s){return s.length>0;});
+  var lines=text.split('\\n').map(function(s){return s.trim();}).filter(function(s){return s.length>0;});
   if(lines.length<2)return;
   if(!_lfHdr){
     _lfHdr=lines[0].split(',').map(function(s){return s.trim().toLowerCase();});
@@ -1494,7 +1494,7 @@ async function liveCheck(){
   try{
     var file=await liveHandle.getFile();
     var text=await file.text();
-    var lines=text.split('\n').map(s=>s.trim()).filter(s=>s.length>0);
+    var lines=text.split('\\n').map(s=>s.trim()).filter(s=>s.length>0);
     if(lines.length<2){liveTimer=setTimeout(liveCheck,parseInt(document.getElementById('liveInterval').value));return;}
     var hdr=lines[0].split(',').map(s=>s.trim().toLowerCase());
     var needed=['type','temp_air','temp_process','vitesse','couple','usure'];
