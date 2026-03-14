@@ -73,6 +73,8 @@ class User(db.Model):
     verify_token   = db.Column(db.String(64))
     api_key        = db.Column(db.String(64), unique=True)
     plan           = db.Column(db.String(20), default='free')
+    plan_expires_at= db.Column(db.DateTime, nullable=True)
+    plan_note      = db.Column(db.String(300), nullable=True)
     is_admin       = db.Column(db.Boolean, default=False)
     team_id        = db.Column(db.Integer, nullable=True)
     created_at     = db.Column(db.DateTime, default=datetime.utcnow)
@@ -129,6 +131,8 @@ with app.app_context():
             "ALTER TABLE analysis ADD COLUMN extra_params TEXT",
             "ALTER TABLE analysis ADD COLUMN confidence INTEGER",
             "ALTER TABLE analysis ADD COLUMN machine_id VARCHAR(100)",
+            "ALTER TABLE user ADD COLUMN plan_expires_at DATETIME",
+            "ALTER TABLE user ADD COLUMN plan_note TEXT",
         ]
     else:
         _migrations = [
@@ -139,6 +143,8 @@ with app.app_context():
             "ALTER TABLE analysis ADD COLUMN IF NOT EXISTS extra_params TEXT",
             "ALTER TABLE analysis ADD COLUMN IF NOT EXISTS confidence INTEGER",
             "ALTER TABLE analysis ADD COLUMN IF NOT EXISTS machine_id VARCHAR(100)",
+            'ALTER TABLE "user" ADD COLUMN IF NOT EXISTS plan_expires_at TIMESTAMP',
+            'ALTER TABLE "user" ADD COLUMN IF NOT EXISTS plan_note VARCHAR(300)',
         ]
     for sql in _migrations:
         try:
@@ -339,37 +345,271 @@ REGISTER_HTML = _AUTH_HEAD + """
 </div>
 </body></html>"""
 
-ADMIN_HTML = _AUTH_HEAD + """
-<div style="width:100%;max-width:800px;">
-  <div class="logo">PILAR — Admin</div>
-  <div class="card" style="margin-bottom:16px">
-    <div class="ctitle">Vue d'ensemble</div>
-    <div class="kgrid">
-      <div class="kc"><div class="kv">{{ total_users }}</div><div class="kl">Utilisateurs</div></div>
-      <div class="kc"><div class="kv">{{ total_analyses }}</div><div class="kl">Analyses</div></div>
-      <div class="kc"><div class="kv" style="color:#d97706">{{ unverified }}</div><div class="kl">Non vérifiés</div></div>
+ADMIN_HTML = """<!DOCTYPE html><html lang="fr"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pilar Admin</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#050d1a;color:#e2e8f0;min-height:100vh;padding:0 0 60px}
+nav{background:#080f1e;border-bottom:1px solid #1a2a45;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.logo{font-size:16px;font-weight:900;letter-spacing:3px;color:#14b8a6}
+.nav-right{display:flex;gap:10px;align-items:center}
+.wrap{max-width:1100px;margin:0 auto;padding:24px 16px}
+.kgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:24px}
+.kc{background:#0c1526;border:1px solid #1a2a45;border-radius:10px;padding:18px 20px}
+.kv{font-size:28px;font-weight:800;letter-spacing:-1px}
+.kl{font-size:11px;color:#64748b;letter-spacing:1px;text-transform:uppercase;margin-top:4px}
+.card{background:#0c1526;border:1px solid #1a2a45;border-radius:12px;padding:20px;margin-bottom:20px}
+.ctitle{font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#64748b;margin-bottom:16px}
+.search-bar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.search-bar input{flex:1;min-width:200px;background:#080f1e;border:1px solid #1a2a45;color:#e2e8f0;padding:9px 14px;border-radius:6px;font-size:12px}
+.search-bar select{background:#080f1e;border:1px solid #1a2a45;color:#e2e8f0;padding:9px 12px;border-radius:6px;font-size:12px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;padding:8px 10px;color:#64748b;font-size:10px;letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid #1a2a45}
+td{padding:10px 10px;border-bottom:1px solid #0f1a2e;vertical-align:middle}
+tr:last-child td{border:none}
+tr:hover td{background:rgba(255,255,255,.015)}
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase}
+.b-free{background:rgba(100,116,139,.15);color:#94a3b8}
+.b-starter{background:rgba(13,148,136,.15);color:#14b8a6}
+.b-pro{background:rgba(124,58,237,.15);color:#a78bfa}
+.b-admin{background:rgba(245,158,11,.15);color:#fbbf24}
+.b-ok{background:rgba(5,150,105,.15);color:#34d399}
+.b-warn{background:rgba(220,38,38,.12);color:#f87171}
+.b-exp{background:rgba(239,68,68,.12);color:#f87171}
+.btn{padding:6px 14px;border:none;border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-block;letter-spacing:.5px}
+.btn-teal{background:#0d9488;color:#fff}
+.btn-teal:hover{background:#14b8a6}
+.btn-ghost{background:transparent;border:1px solid #1e3050;color:#64748b}
+.btn-ghost:hover{border-color:#0d9488;color:#14b8a6}
+.btn-red{background:transparent;border:1px solid rgba(220,38,38,.3);color:#f87171}
+.btn-red:hover{background:rgba(220,38,38,.1)}
+
+/* Modal */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;align-items:center;justify-content:center;padding:16px}
+.overlay.open{display:flex}
+.modal{background:#0c1526;border:1px solid #1a2a45;border-radius:14px;padding:28px;width:100%;max-width:460px;max-height:90vh;overflow-y:auto}
+.modal h3{font-size:14px;font-weight:700;margin-bottom:20px;color:#e2e8f0}
+.fi{width:100%;background:#080f1e;border:1px solid #1a2a45;color:#e2e8f0;padding:10px 14px;border-radius:6px;font-size:12px;margin-bottom:12px}
+.fi:focus{outline:none;border-color:#0d9488}
+label{font-size:11px;color:#64748b;display:block;margin-bottom:4px;letter-spacing:.5px}
+.plan-btns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
+.plan-opt{padding:10px;border:2px solid #1a2a45;border-radius:8px;text-align:center;cursor:pointer;font-size:12px;font-weight:700;transition:all .15s}
+.plan-opt.selected-free{border-color:#64748b;background:rgba(100,116,139,.1);color:#94a3b8}
+.plan-opt.selected-starter{border-color:#0d9488;background:rgba(13,148,136,.1);color:#14b8a6}
+.plan-opt.selected-pro{border-color:#7c3aed;background:rgba(124,58,237,.1);color:#a78bfa}
+.plan-opt:hover{border-color:#0d9488}
+.expires-wrap{display:flex;gap:8px;margin-bottom:12px}
+.expires-wrap button{padding:7px 12px;background:#080f1e;border:1px solid #1a2a45;color:#94a3b8;border-radius:6px;font-size:11px;cursor:pointer;white-space:nowrap}
+.expires-wrap button:hover{border-color:#0d9488;color:#14b8a6}
+.msg{font-size:11px;padding:8px 12px;border-radius:6px;margin-bottom:12px;display:none}
+.msg.ok{background:rgba(5,150,105,.1);border:1px solid rgba(5,150,105,.2);color:#34d399;display:block}
+.msg.err{background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.2);color:#f87171;display:block}
+@media(max-width:600px){
+  .kv{font-size:22px}
+  .search-bar{flex-direction:column}
+  table{display:block;overflow-x:auto}
+}
+</style>
+</head>
+<body>
+<nav>
+  <div class="logo">PILAR ADMIN</div>
+  <div class="nav-right">
+    <a href="/monitor" class="btn btn-ghost">App</a>
+    <a href="/logout" class="btn btn-ghost">Déconnexion</a>
+  </div>
+</nav>
+<div class="wrap">
+
+<!-- KPIs -->
+<div class="kgrid">
+  <div class="kc"><div class="kv" style="color:#14b8a6">{{ total_users }}</div><div class="kl">Utilisateurs</div></div>
+  <div class="kc"><div class="kv" style="color:#a78bfa">{{ paid_users }}</div><div class="kl">Payants</div></div>
+  <div class="kc"><div class="kv" style="color:#34d399">${{ mrr }}</div><div class="kl">MRR estimé</div></div>
+  <div class="kc"><div class="kv">{{ total_analyses }}</div><div class="kl">Analyses</div></div>
+  <div class="kc"><div class="kv" style="color:#f59e0b">{{ expiring_soon }}</div><div class="kl">Expirent &lt;7j</div></div>
+</div>
+
+<!-- FILTRES + TABLEAU -->
+<div class="card">
+  <div class="ctitle">Gestion abonnements</div>
+  <div class="search-bar">
+    <input type="text" id="searchInput" placeholder="Rechercher par email..." oninput="filterTable()">
+    <select id="planFilter" onchange="filterTable()">
+      <option value="">Tous les plans</option>
+      <option value="free">Free</option>
+      <option value="starter">Starter</option>
+      <option value="pro">Pro</option>
+    </select>
+  </div>
+  <table id="usersTable">
+    <thead>
+      <tr>
+        <th>Email</th>
+        <th>Plan</th>
+        <th>Expiration</th>
+        <th>Note paiement</th>
+        <th>Analyses</th>
+        <th>Inscrit</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for u in users %}
+    <tr data-email="{{ u.email|lower }}" data-plan="{{ u.plan }}">
+      <td>
+        <div style="font-weight:600;color:#e2e8f0">{{ u.email }}</div>
+        {% if u.is_admin %}<span class="badge b-admin">admin</span>{% endif %}
+      </td>
+      <td>
+        <span class="badge b-{{ u.plan }}">{{ u.plan }}</span>
+      </td>
+      <td>
+        {% if u.plan_expires_at %}
+          {% if u.plan_expires_at < now %}
+            <span class="badge b-exp">Expiré {{ u.plan_expires_at.strftime('%d/%m/%y') }}</span>
+          {% elif (u.plan_expires_at - now).days < 7 %}
+            <span class="badge b-warn">{{ u.plan_expires_at.strftime('%d/%m/%y') }}</span>
+          {% else %}
+            <span style="font-size:11px;color:#94a3b8">{{ u.plan_expires_at.strftime('%d/%m/%Y') }}</span>
+          {% endif %}
+        {% else %}
+          <span style="color:#334155;font-size:11px">—</span>
+        {% endif %}
+      </td>
+      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#64748b;font-size:11px">
+        {{ u.plan_note or '—' }}
+      </td>
+      <td style="color:#94a3b8">{{ u.analysis_count }}</td>
+      <td style="color:#64748b;font-size:11px;white-space:nowrap">{{ u.created_at.strftime('%d/%m/%Y') }}</td>
+      <td>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn btn-teal" onclick="openModal({{ u.id }},'{{ u.email }}','{{ u.plan }}','{{ u.plan_expires_at.strftime('%Y-%m-%d') if u.plan_expires_at else '' }}','{{ (u.plan_note or '')|replace("'","\\'")|replace('"','&quot;') }}')">Gérer</button>
+          <a href="/admin/impersonate/{{ u.id }}" class="btn btn-ghost">Voir</a>
+        </div>
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+</div><!-- /wrap -->
+
+<!-- MODAL GESTION ABONNEMENT -->
+<div class="overlay" id="overlay" onclick="closeIfOut(event)">
+  <div class="modal">
+    <h3 id="modalTitle">Gérer l'abonnement</h3>
+    <div class="msg" id="modalMsg"></div>
+
+    <label>Plan</label>
+    <div class="plan-btns">
+      <div class="plan-opt" id="opt-free" onclick="selectPlan('free')">Free</div>
+      <div class="plan-opt" id="opt-starter" onclick="selectPlan('starter')">Starter<br><span style="font-size:9px;font-weight:400">$99/mo</span></div>
+      <div class="plan-opt" id="opt-pro" onclick="selectPlan('pro')">Pro<br><span style="font-size:9px;font-weight:400">$299/mo</span></div>
+    </div>
+
+    <label>Date d'expiration</label>
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+      <input type="date" class="fi" id="expiresInput" style="flex:1;margin:0">
+      <button onclick="addMonths(1)" style="padding:7px 10px;background:#080f1e;border:1px solid #1a2a45;color:#94a3b8;border-radius:6px;font-size:11px;cursor:pointer">+1 mois</button>
+      <button onclick="addMonths(3)" style="padding:7px 10px;background:#080f1e;border:1px solid #1a2a45;color:#94a3b8;border-radius:6px;font-size:11px;cursor:pointer">+3 mois</button>
+      <button onclick="addMonths(12)" style="padding:7px 10px;background:#080f1e;border:1px solid #1a2a45;color:#94a3b8;border-radius:6px;font-size:11px;cursor:pointer">+1 an</button>
+      <button onclick="document.getElementById('expiresInput').value=''" style="padding:7px 10px;background:#080f1e;border:1px solid #1a2a45;color:#94a3b8;border-radius:6px;font-size:11px;cursor:pointer">Effacer</button>
+    </div>
+
+    <label>Note paiement (référence virement, etc.)</label>
+    <input type="text" class="fi" id="noteInput" placeholder="ex: Virement BNP ref 2026-031 — Société ABC">
+
+    <div style="display:flex;gap:10px;margin-top:8px">
+      <button onclick="savePlan()" class="btn btn-teal" id="saveBtn" style="flex:1;padding:12px">Enregistrer</button>
+      <button onclick="closeModal()" class="btn btn-ghost" style="padding:12px 20px">Annuler</button>
     </div>
   </div>
-  <div class="card">
-    <div class="ctitle">Utilisateurs</div>
-    <table>
-      <thead><tr><th>Email</th><th>Plan</th><th>Vérifié</th><th>Inscrit</th><th>Analyses</th><th>Actions</th></tr></thead>
-      <tbody>
-      {% for u in users %}
-      <tr>
-        <td>{{ u.email }}{% if u.is_admin %} <span class="badge ok">admin</span>{% endif %}</td>
-        <td><span class="badge free">{{ u.plan }}</span></td>
-        <td>{% if u.email_verified %}<span class="badge ok">✓</span>{% else %}<span style="color:#dc2626">✗</span>{% endif %}</td>
-        <td>{{ u.created_at.strftime('%d/%m/%Y') }}</td>
-        <td>{{ u.analysis_count }}</td>
-        <td><a href="/admin/impersonate/{{ u.id }}" style="color:#14b8a6;font-size:11px">Voir</a></td>
-      </tr>
-      {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  <div class="link" style="margin-top:16px"><a href="/">← Retour à l'app</a> · <a href="/logout">Déconnexion</a></div>
 </div>
+
+<script>
+let _currentUid = null;
+let _currentPlan = 'free';
+
+function openModal(uid, email, plan, expires, note) {
+  _currentUid = uid;
+  _currentPlan = plan;
+  document.getElementById('modalTitle').textContent = 'Abonnement — ' + email;
+  document.getElementById('expiresInput').value = expires;
+  document.getElementById('noteInput').value = note.replace(/&quot;/g, '"');
+  document.getElementById('modalMsg').className = 'msg';
+  document.getElementById('modalMsg').textContent = '';
+  selectPlan(plan);
+  document.getElementById('overlay').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('overlay').classList.remove('open');
+}
+
+function closeIfOut(e) {
+  if (e.target === document.getElementById('overlay')) closeModal();
+}
+
+function selectPlan(plan) {
+  _currentPlan = plan;
+  ['free','starter','pro'].forEach(p => {
+    const el = document.getElementById('opt-' + p);
+    el.className = 'plan-opt';
+    if (p === plan) el.classList.add('selected-' + plan);
+  });
+}
+
+function addMonths(n) {
+  const inp = document.getElementById('expiresInput');
+  const base = inp.value ? new Date(inp.value) : new Date();
+  base.setMonth(base.getMonth() + n);
+  inp.value = base.toISOString().slice(0, 10);
+}
+
+async function savePlan() {
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true;
+  const msg = document.getElementById('modalMsg');
+  const expires = document.getElementById('expiresInput').value;
+  const note = document.getElementById('noteInput').value;
+  try {
+    const r = await fetch('/admin/set_plan/' + _currentUid, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({plan: _currentPlan, expires_at: expires, note: note})
+    });
+    const d = await r.json();
+    if (d.ok) {
+      msg.className = 'msg ok';
+      msg.textContent = 'Abonnement mis à jour.';
+      setTimeout(() => location.reload(), 1000);
+    } else {
+      msg.className = 'msg err';
+      msg.textContent = d.error || 'Erreur';
+      btn.disabled = false;
+    }
+  } catch(e) {
+    msg.className = 'msg err';
+    msg.textContent = 'Erreur réseau';
+    btn.disabled = false;
+  }
+}
+
+function filterTable() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const pf = document.getElementById('planFilter').value;
+  document.querySelectorAll('#usersTable tbody tr').forEach(row => {
+    const email = row.dataset.email || '';
+    const plan = row.dataset.plan || '';
+    const matchEmail = !q || email.includes(q);
+    const matchPlan = !pf || plan === pf;
+    row.style.display = matchEmail && matchPlan ? '' : 'none';
+  });
+}
+</script>
 </body></html>"""
 
 # ── CSS & HEAD ────────────────────────────────────────────────────────────────
@@ -2841,20 +3081,61 @@ def api_key_page():
 @app.route('/admin')
 @admin_required
 def admin():
+    # Auto-expire plans
+    now = datetime.utcnow()
+    expired = User.query.filter(
+        User.plan != 'free',
+        User.plan_expires_at != None,
+        User.plan_expires_at < now
+    ).all()
+    for u in expired:
+        u.plan = 'free'
+    if expired:
+        db.session.commit()
+
     users = User.query.order_by(User.created_at.desc()).all()
     for u in users:
         u.analysis_count = Analysis.query.filter_by(user_id=u.id).count()
+
     total_users = len(users)
     total_analyses = Analysis.query.count()
-    unverified = sum(1 for u in users if not u.email_verified)
+    paid_users = sum(1 for u in users if u.plan in ('starter', 'pro'))
+    mrr = sum(99 if u.plan == 'starter' else 299 if u.plan == 'pro' else 0 for u in users)
+    expiring_soon = sum(1 for u in users if u.plan_expires_at and 0 <= (u.plan_expires_at - now).days < 7)
+
     return render_template_string(ADMIN_HTML, users=users, total_users=total_users,
-                                  total_analyses=total_analyses, unverified=unverified)
+                                  total_analyses=total_analyses, paid_users=paid_users,
+                                  mrr=mrr, expiring_soon=expiring_soon, now=now)
+
+@app.route('/admin/set_plan/<int:uid>', methods=['POST'])
+@admin_required
+def admin_set_plan(uid):
+    user = db.session.get(User, uid)
+    if not user:
+        return jsonify({'error': 'Utilisateur introuvable'}), 404
+    data = request.json or {}
+    plan = data.get('plan', 'free')
+    if plan not in ('free', 'starter', 'pro'):
+        return jsonify({'error': 'Plan invalide'}), 400
+    expires_str = data.get('expires_at', '')
+    note = data.get('note', '')
+    user.plan = plan
+    user.plan_note = note[:300] if note else None
+    if expires_str:
+        try:
+            user.plan_expires_at = datetime.strptime(expires_str, '%Y-%m-%d')
+        except ValueError:
+            return jsonify({'error': 'Date invalide'}), 400
+    else:
+        user.plan_expires_at = None
+    db.session.commit()
+    return jsonify({'ok': True})
 
 @app.route('/admin/impersonate/<int:uid>')
 @admin_required
 def impersonate(uid):
     session['user_id'] = uid
-    return redirect('/')
+    return redirect('/monitor')
 
 # ── ROUTES PAGES ──────────────────────────────────────────────────────────────
 @app.route('/')
