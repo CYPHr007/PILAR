@@ -998,7 +998,7 @@ partial_analysis:'Analyse partielle',imputed:'estimés',discovered_param:'Param�
 page_adapter:'Adaptateur CSV',adp_upload:'Importer CSV',adp_hint:'Tout délimiteur · noms libres · conversion unités incluse',
 adp_change:'Changer',adp_preview:'Aperçu (5 lignes)',adp_download:'Convertir & Télécharger',
 adp_no_map:'Aucun champ mappé',adp_source:'Colonne source',adp_samples:'Exemples',adp_field:'Champ Pilar',adp_unit:'Unité',
-adp_ignore:'(Ignorer)',adp_desc:'Convertissez n\'importe quel CSV au format Pilar',adp_save:'Sauvegarder dans Pilar',adp_my_files:'Mes fichiers',adp_refresh:'Actualiser',adp_saved_ok:'Fichier sauvegardé',adp_no_files:'Aucun fichier sauvegardé',adp_load:'Charger',adp_delete:'Supprimer',
+adp_ignore:'(Ignorer)',adp_desc:'Convertissez n\u2019importe quel CSV au format Pilar',adp_save:'Sauvegarder dans Pilar',adp_my_files:'Mes fichiers',adp_refresh:'Actualiser',adp_saved_ok:'Fichier sauvegardé',adp_no_files:'Aucun fichier sauvegardé',adp_load:'Charger',adp_delete:'Supprimer',
 page_tutorial:'Import & Analyse',tut_csv_desc:"Votre CSV doit contenir ces colonnes (l'ordre n'a pas d'importance) :",tut_click_csv:'Cliquez pour sélectionner un fichier CSV',tut_no_file_sel:'Aucun fichier sélectionné',tut_progress:'Progression',tut_check_every:'Vérifier toutes les',tut_row:'Ligne',
 set_domain:'Domaine',set_nav_title:'Navigation',set_twin_nav:'Jumeau Numérique',
 ast_you:'Vous',ast_pilar:'Pilar IA',ast_error:'Erreur\u00a0: ',ast_net_error:'Erreur réseau. Réessayez.'},
