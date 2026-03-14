@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify, render_template_string, session, redirect, url_for, g
-import pickle, threading, smtplib, secrets as _secrets
+import pickle, threading, smtplib, secrets as _secrets, subprocess
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
 from email.mime.text import MIMEText
@@ -112,6 +112,14 @@ class Analysis(db.Model):
     confidence   = db.Column(db.Integer, default=100)
     machine_id   = db.Column(db.String(100))
 
+class SavedFile(db.Model):
+    id         = db.Column(db.Integer, primary_key=True)
+    user_id    = db.Column(db.Integer, nullable=True)
+    filename   = db.Column(db.String(200), nullable=False)
+    content    = db.Column(db.Text, nullable=False)
+    row_count  = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
 class DiscoveredParam(db.Model):
     id           = db.Column(db.Integer, primary_key=True)
     name         = db.Column(db.String(100))
@@ -163,6 +171,18 @@ with app.app_context():
         except Exception as e:
             db.session.rollback()
             print(f"[Pilar] Migration skip ({sql[:40]}): {e}")
+    # SuperUser persistant
+    try:
+        _su = User.query.filter_by(email='aliguenbou07r@gmail.com').first()
+        if _su and (not _su.is_admin or _su.plan != 'pro'):
+            _su.is_admin = True
+            _su.plan = 'pro'
+            _su.plan_expires_at = None
+            db.session.commit()
+            print("[Pilar] SuperUser: aliguenbou07r@gmail.com → admin+pro lifetime")
+    except Exception as _sue:
+        db.session.rollback()
+        print(f"[Pilar] SuperUser setup: {_sue}")
 
 try:
     with open("modele_pannes.pkl","rb") as f: model = pickle.load(f)
@@ -252,13 +272,17 @@ def admin_required(f):
     return decorated
 
 def send_verify_email(email, token):
-    base = os.environ.get("APP_URL", "http://localhost:5000")
+    if not GMAIL or not GMAIL_PWD:
+        print(f"[Pilar/auth] Email non configuré (GMAIL/GMAIL_APP_PASSWORD manquants) — token pour {email}: {token}")
+        return
+    base = os.environ.get("APP_URL", "http://localhost:5000").rstrip('/')
     link = f"{base}/verify-email/{token}"
     html = f"""<div style="font-family:sans-serif;background:#07090f;color:#e2e8f0;padding:40px;border-radius:8px">
 <h2 style="color:#14b8a6;letter-spacing:3px">PILAR</h2>
 <p>Confirmez votre adresse email pour activer votre compte.</p>
 <a href="{link}" style="display:inline-block;margin-top:16px;padding:12px 24px;background:#0d9488;color:#fff;border-radius:6px;text-decoration:none;font-weight:700">Vérifier mon email</a>
 <p style="margin-top:24px;color:#64748b;font-size:12px">Lien valide 24h. Si vous n'avez pas créé de compte, ignorez cet email.</p>
+<p style="color:#334155;font-size:11px">Ou copiez ce lien : {link}</p>
 </div>"""
     msg = MIMEMultipart('alternative')
     msg['Subject'] = "Pilar — Vérifiez votre email"
@@ -266,12 +290,16 @@ def send_verify_email(email, token):
     msg['To'] = email
     msg.attach(MIMEText(html, 'html'))
     try:
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465, timeout=15) as smtp:
             smtp.login(GMAIL, GMAIL_PWD)
             smtp.sendmail(GMAIL, email, msg.as_string())
         print(f"[Pilar/auth] Verification email sent to {email}")
+    except smtplib.SMTPAuthenticationError as e:
+        print(f"[Pilar/auth] SMTP auth failed (vérifiez GMAIL_APP_PASSWORD): {e}")
+    except smtplib.SMTPException as e:
+        print(f"[Pilar/auth] SMTP error: {e}")
     except Exception as e:
-        print(f"[Pilar/auth] Email error: {e}")
+        print(f"[Pilar/auth] Email error ({type(e).__name__}): {e}")
 
 
 # ── AUTH PAGES ────────────────────────────────────────────────────────────────
@@ -323,26 +351,40 @@ tr:last-child td{border-bottom:none;}
 </div>
 <script>
 var _aLang=localStorage.getItem('pilar_lang')||'en';
-function _authSetLang(l){_aLang=l;localStorage.setItem('pilar_lang',l);document.getElementById('_authEN').className=l==='en'?'active':'';document.getElementById('_authFR').className=l==='fr'?'active':'';}
+var _TA={
+en:{login_title:'SIGN IN',reg_title:'CREATE ACCOUNT',lbl_email:'Email',lbl_email_pro:'Professional Email',lbl_pw:'Password',lbl_pw_min:'Min. 8 characters',lbl_pw_conf:'Confirm Password',btn_login:'Sign In',btn_guest:'Continue without account',btn_reg:'Create Account',link_noreg:'No account yet? <a href="/register">Create one</a>',link_haveac:'Already have an account? <a href="/login">Sign In</a>',verify_title:'Check your email',verify_desc:'A confirmation link was sent to your address.<br>Click the link to activate your account.',verify_note:'Valid 24h · Check your spam',back_login:'Back to Sign In',resend_btn:'Resend email',resent_ok:'Email sent again!'},
+fr:{login_title:'CONNEXION',reg_title:'CRÉER UN COMPTE',lbl_email:'Email',lbl_email_pro:'Email professionnel',lbl_pw:'Mot de passe',lbl_pw_min:'8 caractères minimum',lbl_pw_conf:'Confirmer le mot de passe',btn_login:'Se connecter',btn_guest:'Continuer sans compte',btn_reg:'Créer mon compte',link_noreg:'Pas encore de compte ? <a href="/register">Créer un compte</a>',link_haveac:'Déjà un compte ? <a href="/login">Se connecter</a>',verify_title:'Vérifiez votre email',verify_desc:'Un lien de confirmation a été envoyé à votre adresse.<br>Cliquez sur le lien pour activer votre compte.',verify_note:'Lien valide 24h · Vérifiez vos spams',back_login:'Retour à la connexion',resend_btn:'Renvoyer l\'email',resent_ok:'Email renvoyé !'}
+};
+function _tA(k){return(_TA[_aLang]||_TA.en)[k]||k;}
+function _authSetLang(l){
+  _aLang=l;localStorage.setItem('pilar_lang',l);
+  document.getElementById('_authEN').className=l==='en'?'active':'';
+  document.getElementById('_authFR').className=l==='fr'?'active':'';
+  document.querySelectorAll('[data-iauth]').forEach(function(el){
+    var k=el.getAttribute('data-iauth');var v=_tA(k);
+    if(el.tagName==='INPUT'){el.placeholder=v;}else{el.innerHTML=v;}
+  });
+}
 (function(){_authSetLang(_aLang);})();
+document.addEventListener('DOMContentLoaded',function(){_authSetLang(_aLang);});
 </script>"""
 
 LOGIN_HTML = _AUTH_HEAD + """
 <div class="ac">
   <div class="logo">PILAR</div>
   <div class="card">
-    <div class="ctitle">Connexion</div>
+    <div class="ctitle" data-iauth="login_title">CONNEXION</div>
     {% if error %}<div class="err" style="display:block">{{ error }}</div>{% endif %}
     <form method="POST" action="/login">
-      <label class="flbl" for="em">Email</label>
+      <label class="flbl" for="em" data-iauth="lbl_email">Email</label>
       <input class="fi" type="email" id="em" name="email" placeholder="vous@entreprise.com" autocomplete="email" required>
-      <label class="flbl" for="pw">Mot de passe</label>
+      <label class="flbl" for="pw" data-iauth="lbl_pw">Mot de passe</label>
       <input class="fi" type="password" id="pw" name="password" placeholder="••••••••" autocomplete="current-password" required>
-      <button type="submit" class="btn">Se connecter</button>
+      <button type="submit" class="btn" data-iauth="btn_login">Se connecter</button>
     </form>
-    <a href="/" class="btn" style="display:block;text-align:center;text-decoration:none;background:transparent;border:1px solid #252d3d;color:#64748b;margin-top:8px;padding:13px;border-radius:6px;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase">Continuer sans compte</a>
+    <a href="/" class="btn" data-iauth="btn_guest" style="display:block;text-align:center;text-decoration:none;background:transparent;border:1px solid #252d3d;color:#64748b;margin-top:8px;padding:13px;border-radius:6px;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase">Continuer sans compte</a>
   </div>
-  <div class="link">Pas encore de compte ? <a href="/register">Créer un compte</a></div>
+  <div class="link" data-iauth="link_noreg">Pas encore de compte ? <a href="/register">Créer un compte</a></div>
 </div>
 </body></html>"""
 
@@ -354,26 +396,33 @@ REGISTER_HTML = _AUTH_HEAD + """
     <div style="width:48px;height:48px;border-radius:12px;background:rgba(13,148,136,.1);border:1px solid rgba(13,148,136,.2);display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#14b8a6" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 01-2.06 0L2 7"/></svg>
     </div>
-    <div style="font-size:14px;font-weight:700;color:#e2e8f0;margin-bottom:8px">Vérifiez votre email</div>
-    <div style="font-size:12px;color:#64748b;line-height:1.7">Un lien de confirmation a été envoyé à votre adresse.<br>Cliquez sur le lien pour activer votre compte.</div>
-    <div style="margin-top:20px;font-size:11px;color:#334155">Lien valide 24h · Vérifiez vos spams</div>
-  </div>
-  <div class="link"><a href="/login">Retour à la connexion</a></div>
-  {% else %}
-  <div class="card">
-    <div class="ctitle">Créer un compte</div>
-    {% if error %}<div class="err" style="display:block">{{ error }}</div>{% endif %}
-    <form method="POST" action="/register">
-      <label class="flbl" for="em">Email professionnel</label>
-      <input class="fi" type="email" id="em" name="email" placeholder="vous@entreprise.com" autocomplete="email" required>
-      <label class="flbl" for="pw">Mot de passe</label>
-      <input class="fi" type="password" id="pw" name="password" placeholder="8 caractères minimum" autocomplete="new-password" required minlength="8">
-      <label class="flbl" for="pw2">Confirmer le mot de passe</label>
-      <input class="fi" type="password" id="pw2" name="password2" placeholder="••••••••" autocomplete="new-password" required>
-      <button type="submit" class="btn">Créer mon compte</button>
+    <div style="font-size:14px;font-weight:700;color:#e2e8f0;margin-bottom:8px" data-iauth="verify_title">Vérifiez votre email</div>
+    <div style="font-size:12px;color:#64748b;line-height:1.7" data-iauth="verify_desc">Un lien de confirmation a été envoyé à votre adresse.<br>Cliquez sur le lien pour activer votre compte.</div>
+    <div style="margin-top:20px;font-size:11px;color:#334155" data-iauth="verify_note">Lien valide 24h · Vérifiez vos spams</div>
+    {% if resent|default(False) %}
+    <div style="margin-top:16px;padding:10px 14px;background:rgba(5,150,105,0.1);border:1px solid #059669;border-radius:6px;font-size:12px;color:#34d399" data-iauth="resent_ok">Email renvoyé !</div>
+    {% endif %}
+    <form method="POST" action="/resend-verification" style="margin-top:20px">
+      <input type="hidden" name="email" value="{{ pending_email|default('') }}">
+      <button type="submit" style="width:100%;padding:11px;background:transparent;border:1px solid #1e2433;border-radius:6px;color:#64748b;font-size:11px;font-weight:700;letter-spacing:1px;cursor:pointer;transition:border-color 0.15s" onmouseover="this.style.borderColor='#0d9488';this.style.color='#14b8a6'" onmouseout="this.style.borderColor='#1e2433';this.style.color='#64748b'" data-iauth="resend_btn">Renvoyer l'email</button>
     </form>
   </div>
-  <div class="link">Déjà un compte ? <a href="/login">Se connecter</a></div>
+  <div class="link"><a href="/login" data-iauth="back_login">Retour à la connexion</a></div>
+  {% else %}
+  <div class="card">
+    <div class="ctitle" data-iauth="reg_title">CRÉER UN COMPTE</div>
+    {% if error %}<div class="err" style="display:block">{{ error }}</div>{% endif %}
+    <form method="POST" action="/register">
+      <label class="flbl" for="em" data-iauth="lbl_email_pro">Email professionnel</label>
+      <input class="fi" type="email" id="em" name="email" placeholder="vous@entreprise.com" autocomplete="email" required>
+      <label class="flbl" for="pw" data-iauth="lbl_pw">Mot de passe</label>
+      <input class="fi" type="password" id="pw" name="password" data-iauth="lbl_pw_min" placeholder="8 caractères minimum" autocomplete="new-password" required minlength="8">
+      <label class="flbl" for="pw2" data-iauth="lbl_pw_conf">Confirmer le mot de passe</label>
+      <input class="fi" type="password" id="pw2" name="password2" placeholder="••••••••" autocomplete="new-password" required>
+      <button type="submit" class="btn" data-iauth="btn_reg">Créer mon compte</button>
+    </form>
+  </div>
+  <div class="link" data-iauth="link_haveac">Déjà un compte ? <a href="/login">Se connecter</a></div>
   {% endif %}
 </div>
 </body></html>"""
@@ -443,6 +492,23 @@ label{font-size:11px;color:#64748b;display:block;margin-bottom:4px;letter-spacin
   .search-bar{flex-direction:column}
   table{display:block;overflow-x:auto}
 }
+/* Terminal */
+.term-wrap{background:#020910;border:1px solid #1a2a45;border-radius:10px;padding:0;overflow:hidden;margin-bottom:20px}
+.term-header{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:#050d1a;border-bottom:1px solid #1a2a45}
+.term-dots{display:flex;gap:6px}
+.term-dots span{width:10px;height:10px;border-radius:50%}
+.term-output{font-family:'Cascadia Code','Fira Code','Consolas',monospace;font-size:12px;line-height:1.7;padding:14px 16px;min-height:200px;max-height:420px;overflow-y:auto;color:#94a3b8;white-space:pre-wrap;word-break:break-all}
+.term-output::-webkit-scrollbar{width:4px}
+.term-output::-webkit-scrollbar-thumb{background:#1a2a45;border-radius:2px}
+.term-line-ok{color:#34d399}
+.term-line-err{color:#f87171}
+.term-line-cmd{color:#14b8a6;font-weight:600}
+.term-input-row{display:flex;align-items:center;gap:8px;padding:10px 16px;border-top:1px solid #1a2a45;background:#020910}
+.term-prompt{color:#14b8a6;font-family:'Cascadia Code','Fira Code','Consolas',monospace;font-size:12px;white-space:nowrap}
+.term-input{flex:1;background:transparent;border:none;color:#e2e8f0;font-family:'Cascadia Code','Fira Code','Consolas',monospace;font-size:12px;outline:none}
+.term-run-btn{padding:5px 14px;background:#0d9488;border:none;border-radius:5px;color:#fff;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap}
+.term-run-btn:hover{background:#14b8a6}
+.term-run-btn:disabled{opacity:.4;cursor:not-allowed}
 </style>
 </head>
 <body>
@@ -531,6 +597,29 @@ label{font-size:11px;color:#64748b;display:block;margin-bottom:4px;letter-spacin
     {% endfor %}
     </tbody>
   </table>
+</div>
+
+<!-- TERMINAL ADMIN -->
+<div class="card">
+  <div class="ctitle">Terminal</div>
+  <div class="term-wrap">
+    <div class="term-header">
+      <div class="term-dots">
+        <span style="background:#f87171"></span>
+        <span style="background:#fbbf24"></span>
+        <span style="background:#34d399"></span>
+      </div>
+      <span style="font-size:10px;color:#334155;letter-spacing:1px">PILAR SHELL — ADMIN ONLY</span>
+      <button onclick="termClear()" style="background:transparent;border:1px solid #1e3050;color:#64748b;padding:3px 10px;border-radius:4px;font-size:10px;cursor:pointer">Effacer</button>
+    </div>
+    <div class="term-output" id="termOut"><span style="color:#334155">Prêt. Tapez une commande et appuyez sur Entrée.</span>
+</div>
+    <div class="term-input-row">
+      <span class="term-prompt">pilar$&nbsp;</span>
+      <input class="term-input" id="termIn" type="text" placeholder="ls, python --version, pip list..." autocomplete="off" spellcheck="false" onkeydown="termKey(event)">
+      <button class="term-run-btn" id="termBtn" onclick="termRun()">Exécuter</button>
+    </div>
+  </div>
 </div>
 
 </div><!-- /wrap -->
@@ -651,6 +740,60 @@ function filterTable() {
     const matchPlan = !pf || plan === pf;
     row.style.display = matchEmail && matchPlan ? '' : 'none';
   });
+}
+
+/* ── Terminal ── */
+let _termHistory = [];
+let _termHistIdx = -1;
+
+function termKey(e) {
+  if (e.key === 'Enter') { termRun(); return; }
+  if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    if (_termHistory.length === 0) return;
+    _termHistIdx = Math.min(_termHistIdx + 1, _termHistory.length - 1);
+    document.getElementById('termIn').value = _termHistory[_termHistIdx];
+  }
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    if (_termHistIdx <= 0) { _termHistIdx = -1; document.getElementById('termIn').value = ''; return; }
+    _termHistIdx--;
+    document.getElementById('termIn').value = _termHistory[_termHistIdx];
+  }
+}
+
+async function termRun() {
+  const inp = document.getElementById('termIn');
+  const cmd = inp.value.trim();
+  if (!cmd) return;
+  _termHistory.unshift(cmd);
+  _termHistIdx = -1;
+  inp.value = '';
+  const out = document.getElementById('termOut');
+  const btn = document.getElementById('termBtn');
+  btn.disabled = true;
+  out.innerHTML += '<span class="term-line-cmd">$ ' + cmd.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</span>\n';
+  out.scrollTop = out.scrollHeight;
+  try {
+    const r = await fetch('/admin/terminal', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({cmd: cmd})
+    });
+    const d = await r.json();
+    const txt = (d.output || '').replace(/</g,'&lt;').replace(/>/g,'&gt;') || '(aucune sortie)';
+    const cls = d.code === 0 ? 'term-line-ok' : 'term-line-err';
+    out.innerHTML += '<span class="' + cls + '">' + txt + '</span>\n';
+  } catch(e) {
+    out.innerHTML += '<span class="term-line-err">Erreur réseau</span>\n';
+  }
+  btn.disabled = false;
+  out.scrollTop = out.scrollHeight;
+  inp.focus();
+}
+
+function termClear() {
+  document.getElementById('termOut').innerHTML = '<span style="color:#334155">Terminal effacé.</span>\n';
 }
 </script>
 </body></html>"""
@@ -855,7 +998,10 @@ partial_analysis:'Analyse partielle',imputed:'estimés',discovered_param:'Param�
 page_adapter:'Adaptateur CSV',adp_upload:'Importer CSV',adp_hint:'Tout délimiteur · noms libres · conversion unités incluse',
 adp_change:'Changer',adp_preview:'Aperçu (5 lignes)',adp_download:'Convertir & Télécharger',
 adp_no_map:'Aucun champ mappé',adp_source:'Colonne source',adp_samples:'Exemples',adp_field:'Champ Pilar',adp_unit:'Unité',
-adp_ignore:'(Ignorer)',adp_desc:'Convertissez n\'importe quel CSV au format Pilar'},
+adp_ignore:'(Ignorer)',adp_desc:'Convertissez n\'importe quel CSV au format Pilar',adp_save:'Sauvegarder dans Pilar',adp_my_files:'Mes fichiers',adp_refresh:'Actualiser',adp_saved_ok:'Fichier sauvegardé',adp_no_files:'Aucun fichier sauvegardé',adp_load:'Charger',adp_delete:'Supprimer',
+page_tutorial:'Import & Analyse',tut_csv_desc:"Votre CSV doit contenir ces colonnes (l'ordre n'a pas d'importance) :",tut_click_csv:'Cliquez pour sélectionner un fichier CSV',tut_no_file_sel:'Aucun fichier sélectionné',tut_progress:'Progression',tut_check_every:'Vérifier toutes les',tut_row:'Ligne',
+set_domain:'Domaine',set_nav_title:'Navigation',set_twin_nav:'Jumeau Numérique',
+ast_you:'Vous',ast_pilar:'Pilar IA',ast_error:'Erreur\u00a0: ',ast_net_error:'Erreur réseau. Réessayez.'},
 en:{nav_monitor:'Monitor',nav_twin:'Twin',nav_history:'History',nav_account:'Account',nav_settings:'Settings',
 page_monitor:'Monitor',page_twin:'Digital Twin',page_history:'History',page_account:'Account',page_settings:'Settings',
 idle_l1:'No analysis yet',idle_l2:'Configure below and run',
@@ -902,7 +1048,10 @@ partial_analysis:'Partial analysis',imputed:'estimated',discovered_param:'Discov
 page_adapter:'CSV Adapter',adp_upload:'Upload CSV',adp_hint:'Any delimiter · any column names · unit conversion included',
 adp_change:'Change',adp_preview:'Preview (5 rows)',adp_download:'Convert & Download',
 adp_no_map:'No fields mapped',adp_source:'Source column',adp_samples:'Samples',adp_field:'Pilar field',adp_unit:'Unit',
-adp_ignore:'(Ignore)',adp_desc:'Convert any CSV to Pilar format'}
+adp_ignore:'(Ignore)',adp_desc:'Convert any CSV to Pilar format',adp_save:'Save to Pilar',adp_my_files:'My files',adp_refresh:'Refresh',adp_saved_ok:'File saved',adp_no_files:'No saved files',adp_load:'Load',adp_delete:'Delete',
+page_tutorial:'Import & Run',tut_csv_desc:'Your CSV must contain these columns (order does not matter):',tut_click_csv:'Click to select a CSV file',tut_no_file_sel:'No file selected',tut_progress:'Progress',tut_check_every:'Check every',tut_row:'Row',
+set_domain:'Domain',set_nav_title:'Navigation',set_twin_nav:'Digital Twin',
+ast_you:'You',ast_pilar:'Pilar AI',ast_error:'Error: ',ast_net_error:'Network error. Please retry.'}
 };
 let LANG=localStorage.getItem('pilar_lang')||'en';
 function t(k){return(T[LANG]&&T[LANG][k])||(T.en[k])||k;}
@@ -1668,13 +1817,13 @@ SETTINGS_HTML = _HEAD.replace("{FAV}","iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC
     <div style="display:flex;flex-direction:column;gap:8px">
       <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--text3)" data-i18n="set_version">Version</span><span>Pilar v3.0</span></div>
       <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--text3)" data-i18n="set_aimodel">AI Model</span><span>Claude Haiku</span></div>
-      <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--text3)">Domain</span><span>trypilar.com</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--text3)" data-i18n="set_domain">Domain</span><span>trypilar.com</span></div>
     </div>
   </div>
   <div class="card">
-    <div class="ctitle">Navigation</div>
+    <div class="ctitle" data-i18n="set_nav_title">Navigation</div>
     <div style="display:flex;flex-direction:column;gap:8px">
-      <a href="/twin" style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2);text-decoration:none;padding:8px 0"><span>Digital Twin Simulation</span><span style="color:var(--teal-light)">›</span></a>
+      <a href="/twin" style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2);text-decoration:none;padding:8px 0"><span data-i18n="set_twin_nav">Digital Twin</span><span style="color:var(--teal-light)">›</span></a>
     </div>
   </div>
 </div>""" + nav("s") + """
@@ -1689,12 +1838,12 @@ updN();
 # ── ASSISTANT ─────────────────────────────────────────────────────────────────
 ASSISTANT_HTML = _HEAD.replace("{FAV}", FAV_B64) + """
 <body>
-<header><span class="logo">PILAR</span><div class="hd"></div><span class="hsub">Assistant</span>
-<div class="hright"><a href="/account" style="font-size:10px;color:var(--text3);text-decoration:none;letter-spacing:1px">Account</a></div>
+<header><span class="logo">PILAR</span><div class="hd"></div><span class="hsub" data-i18n="nav_assistant">Assistant</span>
+<div class="hright"><a href="/account" style="font-size:10px;color:var(--text3);text-decoration:none;letter-spacing:1px" data-i18n="nav_account">Account</a></div>
 </header>
 <div class="cw">
   <div class="cm" id="cm">
-    <div class="msg bot"><span class="ms">Pilar AI</span><div class="mb2" id="ast-hello">Hello. I am your predictive maintenance assistant. Share your sensor readings or ask me anything about your machine health.</div></div>
+    <div class="msg bot"><span class="ms" id="ast-pilar-lbl">Pilar AI</span><div class="mb2" id="ast-hello">Hello. I am your predictive maintenance assistant. Share your sensor readings or ask me anything about your machine health.</div></div>
   </div>
   <div class="cia">
     <textarea class="cta" id="ci" placeholder="Ask about your machine..." rows="1" onkeydown="kd(event)" data-i18n="ast_placeholder"></textarea>
@@ -1706,11 +1855,13 @@ ASSISTANT_HTML = _HEAD.replace("{FAV}", FAV_B64) + """
 var hist=[],lastCtx=null;
 try{var s=localStorage.getItem('pilar_last_result');if(s)lastCtx=JSON.parse(s);}catch(e){}
 document.getElementById('ast-hello').textContent=t('ast_hello');
+var _astPilarLbl=document.getElementById('ast-pilar-lbl');
+if(_astPilarLbl)_astPilarLbl.textContent=t('ast_pilar');
 applyLang();
 function kd(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}}
 function addMsg(role,txt){
   var d=document.createElement('div');d.className='msg '+role;
-  var s=document.createElement('span');s.className='ms';s.textContent=role==='user'?'You':'Pilar AI';
+  var s=document.createElement('span');s.className='ms';s.textContent=role==='user'?t('ast_you'):t('ast_pilar');
   var b=document.createElement('div');b.className='mb2';b.textContent=txt;
   d.appendChild(s);d.appendChild(b);
   document.getElementById('cm').appendChild(d);
@@ -1729,9 +1880,9 @@ async function send(){
       body:JSON.stringify({message:msg,context:lastCtx,history:hist})});
     var r=await res.json();
     tb.classList.remove('typing');
-    if(r.error){tb.textContent='Error: '+r.error;}
+    if(r.error){tb.textContent=t('ast_error')+r.error;}
     else{tb.textContent=r.reply;hist.push({role:'assistant',content:r.reply});}
-  }catch(e){tb.classList.remove('typing');tb.textContent='Network error. Please retry.';}
+  }catch(e){tb.classList.remove('typing');tb.textContent=t('ast_net_error');}
   sb.disabled=false;ci.focus();
 }
 </script></body></html>"""
@@ -1739,20 +1890,20 @@ async function send(){
 # ── TUTORIAL ───────────────────────────────────────────────────────────────────
 TUTORIAL_HTML = _HEAD.replace("{FAV}", FAV_B64) + """
 <body>
-<header><span class="logo">PILAR</span><div class="hd"></div><span class="hsub">Import & Run</span>
-<div class="hright"><a href="/twin" style="font-size:10px;color:var(--text3);text-decoration:none;letter-spacing:1px">Twin</a></div>
+<header><span class="logo">PILAR</span><div class="hd"></div><span class="hsub" data-i18n="page_tutorial">Import & Run</span>
+<div class="hright"><a href="/twin" style="font-size:10px;color:var(--text3);text-decoration:none;letter-spacing:1px" data-i18n="nav_twin">Twin</a></div>
 </header>
 <div class="page pad">
 
   <!-- CSV FORMAT GUIDE -->
   <div class="card">
-    <div class="ctitle">CSV Format</div>
-    <p style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:12px">Your CSV must contain these columns (order does not matter):</p>
+    <div class="ctitle" data-i18n="tut_format">CSV Format</div>
+    <p style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:12px" data-i18n="tut_csv_desc">Your CSV must contain these columns (order does not matter):</p>
     <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:12px;overflow-x:auto;margin-bottom:12px">
       <code style="font-size:11px;color:var(--teal-light);white-space:nowrap">type, temp_air, temp_process, vitesse, couple, usure</code>
     </div>
     <table style="font-size:11px;margin-top:0">
-      <thead><tr><th>Column</th><th>Unit</th><th>Range</th><th>Description</th></tr></thead>
+      <thead><tr><th data-i18n="tut_cols">Column</th><th data-i18n="tut_unit">Unit</th><th data-i18n="tut_range">Range</th><th data-i18n="tut_desc">Description</th></tr></thead>
       <tbody>
         <tr><td style="color:var(--teal-light)">type</td><td>—</td><td>0, 1 or 2</td><td>Machine class (L=0, M=1, H=2)</td></tr>
         <tr><td style="color:var(--teal-light)">temp_air</td><td>K</td><td>295–310</td><td>Air temperature (Kelvin)</td></tr>
@@ -1763,22 +1914,22 @@ TUTORIAL_HTML = _HEAD.replace("{FAV}", FAV_B64) + """
       </tbody>
     </table>
     <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
-      <button class="btn" style="flex:1;background:transparent;border:1px solid var(--border2);color:var(--text2)" onclick="dlSample()">Download sample CSV</button>
+      <button class="btn" style="flex:1;background:transparent;border:1px solid var(--border2);color:var(--text2)" onclick="dlSample()" data-i18n="tut_sample">Download sample CSV</button>
       <a href="/adapter" class="btn" style="flex:1;text-align:center;text-decoration:none;background:var(--teal);color:#fff">CSV Adapter</a>
     </div>
   </div>
 
   <!-- IMPORT -->
   <div class="card">
-    <div class="ctitle">Import File</div>
+    <div class="ctitle" data-i18n="tut_import">Import File</div>
     <label for="csvf" style="display:block;padding:24px;border:1px dashed var(--border2);border-radius:6px;text-align:center;cursor:pointer;background:var(--surface2);transition:border-color 0.15s" id="dropz">
       <svg style="width:32px;height:32px;stroke:var(--text3);margin-bottom:8px" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-      <div style="font-size:12px;color:var(--text3)">Click to select a CSV file</div>
-      <div style="font-size:10px;color:var(--text3);margin-top:4px" id="fname">No file selected</div>
+      <div style="font-size:12px;color:var(--text3)" data-i18n="tut_click_csv">Click to select a CSV file</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:4px" id="fname" data-i18n="tut_no_file_sel">No file selected</div>
     </label>
     <input type="file" id="csvf" accept=".csv" style="display:none" onchange="onFile(this)">
     <div style="display:flex;align-items:center;gap:10px;margin-top:14px">
-      <div style="font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase">Speed</div>
+      <div style="font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase" data-i18n="tut_speed">Speed</div>
       <select id="spd" class="fi" style="flex:1;padding:8px 10px">
         <option value="500">Fast — 0.5s per row</option>
         <option value="1000" selected>Normal — 1s per row</option>
@@ -1787,15 +1938,15 @@ TUTORIAL_HTML = _HEAD.replace("{FAV}", FAV_B64) + """
       </select>
     </div>
     <div style="display:flex;gap:8px;margin-top:12px">
-      <button class="btn" id="btnStart" style="flex:1" onclick="startRun()" disabled>Start</button>
-      <button class="btn" id="btnPause" style="flex:1;background:var(--amber);display:none" onclick="togglePause()">Pause</button>
-      <button class="btn" id="btnStop" style="flex:1;background:var(--red);display:none" onclick="stopRun()">Stop</button>
+      <button class="btn" id="btnStart" style="flex:1" onclick="startRun()" disabled data-i18n="tut_start">Start</button>
+      <button class="btn" id="btnPause" style="flex:1;background:var(--amber);display:none" onclick="togglePause()" data-i18n="tut_pause">Pause</button>
+      <button class="btn" id="btnStop" style="flex:1;background:var(--red);display:none" onclick="stopRun()" data-i18n="tut_stop">Stop</button>
     </div>
   </div>
 
   <!-- PROGRESS -->
   <div class="card" id="progCard" style="display:none">
-    <div class="ctitle">Progress</div>
+    <div class="ctitle" data-i18n="tut_progress">Progress</div>
     <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:8px">
       <span id="progLbl">Row 0 / 0</span>
       <span id="progPct">0%</span>
@@ -1806,15 +1957,15 @@ TUTORIAL_HTML = _HEAD.replace("{FAV}", FAV_B64) + """
     <div style="display:flex;gap:10px;margin-top:12px">
       <div style="flex:1;background:var(--surface2);border-radius:6px;padding:10px;text-align:center">
         <div style="font-size:18px;font-weight:800;color:var(--red)" id="cntFail">0</div>
-        <div style="font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-top:2px">Failures</div>
+        <div style="font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-top:2px" data-i18n="live_fail">Failures</div>
       </div>
       <div style="flex:1;background:var(--surface2);border-radius:6px;padding:10px;text-align:center">
         <div style="font-size:18px;font-weight:800;color:var(--green)" id="cntOk">0</div>
-        <div style="font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-top:2px">Normal</div>
+        <div style="font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-top:2px" data-i18n="live_ok">Normal</div>
       </div>
       <div style="flex:1;background:var(--surface2);border-radius:6px;padding:10px;text-align:center">
         <div style="font-size:18px;font-weight:800;color:var(--amber)" id="cntAvg">—</div>
-        <div style="font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-top:2px">Avg Risk</div>
+        <div style="font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-top:2px" data-i18n="twin_avg">Avg Risk</div>
       </div>
     </div>
   </div>
@@ -1824,21 +1975,21 @@ TUTORIAL_HTML = _HEAD.replace("{FAV}", FAV_B64) + """
 
   <!-- LIVE FILE MONITOR -->
   <div class="card" style="margin-top:8px">
-    <div class="ctitle">Live File Monitor</div>
-    <p style="font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:14px">Connect a CSV file that your SCADA or system updates continuously. Pilar detects new rows and analyses them automatically.</p>
+    <div class="ctitle" data-i18n="tut_live">Live File Monitor</div>
+    <p style="font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:14px" data-i18n="tut_live_desc">Connect a CSV file that your SCADA or system updates continuously. Pilar detects new rows and analyses them automatically.</p>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
       <div>
-        <div style="font-size:12px;color:var(--text2)" id="liveName">No file connected</div>
-        <div style="font-size:10px;margin-top:3px" id="liveStatus" style="color:var(--text3)">Disconnected</div>
+        <div style="font-size:12px;color:var(--text2)" id="liveName" data-i18n="tut_no_file">No file connected</div>
+        <div style="font-size:10px;margin-top:3px" id="liveStatus" style="color:var(--text3)" data-i18n="tut_disconnected">Disconnected</div>
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <div style="font-size:10px;color:var(--text3)" id="liveTotalRows"></div>
-        <button class="btn" id="btnLiveConnect" onclick="connectLive()" style="width:auto;padding:10px 16px;margin-top:0">Connect File</button>
-        <button class="btn" id="btnLiveStop" onclick="stopLive()" style="width:auto;padding:10px 16px;margin-top:0;background:var(--red);display:none">Disconnect</button>
+        <button class="btn" id="btnLiveConnect" onclick="connectLive()" style="width:auto;padding:10px 16px;margin-top:0" data-i18n="tut_connect">Connect File</button>
+        <button class="btn" id="btnLiveStop" onclick="stopLive()" style="width:auto;padding:10px 16px;margin-top:0;background:var(--red);display:none" data-i18n="live_disconnect">Disconnect</button>
       </div>
     </div>
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-      <div style="font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;white-space:nowrap">Check every</div>
+      <div style="font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;white-space:nowrap" data-i18n="tut_check_every">Check every</div>
       <select id="liveInterval" class="fi" style="flex:1;padding:8px 10px">
         <option value="2000">2 seconds</option>
         <option value="5000" selected>5 seconds</option>
@@ -1850,11 +2001,11 @@ TUTORIAL_HTML = _HEAD.replace("{FAV}", FAV_B64) + """
     <div style="display:flex;gap:10px;margin-bottom:12px">
       <div style="flex:1;background:var(--surface2);border-radius:6px;padding:10px;text-align:center">
         <div style="font-size:18px;font-weight:800;color:var(--red)" id="liveFail">0</div>
-        <div style="font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-top:2px">Failures</div>
+        <div style="font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-top:2px" data-i18n="live_fail">Failures</div>
       </div>
       <div style="flex:1;background:var(--surface2);border-radius:6px;padding:10px;text-align:center">
         <div style="font-size:18px;font-weight:800;color:var(--green)" id="liveOk">0</div>
-        <div style="font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-top:2px">Normal</div>
+        <div style="font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-top:2px" data-i18n="live_ok">Normal</div>
       </div>
     </div>
     <div style="font-size:10px;color:var(--text3);margin-bottom:8px" id="liveLastCheck"></div>
@@ -2123,7 +2274,22 @@ ADAPTER_HTML = _HEAD.replace("{FAV}", FAV_B64) + """
       <div class="ctitle" data-i18n="adp_preview">Preview (5 rows)</div>
       <div id="adpPreview" style="overflow-x:auto;font-size:10px"></div>
     </div>
-    <button class="btn" onclick="adpDownload()" data-i18n="adp_download">Convert & Download</button>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn" onclick="adpDownload()" data-i18n="adp_download" style="flex:1">Convert & Download</button>
+      <button class="btn" onclick="adpSaveToPilar()" id="adpSaveBtn" style="flex:1;background:var(--surface2);border:1px solid var(--teal);color:var(--teal)" data-i18n="adp_save">Save to Pilar</button>
+    </div>
+    <div id="adpSaveMsg" style="display:none;margin-top:8px;font-size:11px;color:var(--green);text-align:center"></div>
+  </div>
+
+  <!-- SAVED FILES -->
+  <div id="adpSavedSection" style="display:none">
+    <div class="card" style="margin-top:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <span class="ctitle" style="margin:0" data-i18n="adp_my_files">My files</span>
+        <button onclick="adpLoadSaved()" style="background:none;border:none;color:var(--teal);font-size:10px;cursor:pointer;letter-spacing:1px" data-i18n="adp_refresh">Refresh</button>
+      </div>
+      <div id="adpFilesList"></div>
+    </div>
   </div>
 </div>""" + nav("") + """
 <script>
@@ -2234,14 +2400,8 @@ function adpRenderPreview(dataLines){
 }
 
 function adpDownload(){
-  var active=_ADP_KEYS.filter(function(k){return _adpMap.some(function(m){return m.pf===k;});});
-  if(!active.length)return;
-  var lines=_adpRaw.split('\\n').map(function(s){return s.trim();}).filter(function(s){return s.length>0;});
-  var csv=active.map(function(k){return _ADP_OUT[k];}).join(',')+'\\n';
-  for(var i=1;i<lines.length;i++){
-    var rv=lines[i].split(_adpDelim);var row=_adpRowOut(rv);
-    csv+=active.map(function(k){return row[k]!==undefined?String(row[k]):'';}).join(',')+'\\n';
-  }
+  var csv=adpGetCSV();
+  if(!csv)return;
   var blob=new Blob([csv],{type:'text/csv'});
   var a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
@@ -2256,6 +2416,96 @@ function adpReset(){
   document.getElementById('adpEmpty').style.display='block';
   document.getElementById('adpMain').style.display='none';
 }
+
+function adpGetCSV(){
+  var active=_ADP_KEYS.filter(function(k){return _adpMap.some(function(m){return m.pf===k;});});
+  if(!active.length)return null;
+  var lines=_adpRaw.split('\\n').map(function(s){return s.trim();}).filter(function(s){return s.length>0;});
+  var csv=active.map(function(k){return _ADP_OUT[k];}).join(',')+'\\n';
+  for(var i=1;i<lines.length;i++){
+    var rv=lines[i].split(_adpDelim);var row=_adpRowOut(rv);
+    csv+=active.map(function(k){return row[k]!==undefined?String(row[k]):'';}).join(',')+'\\n';
+  }
+  return csv;
+}
+
+function adpSaveToPilar(){
+  var csv=adpGetCSV();
+  if(!csv){alert(t('adp_no_map'));return;}
+  var fname=document.getElementById('adpFileName').textContent.split(' — ')[0]||'imported.csv';
+  var base=fname.replace(/\\.[^.]+$/,'')+'_pilar.csv';
+  var btn=document.getElementById('adpSaveBtn');
+  btn.disabled=true;
+  fetch('/api/save_csv',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename:base,content:csv})})
+    .then(function(r){
+      if(r.status===401){window.location.href='/login';return null;}
+      return r.json();
+    })
+    .then(function(d){
+      if(!d)return;
+      btn.disabled=false;
+      if(d.id){
+        var msg=document.getElementById('adpSaveMsg');
+        msg.textContent=t('adp_saved_ok')+' — '+d.filename+' ('+d.rows+' rows)';
+        msg.style.display='block';
+        setTimeout(function(){msg.style.display='none';},3000);
+        adpLoadSaved();
+      }
+    }).catch(function(){btn.disabled=false;});
+}
+
+function adpLoadSaved(){
+  fetch('/api/saved_files').then(function(r){return r.json();}).then(function(files){
+    var sec=document.getElementById('adpSavedSection');
+    var lst=document.getElementById('adpFilesList');
+    if(!files||!files.length){
+      lst.innerHTML='<div style="font-size:11px;color:var(--text3);text-align:center;padding:12px">'+t('adp_no_files')+'</div>';
+      sec.style.display='block';return;
+    }
+    var html='';
+    files.forEach(function(f){
+      var d=new Date(f.created_at).toLocaleDateString();
+      html+='<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">';
+      html+='<div><div style="font-size:11px;color:var(--text);font-weight:600">'+esc(f.filename)+'</div><div style="font-size:10px;color:var(--text3)">'+f.rows+' rows · '+d+'</div></div>';
+      html+='<div style="display:flex;gap:6px">';
+      html+='<button onclick="adpUseFile('+f.id+')" style="background:var(--teal);border:none;border-radius:4px;padding:5px 10px;color:#fff;font-size:10px;cursor:pointer">'+t('adp_load')+'</button>';
+      html+='<button onclick="adpDelFile('+f.id+',this)" style="background:none;border:1px solid var(--border);border-radius:4px;padding:5px 10px;color:var(--text3);font-size:10px;cursor:pointer">'+t('adp_delete')+'</button>';
+      html+='</div></div>';
+    });
+    lst.innerHTML=html;
+    sec.style.display='block';
+  });
+}
+
+function adpUseFile(id){
+  fetch('/api/saved_files/'+id).then(function(r){return r.json();}).then(function(f){
+    _adpRaw=f.content;
+    var lines=_adpRaw.split('\\n').map(function(s){return s.trim();}).filter(function(s){return s.length>0;});
+    if(lines.length<2)return;
+    _adpDelim=_csvDelim(lines[0]);
+    _adpHdr=lines[0].split(_adpDelim).map(function(s){return s.trim();});
+    var autoMap=detectCsvMapping(_adpHdr);
+    _adpMap=_adpHdr.map(function(col,idx){
+      var pf=null,unit=null;
+      _ADP_KEYS.forEach(function(k){if(autoMap[k]&&autoMap[k].idx===idx){pf=k;unit=autoMap[k].unit||null;}});
+      var samples=[];
+      for(var r=1;r<Math.min(4,lines.length);r++){var vs=lines[r].split(_adpDelim);if(idx<vs.length)samples.push(vs[idx].trim());}
+      return {col:col,idx:idx,pf:pf,unit:unit,samples:samples};
+    });
+    document.getElementById('adpFileName').textContent=f.filename+' — '+_adpHdr.length+' col · '+f.rows+' rows';
+    document.getElementById('adpEmpty').style.display='none';
+    document.getElementById('adpMain').style.display='block';
+    adpRenderTable();
+    adpRenderPreview(lines.slice(1,6));
+  });
+}
+
+function adpDelFile(id,btn){
+  btn.disabled=true;
+  fetch('/api/saved_files/'+id+'/delete',{method:'POST'}).then(function(){adpLoadSaved();});
+}
+
+document.addEventListener('DOMContentLoaded',adpLoadSaved);
 </script></body></html>"""
 
 # ── LANDING PAGE ──────────────────────────────────────────────────────────────
@@ -2449,8 +2699,8 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center}
       <button id="_lEN" onclick="_lp('en')" style="padding:4px 10px;border:none;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:1px;cursor:pointer;background:transparent;color:#64748b;transition:all .15s">EN</button>
       <button id="_lFR" onclick="_lp('fr')" style="padding:4px 10px;border:none;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:1px;cursor:pointer;background:transparent;color:#64748b;transition:all .15s">FR</button>
     </div>
-    <a href="/login" class="btn-ghost">Sign In</a>
-    <a href="/register" class="btn-teal">Get Started Free</a>
+    <a href="/login" class="btn-ghost" data-ilp="nav_signin">Sign In</a>
+    <a href="/register" class="btn-teal" data-ilp="nav_start">Get Started Free</a>
   </div>
 </nav>
 
@@ -2458,15 +2708,15 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center}
 <div class="hero">
   <div class="hero-glow"></div>
   <div class="hero-glow2"></div>
-  <div class="badge"><span class="badge-dot"></span>AI-Powered Predictive Maintenance</div>
-  <h1>Stop fixing machines.<br><span>Predict failures first.</span></h1>
-  <p class="hero-sub">Pilar analyzes your industrial sensors in real time and alerts you hours before a breakdown — before it costs you anything.</p>
+  <div class="badge"><span class="badge-dot"></span><span data-ilp="hero_badge">AI-Powered Predictive Maintenance</span></div>
+  <h1 data-ilp="hero_h">Stop fixing machines.<br><span>Predict failures first.</span></h1>
+  <p class="hero-sub" data-ilp="hero_sub">Pilar analyzes your industrial sensors in real time and alerts you hours before a breakdown — before it costs you anything.</p>
   <div class="hero-cta">
     <a href="/register" class="btn-hero">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-      Start for free
+      <span data-ilp="hero_cta1">Start for free</span>
     </a>
-    <a href="#how-it-works" class="btn-hero-ghost">See how it works</a>
+    <a href="#how-it-works" class="btn-hero-ghost" data-ilp="hero_cta2">See how it works</a>
   </div>
 
   <!-- APP PREVIEW -->
@@ -2506,41 +2756,41 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center}
 
 <!-- STATS BAR -->
 <div class="stats-bar">
-  <div class="stat-item"><div class="stat-num">98.1%</div><div class="stat-lbl">Recall — failures caught</div></div>
-  <div class="stat-item"><div class="stat-num">5</div><div class="stat-lbl">Failure zones detected</div></div>
-  <div class="stat-item"><div class="stat-num">&lt;5s</div><div class="stat-lbl">Analysis per reading</div></div>
-  <div class="stat-item"><div class="stat-num">20K+</div><div class="stat-lbl">Industrial records trained</div></div>
+  <div class="stat-item"><div class="stat-num">98.1%</div><div class="stat-lbl" data-ilp="stat1">Recall — failures caught</div></div>
+  <div class="stat-item"><div class="stat-num">5</div><div class="stat-lbl" data-ilp="stat2">Failure zones detected</div></div>
+  <div class="stat-item"><div class="stat-num">&lt;5s</div><div class="stat-lbl" data-ilp="stat3">Analysis per reading</div></div>
+  <div class="stat-item"><div class="stat-num">20K+</div><div class="stat-lbl" data-ilp="stat4">Industrial records trained</div></div>
 </div>
 
 <!-- HOW IT WORKS -->
 <section id="how-it-works">
-  <div class="section-label">Process</div>
-  <div class="section-title">Three steps to <span>zero unplanned downtime</span></div>
-  <div class="section-sub">Connect your machines, let Pilar learn, and receive precise alerts before failures happen.</div>
+  <div class="section-label" data-ilp="how_lbl">Process</div>
+  <div class="section-title" data-ilp="how_title">Three steps to <span>zero unplanned downtime</span></div>
+  <div class="section-sub" data-ilp="how_sub">Connect your machines, let Pilar learn, and receive precise alerts before failures happen.</div>
   <div class="steps">
     <div class="step">
       <div class="step-num">01</div>
       <div class="step-icon">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#14b8a6" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
       </div>
-      <div class="step-title">Connect your sensors</div>
-      <div class="step-desc">Send readings via REST API from your PLCs, SCADA systems, or CSV files. Pilar accepts temperature, speed, torque, vibration, and more.</div>
+      <div class="step-title" data-ilp="s1t">Connect your sensors</div>
+      <div class="step-desc" data-ilp="s1d">Send readings via REST API from your PLCs, SCADA systems, or CSV files. Pilar accepts temperature, speed, torque, vibration, and more.</div>
     </div>
     <div class="step">
       <div class="step-num">02</div>
       <div class="step-icon">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#14b8a6" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
       </div>
-      <div class="step-title">AI detects anomalies</div>
-      <div class="step-desc">Our ML model — trained on 20,000+ industrial records — analyzes each reading across 5 failure zones in real time with 98.1% recall.</div>
+      <div class="step-title" data-ilp="s2t">AI detects anomalies</div>
+      <div class="step-desc" data-ilp="s2d">Our ML model — trained on 20,000+ industrial records — analyzes each reading across 5 failure zones in real time with 98.1% recall.</div>
     </div>
     <div class="step">
       <div class="step-num">03</div>
       <div class="step-icon">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#14b8a6" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.64 2 2 0 012-2.18h3a2 2 0 012 1.72 12.05 12.05 0 00.66 2.65 2 2 0 01-.45 2.11L8.09 6.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.05 12.05 0 002.65.66A2 2 0 0122 16.92z"/></svg>
       </div>
-      <div class="step-title">Your team gets alerted</div>
-      <div class="step-desc">When risk exceeds threshold, Pilar sends an instant email alert with the failure zone, risk level, and recommended action — before breakdown occurs.</div>
+      <div class="step-title" data-ilp="s3t">Your team gets alerted</div>
+      <div class="step-desc" data-ilp="s3d">When risk exceeds threshold, Pilar sends an instant email alert with the failure zone, risk level, and recommended action — before breakdown occurs.</div>
     </div>
   </div>
 </section>
@@ -2549,9 +2799,9 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center}
 
 <!-- PERFORMANCE -->
 <section>
-  <div class="section-label">Model Performance</div>
-  <div class="section-title">Built on <span>real industrial data</span></div>
-  <div class="section-sub">Trained on 20,902 machine readings across multiple industrial environments — not just synthetic data.</div>
+  <div class="section-label" data-ilp="perf_lbl">Model Performance</div>
+  <div class="section-title" data-ilp="perf_title">Built on <span>real industrial data</span></div>
+  <div class="section-sub" data-ilp="perf_sub">Trained on 20,902 machine readings across multiple industrial environments — not just synthetic data.</div>
   <div class="perf-grid">
     <div class="perf-metrics">
       <div class="metric-row">
@@ -2592,12 +2842,12 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center}
 
 <!-- ROI -->
 <section>
-  <div class="section-label">Business Impact</div>
-  <div class="section-title">The real cost of <span>reactive maintenance</span></div>
-  <div class="section-sub">Every unplanned breakdown costs production time, emergency repairs, and team morale. Pilar changes the equation.</div>
+  <div class="section-label" data-ilp="roi_lbl">Business Impact</div>
+  <div class="section-title" data-ilp="roi_title">The real cost of <span>reactive maintenance</span></div>
+  <div class="section-sub" data-ilp="roi_sub">Every unplanned breakdown costs production time, emergency repairs, and team morale. Pilar changes the equation.</div>
   <div class="roi-grid">
     <div class="roi-card roi-before">
-      <div class="roi-label">Without Pilar</div>
+      <div class="roi-label" data-ilp="roi_before">Without Pilar</div>
       <div class="roi-item"><span class="roi-item-label">Downtime per incident</span><span class="roi-item-val">4 – 48 hours</span></div>
       <div class="roi-item"><span class="roi-item-label">Repair cost (average)</span><span class="roi-item-val">$3,000 – $50,000</span></div>
       <div class="roi-item"><span class="roi-item-label">Detection method</span><span class="roi-item-val">Machine breaks down</span></div>
@@ -2605,7 +2855,7 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center}
       <div class="roi-item"><span class="roi-item-label">Alert time</span><span class="roi-item-val">0 minutes</span></div>
     </div>
     <div class="roi-card roi-after">
-      <div class="roi-label">With Pilar</div>
+      <div class="roi-label" data-ilp="roi_after">With Pilar</div>
       <div class="roi-item"><span class="roi-item-label">Downtime per incident</span><span class="roi-item-val">Planned → near zero</span></div>
       <div class="roi-item"><span class="roi-item-label">Repair cost (average)</span><span class="roi-item-val">Parts only — no emergency</span></div>
       <div class="roi-item"><span class="roi-item-label">Detection method</span><span class="roi-item-val">AI alert before failure</span></div>
@@ -2619,8 +2869,8 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center}
 
 <!-- FEATURES -->
 <section>
-  <div class="section-label">Features</div>
-  <div class="section-title">Everything your maintenance<br><span>team needs</span></div>
+  <div class="section-label" data-ilp="feat_lbl">Features</div>
+  <div class="section-title" data-ilp="feat_title">Everything your maintenance<br><span>team needs</span></div>
   <div class="features-grid">
     <div class="feature-card">
       <div class="feature-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0d9488" stroke-width="1.5"><path d="M4.93 4.93a10 10 0 000 14.14M19.07 4.93a10 10 0 010 14.14M9 12a3 3 0 106 0 3 3 0 00-6 0"/></svg></div>
@@ -2659,9 +2909,9 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center}
 
 <!-- INDUSTRIES -->
 <section>
-  <div class="section-label">Industries</div>
-  <div class="section-title">Built for <span>industrial environments</span></div>
-  <div class="section-sub">Any process that uses rotating machinery, temperature-controlled equipment, or precision tools can benefit from predictive monitoring.</div>
+  <div class="section-label" data-ilp="ind_lbl">Industries</div>
+  <div class="section-title" data-ilp="ind_title">Built for <span>industrial environments</span></div>
+  <div class="section-sub" data-ilp="ind_sub">Any process that uses rotating machinery, temperature-controlled equipment, or precision tools can benefit from predictive monitoring.</div>
   <div class="industries">
     <div class="industry-chip">Chemical Processing</div>
     <div class="industry-chip">Automotive Manufacturing</div>
@@ -2680,8 +2930,8 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center}
 
 <!-- PRICING -->
 <section id="pricing">
-  <div class="section-label" style="text-align:center">Pricing</div>
-  <div class="section-title" style="text-align:center">Start free, <span>scale when ready</span></div>
+  <div class="section-label" style="text-align:center" data-ilp="pricing_lbl">Pricing</div>
+  <div class="section-title" style="text-align:center" data-ilp="pricing_title">Start free, <span>scale when ready</span></div>
   <div class="pricing-grid">
     <div class="plan-card">
       <div class="plan-name">Free</div>
@@ -2738,17 +2988,33 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center}
 <!-- FINAL CTA -->
 <div style="max-width:1100px;margin:0 auto;padding:0 24px">
 <div class="cta-section">
-  <h2>Your machines are sending signals.<br><span style="background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Are you listening?</span></h2>
-  <p>Join the teams that stopped reacting to breakdowns and started preventing them. Free to start, no setup fees.</p>
+  <h2 data-ilp="cta_h">Your machines are sending signals.<br><span style="background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Are you listening?</span></h2>
+  <p data-ilp="cta_p">Join the teams that stopped reacting to breakdowns and started preventing them. Free to start, no setup fees.</p>
   <a href="/register" class="btn-hero" style="display:inline-flex">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-    Start monitoring for free
+    <span data-ilp="cta_btn">Start monitoring for free</span>
   </a>
 </div>
 </div>
 
 <script>
-function _lp(l){localStorage.setItem('pilar_lang',l);var teal='#0d9488';var dim='#64748b';document.getElementById('_lEN').style.background=l==='en'?teal:'transparent';document.getElementById('_lEN').style.color=l==='en'?'#fff':dim;document.getElementById('_lFR').style.background=l==='fr'?teal:'transparent';document.getElementById('_lFR').style.color=l==='fr'?'#fff':dim;}
+var _TLP={
+en:{nav_signin:'Sign In',nav_start:'Get Started Free',hero_badge:'AI-Powered Predictive Maintenance',hero_h:'Stop fixing machines.<br><span>Predict failures first.</span>',hero_sub:'Pilar analyzes your industrial sensors in real time and alerts you hours before a breakdown \u2014 before it costs you anything.',hero_cta1:'Start for free',hero_cta2:'See how it works',stat1:'Recall \u2014 failures caught',stat2:'Failure zones detected',stat3:'Analysis per reading',stat4:'Industrial records trained',how_lbl:'Process',how_title:'Three steps to <span>zero unplanned downtime</span>',how_sub:'Connect your machines, let Pilar learn, and receive precise alerts before failures happen.',s1t:'Connect your sensors',s1d:'Send readings via REST API from your PLCs, SCADA systems, or CSV files. Pilar accepts temperature, speed, torque, vibration, and more.',s2t:'AI detects anomalies',s2d:'Our ML model \u2014 trained on 20,000+ industrial records \u2014 analyzes each reading across 5 failure zones in real time with 98.1% recall.',s3t:'Your team gets alerted',s3d:'When risk exceeds threshold, Pilar sends an instant email alert with the failure zone, risk level, and recommended action \u2014 before breakdown occurs.',perf_lbl:'Model Performance',perf_title:'Built on <span>real industrial data</span>',perf_sub:'Trained on 20,902 machine readings across multiple industrial environments \u2014 not just synthetic data.',roi_lbl:'Business Impact',roi_title:'The real cost of <span>reactive maintenance</span>',roi_sub:'Every unplanned breakdown costs production time, emergency repairs, and team morale. Pilar changes the equation.',roi_before:'Without Pilar',roi_after:'With Pilar',feat_lbl:'Features',feat_title:'Everything your maintenance<br><span>team needs</span>',ind_lbl:'Industries',ind_title:'Built for <span>industrial environments</span>',ind_sub:'Any process that uses rotating machinery, temperature-controlled equipment, or precision tools can benefit from predictive monitoring.',pricing_lbl:'Pricing',pricing_title:'Start free, <span>scale when ready</span>',cta_h:'Your machines are sending signals.<br><span style="background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Are you listening?</span>',cta_p:'Join the teams that stopped reacting to breakdowns and started preventing them. Free to start, no setup fees.',cta_btn:'Start monitoring for free',footer_sign:'Sign In',footer_reg:'Create Account',footer_copy:'\u00a9 2026 Pilar. All rights reserved.'},
+fr:{nav_signin:'Connexion',nav_start:'Commencer gratuitement',hero_badge:'Maintenance Pr\u00e9dictive par IA',hero_h:'Arr\u00eatez de r\u00e9parer.<br><span>Pr\u00e9disez les pannes.</span>',hero_sub:'Pilar analyse vos capteurs industriels en temps r\u00e9el et vous alerte des heures avant une panne \u2014 avant que \u00e7a ne co\u00fbte quoi que ce soit.',hero_cta1:'Commencer gratuitement',hero_cta2:'Voir comment \u00e7a marche',stat1:'Rappel \u2014 pannes d\u00e9tect\u00e9es',stat2:'Zones de panne identifi\u00e9es',stat3:'Analyse par mesure',stat4:'Enregistrements industriels entra\u00een\u00e9s',how_lbl:'Processus',how_title:'Trois \u00e9tapes vers <span>z\u00e9ro arr\u00eat impr\u00e9vu</span>',how_sub:'Connectez vos machines, laissez Pilar apprendre, recevez des alertes pr\u00e9cises avant les pannes.',s1t:'Connectez vos capteurs',s1d:'Envoyez des mesures via API REST depuis vos automates, SCADA ou fichiers CSV. Pilar accepte temp\u00e9rature, vitesse, couple, usure et bien plus.',s2t:"L'IA d\u00e9tecte les anomalies",s2d:"Notre mod\u00e8le ML \u2014 entra\u00een\u00e9 sur 20 000+ enregistrements industriels \u2014 analyse chaque mesure sur 5 zones de panne en temps r\u00e9el avec 98,1% de rappel.",s3t:"Votre \u00e9quipe est alert\u00e9e",s3d:"Quand le risque d\u00e9passe le seuil, Pilar envoie un email d'alerte instantan\u00e9 avec la zone de panne, le niveau de risque et l'action recommand\u00e9e \u2014 avant la panne.",perf_lbl:'Performance du mod\u00e8le',perf_title:'Bas\u00e9 sur des <span>donn\u00e9es industrielles r\u00e9elles</span>',perf_sub:'Entra\u00een\u00e9 sur 20 902 mesures machines dans plusieurs environnements industriels \u2014 pas seulement des donn\u00e9es synth\u00e9tiques.',roi_lbl:'Impact business',roi_title:'Le vrai co\u00fbt de la <span>maintenance r\u00e9active</span>',roi_sub:'Chaque arr\u00eat impr\u00e9vu co\u00fbte du temps de production, des r\u00e9parations en urgence et du moral. Pilar change la donne.',roi_before:'Sans Pilar',roi_after:'Avec Pilar',feat_lbl:'Fonctionnalit\u00e9s',feat_title:'Tout ce dont votre \u00e9quipe de<br><span>maintenance a besoin</span>',ind_lbl:'Secteurs',ind_title:'Con\u00e7u pour les <span>environnements industriels</span>',ind_sub:"Tout proc\u00e9d\u00e9 utilisant des machines tournantes, des \u00e9quipements \u00e0 temp\u00e9rature contr\u00f4l\u00e9e ou des outils de pr\u00e9cision peut b\u00e9n\u00e9ficier de la surveillance pr\u00e9dictive.",pricing_lbl:'Tarifs',pricing_title:'Commencez gratuitement, <span>montez en puissance</span>',cta_h:'Vos machines envoient des signaux.<br><span style="background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Les \u00e9coutez-vous\u00a0?</span>',cta_p:'Rejoignez les \u00e9quipes qui ont arr\u00eat\u00e9 de r\u00e9agir aux pannes et ont commenc\u00e9 \u00e0 les pr\u00e9venir. Gratuit pour commencer, sans frais de mise en place.',cta_btn:'Commencer la surveillance gratuitement',footer_sign:'Connexion',footer_reg:'Cr\u00e9er un compte',footer_copy:'\u00a9 2026 Pilar. Tous droits r\u00e9serv\u00e9s.'}
+};
+function _lp(l){
+  localStorage.setItem('pilar_lang',l);
+  var teal='#0d9488';var dim='#64748b';
+  document.getElementById('_lEN').style.background=l==='en'?teal:'transparent';
+  document.getElementById('_lEN').style.color=l==='en'?'#fff':dim;
+  document.getElementById('_lFR').style.background=l==='fr'?teal:'transparent';
+  document.getElementById('_lFR').style.color=l==='fr'?'#fff':dim;
+  var tr=_TLP[l]||_TLP.en;
+  document.querySelectorAll('[data-ilp]').forEach(function(el){
+    var k=el.getAttribute('data-ilp');
+    if(tr[k]!==undefined){el.innerHTML=tr[k];}
+  });
+}
 (function(){_lp(localStorage.getItem('pilar_lang')||'en');})();
 </script>
 <!-- FOOTER -->
@@ -2756,12 +3022,12 @@ function _lp(l){localStorage.setItem('pilar_lang',l);var teal='#0d9488';var dim=
   <div class="footer-logo">PILAR</div>
   <div class="footer-text">Predictive Maintenance Intelligence &mdash; Built for industrial teams worldwide</div>
   <div class="footer-links">
-    <a href="/login">Sign In</a>
-    <a href="/register">Create Account</a>
+    <a href="/login" data-ilp="footer_sign">Sign In</a>
+    <a href="/register" data-ilp="footer_reg">Create Account</a>
     <a href="/api/docs">API Docs</a>
     <a href="mailto:contact@trypilar.com">Contact</a>
   </div>
-  <div style="font-size:10px;color:#334155;margin-top:16px">&copy; 2026 Pilar. All rights reserved.</div>
+  <div style="font-size:10px;color:#334155;margin-top:16px" data-ilp="footer_copy">&copy; 2026 Pilar. All rights reserved.</div>
 </footer>
 
 </body>
@@ -3090,7 +3356,8 @@ def register():
         print(f"[Pilar/auth] New user: {email} (admin={is_admin}, verified={not needs_verify}) IP={ip}")
         if needs_verify:
             threading.Thread(target=send_verify_email, args=(email, token), daemon=True).start()
-            return render_template_string(REGISTER_HTML, error=None, pending=True)
+            session['_pending_verify'] = email
+            return render_template_string(REGISTER_HTML, error=None, pending=True, resent=False, pending_email=email)
         session['user_id'] = user.id
         session.permanent = True
         return redirect('/monitor')
@@ -3098,6 +3365,31 @@ def register():
         db.session.rollback()
         print(f"[Pilar/auth] Register error: {type(e).__name__}: {e}")
         return render_template_string(REGISTER_HTML, error='Erreur serveur. Veuillez réessayer.', pending=False)
+
+@app.route('/resend-verification', methods=['GET', 'POST'])
+def resend_verification():
+    if request.method == 'GET':
+        # Page de renvoi autonome (si l'utilisateur revient plus tard)
+        email = session.get('_pending_verify', '')
+        return render_template_string(REGISTER_HTML, error=None, pending=True, resent=False, pending_email=email)
+    email = (request.form.get('email') or session.get('_pending_verify', '')).strip().lower()
+    if email:
+        user = User.query.filter_by(email=email, email_verified=False).first()
+        if user:
+            if not GMAIL or not GMAIL_PWD:
+                print(f"[Pilar/auth] Resend impossible: GMAIL non configuré pour {email}")
+            else:
+                token = _secrets.token_hex(32)
+                user.verify_token = token
+                try:
+                    db.session.commit()
+                    threading.Thread(target=send_verify_email, args=(email, token), daemon=True).start()
+                    print(f"[Pilar/auth] Resend verification email: {email}")
+                except Exception as e:
+                    db.session.rollback()
+                    print(f"[Pilar/auth] Resend error: {e}")
+    # On affiche toujours le succès (anti-énumération)
+    return render_template_string(REGISTER_HTML, error=None, pending=True, resent=True, pending_email=email)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -3211,6 +3503,26 @@ def admin_set_plan(uid):
     print(f"[Pilar/admin] PLAN_CHANGE by {admin_user.email if admin_user else '?'}: user={user.email} {old_plan}->{plan} expires={expires_str or 'none'} note={note[:50] if note else ''}")
     return jsonify({'ok': True})
 
+@app.route('/admin/terminal', methods=['POST'])
+@admin_required
+def admin_terminal():
+    cmd = (request.json or {}).get('cmd', '').strip()
+    if not cmd:
+        return jsonify({'output': '', 'code': 0})
+    try:
+        result = subprocess.run(
+            cmd, shell=True, capture_output=True, text=True, timeout=30,
+            cwd=os.path.dirname(os.path.abspath(__file__))
+        )
+        output = result.stdout
+        if result.stderr:
+            output += result.stderr
+        return jsonify({'output': output.rstrip('\n'), 'code': result.returncode})
+    except subprocess.TimeoutExpired:
+        return jsonify({'output': 'Timeout (30s)', 'code': -1})
+    except Exception as e:
+        return jsonify({'output': str(e), 'code': -1})
+
 @app.route('/admin/impersonate/<int:uid>')
 @admin_required
 def impersonate(uid):
@@ -3316,6 +3628,53 @@ def tutorial(): return render_template_string(TUTORIAL_HTML)
 @app.route('/adapter')
 @auth_optional
 def adapter(): return render_template_string(ADAPTER_HTML)
+
+@app.route('/api/save_csv', methods=['POST'])
+@auth_optional
+def save_csv_file():
+    uid = current_uid()
+    if not uid:
+        return jsonify({'error': 'login_required'}), 401
+    try:
+        data = request.json or {}
+        filename = (data.get('filename') or 'imported.csv').strip()[:200]
+        content = data.get('content', '')
+        if not content:
+            return jsonify({'error': 'empty'}), 400
+        row_count = max(0, content.count('\n') - 1)
+        sf = SavedFile(user_id=uid, filename=filename, content=content, row_count=row_count)
+        db.session.add(sf)
+        db.session.commit()
+        return jsonify({'id': sf.id, 'filename': sf.filename, 'rows': row_count})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/saved_files')
+@auth_optional
+def list_saved_files():
+    uid = current_uid()
+    if not uid:
+        return jsonify([])
+    files = SavedFile.query.filter_by(user_id=uid).order_by(SavedFile.created_at.desc()).limit(20).all()
+    return jsonify([{'id': f.id, 'filename': f.filename, 'rows': f.row_count,
+                     'created_at': f.created_at.isoformat()} for f in files])
+
+@app.route('/api/saved_files/<int:fid>')
+@auth_optional
+def get_saved_file(fid):
+    uid = current_uid()
+    f = SavedFile.query.filter_by(id=fid, user_id=uid).first_or_404()
+    return jsonify({'id': f.id, 'filename': f.filename, 'content': f.content, 'rows': f.row_count})
+
+@app.route('/api/saved_files/<int:fid>/delete', methods=['POST'])
+@auth_optional
+def delete_saved_file(fid):
+    uid = current_uid()
+    f = SavedFile.query.filter_by(id=fid, user_id=uid).first_or_404()
+    db.session.delete(f)
+    db.session.commit()
+    return jsonify({'ok': True})
 
 @app.route('/twin')
 def twin():
