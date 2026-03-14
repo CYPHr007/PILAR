@@ -1118,16 +1118,16 @@ _NAV = """<nav class="bottom-nav">
 <button class="ni lang-toggle" id="_langBtn" onclick="_toggleLang()" title="Switch language" style="background:none;border:none;cursor:pointer"><span id="_langLbl" style="font-size:10px;font-weight:700;letter-spacing:1px">EN</span></button>
 </nav>
 <script>
-(function(){
+(function(){{
   var lbl=document.getElementById('_langLbl');
   if(lbl)lbl.textContent=(localStorage.getItem('pilar_lang')||'en').toUpperCase();
-})();
-function _toggleLang(){
+}})();
+function _toggleLang(){{
   var next=LANG==='en'?'fr':'en';
   setLang(next);
   var lbl=document.getElementById('_langLbl');
   if(lbl)lbl.textContent=next.toUpperCase();
-}
+}}
 </script>"""
 
 def nav(active):
