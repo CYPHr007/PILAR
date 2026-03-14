@@ -591,6 +591,7 @@ label{font-size:11px;color:#64748b;display:block;margin-bottom:4px;letter-spacin
             data-expires="{{ u.plan_expires_at.strftime('%Y-%m-%d') if u.plan_expires_at else '' }}"
             data-note="{{ u.plan_note|e if u.plan_note else '' }}">Gérer</button>
           <a href="/admin/impersonate/{{ u.id }}" class="btn btn-ghost">Voir</a>
+          <button onclick="toggleAdmin({{ u.id }}, '{{ u.email|e }}')" class="btn {% if u.is_admin %}btn-red{% else %}btn-ghost{% endif %}" style="font-size:10px">{% if u.is_admin %}Admin ↓{% else %}Admin ↑{% endif %}</button>
         </div>
       </td>
     </tr>
@@ -602,6 +603,16 @@ label{font-size:11px;color:#64748b;display:block;margin-bottom:4px;letter-spacin
 <!-- TERMINAL ADMIN -->
 <div class="card">
   <div class="ctitle">Terminal</div>
+  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
+    <button class="btn btn-ghost" onclick="termQuick('python --version')">python --version</button>
+    <button class="btn btn-ghost" onclick="termQuick('pip list')">pip list</button>
+    <button class="btn btn-ghost" onclick="termQuick('ls -lh *.pkl *.json 2>/dev/null || dir /B *.pkl *.json')">ls modèles</button>
+    <button class="btn btn-ghost" onclick="termQuick('python -c &quot;from etape7 import app,db,User,Analysis; app.app_context().push(); print(User.query.count(),&#39;users&#39;, Analysis.query.count(),&#39;analyses&#39;)&quot;')">stats DB</button>
+    <button class="btn btn-ghost" onclick="termQuick('python -c &quot;import pickle,os; m=pickle.load(open(&#39;modele_pannes.pkl&#39;,&#39;rb&#39;)) if os.path.exists(&#39;modele_pannes.pkl&#39;) else None; print(type(m).__name__ if m else &#39;non trouve&#39;)&quot;')">check modèle</button>
+    <button class="btn btn-ghost" onclick="termQuick('env | grep -E &quot;RAILWAY|DATABASE|PORT|APP_URL&quot; 2>/dev/null || set | findstr /R &quot;RAILWAY DATABASE PORT APP_URL&quot;')">env vars</button>
+    <button class="btn btn-ghost" onclick="termQuick('python -c &quot;import sys,platform; print(sys.version); print(platform.platform())&quot;')">système</button>
+    <button class="btn btn-ghost" onclick="termQuick('python retrain_real.py')">retrain ML</button>
+  </div>
   <div class="term-wrap">
     <div class="term-header">
       <div class="term-dots">
@@ -612,11 +623,11 @@ label{font-size:11px;color:#64748b;display:block;margin-bottom:4px;letter-spacin
       <span style="font-size:10px;color:#334155;letter-spacing:1px">PILAR SHELL — ADMIN ONLY</span>
       <button onclick="termClear()" style="background:transparent;border:1px solid #1e3050;color:#64748b;padding:3px 10px;border-radius:4px;font-size:10px;cursor:pointer">Effacer</button>
     </div>
-    <div class="term-output" id="termOut"><span style="color:#334155">Prêt. Tapez une commande et appuyez sur Entrée.</span>
+    <div class="term-output" id="termOut"><span style="color:#334155">Prêt. Cliquez un raccourci ou tapez une commande.</span>
 </div>
     <div class="term-input-row">
       <span class="term-prompt">pilar$&nbsp;</span>
-      <input class="term-input" id="termIn" type="text" placeholder="ls, python --version, pip list..." autocomplete="off" spellcheck="false" onkeydown="termKey(event)">
+      <input class="term-input" id="termIn" type="text" placeholder="ex: pip list, python --version, ls..." autocomplete="off" spellcheck="false" onkeydown="termKey(event)">
       <button class="term-run-btn" id="termBtn" onclick="termRun()">Exécuter</button>
     </div>
   </div>
@@ -742,6 +753,17 @@ function filterTable() {
   });
 }
 
+/* ── Toggle Admin ── */
+async function toggleAdmin(uid, email) {
+  if (!confirm('Modifier les droits admin de ' + email + ' ?')) return;
+  try {
+    const r = await fetch('/admin/toggle_admin/' + uid, {method:'POST', headers:{'Content-Type':'application/json'}});
+    const d = await r.json();
+    if (d.ok) location.reload();
+    else alert(d.error || 'Erreur');
+  } catch(e) { alert('Erreur réseau'); }
+}
+
 /* ── Terminal ── */
 let _termHistory = [];
 let _termHistIdx = -1;
@@ -772,7 +794,7 @@ async function termRun() {
   const out = document.getElementById('termOut');
   const btn = document.getElementById('termBtn');
   btn.disabled = true;
-  out.innerHTML += '<span class="term-line-cmd">$ ' + cmd.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</span>\n';
+  out.innerHTML += '<span class="term-line-cmd">$ ' + cmd.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</span>\\n';
   out.scrollTop = out.scrollHeight;
   try {
     const r = await fetch('/admin/terminal', {
@@ -783,9 +805,9 @@ async function termRun() {
     const d = await r.json();
     const txt = (d.output || '').replace(/</g,'&lt;').replace(/>/g,'&gt;') || '(aucune sortie)';
     const cls = d.code === 0 ? 'term-line-ok' : 'term-line-err';
-    out.innerHTML += '<span class="' + cls + '">' + txt + '</span>\n';
+    out.innerHTML += '<span class="' + cls + '">' + txt + '</span>\\n';
   } catch(e) {
-    out.innerHTML += '<span class="term-line-err">Erreur réseau</span>\n';
+    out.innerHTML += '<span class="term-line-err">Erreur réseau</span>\\n';
   }
   btn.disabled = false;
   out.scrollTop = out.scrollHeight;
@@ -793,7 +815,12 @@ async function termRun() {
 }
 
 function termClear() {
-  document.getElementById('termOut').innerHTML = '<span style="color:#334155">Terminal effacé.</span>\n';
+  document.getElementById('termOut').innerHTML = '<span style="color:#334155">Terminal effacé.</span>\\n';
+}
+
+function termQuick(cmd) {
+  document.getElementById('termIn').value = cmd;
+  termRun();
 }
 </script>
 </body></html>"""
@@ -3502,6 +3529,21 @@ def admin_set_plan(uid):
     admin_user = db.session.get(User, current_uid())
     print(f"[Pilar/admin] PLAN_CHANGE by {admin_user.email if admin_user else '?'}: user={user.email} {old_plan}->{plan} expires={expires_str or 'none'} note={note[:50] if note else ''}")
     return jsonify({'ok': True})
+
+@app.route('/admin/toggle_admin/<int:uid>', methods=['POST'])
+@admin_required
+def admin_toggle_admin(uid):
+    me = db.session.get(User, current_uid())
+    target = db.session.get(User, uid)
+    if not target:
+        return jsonify({'error': 'Utilisateur introuvable'}), 404
+    if target.id == me.id:
+        return jsonify({'error': 'Impossible de modifier ses propres droits'}), 400
+    target.is_admin = not target.is_admin
+    db.session.commit()
+    action = 'GRANT_ADMIN' if target.is_admin else 'REVOKE_ADMIN'
+    print(f"[Pilar/admin] {action} by {me.email}: target={target.email}")
+    return jsonify({'ok': True, 'is_admin': target.is_admin})
 
 @app.route('/admin/terminal', methods=['POST'])
 @admin_required
