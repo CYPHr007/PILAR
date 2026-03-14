@@ -313,7 +313,19 @@ tr:last-child td{border-bottom:none;}
 .kc{background:#141820;border:1px solid #1e2433;border-radius:8px;padding:14px;}
 .kv{font-size:22px;font-weight:800;color:#14b8a6;}
 .kl{font-size:9px;color:#64748b;letter-spacing:1px;text-transform:uppercase;margin-top:3px;}
-</style></head><body>"""
+.lang-sw{position:fixed;top:14px;right:14px;display:flex;gap:2px;background:#141820;border:1px solid #1e2433;border-radius:6px;padding:3px;z-index:99;}
+.lang-sw button{padding:4px 10px;border:none;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:1px;cursor:pointer;background:transparent;color:#64748b;transition:all .15s;}
+.lang-sw button.active{background:#0d9488;color:#fff;}
+</style></head><body>
+<div class="lang-sw" id="_authLang">
+  <button id="_authEN" onclick="_authSetLang('en')">EN</button>
+  <button id="_authFR" onclick="_authSetLang('fr')">FR</button>
+</div>
+<script>
+var _aLang=localStorage.getItem('pilar_lang')||'en';
+function _authSetLang(l){_aLang=l;localStorage.setItem('pilar_lang',l);document.getElementById('_authEN').className=l==='en'?'active':'';document.getElementById('_authFR').className=l==='fr'?'active':'';}
+(function(){_authSetLang(_aLang);})();
+</script>"""
 
 LOGIN_HTML = _AUTH_HEAD + """
 <div class="ac">
@@ -679,6 +691,8 @@ header{height:52px;border-bottom:1px solid var(--border);display:flex;align-item
 .ni{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-decoration:none;color:var(--text3);font-size:9px;letter-spacing:0.5px;text-transform:uppercase;border:none;background:none;cursor:pointer;padding:8px 0;}
 .ni.on{color:var(--teal-light);}
 .ni svg{width:20px;height:20px;stroke-width:1.8;}
+.lang-toggle{max-width:42px;color:var(--text3);}
+.lang-toggle:hover span{color:var(--teal-light);}
 .page{flex:1;overflow-y:auto;overflow-x:hidden;}
 .page::-webkit-scrollbar{width:0;}
 .pad{padding:16px;padding-bottom:80px;}
@@ -1096,12 +1110,25 @@ function buildPilarRow(vals,map){
 </script></head>"""
 
 _NAV = """<nav class="bottom-nav">
-<a href="/" class="ni {m}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg><span data-i18n="nav_monitor">Monitor</span></a>
+<a href="/monitor" class="ni {m}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg><span data-i18n="nav_monitor">Monitor</span></a>
 <a href="/tutorial" class="ni {tut}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg><span data-i18n="nav_import">Import</span></a>
 <a href="/history" class="ni {h}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg><span data-i18n="nav_history">History</span></a>
 <a href="/account" class="ni {a}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z"/></svg><span data-i18n="nav_account">Account</span></a>
 <a href="/settings" class="ni {s}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg><span data-i18n="nav_settings">Settings</span></a>
-</nav>"""
+<button class="ni lang-toggle" id="_langBtn" onclick="_toggleLang()" title="Switch language" style="background:none;border:none;cursor:pointer"><span id="_langLbl" style="font-size:10px;font-weight:700;letter-spacing:1px">EN</span></button>
+</nav>
+<script>
+(function(){
+  var lbl=document.getElementById('_langLbl');
+  if(lbl)lbl.textContent=(localStorage.getItem('pilar_lang')||'en').toUpperCase();
+})();
+function _toggleLang(){
+  var next=LANG==='en'?'fr':'en';
+  setLang(next);
+  var lbl=document.getElementById('_langLbl');
+  if(lbl)lbl.textContent=next.toUpperCase();
+}
+</script>"""
 
 def nav(active):
     keys = {"m":"","tut":"","h":"","a":"","s":""}
@@ -2418,6 +2445,10 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center}
 <nav>
   <a href="/" class="nav-logo">PILAR</a>
   <div class="nav-links">
+    <div style="display:flex;gap:2px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:6px;padding:3px;margin-right:4px">
+      <button id="_lEN" onclick="_lp('en')" style="padding:4px 10px;border:none;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:1px;cursor:pointer;background:transparent;color:#64748b;transition:all .15s">EN</button>
+      <button id="_lFR" onclick="_lp('fr')" style="padding:4px 10px;border:none;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:1px;cursor:pointer;background:transparent;color:#64748b;transition:all .15s">FR</button>
+    </div>
     <a href="/login" class="btn-ghost">Sign In</a>
     <a href="/register" class="btn-teal">Get Started Free</a>
   </div>
@@ -2716,6 +2747,10 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center}
 </div>
 </div>
 
+<script>
+function _lp(l){localStorage.setItem('pilar_lang',l);var teal='#0d9488';var dim='#64748b';document.getElementById('_lEN').style.background=l==='en'?teal:'transparent';document.getElementById('_lEN').style.color=l==='en'?'#fff':dim;document.getElementById('_lFR').style.background=l==='fr'?teal:'transparent';document.getElementById('_lFR').style.color=l==='fr'?'#fff':dim;}
+(function(){_lp(localStorage.getItem('pilar_lang')||'en');})();
+</script>
 <!-- FOOTER -->
 <footer>
   <div class="footer-logo">PILAR</div>
