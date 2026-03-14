@@ -337,6 +337,17 @@ LOGIN_HTML = _AUTH_HEAD + """
 REGISTER_HTML = _AUTH_HEAD + """
 <div class="ac">
   <div class="logo">PILAR</div>
+  {% if pending %}
+  <div class="card" style="text-align:center;padding:32px 24px">
+    <div style="width:48px;height:48px;border-radius:12px;background:rgba(13,148,136,.1);border:1px solid rgba(13,148,136,.2);display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#14b8a6" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 01-2.06 0L2 7"/></svg>
+    </div>
+    <div style="font-size:14px;font-weight:700;color:#e2e8f0;margin-bottom:8px">Vérifiez votre email</div>
+    <div style="font-size:12px;color:#64748b;line-height:1.7">Un lien de confirmation a été envoyé à votre adresse.<br>Cliquez sur le lien pour activer votre compte.</div>
+    <div style="margin-top:20px;font-size:11px;color:#334155">Lien valide 24h · Vérifiez vos spams</div>
+  </div>
+  <div class="link"><a href="/login">Retour à la connexion</a></div>
+  {% else %}
   <div class="card">
     <div class="ctitle">Créer un compte</div>
     {% if error %}<div class="err" style="display:block">{{ error }}</div>{% endif %}
@@ -351,6 +362,7 @@ REGISTER_HTML = _AUTH_HEAD + """
     </form>
   </div>
   <div class="link">Déjà un compte ? <a href="/login">Se connecter</a></div>
+  {% endif %}
 </div>
 </body></html>"""
 
@@ -1366,7 +1378,7 @@ ACCOUNT_HTML = _HEAD.replace("{FAV}", FAV_B64) + """
 
 {% if not user %}
 <div class="card" style="text-align:center;padding:28px">
-  <div style="font-size:32px;margin-bottom:12px">👤</div>
+  <div style="width:48px;height:48px;border-radius:12px;background:rgba(13,148,136,.08);border:1px solid rgba(13,148,136,.15);display:flex;align-items:center;justify-content:center;margin:0 auto 16px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="1.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
   <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px" data-i18n="acc_guest_title">Guest Mode</div>
   <div style="font-size:11px;color:var(--text3);line-height:1.7;margin-bottom:20px" data-i18n-html="acc_guest_desc">Sign in to save your data.</div>
   <a href="/login" style="display:block;padding:13px;background:var(--teal);color:#fff;border-radius:6px;text-decoration:none;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px" data-i18n="acc_signin">Sign In</a>
@@ -1605,10 +1617,10 @@ SETTINGS_HTML = _HEAD.replace("{FAV}","iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC
     <div class="ctitle" data-i18n="set_lang">Language</div>
     <div style="display:flex;gap:10px">
       <div class="lcard lactive" data-lang="en" onclick="setLang('en')">
-        <span class="flag">🇬🇧</span><span class="lname">English</span>
+        <span class="flag" style="font-size:13px;font-weight:700;letter-spacing:1px">EN</span><span class="lname">English</span>
       </div>
       <div class="lcard" data-lang="fr" onclick="setLang('fr')">
-        <span class="flag">🇫🇷</span><span class="lname">Français</span>
+        <span class="flag" style="font-size:13px;font-weight:700;letter-spacing:1px">FR</span><span class="lname">Français</span>
       </div>
     </div>
   </div>
@@ -2361,7 +2373,7 @@ section{padding:80px 24px;max-width:1100px;margin:0 auto}
 .plan-features{list-style:none;margin-bottom:28px}
 .plan-features li{font-size:13px;color:var(--text2);padding:7px 0;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
 .plan-features li:last-child{border:none}
-.plan-features li::before{content:'✓';color:var(--teal2);font-weight:700;flex-shrink:0}
+.plan-features li::before{content:'\2713';color:var(--teal2);font-weight:700;flex-shrink:0}
 .plan-features li.off{color:var(--text3)}
 .plan-features li.off::before{content:'—';color:var(--text3)}
 .plan-btn{display:block;width:100%;padding:13px;border-radius:8px;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;text-align:center;text-decoration:none;transition:all .2s;cursor:pointer;border:none}
@@ -2580,32 +2592,32 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center}
   <div class="section-title">Everything your maintenance<br><span>team needs</span></div>
   <div class="features-grid">
     <div class="feature-card">
-      <div class="feature-icon">📡</div>
+      <div class="feature-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0d9488" stroke-width="1.5"><path d="M4.93 4.93a10 10 0 000 14.14M19.07 4.93a10 10 0 010 14.14M9 12a3 3 0 106 0 3 3 0 00-6 0"/></svg></div>
       <div class="feature-title">Live Sensor Monitoring</div>
       <div class="feature-desc">Real-time analysis of temperature, speed, torque, tool wear and more. Upload CSV files or connect directly via API.</div>
     </div>
     <div class="feature-card">
-      <div class="feature-icon">🔬</div>
+      <div class="feature-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0d9488" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg></div>
       <div class="feature-title">5-Zone Failure Detection</div>
       <div class="feature-desc">Identifies Tool Wear (TWF), Heat Dissipation (HDF), Power Failure (PWF), Overstrain (OSF), and Random (RNF) failure modes.</div>
     </div>
     <div class="feature-card">
-      <div class="feature-icon">📧</div>
+      <div class="feature-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0d9488" stroke-width="1.5"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 01-2.06 0L2 7"/></svg></div>
       <div class="feature-title">Instant Email Alerts</div>
       <div class="feature-desc">Automated alert emails to your maintenance team when failure probability exceeds threshold — with failure zone and risk level.</div>
     </div>
     <div class="feature-card">
-      <div class="feature-icon">🔮</div>
+      <div class="feature-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0d9488" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
       <div class="feature-title">Digital Twin Simulation</div>
       <div class="feature-desc">Simulate your machine behavior over 24 hours. Adjust parameters and see failure risk projections before changing settings.</div>
     </div>
     <div class="feature-card">
-      <div class="feature-icon">🤖</div>
+      <div class="feature-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0d9488" stroke-width="1.5"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4M8 14h.01M12 14h.01M16 14h.01"/></svg></div>
       <div class="feature-title">AI Maintenance Assistant</div>
       <div class="feature-desc">Ask questions about your machines in plain language. Get root cause hypotheses, maintenance recommendations, and technical guidance.</div>
     </div>
     <div class="feature-card">
-      <div class="feature-icon">🔌</div>
+      <div class="feature-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0d9488" stroke-width="1.5"><path d="M18 8h1a4 4 0 010 8h-1M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8zM6 1v3M10 1v3M14 1v3"/></svg></div>
       <div class="feature-title">REST API Integration</div>
       <div class="feature-desc">Connect any PLC, SCADA, or IoT device via our documented REST API. Python examples and Curl snippets included.</div>
     </div>
@@ -3011,44 +3023,51 @@ def envoyer_alerte(email_to, probabilite, zones_risque, data):
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'GET':
-        if current_uid(): return redirect('/')
-        return render_template_string(REGISTER_HTML, error=None)
+        if current_uid(): return redirect('/monitor')
+        return render_template_string(REGISTER_HTML, error=None, pending=False)
     ip = (request.headers.get('X-Forwarded-For','').split(',')[0].strip() if os.environ.get('RAILWAY_ENVIRONMENT') else '') or request.remote_addr or ''
     if _check_rate_limit(ip):
         print(f"[Pilar/auth] Rate limit register IP={ip}")
-        return render_template_string(REGISTER_HTML, error='Trop de tentatives. Réessayez dans 15 minutes.')
+        return render_template_string(REGISTER_HTML, error='Trop de tentatives. Réessayez dans 15 minutes.', pending=False)
     try:
         email = (request.form.get('email') or '').strip().lower()
         password = request.form.get('password', '')
         password2 = request.form.get('password2', '')
         if not email or not password:
-            return render_template_string(REGISTER_HTML, error='Email et mot de passe requis')
+            return render_template_string(REGISTER_HTML, error='Email et mot de passe requis', pending=False)
         if len(password) < 8:
-            return render_template_string(REGISTER_HTML, error='Mot de passe trop court (8 caractères minimum)')
+            return render_template_string(REGISTER_HTML, error='Mot de passe trop court (8 caractères minimum)', pending=False)
         if password != password2:
-            return render_template_string(REGISTER_HTML, error='Les mots de passe ne correspondent pas')
+            return render_template_string(REGISTER_HTML, error='Les mots de passe ne correspondent pas', pending=False)
         if User.query.filter_by(email=email).first():
             _record_failed_login(ip)
-            return render_template_string(REGISTER_HTML, error='Un compte existe déjà avec cet email')
+            return render_template_string(REGISTER_HTML, error='Un compte existe déjà avec cet email', pending=False)
         api_key = 'pk_' + _secrets.token_hex(24)
         is_admin = (email == os.environ.get('ADMIN_EMAIL', '').lower()) or (User.query.count() == 0)
+        token = _secrets.token_hex(32)
+        # Les admins sont auto-vérifiés ; les autres doivent confirmer leur email
+        needs_verify = not is_admin and bool(GMAIL)
         user = User(email=email, password_hash=generate_password_hash(password, method='pbkdf2:sha256:600000'),
-                    email_verified=True, api_key=api_key, is_admin=is_admin)
+                    email_verified=not needs_verify, verify_token=token if needs_verify else None,
+                    api_key=api_key, is_admin=is_admin)
         db.session.add(user)
         db.session.commit()
+        print(f"[Pilar/auth] New user: {email} (admin={is_admin}, verified={not needs_verify}) IP={ip}")
+        if needs_verify:
+            threading.Thread(target=send_verify_email, args=(email, token), daemon=True).start()
+            return render_template_string(REGISTER_HTML, error=None, pending=True)
         session['user_id'] = user.id
         session.permanent = True
-        print(f"[Pilar/auth] New user: {email} (admin={is_admin}) IP={ip}")
-        return redirect('/')
+        return redirect('/monitor')
     except Exception as e:
         db.session.rollback()
         print(f"[Pilar/auth] Register error: {type(e).__name__}: {e}")
-        return render_template_string(REGISTER_HTML, error='Erreur serveur. Veuillez réessayer.')
+        return render_template_string(REGISTER_HTML, error='Erreur serveur. Veuillez réessayer.', pending=False)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'GET':
-        if current_uid(): return redirect('/')
+        if current_uid(): return redirect('/monitor')
         return render_template_string(LOGIN_HTML, error=None)
     ip = (request.headers.get('X-Forwarded-For','').split(',')[0].strip() if os.environ.get('RAILWAY_ENVIRONMENT') else '') or request.remote_addr or ''
     if _check_rate_limit(ip):
@@ -3064,10 +3083,12 @@ def login():
             _record_failed_login(ip)
             print(f"[Pilar/auth] Failed login: {email} IP={ip}")
             return render_template_string(LOGIN_HTML, error='Email ou mot de passe incorrect')
+        if not user.email_verified:
+            return render_template_string(LOGIN_HTML, error='Confirmez votre email avant de vous connecter. Vérifiez vos spams.')
         session['user_id'] = user.id
         session.permanent = True
         print(f"[Pilar/auth] Login OK: {email} IP={ip}")
-        return redirect('/')
+        return redirect('/monitor')
     except Exception as e:
         db.session.rollback()
         print(f"[Pilar/auth] Login error: {type(e).__name__}: {e}")
@@ -3087,7 +3108,8 @@ def verify_email(token):
     user.verify_token = None
     db.session.commit()
     session['user_id'] = user.id
-    return redirect('/')
+    session.permanent = True
+    return redirect('/monitor')
 
 @app.route('/profile/api-key', methods=['GET', 'POST'])
 @login_required
@@ -3202,9 +3224,11 @@ def _paid_required():
     if not uid:
         return redirect('/login')
     user = db.session.get(User, uid)
-    if user and user.plan in ('starter', 'pro', 'admin'):
+    if not user:
+        session.clear()
+        return redirect('/login')
+    if user.is_admin or user.plan in ('starter', 'pro'):
         return None
-    # Free plan — show upgrade prompt
     return redirect('/upgrade')
 
 @app.route('/upgrade')
@@ -3221,13 +3245,13 @@ p{font-size:13px;color:#64748b;line-height:1.7;margin-bottom:28px}
 .features{list-style:none;margin-bottom:28px;text-align:left}
 .features li{font-size:12px;color:#94a3b8;padding:6px 0;border-bottom:1px solid #1a2a45;display:flex;align-items:center;gap:8px}
 .features li:last-child{border:none}
-.features li::before{content:'✓';color:#14b8a6;font-weight:700}
+.features li::before{content:'\2713';color:#14b8a6;font-weight:700}
 .btn{display:block;width:100%;padding:14px;background:#0d9488;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;text-decoration:none;margin-bottom:10px}
 .btn:hover{background:#14b8a6}
 .btn-ghost{display:block;width:100%;padding:12px;background:transparent;border:1px solid #1e3050;color:#64748b;border-radius:8px;font-size:12px;cursor:pointer;text-decoration:none}
 </style></head><body>
 <div class="card">
-<div class="icon">🚀</div>
+<div style="width:48px;height:48px;border-radius:12px;background:rgba(13,148,136,.1);border:1px solid rgba(13,148,136,.2);display:flex;align-items:center;justify-content:center;margin:0 auto 16px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#14b8a6" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></div>
 <h2>Upgrade to Starter</h2>
 <p>This feature is available on paid plans. Upgrade to unlock the full Pilar experience.</p>
 <ul class="features">
