@@ -44,12 +44,21 @@ if not _secret_key:
     _secret_key = _s.token_hex(32)
     print("[Pilar] WARNING: SECRET_KEY not set — generating random key (sessions will reset on restart)")
 app.config["SECRET_KEY"] = _secret_key
-app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=90)
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=30)
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_HTTPONLY"] = True
-# HTTPS only en production (Railway), désactivé en local pour dev
 app.config["SESSION_COOKIE_SECURE"] = os.environ.get("RAILWAY_ENVIRONMENT") is not None
 db = SQLAlchemy(app)
+
+@app.after_request
+def set_security_headers(response):
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    response.headers['Permissions-Policy'] = 'geolocation=(), microphone=(), camera=()'
+    if os.environ.get("RAILWAY_ENVIRONMENT"):
+        response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    return response
 
 # ── MODÈLES ───────────────────────────────────────────────────────────────────
 class Team(db.Model):
@@ -218,7 +227,7 @@ def api_or_login_required(f):
     """Accepte session Flask OU header X-Api-Key pour les endpoints API."""
     @wraps(f)
     def decorated(*args, **kwargs):
-        api_key = request.headers.get('X-Api-Key') or request.args.get('api_key')
+        api_key = request.headers.get('X-Api-Key')
         if api_key:
             user = User.query.filter_by(api_key=api_key).first()
             if user:
@@ -485,7 +494,12 @@ label{font-size:11px;color:#64748b;display:block;margin-bottom:4px;letter-spacin
       <td style="color:#64748b;font-size:11px;white-space:nowrap">{{ u.created_at.strftime('%d/%m/%Y') }}</td>
       <td>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
-          <button class="btn btn-teal" onclick="openModal({{ u.id }},'{{ u.email }}','{{ u.plan }}','{{ u.plan_expires_at.strftime('%Y-%m-%d') if u.plan_expires_at else '' }}','{{ (u.plan_note or '')|replace("'","\\'")|replace('"','&quot;') }}')">Gérer</button>
+          <button class="btn btn-teal manage-btn"
+            data-uid="{{ u.id }}"
+            data-email="{{ u.email|e }}"
+            data-plan="{{ u.plan }}"
+            data-expires="{{ u.plan_expires_at.strftime('%Y-%m-%d') if u.plan_expires_at else '' }}"
+            data-note="{{ u.plan_note|e if u.plan_note else '' }}">Gérer</button>
           <a href="/admin/impersonate/{{ u.id }}" class="btn btn-ghost">Voir</a>
         </div>
       </td>
@@ -533,12 +547,17 @@ label{font-size:11px;color:#64748b;display:block;margin-bottom:4px;letter-spacin
 let _currentUid = null;
 let _currentPlan = 'free';
 
+document.addEventListener('click', function(e) {
+  const btn = e.target.closest('.manage-btn');
+  if (btn) openModal(btn.dataset.uid, btn.dataset.email, btn.dataset.plan, btn.dataset.expires, btn.dataset.note);
+});
+
 function openModal(uid, email, plan, expires, note) {
   _currentUid = uid;
   _currentPlan = plan;
   document.getElementById('modalTitle').textContent = 'Abonnement — ' + email;
   document.getElementById('expiresInput').value = expires;
-  document.getElementById('noteInput').value = note.replace(/&quot;/g, '"');
+  document.getElementById('noteInput').value = note || '';
   document.getElementById('modalMsg').className = 'msg';
   document.getElementById('modalMsg').textContent = '';
   selectPlan(plan);
@@ -2069,6 +2088,7 @@ ADAPTER_HTML = _HEAD.replace("{FAV}", FAV_B64) + """
   </div>
 </div>""" + nav("") + """
 <script>
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 var _adpRaw=null,_adpDelim=',',_adpHdr=[],_adpMap=[];
 var _ADP_KEYS=['type','temp_air','temp_process','vitesse','couple','usure','humidite','vibration','pression','courant','tension'];
 var _ADP_LBL_FR={type:'Type machine',temp_air:'Temp. air',temp_process:'Temp. process',vitesse:'Vitesse (rpm)',couple:'Couple (Nm)',usure:'Usure outil',humidite:'Humidité (%)',vibration:'Vibration (mm/s)',pression:'Pression (bar)',courant:'Courant (A)',tension:'Tension (V)'};
@@ -2125,7 +2145,7 @@ function adpRenderTable(){
       ['min','h'].forEach(function(u){unitEl+='<option'+(u===(m.unit||'min')?' selected':'')+'>'+u+'</option>';});
       unitEl+='</select>';
     }
-    html+='<tr>'+tds('<span style="display:flex;align-items:center">'+dot+'<strong style="font-size:11px;color:var(--text)">'+m.col+'</strong></span>')+tds('<span style="color:var(--text3);font-size:10px">'+m.samples.slice(0,3).join(', ')+'</span>')+tds(selEl)+tds(unitEl)+'</tr>';
+    html+='<tr>'+tds('<span style="display:flex;align-items:center">'+dot+'<strong style="font-size:11px;color:var(--text)">'+esc(m.col)+'</strong></span>')+tds('<span style="color:var(--text3);font-size:10px">'+esc(m.samples.slice(0,3).join(', '))+'</span>')+tds(selEl)+tds(unitEl)+'</tr>';
   });
   html+='</tbody></table>';
   document.getElementById('adpTable').innerHTML=html;
@@ -2993,7 +3013,7 @@ def register():
     if request.method == 'GET':
         if current_uid(): return redirect('/')
         return render_template_string(REGISTER_HTML, error=None)
-    ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
+    ip = (request.headers.get('X-Forwarded-For','').split(',')[0].strip() if os.environ.get('RAILWAY_ENVIRONMENT') else '') or request.remote_addr or ''
     if _check_rate_limit(ip):
         print(f"[Pilar/auth] Rate limit register IP={ip}")
         return render_template_string(REGISTER_HTML, error='Trop de tentatives. Réessayez dans 15 minutes.')
@@ -3030,7 +3050,7 @@ def login():
     if request.method == 'GET':
         if current_uid(): return redirect('/')
         return render_template_string(LOGIN_HTML, error=None)
-    ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
+    ip = (request.headers.get('X-Forwarded-For','').split(',')[0].strip() if os.environ.get('RAILWAY_ENVIRONMENT') else '') or request.remote_addr or ''
     if _check_rate_limit(ip):
         print(f"[Pilar/auth] Rate limit login IP={ip}")
         return render_template_string(LOGIN_HTML, error='Trop de tentatives. Réessayez dans 15 minutes.')
@@ -3119,6 +3139,7 @@ def admin_set_plan(uid):
         return jsonify({'error': 'Plan invalide'}), 400
     expires_str = data.get('expires_at', '')
     note = data.get('note', '')
+    old_plan = user.plan
     user.plan = plan
     user.plan_note = note[:300] if note else None
     if expires_str:
@@ -3129,11 +3150,16 @@ def admin_set_plan(uid):
     else:
         user.plan_expires_at = None
     db.session.commit()
+    admin_user = db.session.get(User, current_uid())
+    print(f"[Pilar/admin] PLAN_CHANGE by {admin_user.email if admin_user else '?'}: user={user.email} {old_plan}->{plan} expires={expires_str or 'none'} note={note[:50] if note else ''}")
     return jsonify({'ok': True})
 
 @app.route('/admin/impersonate/<int:uid>')
 @admin_required
 def impersonate(uid):
+    admin_user = db.session.get(User, current_uid())
+    target = db.session.get(User, uid)
+    print(f"[Pilar/admin] IMPERSONATE by {admin_user.email if admin_user else '?'}: target={target.email if target else uid}")
     session['user_id'] = uid
     return redirect('/monitor')
 
@@ -3260,7 +3286,11 @@ def settings():
 @app.route('/set_email', methods=['POST'])
 @login_required
 def set_email():
-    set_setting('responsible_email', request.json.get('email', ''))
+    import re as _re
+    email = (request.json or {}).get('email', '').strip()[:200]
+    if email and not _re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', email):
+        return jsonify({'status': 'error', 'message': 'Email invalide'}), 400
+    set_setting('responsible_email', email)
     return jsonify({'status': 'ok'})
 
 @app.route('/predire', methods=['POST'])
@@ -3282,6 +3312,12 @@ def predire():
                 data[field] = None
         if all(data.get(f) is None for f in CORE_FEATURES):
             return jsonify({'error': 'Au moins un paramètre requis'}), 400
+        # Bornes physiques des capteurs
+        _bounds = {'temp_air':(200,600),'temp_process':(200,700),'vitesse':(0,50000),'couple':(0,2000),'usure':(0,500000),'type':(0,3)}
+        for fld, (lo, hi) in _bounds.items():
+            v = data.get(fld)
+            if v is not None and not (lo <= v <= hi):
+                return jsonify({'error': f'Valeur hors limites : {fld} ({v}) — attendu [{lo},{hi}]'}), 400
         # Champs optionnels connus
         import json as _json
         extra_params = {}
@@ -3313,7 +3349,7 @@ def predire():
         db.session.rollback()
         import traceback
         print(f"[Pilar/predire] ERROR: {type(e).__name__}: {e}\n{traceback.format_exc()}")
-        return jsonify({'error': f'Erreur modèle: {type(e).__name__}: {str(e)}'}), 500
+        return jsonify({'error': 'Erreur interne — réessayez ou contactez le support'}), 500
 
 @app.route('/api/twin')
 @api_or_login_required
@@ -3352,7 +3388,7 @@ def api_twin():
     except Exception as e:
         import traceback
         print(f"[Pilar/api_twin] ERROR: {type(e).__name__}: {e}\n{traceback.format_exc()}")
-        return jsonify({'error': f'{type(e).__name__}: {str(e)}'}), 500
+        return jsonify({'error': 'Erreur serveur'}), 500
 
 @app.route('/api/health')
 def api_health():
@@ -3485,6 +3521,11 @@ def _parse_sensor_input(data):
     if all(data.get(f) is None for f in CORE_FEATURES):
         return None, None, None, (jsonify({'error': 'At least one sensor field required',
                                            'code': 'NO_FIELDS'}), 400)
+    _bounds = {'temp_air':(200,600),'temp_process':(200,700),'vitesse':(0,50000),'couple':(0,2000),'usure':(0,500000),'type':(0,3)}
+    for fld, (lo, hi) in _bounds.items():
+        v = data.get(fld)
+        if v is not None and not (lo <= v <= hi):
+            return None, None, None, (jsonify({'error': f'Value out of range: {fld}={v} (expected [{lo},{hi}])', 'code': 'OUT_OF_RANGE'}), 400)
     extra = {}
     for field in OPTIONAL_FIELDS:
         if field in data and data[field] is not None:
@@ -3538,7 +3579,7 @@ def api_v1_analyze():
         db.session.rollback()
         import traceback
         print(f"[Pilar/api_v1_analyze] {type(e).__name__}: {e}\n{traceback.format_exc()}")
-        return jsonify({'error': str(e), 'code': 'INTERNAL_ERROR'}), 500
+        return jsonify({'error': 'Internal server error', 'code': 'INTERNAL_ERROR'}), 500
 
 @app.route('/api/v1/analyze/batch', methods=['POST'])
 def api_v1_batch():
@@ -3657,7 +3698,7 @@ def api_whatif():
         return jsonify({'risk':risk,'status':status,'message':message,'zones':zones})
     except Exception as e:
         print(f"[Pilar/api_whatif] ERROR: {type(e).__name__}: {e}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Erreur serveur'}), 500
 
 @app.route('/chat', methods=['POST'])
 @api_or_login_required
@@ -3668,13 +3709,23 @@ def chat():
         print("[Pilar/chat] ANTHROPIC_API_KEY manquante — configurez-la sur Railway")
         return jsonify({'reply': None, 'error': 'API key not configured'}), 503
 
+    # Rate limit : 30 messages / 10 minutes par utilisateur
+    _chat_uid = str(current_uid() or request.remote_addr or 'anon')
+    _now_ts = time.time()
+    _chat_window = _login_attempts  # réutilise la structure {key: [timestamps]}
+    _chat_key = f'chat_{_chat_uid}'
+    _login_attempts[_chat_key] = [t for t in _login_attempts[_chat_key] if _now_ts - t < 600]
+    if len(_login_attempts[_chat_key]) >= 30:
+        return jsonify({'reply': None, 'error': 'Trop de messages — réessayez dans quelques minutes'}), 429
+    _login_attempts[_chat_key].append(_now_ts)
+
     data = request.json
-    message = (data.get('message') or '').strip()
+    message = (data.get('message') or '').strip()[:2000]
     if not message:
         return jsonify({'reply': '', 'error': 'Empty message'}), 400
 
     context = data.get('context')
-    chat_history = data.get('history', [])
+    chat_history = (data.get('history') or [])[-20:]  # max 20 messages d'historique
 
     # ── Bloc contexte machine ────────────────────────────────────────────────
     if context:
@@ -3733,7 +3784,7 @@ Directives :
         return jsonify({'reply': None, 'error': 'Rate limit reached'}), 429
     except Exception as e:
         print(f"[Pilar/chat] Error {type(e).__name__}: {e}")
-        return jsonify({'reply': None, 'error': str(e)}), 500
+        return jsonify({'reply': None, 'error': 'Erreur serveur'}), 500
 
 
 # ── TEAM ROUTES ───────────────────────────────────────────────────────────────
@@ -3895,7 +3946,7 @@ def internal_error(e):
     wants_json = request.headers.get('Accept','').find('application/json') >= 0 \
                  or request.headers.get('Content-Type','').find('application/json') >= 0
     if wants_json:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Internal server error'}), 500
     return f"""<!DOCTYPE html><html><head><meta charset="UTF-8">
 <style>body{{font-family:sans-serif;background:#07090f;color:#e2e8f0;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;}}
 .c{{max-width:420px;text-align:center;padding:40px;}}.logo{{font-size:13px;letter-spacing:4px;color:#14b8a6;font-weight:700;}}.msg{{color:#94a3b8;font-size:13px;margin:16px 0 24px;line-height:1.7;}}
