@@ -85,8 +85,15 @@ class User(db.Model):
     plan_expires_at= db.Column(db.DateTime, nullable=True)
     plan_note      = db.Column(db.String(300), nullable=True)
     is_admin       = db.Column(db.Boolean, default=False)
+    is_banned      = db.Column(db.Boolean, default=False)
     team_id        = db.Column(db.Integer, nullable=True)
     created_at     = db.Column(db.DateTime, default=datetime.utcnow)
+
+class BannedEmail(db.Model):
+    id         = db.Column(db.Integer, primary_key=True)
+    email      = db.Column(db.String(200), unique=True, nullable=False)
+    reason     = db.Column(db.String(300), nullable=True)
+    banned_at  = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Settings(db.Model):
     id      = db.Column(db.Integer, primary_key=True)
@@ -160,6 +167,7 @@ with app.app_context():
             "ALTER TABLE user ADD COLUMN plan_expires_at DATETIME",
             "ALTER TABLE user ADD COLUMN plan_note TEXT",
             "ALTER TABLE saved_file ADD COLUMN team_id INTEGER",
+            "ALTER TABLE user ADD COLUMN is_banned INTEGER DEFAULT 0",
         ]
     else:
         _migrations = [
@@ -173,6 +181,7 @@ with app.app_context():
             'ALTER TABLE "user" ADD COLUMN IF NOT EXISTS plan_expires_at TIMESTAMP',
             'ALTER TABLE "user" ADD COLUMN IF NOT EXISTS plan_note VARCHAR(300)',
             "ALTER TABLE saved_file ADD COLUMN IF NOT EXISTS team_id INTEGER",
+            'ALTER TABLE "user" ADD COLUMN IF NOT EXISTS is_banned BOOLEAN DEFAULT FALSE',
         ]
     for sql in _migrations:
         try:
@@ -571,8 +580,9 @@ label{font-size:11px;color:#64748b;display:block;margin-bottom:4px;letter-spacin
     {% for u in users %}
     <tr data-email="{{ u.email|lower }}" data-plan="{{ u.plan }}">
       <td>
-        <div style="font-weight:600;color:#e2e8f0">{{ u.email }}</div>
+        <div style="font-weight:600;color:{% if u.is_banned %}#f87171{% else %}#e2e8f0{% endif %}">{{ u.email }}</div>
         {% if u.is_admin %}<span class="badge b-admin">admin</span>{% endif %}
+        {% if u.is_banned %}<span class="badge b-warn">banni</span>{% endif %}
       </td>
       <td>
         <span class="badge b-{{ u.plan }}">{{ u.plan }}</span>
@@ -605,12 +615,41 @@ label{font-size:11px;color:#64748b;display:block;margin-bottom:4px;letter-spacin
             data-note="{{ u.plan_note|e if u.plan_note else '' }}">Gérer</button>
           <a href="/admin/impersonate/{{ u.id }}" class="btn btn-ghost">Voir</a>
           <button onclick="toggleAdmin({{ u.id }}, '{{ u.email|e }}')" class="btn {% if u.is_admin %}btn-red{% else %}btn-ghost{% endif %}" style="font-size:10px">{% if u.is_admin %}Admin ↓{% else %}Admin ↑{% endif %}</button>
+          <button onclick="toggleBan({{ u.id }}, '{{ u.email|e }}', {{ 'true' if u.is_banned else 'false' }})" class="btn {% if u.is_banned %}btn-teal{% else %}btn-red{% endif %}" style="font-size:10px">{% if u.is_banned %}Débannir{% else %}Bannir{% endif %}</button>
+          <button onclick="deleteUser({{ u.id }}, '{{ u.email|e }}')" class="btn btn-red" style="font-size:10px">Supprimer</button>
         </div>
       </td>
     </tr>
     {% endfor %}
     </tbody>
   </table>
+</div>
+
+<!-- BLOCKED EMAILS -->
+<div class="card">
+  <div class="ctitle">Emails bloqués</div>
+  <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+    <input id="blockEmailInput" class="search-bar" style="flex:1;min-width:200px;background:#080f1e;border:1px solid #1a2a45;color:#e2e8f0;padding:9px 14px;border-radius:6px;font-size:12px" placeholder="email@domaine.com" type="email">
+    <input id="blockReasonInput" style="flex:1;min-width:160px;background:#080f1e;border:1px solid #1a2a45;color:#e2e8f0;padding:9px 14px;border-radius:6px;font-size:12px" placeholder="Raison (optionnel)">
+    <button onclick="blockEmail()" class="btn btn-red">Bloquer l'email</button>
+  </div>
+  {% if banned_emails %}
+  <table>
+    <thead><tr><th>Email</th><th>Raison</th><th>Date</th><th></th></tr></thead>
+    <tbody>
+    {% for b in banned_emails %}
+    <tr>
+      <td style="color:#f87171;font-weight:600">{{ b.email }}</td>
+      <td style="color:#64748b;font-size:11px">{{ b.reason or '—' }}</td>
+      <td style="color:#64748b;font-size:11px">{{ b.banned_at.strftime('%d/%m/%Y') }}</td>
+      <td><button onclick="unblockEmail({{ b.id }}, '{{ b.email|e }}')" class="btn btn-ghost" style="font-size:10px">Débloquer</button></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div style="color:#334155;font-size:12px;text-align:center;padding:12px">Aucun email bloqué.</div>
+  {% endif %}
 </div>
 
 <!-- TERMINAL ADMIN -->
@@ -771,6 +810,53 @@ async function toggleAdmin(uid, email) {
   if (!confirm('Modifier les droits admin de ' + email + ' ?')) return;
   try {
     const r = await fetch('/admin/toggle_admin/' + uid, {method:'POST', headers:{'Content-Type':'application/json'}});
+    const d = await r.json();
+    if (d.ok) location.reload();
+    else alert(d.error || 'Erreur');
+  } catch(e) { alert('Erreur réseau'); }
+}
+
+/* ── Ban / Unban ── */
+async function toggleBan(uid, email, isBanned) {
+  const action = isBanned ? 'Débannir' : 'Bannir';
+  if (!confirm(action + ' le compte de ' + email + ' ?')) return;
+  try {
+    const r = await fetch('/admin/toggle_ban/' + uid, {method:'POST', headers:{'Content-Type':'application/json'}});
+    const d = await r.json();
+    if (d.ok) location.reload();
+    else alert(d.error || 'Erreur');
+  } catch(e) { alert('Erreur réseau'); }
+}
+
+/* ── Delete User ── */
+async function deleteUser(uid, email) {
+  if (!confirm('⚠️ Supprimer définitivement le compte de ' + email + ' et toutes ses données ?\n\nCette action est irréversible.')) return;
+  try {
+    const r = await fetch('/admin/delete_user/' + uid, {method:'POST', headers:{'Content-Type':'application/json'}});
+    const d = await r.json();
+    if (d.ok) location.reload();
+    else alert(d.error || 'Erreur');
+  } catch(e) { alert('Erreur réseau'); }
+}
+
+/* ── Block / Unblock Email ── */
+async function blockEmail() {
+  const email = document.getElementById('blockEmailInput').value.trim();
+  const reason = document.getElementById('blockReasonInput').value.trim();
+  if (!email) { alert('Email requis'); return; }
+  if (!confirm('Bloquer l\'adresse ' + email + ' ?')) return;
+  try {
+    const r = await fetch('/admin/block_email', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({email, reason})});
+    const d = await r.json();
+    if (d.ok) location.reload();
+    else alert(d.error || 'Erreur');
+  } catch(e) { alert('Erreur réseau'); }
+}
+
+async function unblockEmail(bid, email) {
+  if (!confirm('Débloquer ' + email + ' ?')) return;
+  try {
+    const r = await fetch('/admin/unblock_email/' + bid, {method:'POST', headers:{'Content-Type':'application/json'}});
     const d = await r.json();
     if (d.ok) location.reload();
     else alert(d.error || 'Erreur');
@@ -3465,6 +3551,9 @@ def register():
             return render_template_string(REGISTER_HTML, error='Mot de passe trop court (8 caractères minimum)', pending=False)
         if password != password2:
             return render_template_string(REGISTER_HTML, error='Les mots de passe ne correspondent pas', pending=False)
+        if BannedEmail.query.filter_by(email=email).first():
+            _record_failed_login(ip)
+            return render_template_string(REGISTER_HTML, error='Cette adresse email est bloquée. Contactez le support.', pending=False)
         if User.query.filter_by(email=email).first():
             _record_failed_login(ip)
             return render_template_string(REGISTER_HTML, error='Un compte existe déjà avec cet email', pending=False)
@@ -3537,6 +3626,9 @@ def login():
             _record_failed_login(ip)
             print(f"[Pilar/auth] Failed login: {email} IP={ip}")
             return render_template_string(LOGIN_HTML, error='Email ou mot de passe incorrect')
+        if user.is_banned:
+            print(f"[Pilar/auth] Banned login attempt: {email} IP={ip}")
+            return render_template_string(LOGIN_HTML, error='Ce compte a été suspendu. Contactez le support.')
         if not user.email_verified:
             return render_template_string(LOGIN_HTML, error='Confirmez votre email avant de vous connecter. Vérifiez vos spams.')
         session['user_id'] = user.id
@@ -3599,9 +3691,11 @@ def admin():
     mrr = sum(99 if u.plan == 'starter' else 299 if u.plan == 'pro' else 0 for u in users)
     expiring_soon = sum(1 for u in users if u.plan_expires_at and 0 <= (u.plan_expires_at - now).days < 7)
 
+    banned_emails = BannedEmail.query.order_by(BannedEmail.banned_at.desc()).all()
     return render_template_string(ADMIN_HTML, users=users, total_users=total_users,
                                   total_analyses=total_analyses, paid_users=paid_users,
-                                  mrr=mrr, expiring_soon=expiring_soon, now=now)
+                                  mrr=mrr, expiring_soon=expiring_soon, now=now,
+                                  banned_emails=banned_emails)
 
 @app.route('/admin/set_plan/<int:uid>', methods=['POST'])
 @admin_required
@@ -3644,6 +3738,73 @@ def admin_toggle_admin(uid):
     action = 'GRANT_ADMIN' if target.is_admin else 'REVOKE_ADMIN'
     print(f"[Pilar/admin] {action} by {me.email}: target={target.email}")
     return jsonify({'ok': True, 'is_admin': target.is_admin})
+
+@app.route('/admin/toggle_ban/<int:uid>', methods=['POST'])
+@admin_required
+def admin_toggle_ban(uid):
+    me = db.session.get(User, current_uid())
+    target = db.session.get(User, uid)
+    if not target:
+        return jsonify({'error': 'Utilisateur introuvable'}), 404
+    if target.id == me.id:
+        return jsonify({'error': 'Impossible de se bannir soi-même'}), 400
+    target.is_banned = not target.is_banned
+    db.session.commit()
+    action = 'BAN' if target.is_banned else 'UNBAN'
+    print(f"[Pilar/admin] {action} by {me.email}: target={target.email}")
+    return jsonify({'ok': True, 'is_banned': target.is_banned})
+
+@app.route('/admin/delete_user/<int:uid>', methods=['POST'])
+@admin_required
+def admin_delete_user(uid):
+    me = db.session.get(User, current_uid())
+    target = db.session.get(User, uid)
+    if not target:
+        return jsonify({'error': 'Utilisateur introuvable'}), 404
+    if target.id == me.id:
+        return jsonify({'error': 'Impossible de supprimer son propre compte'}), 400
+    email = target.email
+    # Supprimer les données liées
+    Analysis.query.filter_by(user_id=uid).delete()
+    Settings.query.filter_by(user_id=uid).delete()
+    SavedFile.query.filter_by(user_id=uid).delete()
+    TeamMember.query.filter_by(user_id=uid).delete()
+    # Retirer de la team
+    if target.team_id:
+        target.team_id = None
+    db.session.delete(target)
+    db.session.commit()
+    print(f"[Pilar/admin] DELETE_USER by {me.email}: deleted={email}")
+    return jsonify({'ok': True})
+
+@app.route('/admin/block_email', methods=['POST'])
+@admin_required
+def admin_block_email():
+    me = db.session.get(User, current_uid())
+    data = request.json or {}
+    email = (data.get('email') or '').strip().lower()
+    reason = (data.get('reason') or '').strip()[:300]
+    if not email:
+        return jsonify({'error': 'Email requis'}), 400
+    if BannedEmail.query.filter_by(email=email).first():
+        return jsonify({'error': 'Email déjà bloqué'}), 409
+    db.session.add(BannedEmail(email=email, reason=reason or None))
+    db.session.commit()
+    print(f"[Pilar/admin] BLOCK_EMAIL by {me.email}: email={email}")
+    return jsonify({'ok': True})
+
+@app.route('/admin/unblock_email/<int:bid>', methods=['POST'])
+@admin_required
+def admin_unblock_email(bid):
+    me = db.session.get(User, current_uid())
+    entry = db.session.get(BannedEmail, bid)
+    if not entry:
+        return jsonify({'error': 'Introuvable'}), 404
+    email = entry.email
+    db.session.delete(entry)
+    db.session.commit()
+    print(f"[Pilar/admin] UNBLOCK_EMAIL by {me.email}: email={email}")
+    return jsonify({'ok': True})
 
 @app.route('/admin/terminal', methods=['POST'])
 @admin_required
