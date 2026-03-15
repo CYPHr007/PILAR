@@ -1995,7 +1995,7 @@ HISTORY_HTML = _HEAD.replace("{FAV}","iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+
   </div>
   {% if reliability is none %}
   <div style="font-size:11px;color:var(--text3);margin:6px 0 12px;padding:8px 12px;background:var(--bg2);border-radius:8px;border-left:3px solid var(--amber)">
-    <span data-i18n="hist_reliability_hint">Rate alerts with 👍/👎 to track model accuracy on your data.</span>
+    <span data-i18n="hist_reliability_hint">Rate alerts with +/- to track model accuracy on your data.</span>
   </div>
   {% endif %}
   <div class="tw">
@@ -2009,8 +2009,8 @@ HISTORY_HTML = _HEAD.replace("{FAV}","iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+
           <td>{% if a.mail_sent %}<span class="mb">Sent</span>{% else %}—{% endif %}</td>
           <td>{% if a.prediction %}
             <span class="fbtn" data-id="{{ a.id }}" data-fb="{{ a.feedback or '' }}">
-              <button onclick="rate({{ a.id }},'tp',this)" class="fb-btn {{ 'fb-active-tp' if a.feedback=='tp' else '' }}" title="Confirmed failure">👍</button>
-              <button onclick="rate({{ a.id }},'fp',this)" class="fb-btn {{ 'fb-active-fp' if a.feedback=='fp' else '' }}" title="False positive">👎</button>
+              <button onclick="rate({{ a.id }},'tp',this)" class="fb-btn {{ 'fb-active-tp' if a.feedback=='tp' else '' }}" title="Confirmed failure">+</button>
+              <button onclick="rate({{ a.id }},'fp',this)" class="fb-btn {{ 'fb-active-fp' if a.feedback=='fp' else '' }}" title="False positive">-</button>
             </span>
           {% else %}—{% endif %}</td></tr>
       {% endfor %}
