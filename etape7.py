@@ -169,6 +169,7 @@ with app.app_context():
             "ALTER TABLE user ADD COLUMN plan_note TEXT",
             "ALTER TABLE saved_file ADD COLUMN team_id INTEGER",
             "ALTER TABLE user ADD COLUMN is_banned INTEGER DEFAULT 0",
+            "ALTER TABLE analysis ADD COLUMN feedback VARCHAR(10)",
         ]
     else:
         _migrations = [
@@ -183,6 +184,7 @@ with app.app_context():
             'ALTER TABLE "user" ADD COLUMN IF NOT EXISTS plan_note VARCHAR(300)',
             "ALTER TABLE saved_file ADD COLUMN IF NOT EXISTS team_id INTEGER",
             'ALTER TABLE "user" ADD COLUMN IF NOT EXISTS is_banned BOOLEAN DEFAULT FALSE',
+            "ALTER TABLE analysis ADD COLUMN IF NOT EXISTS feedback VARCHAR(10)",
         ]
     for sql in _migrations:
         try:
@@ -653,6 +655,16 @@ label{font-size:11px;color:#64748b;display:block;margin-bottom:4px;letter-spacin
   {% endif %}
 </div>
 
+<!-- USER FILES -->
+<div class="card">
+  <div class="ctitle">Fichiers utilisateurs</div>
+  <div id="filesMsg" style="font-size:12px;color:#64748b;margin-bottom:12px">Chargement...</div>
+  <table id="filesTable" style="display:none;width:100%;border-collapse:collapse;font-size:12px">
+    <thead><tr><th>Fichier</th><th>Utilisateur</th><th>Lignes</th><th>Date</th><th></th></tr></thead>
+    <tbody id="filesTbody"></tbody>
+  </table>
+</div>
+
 <!-- TERMINAL ADMIN -->
 <div class="card">
   <div class="ctitle">Terminal</div>
@@ -922,6 +934,28 @@ function termQuick(cmd) {
   document.getElementById('termIn').value = cmd;
   termRun();
 }
+
+/* ── User Files ── */
+async function loadFiles() {
+  try {
+    const r = await fetch('/admin/files');
+    const files = await r.json();
+    const msg = document.getElementById('filesMsg');
+    const table = document.getElementById('filesTable');
+    const tbody = document.getElementById('filesTbody');
+    if (!files.length) { msg.textContent = 'Aucun fichier.'; return; }
+    msg.style.display = 'none';
+    table.style.display = '';
+    tbody.innerHTML = files.map(f => `<tr>
+      <td style="font-weight:600;color:#e2e8f0">${f.filename}</td>
+      <td style="color:#64748b;font-size:11px">${f.user_email}</td>
+      <td style="color:#94a3b8">${f.rows}</td>
+      <td style="color:#64748b;font-size:11px">${new Date(f.created_at).toLocaleDateString('fr')}</td>
+      <td><a href="/admin/files/${f.id}/download" class="btn btn-ghost" style="font-size:10px">Telecharger</a></td>
+    </tr>`).join('');
+  } catch(e) { document.getElementById('filesMsg').textContent = 'Erreur de chargement.'; }
+}
+loadFiles();
 </script>
 </body></html>"""
 
@@ -4073,6 +4107,29 @@ def delete_saved_file(fid):
     db.session.delete(f)
     db.session.commit()
     return jsonify({'ok': True})
+
+@app.route('/admin/files')
+@admin_required
+def admin_list_files():
+    rows = db.session.query(SavedFile, User.email)\
+        .outerjoin(User, SavedFile.user_id == User.id)\
+        .order_by(SavedFile.created_at.desc()).all()
+    return jsonify([{
+        'id': f.id, 'filename': f.filename, 'rows': f.row_count,
+        'created_at': f.created_at.isoformat(),
+        'user_email': email or 'unknown'
+    } for f, email in rows])
+
+@app.route('/admin/files/<int:fid>/download')
+@admin_required
+def admin_download_file(fid):
+    from flask import Response
+    f = SavedFile.query.get_or_404(fid)
+    return Response(
+        f.content,
+        mimetype='text/csv',
+        headers={'Content-Disposition': f'attachment; filename="{f.filename}"'}
+    )
 
 @app.route('/twin')
 def twin():
