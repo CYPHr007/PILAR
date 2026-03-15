@@ -282,11 +282,13 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated
 
-def send_verify_email(email, token):
+def send_verify_email(email, token, base_url=None):
     if not GMAIL or not GMAIL_PWD:
         print(f"[Pilar/auth] Email non configuré (GMAIL/GMAIL_APP_PASSWORD manquants) — token pour {email}: {token}")
         return
-    base = os.environ.get("APP_URL", "http://localhost:5000").rstrip('/')
+    base = (base_url or os.environ.get("APP_URL", "")).rstrip('/')
+    if not base:
+        base = "https://trypilar.com"
     link = f"{base}/verify-email/{token}"
     html = f"""<div style="font-family:sans-serif;background:#07090f;color:#e2e8f0;padding:40px;border-radius:8px">
 <h2 style="color:#14b8a6;letter-spacing:3px">PILAR</h2>
@@ -3495,7 +3497,8 @@ def register():
         db.session.commit()
         print(f"[Pilar/auth] New user: {email} (admin={is_admin}, verified={not needs_verify}) IP={ip}")
         if needs_verify:
-            threading.Thread(target=send_verify_email, args=(email, token), daemon=True).start()
+            base_url = request.host_url.rstrip('/')
+            threading.Thread(target=send_verify_email, args=(email, token, base_url), daemon=True).start()
             session['_pending_verify'] = email
             return render_template_string(REGISTER_HTML, error=None, pending=True, resent=False, pending_email=email)
         session['user_id'] = user.id
@@ -3523,7 +3526,8 @@ def resend_verification():
                 user.verify_token = token
                 try:
                     db.session.commit()
-                    threading.Thread(target=send_verify_email, args=(email, token), daemon=True).start()
+                    base_url = request.host_url.rstrip('/')
+                    threading.Thread(target=send_verify_email, args=(email, token, base_url), daemon=True).start()
                     print(f"[Pilar/auth] Resend verification email: {email}")
                 except Exception as e:
                     db.session.rollback()
