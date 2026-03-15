@@ -487,10 +487,10 @@ tr:hover td{background:rgba(255,255,255,.015)}
 .btn{padding:6px 14px;border:none;border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-block;letter-spacing:.5px}
 .btn-teal{background:#0d9488;color:#fff}
 .btn-teal:hover{background:#14b8a6}
-.btn-ghost{background:transparent;border:1px solid #1e3050;color:#64748b}
-.btn-ghost:hover{border-color:#0d9488;color:#14b8a6}
-.btn-red{background:transparent;border:1px solid rgba(220,38,38,.3);color:#f87171}
-.btn-red:hover{background:rgba(220,38,38,.1)}
+.btn-ghost{background:rgba(255,255,255,.03);border:1px solid #2a3a55;color:#94a3b8}
+.btn-ghost:hover{border-color:#0d9488;color:#14b8a6;background:rgba(13,148,136,.06)}
+.btn-red{background:rgba(220,38,38,.06);border:1px solid rgba(220,38,38,.35);color:#f87171}
+.btn-red:hover{background:rgba(220,38,38,.15)}
 
 /* Modal */
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;align-items:center;justify-content:center;padding:16px}
@@ -843,7 +843,7 @@ async function toggleBan(uid, email, isBanned) {
 
 /* ── Delete User ── */
 async function deleteUser(uid, email) {
-  if (!confirm('⚠️ Supprimer définitivement le compte de ' + email + ' et toutes ses données ?\n\nCette action est irréversible.')) return;
+  if (!confirm('Supprimer définitivement le compte de ' + email + ' et toutes ses données ?\n\nCette action est irréversible.')) return;
   try {
     const r = await fetch('/admin/delete_user/' + uid, {method:'POST', headers:{'Content-Type':'application/json'}});
     const d = await r.json();
@@ -983,7 +983,7 @@ if('serviceWorker' in navigator){
 
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-:root{--bg:#07090f;--surface:#0e1118;--surface2:#141820;--border:#1e2433;--border2:#252d3d;--teal:#0d9488;--teal-light:#14b8a6;--teal-dim:rgba(13,148,136,0.08);--red:#dc2626;--red-dim:rgba(220,38,38,0.08);--green:#059669;--green-dim:rgba(5,150,105,0.08);--amber:#d97706;--purple:#7c3aed;--text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;--nav-h:60px;}
+:root{--bg:#07090f;--surface:#0e1118;--surface2:#141820;--bg2:#141820;--border:#1e2433;--border2:#252d3d;--teal:#0d9488;--teal-light:#14b8a6;--teal-dim:rgba(13,148,136,0.08);--red:#dc2626;--red-dim:rgba(220,38,38,0.08);--green:#059669;--green-dim:rgba(5,150,105,0.08);--amber:#d97706;--purple:#7c3aed;--text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;--nav-h:60px;}
 html,body{height:100%;overflow:hidden;}
 body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column;}
 header{height:52px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;padding:0 20px;background:var(--surface);flex-shrink:0;}
@@ -1127,9 +1127,9 @@ twin_loading:'Chargement simulation...',twin_no_data:'Aucune donnée',twin_no_da
 twin_healthy:'Système sain',twin_failure:'Panne dans ~',twin_trend:'Tendance\u00a0:',twin_cur_risk:'Risque actuel',twin_avg:'Risque moyen',twin_anom:"Taux d'anomalie",
 twin_c_risk:'Risque — Historique + Simulation 24h',twin_c_wear:'Projection usure outil',twin_c_temp:'Température process',twin_c_sim:'Simulateur de scénario',
 twin_speed:'Vitesse (tr/min)',twin_torque:'Couple (N·m)',twin_wear:'Usure outil (h)',twin_airtemp:'Temp. air (°C)',twin_sim:'Simuler',twin_sim_r:'Risque simulé',
-hist_total:'Total',hist_anom:'Anomalies',hist_avg:'Risque moy.',hist_alerts:'Alertes envoyées',
-hist_time:'Heure',hist_class:'Classe',hist_risk:'Risque',hist_status:'Statut',hist_zones:'Zones',hist_alert:'Alerte',
-hist_anomaly:'Anomalie',hist_ok:'OK',hist_sent:'Envoyé',
+hist_total:'Total',hist_anom:'Anomalies',hist_avg:'Risque moy.',hist_alerts:'Alertes envoyées',hist_reliability:'Fiabilité',
+hist_time:'Heure',hist_class:'Classe',hist_risk:'Risque',hist_status:'Statut',hist_zones:'Zones',hist_alert:'Alerte',hist_feedback:'Retour',
+hist_anomaly:'Anomalie',hist_ok:'OK',hist_sent:'Envoyé',hist_reliability_hint:'Notez les alertes avec +/- pour mesurer la précision du modèle sur vos données.',
 set_email:"Email d'alerte",set_email_lbl:'Adresse destinataire',set_email_ph:'maintenance@entreprise.com',set_email_btn:'Enregistrer',set_saved:'Enregistré',
 set_notif:'Notifications navigateur',set_notif_desc:'Recevez des alertes quand le risque dépasse 50%.',set_notif_btn:'Activer les notifications',set_notif_on:'Notifications activées',set_notif_blocked:'Bloqué — Activez dans les réglages',
 set_sys:'Infos système',set_version:'Version',set_aimodel:'Modèle IA',set_db:'Base de données',set_lang:'Langue',
@@ -1177,9 +1177,9 @@ twin_loading:'Loading simulation...',twin_no_data:'No data yet',twin_no_data2:'R
 twin_healthy:'System Healthy',twin_failure:'Failure in ~',twin_trend:'Trend:',twin_cur_risk:'Current risk',twin_avg:'Avg risk',twin_anom:'Anomaly rate',
 twin_c_risk:'Risk \u2014 History + 24h Simulation',twin_c_wear:'Tool wear projection',twin_c_temp:'Process temperature',twin_c_sim:'Scenario Simulator',
 twin_speed:'Speed (rpm)',twin_torque:'Torque (Nm)',twin_wear:'Tool wear (min)',twin_airtemp:'Air temp (K)',twin_sim:'Simulate',twin_sim_r:'Simulated risk',
-hist_total:'Total',hist_anom:'Anomalies',hist_avg:'Avg risk',hist_alerts:'Alerts sent',
-hist_time:'Time',hist_class:'Class',hist_risk:'Risk',hist_status:'Status',hist_zones:'Zones',hist_alert:'Alert',
-hist_anomaly:'Anomaly',hist_ok:'OK',hist_sent:'Sent',
+hist_total:'Total',hist_anom:'Anomalies',hist_avg:'Avg risk',hist_alerts:'Alerts sent',hist_reliability:'Reliability',
+hist_time:'Time',hist_class:'Class',hist_risk:'Risk',hist_status:'Status',hist_zones:'Zones',hist_alert:'Alert',hist_feedback:'Feedback',
+hist_anomaly:'Anomaly',hist_ok:'OK',hist_sent:'Sent',hist_reliability_hint:'Rate alerts with +/- to track model accuracy on your data.',
 set_email:'Alert email',set_email_lbl:'Recipient address',set_email_ph:'maintenance@company.com',set_email_btn:'Save Email',set_saved:'Saved',
 set_notif:'Browser notifications',set_notif_desc:'Receive alerts when failure risk exceeds 50%.',set_notif_btn:'Enable Notifications',set_notif_on:'Notifications Enabled',set_notif_blocked:'Blocked \u2014 Enable in Browser Settings',
 set_sys:'System info',set_version:'Version',set_aimodel:'AI Model',set_db:'Database',set_lang:'Language',
@@ -1860,10 +1860,10 @@ async function rotateKey(btn){
 {% if team %}
 <!-- ── TEAM CHAT ─────────────────────────────────────────────────────────── -->
 <style>
-#chat-bubble{position:fixed;bottom:72px;right:16px;width:44px;height:44px;border-radius:50%;background:var(--teal);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,.4);z-index:200;transition:transform .15s}
+#chat-bubble{position:fixed;bottom:68px;right:16px;width:40px;height:40px;border-radius:50%;background:var(--teal);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,.4);z-index:200;transition:transform .15s}
 #chat-bubble:hover{transform:scale(1.08)}
 #chat-badge{position:absolute;top:-2px;right:-2px;width:16px;height:16px;border-radius:50%;background:#ef4444;font-size:9px;font-weight:700;color:#fff;display:none;align-items:center;justify-content:center}
-#chat-panel{position:fixed;bottom:124px;right:16px;width:300px;max-width:calc(100vw - 32px);height:380px;background:#0c1526;border:1px solid var(--border2);border-radius:14px;display:none;flex-direction:column;z-index:201;box-shadow:0 8px 32px rgba(0,0,0,.5)}
+#chat-panel{position:fixed;bottom:116px;right:16px;width:300px;max-width:calc(100vw - 32px);height:380px;background:#0c1526;border:1px solid var(--border2);border-radius:14px;display:none;flex-direction:column;z-index:201;box-shadow:0 8px 32px rgba(0,0,0,.5)}
 #chat-panel.open{display:flex}
 #chat-head{padding:12px 14px;border-bottom:1px solid var(--border2);font-size:12px;font-weight:700;color:var(--teal-light);display:flex;justify-content:space-between;align-items:center}
 #chat-msgs{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:6px}
@@ -1889,7 +1889,7 @@ async function rotateKey(btn){
   <div id="chat-msgs"></div>
   <form id="chat-form" onsubmit="sendMsg(event)">
     <input id="chat-input" placeholder="Message..." maxlength="1000" autocomplete="off">
-    <button id="chat-send" type="submit">➤</button>
+    <button id="chat-send" type="submit">Send</button>
   </form>
 </div>
 
@@ -2020,7 +2020,7 @@ HISTORY_HTML = _HEAD.replace("{FAV}","iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+
 <body>
 <header><span class="logo">PILAR</span><div class="hd"></div><span class="hsub" data-i18n="page_history">History</span></header>
 <div class="page pad">
-  <div class="kgrid">
+  <div class="kgrid" style="grid-template-columns:repeat(auto-fit,minmax(80px,1fr))">
     <div class="kc"><div class="kv">{{ total }}</div><div class="kl" data-i18n="hist_total">Total</div></div>
     <div class="kc"><div class="kv alert">{{ anomalies }}</div><div class="kl" data-i18n="hist_anom">Anomalies</div></div>
     <div class="kc"><div class="kv amber">{{ avg_risk }}%</div><div class="kl" data-i18n="hist_avg">Avg risk</div></div>
