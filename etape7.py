@@ -115,9 +115,18 @@ class Analysis(db.Model):
 class SavedFile(db.Model):
     id         = db.Column(db.Integer, primary_key=True)
     user_id    = db.Column(db.Integer, nullable=True)
+    team_id    = db.Column(db.Integer, nullable=True)
     filename   = db.Column(db.String(200), nullable=False)
     content    = db.Column(db.Text, nullable=False)
     row_count  = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class TeamMessage(db.Model):
+    id         = db.Column(db.Integer, primary_key=True)
+    team_id    = db.Column(db.Integer, nullable=False)
+    user_id    = db.Column(db.Integer, nullable=False)
+    user_email = db.Column(db.String(200))
+    content    = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class DiscoveredParam(db.Model):
@@ -150,6 +159,7 @@ with app.app_context():
             "ALTER TABLE analysis ADD COLUMN machine_id VARCHAR(100)",
             "ALTER TABLE user ADD COLUMN plan_expires_at DATETIME",
             "ALTER TABLE user ADD COLUMN plan_note TEXT",
+            "ALTER TABLE saved_file ADD COLUMN team_id INTEGER",
         ]
     else:
         _migrations = [
@@ -162,6 +172,7 @@ with app.app_context():
             "ALTER TABLE analysis ADD COLUMN IF NOT EXISTS machine_id VARCHAR(100)",
             'ALTER TABLE "user" ADD COLUMN IF NOT EXISTS plan_expires_at TIMESTAMP',
             'ALTER TABLE "user" ADD COLUMN IF NOT EXISTS plan_note VARCHAR(300)',
+            "ALTER TABLE saved_file ADD COLUMN IF NOT EXISTS team_id INTEGER",
         ]
     for sql in _migrations:
         try:
@@ -1721,7 +1732,109 @@ async function rotateKey(btn){
   const d=await r.json();
   if(d.api_key)location.reload();else{alert('Erreur');btn.disabled=false;}
 }
-</script></body></html>"""
+</script>
+
+{% if team %}
+<!-- ── TEAM CHAT ─────────────────────────────────────────────────────────── -->
+<style>
+#chat-bubble{position:fixed;bottom:72px;right:16px;width:44px;height:44px;border-radius:50%;background:var(--teal);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,.4);z-index:200;transition:transform .15s}
+#chat-bubble:hover{transform:scale(1.08)}
+#chat-badge{position:absolute;top:-2px;right:-2px;width:16px;height:16px;border-radius:50%;background:#ef4444;font-size:9px;font-weight:700;color:#fff;display:none;align-items:center;justify-content:center}
+#chat-panel{position:fixed;bottom:124px;right:16px;width:300px;max-width:calc(100vw - 32px);height:380px;background:#0c1526;border:1px solid var(--border2);border-radius:14px;display:none;flex-direction:column;z-index:201;box-shadow:0 8px 32px rgba(0,0,0,.5)}
+#chat-panel.open{display:flex}
+#chat-head{padding:12px 14px;border-bottom:1px solid var(--border2);font-size:12px;font-weight:700;color:var(--teal-light);display:flex;justify-content:space-between;align-items:center}
+#chat-msgs{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:6px}
+.cmsg{max-width:80%;padding:7px 10px;border-radius:10px;font-size:11px;line-height:1.5;word-break:break-word}
+.cmsg.mine{align-self:flex-end;background:rgba(13,148,136,.2);border:1px solid rgba(13,148,136,.3);color:var(--text)}
+.cmsg.theirs{align-self:flex-start;background:#1a2a45;border:1px solid var(--border2);color:var(--text)}
+.cmsg .cmeta{font-size:9px;color:var(--text3);margin-bottom:2px}
+#chat-form{display:flex;padding:10px;gap:8px;border-top:1px solid var(--border2)}
+#chat-input{flex:1;background:#07090f;border:1px solid var(--border2);border-radius:8px;padding:8px 10px;color:var(--text);font-size:12px;outline:none}
+#chat-send{background:var(--teal);border:none;border-radius:8px;padding:8px 12px;cursor:pointer;color:#fff;font-size:12px;font-weight:700}
+</style>
+
+<div id="chat-bubble" onclick="toggleChat()" title="Team Chat">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+  <span id="chat-badge"></span>
+</div>
+
+<div id="chat-panel">
+  <div id="chat-head">
+    <span>{{ team.name }} — Team Chat</span>
+    <button onclick="toggleChat()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;line-height:1">×</button>
+  </div>
+  <div id="chat-msgs"></div>
+  <form id="chat-form" onsubmit="sendMsg(event)">
+    <input id="chat-input" placeholder="Message..." maxlength="1000" autocomplete="off">
+    <button id="chat-send" type="submit">➤</button>
+  </form>
+</div>
+
+<script>
+let _chatLastId = 0;
+let _chatOpen = false;
+let _chatUnread = 0;
+
+function toggleChat(){
+  _chatOpen = !_chatOpen;
+  document.getElementById('chat-panel').classList.toggle('open', _chatOpen);
+  if(_chatOpen){ _chatUnread=0; updateBadge(); fetchMsgs(); }
+}
+
+function updateBadge(){
+  const b = document.getElementById('chat-badge');
+  if(_chatUnread > 0){ b.textContent=_chatUnread>9?'9+':_chatUnread; b.style.display='flex'; }
+  else b.style.display='none';
+}
+
+function escHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+async function fetchMsgs(){
+  try{
+    const r = await fetch('/team/messages?since='+_chatLastId);
+    if(!r.ok) return;
+    const msgs = await r.json();
+    if(!msgs.length) return;
+    const box = document.getElementById('chat-msgs');
+    const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 60;
+    msgs.forEach(m => {
+      _chatLastId = Math.max(_chatLastId, m.id);
+      const div = document.createElement('div');
+      div.className = 'cmsg ' + (m.mine ? 'mine' : 'theirs');
+      div.innerHTML = (!m.mine ? `<div class="cmeta">${escHtml(m.email.split('@')[0])}</div>` : '') +
+                      `<div>${escHtml(m.content)}</div><div class="cmeta" style="text-align:right;margin-top:2px">${m.ts}</div>`;
+      box.appendChild(div);
+      if(!_chatOpen && !m.mine){ _chatUnread++; }
+    });
+    if(atBottom || _chatOpen) box.scrollTop = box.scrollHeight;
+    if(!_chatOpen && msgs.some(m=>!m.mine)) updateBadge();
+  } catch(e){}
+}
+
+async function sendMsg(e){
+  e.preventDefault();
+  const inp = document.getElementById('chat-input');
+  const content = inp.value.trim();
+  if(!content) return;
+  inp.value = '';
+  try{
+    await fetch('/team/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content})});
+    await fetchMsgs();
+  } catch(e){}
+}
+
+// Ctrl+Enter ou Enter pour envoyer
+document.getElementById('chat-input').addEventListener('keydown', e => {
+  if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendMsg(e); }
+});
+
+// Polling toutes les 4 secondes
+setInterval(fetchMsgs, 4000);
+fetchMsgs();
+</script>
+{% endif %}
+
+</body></html>"""
 
 # ── TWIN ──────────────────────────────────────────────────────────────────────
 TWIN_HTML = _HEAD.replace("{FAV}","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") + """
@@ -3684,7 +3797,9 @@ def save_csv_file():
         if not content:
             return jsonify({'error': 'empty'}), 400
         row_count = max(0, content.count('\n') - 1)
-        sf = SavedFile(user_id=uid, filename=filename, content=content, row_count=row_count)
+        user = db.session.get(User, uid)
+        team_id = user.team_id if user else None
+        sf = SavedFile(user_id=uid, team_id=team_id, filename=filename, content=content, row_count=row_count)
         db.session.add(sf)
         db.session.commit()
         return jsonify({'id': sf.id, 'filename': sf.filename, 'rows': row_count})
@@ -3698,22 +3813,47 @@ def list_saved_files():
     uid = current_uid()
     if not uid:
         return jsonify([])
-    files = SavedFile.query.filter_by(user_id=uid).order_by(SavedFile.created_at.desc()).limit(20).all()
-    return jsonify([{'id': f.id, 'filename': f.filename, 'rows': f.row_count,
-                     'created_at': f.created_at.isoformat()} for f in files])
+    user = db.session.get(User, uid)
+    if user and user.team_id:
+        files = SavedFile.query.filter(
+            (SavedFile.team_id == user.team_id) | (SavedFile.user_id == uid)
+        ).order_by(SavedFile.created_at.desc()).limit(50).all()
+    else:
+        files = SavedFile.query.filter_by(user_id=uid).order_by(SavedFile.created_at.desc()).limit(20).all()
+    return jsonify([{
+        'id': f.id, 'filename': f.filename, 'rows': f.row_count,
+        'created_at': f.created_at.isoformat(),
+        'owner': f.user_id == uid
+    } for f in files])
 
 @app.route('/api/saved_files/<int:fid>')
 @auth_optional
 def get_saved_file(fid):
     uid = current_uid()
-    f = SavedFile.query.filter_by(id=fid, user_id=uid).first_or_404()
+    user = db.session.get(User, uid) if uid else None
+    if user and user.team_id:
+        f = SavedFile.query.filter(
+            SavedFile.id == fid,
+            (SavedFile.team_id == user.team_id) | (SavedFile.user_id == uid)
+        ).first_or_404()
+    else:
+        f = SavedFile.query.filter_by(id=fid, user_id=uid).first_or_404()
     return jsonify({'id': f.id, 'filename': f.filename, 'content': f.content, 'rows': f.row_count})
 
 @app.route('/api/saved_files/<int:fid>/delete', methods=['POST'])
 @auth_optional
 def delete_saved_file(fid):
     uid = current_uid()
-    f = SavedFile.query.filter_by(id=fid, user_id=uid).first_or_404()
+    user = db.session.get(User, uid) if uid else None
+    f = SavedFile.query.filter_by(id=fid).first_or_404()
+    # Seul le propriétaire ou le leader de la team peut supprimer
+    is_owner = f.user_id == uid
+    is_leader = False
+    if user and user.team_id and f.team_id == user.team_id:
+        mbr = TeamMember.query.filter_by(team_id=user.team_id, user_id=uid, is_kicked=False).first()
+        is_leader = mbr and mbr.role == 'leader'
+    if not is_owner and not is_leader:
+        return jsonify({'error': 'Forbidden'}), 403
     db.session.delete(f)
     db.session.commit()
     return jsonify({'ok': True})
@@ -4351,6 +4491,43 @@ def team_leave():
     user.team_id = None
     db.session.commit()
     return jsonify({'ok': True})
+
+# ── TEAM CHAT ─────────────────────────────────────────────────────────────────
+@app.route('/team/messages')
+@login_required
+def team_messages_get():
+    uid = current_uid()
+    user = db.session.get(User, uid)
+    if not user or not user.team_id:
+        return jsonify({'error': 'Not in a team'}), 400
+    since_id = request.args.get('since', 0, type=int)
+    msgs = (TeamMessage.query
+            .filter(TeamMessage.team_id == user.team_id, TeamMessage.id > since_id)
+            .order_by(TeamMessage.created_at.asc())
+            .limit(50).all())
+    return jsonify([{
+        'id': m.id,
+        'user_id': m.user_id,
+        'email': m.user_email,
+        'content': m.content,
+        'ts': m.created_at.strftime('%H:%M'),
+        'mine': m.user_id == uid
+    } for m in msgs])
+
+@app.route('/team/messages', methods=['POST'])
+@login_required
+def team_messages_post():
+    uid = current_uid()
+    user = db.session.get(User, uid)
+    if not user or not user.team_id:
+        return jsonify({'error': 'Not in a team'}), 400
+    content = ((request.json or {}).get('content') or '').strip()[:1000]
+    if not content:
+        return jsonify({'error': 'empty'}), 400
+    msg = TeamMessage(team_id=user.team_id, user_id=uid, user_email=user.email, content=content)
+    db.session.add(msg)
+    db.session.commit()
+    return jsonify({'id': msg.id, 'ok': True})
 
 # ── PWA ───────────────────────────────────────────────────────────────────────
 @app.route('/manifest.json')
