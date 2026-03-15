@@ -3166,9 +3166,9 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center}
       <div class="plan-price">$0 <span>/ forever</span></div>
       <div class="plan-desc" data-ilp="plan_free_desc">Get started immediately. No credit card required.</div>
       <ul class="plan-features">
-        <li>Live sensor analysis</li>
         <li>Manual CSV analysis</li>
-        <li>Real-time failure alerts</li>
+        <li>One-off failure prediction</li>
+        <li class="off">Live sensor monitor</li>
         <li class="off">Analysis history</li>
         <li class="off">Digital Twin simulation</li>
         <li class="off">AI maintenance assistant</li>
@@ -3869,7 +3869,10 @@ def index():
     return LANDING_HTML
 
 @app.route('/monitor')
-def monitor(): return render_template_string(HTML)
+def monitor():
+    r = _paid_required()
+    if r: return r
+    return render_template_string(HTML)
 
 @app.route('/account')
 def account():
@@ -3931,8 +3934,9 @@ h2{font-size:22px;font-weight:800;letter-spacing:-0.5px;margin-bottom:10px}
 </div>
 <div class="badge">Custom Plan</div>
 <h2>Get Full Access to Pilar</h2>
-<p class="sub">No fixed tiers. You choose the features you need, we build a contract around your operations — your machines, your budget, your terms.</p>
+<p class="sub">Your free account includes manual analysis. Unlock the full platform with a custom contract built around your operations.</p>
 <ul class="features">
+<li>Live Monitor (real-time sensor stream)</li>
 <li>Full analysis history &amp; Digital Twin</li>
 <li>AI maintenance assistant (Claude)</li>
 <li>REST API access</li>
@@ -3960,8 +3964,10 @@ def assistant():
 def tutorial(): return render_template_string(TUTORIAL_HTML)
 
 @app.route('/adapter')
-@auth_optional
-def adapter(): return render_template_string(ADAPTER_HTML)
+def adapter():
+    r = _paid_required()
+    if r: return r
+    return render_template_string(ADAPTER_HTML)
 
 @app.route('/api/save_csv', methods=['POST'])
 @auth_optional
@@ -4195,8 +4201,10 @@ def api_health():
     })
 
 @app.route('/api/discover', methods=['POST'])
-@auth_optional
+@login_required
 def api_discover():
+    r = _paid_required()
+    if r: return jsonify({'error': 'Paid plan required'}), 403
     try:
         import json as _json, math
         data = request.json
@@ -4464,8 +4472,10 @@ def api_docs():
     return render_template_string(API_DOCS_HTML, api_key=api_key, ak=api_key)
 
 @app.route('/api/whatif', methods=['POST'])
-@api_or_login_required
+@login_required
 def api_whatif():
+    r = _paid_required()
+    if r: return jsonify({'error': 'Paid plan required'}), 403
     try:
         params = request.json
         if not params: return jsonify({'error': 'Données manquantes'}), 400
