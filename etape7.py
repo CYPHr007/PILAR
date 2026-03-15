@@ -3073,12 +3073,12 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center}
 <!-- PRICING -->
 <section id="pricing">
   <div class="section-label" style="text-align:center" data-ilp="pricing_lbl">Pricing</div>
-  <div class="section-title" style="text-align:center" data-ilp="pricing_title">Start free, <span>scale when ready</span></div>
-  <div class="pricing-grid">
+  <div class="section-title" style="text-align:center" data-ilp="pricing_title">Simple pricing, <span>built around you</span></div>
+  <div class="pricing-grid" style="max-width:700px">
     <div class="plan-card">
       <div class="plan-name">Free</div>
       <div class="plan-price">$0 <span>/ forever</span></div>
-      <div class="plan-desc">Get started immediately. No credit card required.</div>
+      <div class="plan-desc" data-ilp="plan_free_desc">Get started immediately. No credit card required.</div>
       <ul class="plan-features">
         <li>Live sensor analysis</li>
         <li>Manual CSV analysis</li>
@@ -3089,40 +3089,23 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center}
         <li class="off">API access</li>
         <li class="off">Team collaboration</li>
       </ul>
-      <a href="/register" class="plan-btn plan-btn-ghost">Get started free</a>
+      <a href="/register" class="plan-btn plan-btn-ghost" data-ilp="plan_free_btn">Get started free</a>
     </div>
     <div class="plan-card featured">
-      <div class="plan-badge">Most Popular</div>
-      <div class="plan-name">Starter</div>
-      <div class="plan-price">$99 <span>/ month</span></div>
-      <div class="plan-desc">For small teams monitoring up to 10 machines.</div>
+      <div class="plan-badge" data-ilp="plan_custom_badge">Custom Contract</div>
+      <div class="plan-name" data-ilp="plan_custom_name">Your Plan</div>
+      <div class="plan-price" style="font-size:32px;letter-spacing:-1px" data-ilp="plan_custom_price">On demand</div>
+      <div class="plan-desc" data-ilp="plan_custom_desc">No fixed tiers. You choose the features, we adapt the contract to your operations and budget.</div>
       <ul class="plan-features">
-        <li>Everything in Free</li>
-        <li>Full analysis history</li>
-        <li>Digital Twin simulation</li>
+        <li>Full analysis history &amp; Digital Twin</li>
         <li>AI maintenance assistant</li>
-        <li>REST API — 1,000 calls/day</li>
-        <li>Email alerts with PDF report</li>
-        <li class="off">Team collaboration</li>
-        <li class="off">Custom sensor variables</li>
-      </ul>
-      <a href="/register" class="plan-btn plan-btn-primary">Start Starter</a>
-    </div>
-    <div class="plan-card">
-      <div class="plan-name">Pro</div>
-      <div class="plan-price">$299 <span>/ month</span></div>
-      <div class="plan-desc">For industrial teams managing large fleets of machines.</div>
-      <ul class="plan-features">
-        <li>Everything in Starter</li>
-        <li>Team collaboration (unlimited)</li>
+        <li>REST API access</li>
+        <li>Email alerts &amp; reports</li>
+        <li>Team collaboration</li>
         <li>Custom sensor variables</li>
-        <li>API — 50,000 calls/day</li>
-        <li>Adaptive model on your data</li>
-        <li>Priority support</li>
-        <li>CSV/Excel bulk import</li>
-        <li>Dedicated onboarding</li>
+        <li>Dedicated onboarding &amp; support</li>
       </ul>
-      <a href="/register" class="plan-btn plan-btn-ghost">Start Pro</a>
+      <a href="mailto:aliguenbou07r@gmail.com?subject=Pilar%20%E2%80%94%20Custom%20Plan%20Request&body=Hi%2C%20I%27d%20like%20to%20discuss%20a%20custom%20plan%20for%20my%20team." class="plan-btn plan-btn-primary" data-ilp="plan_custom_btn">Contact us</a>
     </div>
   </div>
 </section>
@@ -3141,8 +3124,8 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center}
 
 <script>
 var _TLP={
-en:{nav_signin:'Sign In',nav_start:'Get Started Free',hero_badge:'AI-Powered Predictive Maintenance',hero_h:'Stop fixing machines.<br><span>Predict failures first.</span>',hero_sub:'Pilar analyzes your industrial sensors in real time and alerts you hours before a breakdown \u2014 before it costs you anything.',hero_cta1:'Start for free',hero_cta2:'See how it works',stat1:'Recall \u2014 failures caught',stat2:'Failure zones detected',stat3:'Analysis per reading',stat4:'Industrial records trained',how_lbl:'Process',how_title:'Three steps to <span>zero unplanned downtime</span>',how_sub:'Connect your machines, let Pilar learn, and receive precise alerts before failures happen.',s1t:'Connect your sensors',s1d:'Send readings via REST API from your PLCs, SCADA systems, or CSV files. Pilar accepts temperature, speed, torque, vibration, and more.',s2t:'AI detects anomalies',s2d:'Our ML model \u2014 trained on 20,000+ industrial records \u2014 analyzes each reading across 5 failure zones in real time with 98.1% recall.',s3t:'Your team gets alerted',s3d:'When risk exceeds threshold, Pilar sends an instant email alert with the failure zone, risk level, and recommended action \u2014 before breakdown occurs.',perf_lbl:'Model Performance',perf_title:'Built on <span>real industrial data</span>',perf_sub:'Trained on 20,902 machine readings across multiple industrial environments \u2014 not just synthetic data.',roi_lbl:'Business Impact',roi_title:'The real cost of <span>reactive maintenance</span>',roi_sub:'Every unplanned breakdown costs production time, emergency repairs, and team morale. Pilar changes the equation.',roi_before:'Without Pilar',roi_after:'With Pilar',feat_lbl:'Features',feat_title:'Everything your maintenance<br><span>team needs</span>',ind_lbl:'Industries',ind_title:'Built for <span>industrial environments</span>',ind_sub:'Any process that uses rotating machinery, temperature-controlled equipment, or precision tools can benefit from predictive monitoring.',pricing_lbl:'Pricing',pricing_title:'Start free, <span>scale when ready</span>',cta_h:'Your machines are sending signals.<br><span style="background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Are you listening?</span>',cta_p:'Join the teams that stopped reacting to breakdowns and started preventing them. Free to start, no setup fees.',cta_btn:'Start monitoring for free',footer_sign:'Sign In',footer_reg:'Create Account',footer_copy:'\u00a9 2026 Pilar. All rights reserved.'},
-fr:{nav_signin:'Connexion',nav_start:'Commencer gratuitement',hero_badge:'Maintenance Pr\u00e9dictive par IA',hero_h:'Arr\u00eatez de r\u00e9parer.<br><span>Pr\u00e9disez les pannes.</span>',hero_sub:'Pilar analyse vos capteurs industriels en temps r\u00e9el et vous alerte des heures avant une panne \u2014 avant que \u00e7a ne co\u00fbte quoi que ce soit.',hero_cta1:'Commencer gratuitement',hero_cta2:'Voir comment \u00e7a marche',stat1:'Rappel \u2014 pannes d\u00e9tect\u00e9es',stat2:'Zones de panne identifi\u00e9es',stat3:'Analyse par mesure',stat4:'Enregistrements industriels entra\u00een\u00e9s',how_lbl:'Processus',how_title:'Trois \u00e9tapes vers <span>z\u00e9ro arr\u00eat impr\u00e9vu</span>',how_sub:'Connectez vos machines, laissez Pilar apprendre, recevez des alertes pr\u00e9cises avant les pannes.',s1t:'Connectez vos capteurs',s1d:'Envoyez des mesures via API REST depuis vos automates, SCADA ou fichiers CSV. Pilar accepte temp\u00e9rature, vitesse, couple, usure et bien plus.',s2t:"L'IA d\u00e9tecte les anomalies",s2d:"Notre mod\u00e8le ML \u2014 entra\u00een\u00e9 sur 20 000+ enregistrements industriels \u2014 analyse chaque mesure sur 5 zones de panne en temps r\u00e9el avec 98,1% de rappel.",s3t:"Votre \u00e9quipe est alert\u00e9e",s3d:"Quand le risque d\u00e9passe le seuil, Pilar envoie un email d'alerte instantan\u00e9 avec la zone de panne, le niveau de risque et l'action recommand\u00e9e \u2014 avant la panne.",perf_lbl:'Performance du mod\u00e8le',perf_title:'Bas\u00e9 sur des <span>donn\u00e9es industrielles r\u00e9elles</span>',perf_sub:'Entra\u00een\u00e9 sur 20 902 mesures machines dans plusieurs environnements industriels \u2014 pas seulement des donn\u00e9es synth\u00e9tiques.',roi_lbl:'Impact business',roi_title:'Le vrai co\u00fbt de la <span>maintenance r\u00e9active</span>',roi_sub:'Chaque arr\u00eat impr\u00e9vu co\u00fbte du temps de production, des r\u00e9parations en urgence et du moral. Pilar change la donne.',roi_before:'Sans Pilar',roi_after:'Avec Pilar',feat_lbl:'Fonctionnalit\u00e9s',feat_title:'Tout ce dont votre \u00e9quipe de<br><span>maintenance a besoin</span>',ind_lbl:'Secteurs',ind_title:'Con\u00e7u pour les <span>environnements industriels</span>',ind_sub:"Tout proc\u00e9d\u00e9 utilisant des machines tournantes, des \u00e9quipements \u00e0 temp\u00e9rature contr\u00f4l\u00e9e ou des outils de pr\u00e9cision peut b\u00e9n\u00e9ficier de la surveillance pr\u00e9dictive.",pricing_lbl:'Tarifs',pricing_title:'Commencez gratuitement, <span>montez en puissance</span>',cta_h:'Vos machines envoient des signaux.<br><span style="background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Les \u00e9coutez-vous\u00a0?</span>',cta_p:'Rejoignez les \u00e9quipes qui ont arr\u00eat\u00e9 de r\u00e9agir aux pannes et ont commenc\u00e9 \u00e0 les pr\u00e9venir. Gratuit pour commencer, sans frais de mise en place.',cta_btn:'Commencer la surveillance gratuitement',footer_sign:'Connexion',footer_reg:'Cr\u00e9er un compte',footer_copy:'\u00a9 2026 Pilar. Tous droits r\u00e9serv\u00e9s.'}
+en:{nav_signin:'Sign In',nav_start:'Get Started Free',hero_badge:'AI-Powered Predictive Maintenance',hero_h:'Stop fixing machines.<br><span>Predict failures first.</span>',hero_sub:'Pilar analyzes your industrial sensors in real time and alerts you hours before a breakdown \u2014 before it costs you anything.',hero_cta1:'Start for free',hero_cta2:'See how it works',stat1:'Recall \u2014 failures caught',stat2:'Failure zones detected',stat3:'Analysis per reading',stat4:'Industrial records trained',how_lbl:'Process',how_title:'Three steps to <span>zero unplanned downtime</span>',how_sub:'Connect your machines, let Pilar learn, and receive precise alerts before failures happen.',s1t:'Connect your sensors',s1d:'Send readings via REST API from your PLCs, SCADA systems, or CSV files. Pilar accepts temperature, speed, torque, vibration, and more.',s2t:'AI detects anomalies',s2d:'Our ML model \u2014 trained on 20,000+ industrial records \u2014 analyzes each reading across 5 failure zones in real time with 98.1% recall.',s3t:'Your team gets alerted',s3d:'When risk exceeds threshold, Pilar sends an instant email alert with the failure zone, risk level, and recommended action \u2014 before breakdown occurs.',perf_lbl:'Model Performance',perf_title:'Built on <span>real industrial data</span>',perf_sub:'Trained on 20,902 machine readings across multiple industrial environments \u2014 not just synthetic data.',roi_lbl:'Business Impact',roi_title:'The real cost of <span>reactive maintenance</span>',roi_sub:'Every unplanned breakdown costs production time, emergency repairs, and team morale. Pilar changes the equation.',roi_before:'Without Pilar',roi_after:'With Pilar',feat_lbl:'Features',feat_title:'Everything your maintenance<br><span>team needs</span>',ind_lbl:'Industries',ind_title:'Built for <span>industrial environments</span>',ind_sub:'Any process that uses rotating machinery, temperature-controlled equipment, or precision tools can benefit from predictive monitoring.',pricing_lbl:'Pricing',pricing_title:'Simple pricing, <span>built around you</span>',plan_free_desc:'Get started immediately. No credit card required.',plan_free_btn:'Get started free',plan_custom_badge:'Custom Contract',plan_custom_name:'Your Plan',plan_custom_price:'On demand',plan_custom_desc:'No fixed tiers. You choose the features, we adapt the contract to your operations and budget.',plan_custom_btn:'Contact us',cta_h:'Your machines are sending signals.<br><span style="background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Are you listening?</span>',cta_p:'Join the teams that stopped reacting to breakdowns and started preventing them. Free to start, no setup fees.',cta_btn:'Start monitoring for free',footer_sign:'Sign In',footer_reg:'Create Account',footer_copy:'\u00a9 2026 Pilar. All rights reserved.'},
+fr:{nav_signin:'Connexion',nav_start:'Commencer gratuitement',hero_badge:'Maintenance Pr\u00e9dictive par IA',hero_h:'Arr\u00eatez de r\u00e9parer.<br><span>Pr\u00e9disez les pannes.</span>',hero_sub:'Pilar analyse vos capteurs industriels en temps r\u00e9el et vous alerte des heures avant une panne \u2014 avant que \u00e7a ne co\u00fbte quoi que ce soit.',hero_cta1:'Commencer gratuitement',hero_cta2:'Voir comment \u00e7a marche',stat1:'Rappel \u2014 pannes d\u00e9tect\u00e9es',stat2:'Zones de panne identifi\u00e9es',stat3:'Analyse par mesure',stat4:'Enregistrements industriels entra\u00een\u00e9s',how_lbl:'Processus',how_title:'Trois \u00e9tapes vers <span>z\u00e9ro arr\u00eat impr\u00e9vu</span>',how_sub:'Connectez vos machines, laissez Pilar apprendre, recevez des alertes pr\u00e9cises avant les pannes.',s1t:'Connectez vos capteurs',s1d:'Envoyez des mesures via API REST depuis vos automates, SCADA ou fichiers CSV. Pilar accepte temp\u00e9rature, vitesse, couple, usure et bien plus.',s2t:"L'IA d\u00e9tecte les anomalies",s2d:"Notre mod\u00e8le ML \u2014 entra\u00een\u00e9 sur 20 000+ enregistrements industriels \u2014 analyse chaque mesure sur 5 zones de panne en temps r\u00e9el avec 98,1% de rappel.",s3t:"Votre \u00e9quipe est alert\u00e9e",s3d:"Quand le risque d\u00e9passe le seuil, Pilar envoie un email d'alerte instantan\u00e9 avec la zone de panne, le niveau de risque et l'action recommand\u00e9e \u2014 avant la panne.",perf_lbl:'Performance du mod\u00e8le',perf_title:'Bas\u00e9 sur des <span>donn\u00e9es industrielles r\u00e9elles</span>',perf_sub:'Entra\u00een\u00e9 sur 20 902 mesures machines dans plusieurs environnements industriels \u2014 pas seulement des donn\u00e9es synth\u00e9tiques.',roi_lbl:'Impact business',roi_title:'Le vrai co\u00fbt de la <span>maintenance r\u00e9active</span>',roi_sub:'Chaque arr\u00eat impr\u00e9vu co\u00fbte du temps de production, des r\u00e9parations en urgence et du moral. Pilar change la donne.',roi_before:'Sans Pilar',roi_after:'Avec Pilar',feat_lbl:'Fonctionnalit\u00e9s',feat_title:'Tout ce dont votre \u00e9quipe de<br><span>maintenance a besoin</span>',ind_lbl:'Secteurs',ind_title:'Con\u00e7u pour les <span>environnements industriels</span>',ind_sub:"Tout proc\u00e9d\u00e9 utilisant des machines tournantes, des \u00e9quipements \u00e0 temp\u00e9rature contr\u00f4l\u00e9e ou des outils de pr\u00e9cision peut b\u00e9n\u00e9ficier de la surveillance pr\u00e9dictive.",pricing_lbl:'Tarifs',pricing_title:'Tarif simple, <span>adapt\u00e9 \u00e0 vous</span>',plan_free_desc:'D\u00e9marrez imm\u00e9diatement. Aucune carte bancaire requise.',plan_free_btn:'Commencer gratuitement',plan_custom_badge:'Contrat sur mesure',plan_custom_name:'Votre Plan',plan_custom_price:'Sur devis',plan_custom_desc:"Pas de niveaux fixes. Vous choisissez les fonctionnalit\u00e9s, on adapte le contrat \u00e0 vos op\u00e9rations et votre budget.",plan_custom_btn:'Nous contacter',cta_h:'Vos machines envoient des signaux.<br><span style="background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Les \u00e9coutez-vous\u00a0?</span>',cta_p:'Rejoignez les \u00e9quipes qui ont arr\u00eat\u00e9 de r\u00e9agir aux pannes et ont commenc\u00e9 \u00e0 les pr\u00e9venir. Gratuit pour commencer, sans frais de mise en place.',cta_btn:'Commencer la surveillance gratuitement',footer_sign:'Connexion',footer_reg:'Cr\u00e9er un compte',footer_copy:'\u00a9 2026 Pilar. Tous droits r\u00e9serv\u00e9s.'}
 };
 function _lp(l){
   localStorage.setItem('pilar_lang',l);
@@ -3739,35 +3722,40 @@ def _paid_required():
 
 @app.route('/upgrade')
 def upgrade():
-    uid = current_uid()
-    user = db.session.get(User, uid) if uid else None
     html = """<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Upgrade — Pilar</title>
+<title>Get Access — Pilar</title>
 <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:system-ui,sans-serif;background:#050d1a;color:#e2e8f0;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center}
-.card{background:#0c1526;border:1px solid #1a2a45;border-radius:16px;padding:40px 32px;max-width:420px;width:100%}
-.icon{font-size:40px;margin-bottom:16px}
-h2{font-size:22px;font-weight:800;letter-spacing:-0.5px;margin-bottom:8px}
-p{font-size:13px;color:#64748b;line-height:1.7;margin-bottom:28px}
+.card{background:#0c1526;border:1px solid #1a2a45;border-radius:16px;padding:40px 32px;max-width:440px;width:100%}
+h2{font-size:22px;font-weight:800;letter-spacing:-0.5px;margin-bottom:10px}
+.sub{font-size:13px;color:#64748b;line-height:1.8;margin-bottom:28px}
 .features{list-style:none;margin-bottom:28px;text-align:left}
-.features li{font-size:12px;color:#94a3b8;padding:6px 0;border-bottom:1px solid #1a2a45;display:flex;align-items:center;gap:8px}
+.features li{font-size:12px;color:#94a3b8;padding:7px 0;border-bottom:1px solid #1a2a45;display:flex;align-items:center;gap:10px}
 .features li:last-child{border:none}
-.features li::before{content:'\2713';color:#14b8a6;font-weight:700}
-.btn{display:block;width:100%;padding:14px;background:#0d9488;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;text-decoration:none;margin-bottom:10px}
+.features li::before{content:'\2713';color:#14b8a6;font-weight:700;flex-shrink:0}
+.badge{display:inline-block;padding:3px 10px;background:rgba(13,148,136,.12);border:1px solid rgba(13,148,136,.25);border-radius:100px;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#14b8a6;margin-bottom:20px}
+.btn{display:block;width:100%;padding:15px;background:#0d9488;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;text-decoration:none;margin-bottom:10px;transition:background .15s}
 .btn:hover{background:#14b8a6}
 .btn-ghost{display:block;width:100%;padding:12px;background:transparent;border:1px solid #1e3050;color:#64748b;border-radius:8px;font-size:12px;cursor:pointer;text-decoration:none}
+.divider{border:none;border-top:1px solid #1a2a45;margin:24px 0}
 </style></head><body>
 <div class="card">
-<div style="width:48px;height:48px;border-radius:12px;background:rgba(13,148,136,.1);border:1px solid rgba(13,148,136,.2);display:flex;align-items:center;justify-content:center;margin:0 auto 16px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#14b8a6" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></div>
-<h2>Upgrade to Starter</h2>
-<p>This feature is available on paid plans. Upgrade to unlock the full Pilar experience.</p>
+<div style="width:52px;height:52px;border-radius:14px;background:rgba(13,148,136,.08);border:1px solid rgba(13,148,136,.2);display:flex;align-items:center;justify-content:center;margin:0 auto 18px">
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#14b8a6" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+</div>
+<div class="badge">Custom Plan</div>
+<h2>Get Full Access to Pilar</h2>
+<p class="sub">No fixed tiers. You choose the features you need, we build a contract around your operations — your machines, your budget, your terms.</p>
 <ul class="features">
-<li>Full analysis history</li>
-<li>Digital Twin simulation</li>
-<li>AI maintenance assistant</li>
+<li>Full analysis history &amp; Digital Twin</li>
+<li>AI maintenance assistant (Claude)</li>
 <li>REST API access</li>
-<li>Email alerts with reports</li>
+<li>Email alerts with detailed reports</li>
+<li>Team collaboration</li>
+<li>Custom sensor variables</li>
+<li>Dedicated onboarding &amp; support</li>
 </ul>
-<a href="mailto:contact@trypilar.com?subject=Upgrade%20Pilar%20Starter" class="btn">Contact us to upgrade — $99/mo</a>
+<a href="mailto:aliguenbou07r@gmail.com?subject=Pilar%20%E2%80%94%20Custom%20Plan%20Request&body=Hi%2C%20I%27d%20like%20to%20discuss%20a%20custom%20plan%20for%20my%20team." class="btn">&#128231; Contact us to get access</a>
+<hr class="divider">
 <a href="/monitor" class="btn-ghost">Back to Monitor</a>
 </div>
 </body></html>"""
