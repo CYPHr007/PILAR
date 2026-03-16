@@ -9,3 +9,5 @@ numpy
 anthropic
 plotly
 gunicorn
+fpdf2
+APScheduler
