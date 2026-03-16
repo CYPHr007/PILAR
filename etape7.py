@@ -3498,7 +3498,7 @@ audio::-webkit-media-controls-panel{background:var(--surface2)}
 <div class="wrap">
   <div class="page-eyebrow">Live Demo</div>
   <h1>See Pilar<br><span>in action</span></h1>
-  <p class="page-sub">No account required. Explore real failure scenarios, listen to the walkthrough, and understand how Pilar detects breakdowns before they happen.</p>
+  <p class="page-sub">Press play above to hear the full walkthrough — available in English and French. Then explore the live failure scenarios below to see the model in action.</p>
 
   <!-- AUDIO PLAYER -->
   <div class="audio-section">
@@ -3512,6 +3512,43 @@ audio::-webkit-media-controls-panel{background:var(--surface2)}
     <audio id="demo-audio" controls preload="metadata">
       <source id="demo-audio-src" src="/static/pilar_tuto_en.mp3" type="audio/mpeg">
     </audio>
+  </div>
+
+  <!-- WALKTHROUGH STEPS — mirrors the audio exactly -->
+  <div style="margin-bottom:48px">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:3px;color:var(--teal2);text-transform:uppercase;margin-bottom:24px;display:flex;align-items:center;gap:10px"><span style="display:inline-block;width:20px;height:1px;background:var(--teal2)"></span>How it works — follow along with the audio</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));border:1px solid var(--border)">
+      <div style="padding:20px 22px;border-right:1px solid var(--border);background:var(--surface)">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--teal2);letter-spacing:2px;margin-bottom:10px">01 / 06</div>
+        <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:6px">Enter your parameters</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.7">Temperature, speed, torque, tool wear — manually or via CSV upload.</div>
+      </div>
+      <div style="padding:20px 22px;border-right:1px solid var(--border);background:var(--surface)">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--teal2);letter-spacing:2px;margin-bottom:10px">02 / 06</div>
+        <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:6px">Upload your data file</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.7">CSV with columns: machine class, air temp, process temp, RPM, torque, tool wear.</div>
+      </div>
+      <div style="padding:20px 22px;border-right:1px solid var(--border);background:var(--surface)">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--teal2);letter-spacing:2px;margin-bottom:10px">03 / 06</div>
+        <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:6px">Map your columns</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.7">Review detected columns and confirm each one matches the correct Pilar field.</div>
+      </div>
+      <div style="padding:20px 22px;border-right:1px solid var(--border);background:var(--surface)">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--teal2);letter-spacing:2px;margin-bottom:10px">04 / 06</div>
+        <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:6px">Launch the analysis</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.7">Pilar processes your data and runs the ML model across all 5 failure zones.</div>
+      </div>
+      <div style="padding:20px 22px;border-right:1px solid var(--border);background:var(--surface)">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--teal2);letter-spacing:2px;margin-bottom:10px">05 / 06</div>
+        <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:6px">Instant risk result</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.7">In seconds, a clear risk level is displayed — see the live simulation below.</div>
+      </div>
+      <div style="padding:20px 22px;background:var(--surface)">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--teal2);letter-spacing:2px;margin-bottom:10px">06 / 06</div>
+        <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:6px">History &amp; alerts</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.7">Review all previous analyses in History. Enable email alerts in Settings.</div>
+      </div>
+    </div>
   </div>
 
   <!-- DEMO SCENARIOS + RESULT -->
