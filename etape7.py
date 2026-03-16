@@ -260,12 +260,12 @@ except Exception as _e:
     model = scaler = None
     modeles_zones = {}
 
-FAILURE_ZONES = {"TWF":"Tool Wear Failure","HDF":"Heat Dissipation Failure","PWF":"Power Failure","OSF":"Overstrain Failure","RNF":"Random Failure"}
-COLONNES = ["Type","Air temperature [K]","Process temperature [K]","Rotational speed [rpm]","Torque [Nm]","Tool wear [min]","ecart_temp","puissance"]
-# Médianes données réelles — utilisées pour imputer les features manquantes (analyse partielle)
-FEATURE_MEDIANS = {'type':1.0,'temp_air':377.0,'temp_process':314.6,'vitesse':1298.0,'couple':257.8,'usure':8248.0}
+FAILURE_ZONES = {"CAV":"Cavitation","ROL":"Bearing Failure","ETN":"Seal Failure","IMP":"Impeller Wear","MOT":"Motor Fault"}
+COLONNES = ["vibration","temp_palier","debit","pression_entree","pression_sortie","courant_moteur","temp_moteur","heure_fonctionnement"]
+# Médianes pompe centrifuge — utilisées pour imputer les features manquantes (analyse partielle)
+FEATURE_MEDIANS = {'vibration':2.5,'temp_palier':65.0,'debit':45.0,'pression_entree':1.5,'pression_sortie':4.5,'courant_moteur':18.0,'temp_moteur':75.0,'heure_fonctionnement':5000.0}
 CORE_FEATURES   = list(FEATURE_MEDIANS.keys())
-OPTIONAL_FIELDS = ['humidite','vibration','pression','courant','tension']
+OPTIONAL_FIELDS = ['temperature_ambiante','niveau_huile','tension_reseau']
 GMAIL     = os.environ.get("GMAIL_ADDRESS", "")
 GMAIL_PWD = os.environ.get("GMAIL_APP_PASSWORD", "")
 FAVICON = "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAHxUlEQVR4nO2Za4wT1xXHz713PLbHj8Xe2V17H973C3YXNgQKIWlE2rJSFDWCqlUkmoeafilVUrWVKqVqxIe0EoqqNIqqqEraokStRBIR2kDDpoFNgeUN5rE89gVre9/s+v0az8y9tx9MUSlSpNiTOkj+f7Vn7vndc+45555BnHO4n4VLbUCxKgOUWmWAUqsMcI/+z3m57IF7hBAy/J2fo7IHSq0yQKklGPs6zvnnp1GEkLGnHN3v7bRhHuAcAPhEcGY5EjMJwl2O4AAACIGmUdld0dHcAMZlW8MAGGOE4OP+kXf3Dq5wOChj//UjRwghhOPJ1DNbt3S2+ChlhHyVADjnGKNYMjU1s1AluzWdEwKEYH577xGlDCGQ5crQ3GIylbbbJM65IU4wBoAxTgh+ffcHr779gd0mbVi9srvFG01kzKIJAOU0ze2wXRoL+K/f/Me/ThPB9KsdTxvlBCOzEKVMIKKSo51NtVs2PTA2NSuaBIyxklNXtjaoOj1+YVQQRKpTAxc1Jgvl42F+KfzL377dWO+VLKblaCKr6ACIYGCAHBaz7HZGE6m5W8u/+fkPaypdRoWQYQCM80+Pn9u0tschSb//677RqZlwJC5gwWQSVF1b4XD2dzQ+/9QTiWTy1KWxb25aiwxKRAaEEGMcY3Ru5JpHdjkkCQDSioZz6c0dVVUuGyAUiWcvBpZimSzn3Olw1MgVl66N96/qzD9Y5OoGtBIYI0ppOqOs6W5XUrFkJmvOxQb6W5tX9sxMB65dverr6NncW19r44qqZTLJnraGcCyhalrx1kPxIcQ5p5SevXw9mkh2tzUtBG/MxZQ6Gz0ZSA4fGtz+1Danzb5797u9D20e6PMGYrytXvZ53KGYbhVNbY31vOhAMiCEOKDL4wGft2opmrRU+Tw0EM3k5sdHHnl4/Ww0O72U2rhpw8TElekG1zce7HHWNAKAC5ZvLUcBIc54kQehWACE0Gxg4uLhD70DW1qbXIoS1SrI6aHD69eur27u9Pv9lEPf2nUNtZ7Jc8N9dRWpRBxjnEsl4xNj8xL3NLYXaUCxAIzzWl/zIwPb2nu7K+qa3BilFkOuxq7J8bGcIGlgooxN3QxFgqPe9t6UjjDYgbLlTGaBVG2saShydTDgEHMQRfOaNT0OlzubWJ4Khk5cC6zuaZ9RzMcOHujvaunvbPF/NjiVFNubG89Nzk+FQqlkLJ7VzTY7MZmKByj+EANCML+4FJhbXNvVGImnMxoMDf69wec7fXXWmp0XBRwmlQ/3tcyFgg9963HZit2yyz863e6rddhtxZez4s8AcM69NVUjYzc0ED0eBwDsCiQjsavrulqRKnFGRXvFGf+FUEZ8rrEOAOKpzMKtcH93O+McF13LDOuF+rpbj5zxP/7oRs65xSxGsO2t/aeavJUY4+Dclda2Douo5C0ePn95XW8nQrfvCUXKgEKGEOKce6qq6jzV/xw+CwDprMKoblshh7M8qmLJWcm5nlYUBPDJsTM+b031V60XAoD87o6M31CyuY8ODS9GEppGMcEYI13NWSxSTaVzy6Nfc9qkno4WQ4InL8NCCCPEGOvtaL0RCK72mHW5wiSYKKMCIgiBpmlEFLyVFc2+BsYYxoZNQ4ydSiAA+Ntnp0/4A06HnVLKGUMIYYwxwrFkcpGf37HdgNx/15JGhRCljBD8uz+//4f3Pna7nbqq5dsczhniCACZTEI4lnjh6Sd//P2tlFJCiCHrFuiBO0OHO209QsA42/jAKqfDbhZN/9Mq58dBSi7X19UCAAjje99QmAzwQPH5pJiLwRf2QL703gpHUhlFVVVMUEdTIwBMzy9qOrWazQ67dX4pDAAe2S1ZrBx4PuPruq6qms0mEYwppcG5BQCUzmTqPdWuCmdh1kNBdYADgKrp33th57FzF/cePLLj5dcopdcnA99+/qWlSIxg/Mob7+x68y8EY4SAEAKABEL27B/a+fofCcaargPA/kMnfvCLXcHZxe0/+/WBoeMAwO4aJX1pAPloqfdUW0XxwVUrX/rRM/sGjwZn5vq626xWsaWh1mqx1MqyV3ZLVivjHOWvbIxdGr9x+NTVaDwhEEIIaWnwWkXzE49t6u1q/9P7H8Pt2d6XD5BXPu5jqfT+oZNtrT5PtZxIZTAW8rurc67z2/+jjCGEzl8Ze/KxjT1tvvcODOW3QKdUUbVjZy8vLsVefO67BR+kwguKxWKeuxXWNG3PGzslq1XX6Z3yhDkngBnnhBCCMQAcOeUfnQytcNo/OnwS/tMEWSzChWsTN0PTmzes4QCFJYICARBC8US63itvG/h6XXUlAJgEklFyBBMAUDlTqI4RWliOnPCPRONxIpi2bx3Y+ZNnA7MLR09fRAA6pbpOX3z2O3KFY8fLr2FUYD78wgD5ZSaDs5WyPBmcUzVN1ykAjAZmK2XXeDCUTKdzOo0l0u/sPfjqW3sYhw8/Pc4BOWySZDX3dbXuOzQciceWokmzVQrNL775yk+XwrF9nxzFGBfAUCC3klNF0ZTLqRazmI/djJKzmEVV1QjB+W4nnVFE0SRZzJlsDmNkMYuqphOCKaUAwDkIAlE1zWo2A0Aqk7VL1gIsKf0HjrwBBZfC0gMUqfv+I18ZoNQqA5RaZYBSqwxQapUBSq0yQKl13wP8GxwKx1pBe9uwAAAAAElFTkSuQmCC"
@@ -1157,15 +1157,16 @@ page_monitor:'Monitor',page_twin:'Jumeau Numérique',page_history:'Historique',p
 idle_l1:'Aucune analyse',idle_l2:'Configurez ci-dessous et lancez',
 machine_class:'Classe machine',sensor_params:'Paramètres capteurs',
 air_temp:'Température air',proc_temp:'Température process',rot_speed:'Vitesse rotation',torque:'Couple',tool_wear:'Usure outil',
+p_vibration:'Vibration',p_temp_palier:'Temp. palier',p_debit:'Débit',p_pression_e:'Pression entrée',p_pression_s:'Pression sortie',p_courant:'Courant moteur',p_temp_moteur:'Temp. moteur',p_heure:'Heures fonct.',
 run_btn:"Lancer l'analyse",zone_title:'Analyse zones de panne',
 status_ok:'Fonctionnement normal',status_alert:'Anomalie détectée',failure_prob:'Prob. panne',
-u_temp:'°C',u_speed:'tr/min',u_torque:'N·m',u_wear:'h',
+u_temp:'°C',u_speed:'m³/h',u_torque:'bar',u_wear:'h',
 r_ta_min:'21.9°C',r_ta_max:'31.9°C',r_tp_min:'31.9°C',r_tp_max:'41.9°C',
 r_v_min:'1000',r_v_max:'3000',r_c_min:'3',r_c_max:'80N·m',r_u_min:'0',r_u_max:'4.17h',
 twin_loading:'Chargement simulation...',twin_no_data:'Aucune donnée',twin_no_data2:"Lancez d'abord une analyse dans Monitor",twin_go:'Aller à Monitor',
 twin_healthy:'Système sain',twin_failure:'Panne dans ~',twin_trend:'Tendance\u00a0:',twin_cur_risk:'Risque actuel',twin_avg:'Risque moyen',twin_anom:"Taux d'anomalie",
-twin_c_risk:'Risque — Historique + Simulation 24h',twin_c_wear:'Projection usure outil',twin_c_temp:'Température process',twin_c_sim:'Simulateur de scénario',
-twin_speed:'Vitesse (tr/min)',twin_torque:'Couple (N·m)',twin_wear:'Usure outil (h)',twin_airtemp:'Temp. air (°C)',twin_sim:'Simuler',twin_sim_r:'Risque simulé',
+twin_c_risk:'Risque — Historique + Simulation 24h',twin_c_wear:'Projection heures fonct.',twin_c_temp:'Température palier',twin_c_sim:'Simulateur de scénario',
+twin_speed:'Débit (m³/h)',twin_torque:'Pression sortie (bar)',twin_wear:'Heures fonct. (h)',twin_airtemp:'Vibration (mm/s)',twin_sim:'Simuler',twin_sim_r:'Risque simulé',
 hist_total:'Total',hist_anom:'Anomalies',hist_avg:'Risque moy.',hist_alerts:'Alertes envoyées',hist_reliability:'Fiabilité',
 hist_time:'Heure',hist_class:'Classe',hist_risk:'Risque',hist_status:'Statut',hist_zones:'Zones',hist_alert:'Alerte',hist_feedback:'Retour',
 hist_anomaly:'Anomalie',hist_ok:'OK',hist_sent:'Envoyé',hist_reliability_hint:'Notez les alertes avec +/- pour mesurer la précision du modèle sur vos données.',
@@ -1197,7 +1198,7 @@ live_hint:'CSV · noms de colonnes libres · conversion auto',manual_title:'Anal
 select_machine:'Choisissez votre machine',adv_params:'Paramètres avancés',not_listed:'Ma machine n\u2019est pas listée',
 idle_l2b:'Sélectionnez une machine ci-dessous et lancez l\u2019analyse',
 custom_machine_title:'Machine personnalisée',custom_machine_desc:'Décrivez votre machine ci-dessous. Nous l\u2019intégrerons à Pilar sous 48h.',
-cust_name_lbl:'Nom / type de machine',cust_mfr_lbl:'Fabricant',cust_rpm_lbl:'Plage RPM typique',cust_torque_lbl:'Plage couple (Nm)',cust_desc_lbl:'Description',
+cust_name_lbl:'Nom / type de machine',cust_mfr_lbl:'Fabricant',cust_rpm_lbl:'Plage débit typique (m³/h)',cust_torque_lbl:'Plage pression (bar)',cust_desc_lbl:'Description',
 cust_submit:'Envoyer la demande',cust_sent:'Demande reçue. Votre machine sera intégrée sous 48h.',
 partial_analysis:'Analyse partielle',imputed:'estimés',discovered_param:'Paramètre découvert',
 page_adapter:'Adaptateur CSV',adp_upload:'Importer CSV',adp_hint:'Tout délimiteur · noms libres · conversion unités incluse',
@@ -1212,15 +1213,16 @@ page_monitor:'Monitor',page_twin:'Digital Twin',page_history:'History',page_acco
 idle_l1:'No analysis yet',idle_l2:'Configure below and run',
 machine_class:'Machine class',sensor_params:'Sensor parameters',
 air_temp:'Air temperature',proc_temp:'Process temperature',rot_speed:'Rotational speed',torque:'Torque',tool_wear:'Tool wear',
+p_vibration:'Vibration',p_temp_palier:'Bearing temp.',p_debit:'Flow rate',p_pression_e:'Inlet pressure',p_pression_s:'Outlet pressure',p_courant:'Motor current',p_temp_moteur:'Motor temp.',p_heure:'Run hours',
 run_btn:'Run Analysis',zone_title:'Failure zone analysis',
 status_ok:'Normal Operation',status_alert:'Anomaly Detected',failure_prob:'Failure prob.',
-u_temp:'K',u_speed:'rpm',u_torque:'Nm',u_wear:'min',
+u_temp:'°C',u_speed:'m\u00b3/h',u_torque:'bar',u_wear:'h',
 r_ta_min:'295K',r_ta_max:'305K',r_tp_min:'305K',r_tp_max:'315K',
 r_v_min:'1000',r_v_max:'3000',r_c_min:'3',r_c_max:'80Nm',r_u_min:'0',r_u_max:'250',
 twin_loading:'Loading simulation...',twin_no_data:'No data yet',twin_no_data2:'Run an analysis on Monitor first',twin_go:'Go to Monitor',
 twin_healthy:'System Healthy',twin_failure:'Failure in ~',twin_trend:'Trend:',twin_cur_risk:'Current risk',twin_avg:'Avg risk',twin_anom:'Anomaly rate',
-twin_c_risk:'Risk \u2014 History + 24h Simulation',twin_c_wear:'Tool wear projection',twin_c_temp:'Process temperature',twin_c_sim:'Scenario Simulator',
-twin_speed:'Speed (rpm)',twin_torque:'Torque (Nm)',twin_wear:'Tool wear (min)',twin_airtemp:'Air temp (K)',twin_sim:'Simulate',twin_sim_r:'Simulated risk',
+twin_c_risk:'Risk \u2014 History + 24h Simulation',twin_c_wear:'Run hours projection',twin_c_temp:'Bearing temperature',twin_c_sim:'Scenario Simulator',
+twin_speed:'Flow rate (m³/h)',twin_torque:'Outlet pressure (bar)',twin_wear:'Run hours (h)',twin_airtemp:'Vibration (mm/s)',twin_sim:'Simulate',twin_sim_r:'Simulated risk',
 hist_total:'Total',hist_anom:'Anomalies',hist_avg:'Avg risk',hist_alerts:'Alerts sent',hist_reliability:'Reliability',
 hist_time:'Time',hist_class:'Class',hist_risk:'Risk',hist_status:'Status',hist_zones:'Zones',hist_alert:'Alert',hist_feedback:'Feedback',
 hist_anomaly:'Anomaly',hist_ok:'OK',hist_sent:'Sent',hist_reliability_hint:'Rate alerts with +/- to track model accuracy on your data.',
@@ -1252,7 +1254,7 @@ live_hint:'CSV · any column names · auto unit conversion',manual_title:'Manual
 select_machine:'Select your machine',adv_params:'Advanced parameters',not_listed:'My machine is not listed',
 idle_l2b:'Select a machine below and run analysis',
 custom_machine_title:'Custom Machine',custom_machine_desc:'Describe your machine below. We will integrate it into Pilar within 48 hours.',
-cust_name_lbl:'Machine name / type',cust_mfr_lbl:'Manufacturer',cust_rpm_lbl:'Typical RPM range',cust_torque_lbl:'Torque range (Nm)',cust_desc_lbl:'Description',
+cust_name_lbl:'Machine name / type',cust_mfr_lbl:'Manufacturer',cust_rpm_lbl:'Typical flow range (m³/h)',cust_torque_lbl:'Pressure range (bar)',cust_desc_lbl:'Description',
 cust_submit:'Submit Request',cust_sent:'Request received. Your machine will be integrated within 48 hours.',
 partial_analysis:'Partial analysis',imputed:'estimated',discovered_param:'Discovered parameter',
 page_adapter:'CSV Adapter',adp_upload:'Upload CSV',adp_hint:'Any delimiter · any column names · unit conversion included',
@@ -1276,7 +1278,7 @@ function applyLang(){
   document.querySelectorAll('td .badge.alert').forEach(function(el){el.textContent=t('hist_anomaly');});
   document.querySelectorAll('td .badge.ok').forEach(function(el){el.textContent=t('hist_ok');});
   document.querySelectorAll('td .mb').forEach(function(el){el.textContent=t('hist_sent');});
-  if(document.getElementById('nta'))updateSensorUnits();
+  updateSensorUnits();
   document.querySelectorAll('.acc-role').forEach(function(el){el.textContent=t(el.dataset.role==='leader'?'acc_role_leader':'acc_role_member');});
   document.querySelectorAll('[data-i18n-count]').forEach(function(el){var n=el.dataset.icount||'0';el.textContent=n+t(el.getAttribute('data-i18n-count'));});
 }
@@ -1293,29 +1295,7 @@ function toRaw(disp,type){
   return disp;
 }
 function updateSensorUnits(){
-  var fr=LANG==='fr';
-  var nta=document.getElementById('nta'),ntp=document.getElementById('ntp'),nu=document.getElementById('nu');
-  if(!nta)return;
-  var ta_raw=parseFloat(nta.dataset.raw)||300;
-  var tp_raw=parseFloat(ntp.dataset.raw)||310;
-  var u_raw=parseFloat(nu.dataset.raw)||100;
-  var ta_min=fr?21.85:295,ta_max=fr?31.85:305;
-  document.getElementById('sta').min=ta_min;document.getElementById('sta').max=ta_max;
-  nta.min=ta_min;nta.max=ta_max;
-  var ta_d=toDisplay(ta_raw,'temp');nta.value=ta_d;document.getElementById('sta').value=ta_d;
-  var tp_min=fr?31.85:305,tp_max=fr?41.85:315;
-  document.getElementById('stp').min=tp_min;document.getElementById('stp').max=tp_max;
-  ntp.min=tp_min;ntp.max=tp_max;
-  var tp_d=toDisplay(tp_raw,'temp');ntp.value=tp_d;document.getElementById('stp').value=tp_d;
-  var u_max=fr?+(250/60).toFixed(3):250,u_step=fr?0.001:1;
-  document.getElementById('su').min=0;document.getElementById('su').max=u_max;document.getElementById('su').step=u_step;
-  nu.min=0;nu.max=u_max;
-  var u_d=toDisplay(u_raw,'wear');nu.value=u_d;document.getElementById('su').value=u_d;
-  var ids={'vu-ta':t('u_temp'),'vu-tp':t('u_temp'),'vu-v':t('u_speed'),'vu-c':t('u_torque'),'vu-u':t('u_wear'),
-    'rl-ta-min':t('r_ta_min'),'rl-ta-max':t('r_ta_max'),'rl-tp-min':t('r_tp_min'),'rl-tp-max':t('r_tp_max'),
-    'rl-v-min':t('r_v_min'),'rl-v-max':t('r_v_max'),'rl-c-min':t('r_c_min'),'rl-c-max':t('r_c_max'),
-    'rl-u-min':t('r_u_min'),'rl-u-max':t('r_u_max')};
-  Object.keys(ids).forEach(function(id){var e=document.getElementById(id);if(e)e.textContent=ids[id];});
+  // Pump sensors use fixed SI units — no locale conversion needed
 }
 document.addEventListener('DOMContentLoaded',applyLang);
 var _tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -1364,22 +1344,22 @@ function animateNum(el,from,to,decimals,duration){
   requestAnimationFrame(step);
 }
 // ── CSV INTELLIGENT PARSING ───────────────────────────────────────────────
-var _CSV_FIELDS=['type','temp_air','temp_process','vitesse','couple','usure'];
-var _CSV_OPT_FIELDS=['humidite','vibration','pression','courant','tension'];
+var _CSV_FIELDS=['vibration','temp_palier','debit','pression_entree','pression_sortie','courant_moteur','temp_moteur','heure_fonctionnement'];
+var _CSV_OPT_FIELDS=['temperature_ambiante','niveau_huile','tension_reseau'];
 var _CSV_PATS={
-  type:['type','machine_type','product_type','machine','classe','class','category','categorie'],
-  temp_air:['air_temp','temp_air','temperature_air','air_temperature','t_air','tair','ambient_temp','temp_ambiante','temp_ambiant'],
-  temp_process:['process_temp','temp_process','temperature_process','process_temperature','t_process','tprocess','proc_temp'],
-  vitesse:['speed','vitesse','rpm','rotational_speed','rotation_speed','speed_rpm','rot_speed'],
-  couple:['torque','couple','torque_nm','couple_nm','moment'],
-  usure:['wear','usure','tool_wear','wear_min','tool_wear_min','outil','usure_outil','wear_time']
+  vibration:['vibration','vib','vibration_mm','vib_mms','vibration_mmps','accel','acceleration','vibr'],
+  temp_palier:['temp_palier','bearing_temp','palier_temp','t_palier','tpalier','bearing_temperature','temp_roulement'],
+  debit:['debit','flow','flow_rate','flowrate','debit_m3h','flow_m3h','caudal','durchfluss'],
+  pression_entree:['pression_entree','inlet_pressure','pressure_in','p_in','pe','suction_pressure','pression_aspiration'],
+  pression_sortie:['pression_sortie','outlet_pressure','discharge_pressure','pressure_out','p_out','ps','pression_refoulement'],
+  courant_moteur:['courant_moteur','motor_current','current_motor','im','courant_a','current_a','ampere_moteur','motor_amp'],
+  temp_moteur:['temp_moteur','motor_temp','motor_temperature','tm','temperature_moteur','t_moteur'],
+  heure_fonctionnement:['heure_fonctionnement','run_hours','operating_hours','runtime','heures','hours','hf','total_hours']
 };
 var _CSV_OPT_PATS={
-  humidite:['humidity','humidite','humid','rh','relative_humidity','moisture','humidite_relative','humidity_pct'],
-  vibration:['vibration','vib','vibration_mm','vib_mms','vibration_mmps','accel','acceleration'],
-  pression:['pressure','pression','pres','bar','press','pression_bar','pressure_bar'],
-  courant:['current','courant','ampere','amp','current_a','courant_a','intensite'],
-  tension:['voltage','tension','volt','v_in','tension_v','voltage_v','alimentation']
+  temperature_ambiante:['temperature_ambiante','ambient_temp','temp_ambiante','t_amb','ambient','ta'],
+  niveau_huile:['niveau_huile','oil_level','oil','huile','niveau'],
+  tension_reseau:['tension_reseau','voltage','tension','v_reseau','power_supply','supply_voltage']
 };
 function _csvN(s){return s.toLowerCase().trim().replace(/[^a-z0-9]/g,'_').replace(/_+/g,'_').replace(/^_|_$/g,'');}
 function _csvDelim(line){var sc=(line.match(/;/g)||[]).length,cc=(line.match(/,/g)||[]).length;return sc>cc?';':',';}
@@ -1401,15 +1381,7 @@ function detectCsvMapping(rawHeaders){
     }
     if(best!==-1){
       var orig=origLow[best],unit=null;
-      if(field==='temp_air'||field==='temp_process'){
-        if(orig.indexOf('celsius')!==-1||orig.indexOf('_c')!==-1)unit='C';
-        else if(orig.indexOf('fahrenheit')!==-1||orig.indexOf('_f')!==-1)unit='F';
-        else if(orig.indexOf('kelvin')!==-1||orig.indexOf('_k')!==-1)unit='K';
-      }
-      if(field==='usure'){
-        if(orig.indexOf('hour')!==-1||orig.indexOf('heure')!==-1||orig.endsWith('_h'))unit='h';
-        else if(orig.indexOf('min')!==-1)unit='min';
-      }
+      // Pump fields — no unit conversion needed (all SI)
       map[field]={idx:best,unit:unit,col:rawHeaders[best]};
       usedIdx.add(best);
     }
@@ -1429,21 +1401,9 @@ function buildPilarRow(vals,map){
     var f=_CSV_FIELDS[i],m=map[f];
     if(!m||m.idx>=vals.length){row[f]=null;continue;}
     var raw=(vals[m.idx]||'').toString().trim().replace(',','.');
-    if(f==='type'){
-      var sv=raw.toLowerCase();
-      if(sv==='l'||sv==='low')row.type=0;
-      else if(sv==='m'||sv==='medium'||sv==='med')row.type=1;
-      else if(sv==='h'||sv==='high')row.type=2;
-      else{var n=parseFloat(raw);if(isNaN(n)){row.type=null;continue;}row.type=Math.min(2,Math.max(0,Math.round(n)));}
-    }else{
-      var v=parseFloat(raw);if(isNaN(v)){row[f]=null;continue;}
-      if(f==='temp_air'||f==='temp_process'){
-        var u=m.unit||(v<200?'C':'K');
-        if(u==='C')v+=273.15;else if(u==='F')v=(v-32)*5/9+273.15;
-      }
-      if(f==='usure'){var u=m.unit||(v<20?'h':'min');if(u==='h')v*=60;}
-      row[f]=Math.round(v*100)/100;
-    }
+    var v=parseFloat(raw);
+    if(isNaN(v)){row[f]=null;continue;}
+    row[f]=Math.round(v*100)/100;
   }
   var hasAny=_CSV_FIELDS.some(function(f){return row[f]!==null;});
   if(!hasAny)return null;
@@ -1534,17 +1494,20 @@ HTML = _HEAD.replace("{FAV}","iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAHxU
           </div>
         </div>
         <div class="ctitle" data-i18n="sensor_params">Sensor readings</div>
-        <div class="sensor"><div class="srow"><span class="sname" data-i18n="rot_speed">Rotational speed</span><div class="vwrap"><input class="vi" type="number" id="nv" value="1500" min="100" max="4000" step="10" oninput="si('sv','nv',null)"><span class="vu" id="vu-v">rpm</span></div></div><input type="range" id="sv" min="100" max="4000" step="10" value="1500" oninput="ss('sv','nv',0,null)"><div class="rl"><span id="rl-v-min">100</span><span id="rl-v-max">4000rpm</span></div></div>
-        <div class="sensor"><div class="srow"><span class="sname" data-i18n="torque">Torque</span><div class="vwrap"><input class="vi" type="number" id="nc" value="40" min="1" max="200" step="0.5" oninput="si('sc','nc',null)"><span class="vu" id="vu-c">Nm</span></div></div><input type="range" id="sc" min="1" max="200" step="0.5" value="40" oninput="ss('sc','nc',1,null)"><div class="rl"><span id="rl-c-min">1</span><span id="rl-c-max">200Nm</span></div></div>
-        <div class="sensor"><div class="srow"><span class="sname" data-i18n="tool_wear">Tool wear</span><div class="vwrap"><input class="vi" type="number" id="nu" value="100" min="0" max="300" step="1" data-raw="100" oninput="si('su','nu','wear')"><span class="vu" id="vu-u">min</span></div></div><input type="range" id="su" min="0" max="300" step="1" value="100" oninput="ss('su','nu',0,'wear')"><div class="rl"><span id="rl-u-min">0</span><span id="rl-u-max">300</span></div></div>
+        <div class="sensor"><div class="srow"><span class="sname" data-i18n="p_vibration">Vibration</span><div class="vwrap"><input class="vi" type="number" id="nvib" value="2.5" min="0" max="30" step="0.1" oninput="si('svib','nvib',null)"><span class="vu">mm/s</span></div></div><input type="range" id="svib" min="0" max="30" step="0.1" value="2.5" oninput="ss('svib','nvib',1,null)"><div class="rl"><span>0</span><span>30 mm/s</span></div></div>
+        <div class="sensor"><div class="srow"><span class="sname" data-i18n="p_temp_palier">Bearing temp.</span><div class="vwrap"><input class="vi" type="number" id="ntp" value="65" min="20" max="150" step="1" oninput="si('stp','ntp',null)"><span class="vu">°C</span></div></div><input type="range" id="stp" min="20" max="150" step="1" value="65" oninput="ss('stp','ntp',0,null)"><div class="rl"><span>20</span><span>150°C</span></div></div>
+        <div class="sensor"><div class="srow"><span class="sname" data-i18n="p_debit">Flow rate</span><div class="vwrap"><input class="vi" type="number" id="ndbt" value="45" min="0" max="300" step="1" oninput="si('sdbt','ndbt',null)"><span class="vu">m³/h</span></div></div><input type="range" id="sdbt" min="0" max="300" step="1" value="45" oninput="ss('sdbt','ndbt',0,null)"><div class="rl"><span>0</span><span>300 m³/h</span></div></div>
+        <div class="sensor"><div class="srow"><span class="sname" data-i18n="p_pression_e">Inlet pressure</span><div class="vwrap"><input class="vi" type="number" id="npe" value="1.5" min="0" max="15" step="0.1" oninput="si('spe','npe',null)"><span class="vu">bar</span></div></div><input type="range" id="spe" min="0" max="15" step="0.1" value="1.5" oninput="ss('spe','npe',1,null)"><div class="rl"><span>0</span><span>15 bar</span></div></div>
+        <div class="sensor"><div class="srow"><span class="sname" data-i18n="p_pression_s">Outlet pressure</span><div class="vwrap"><input class="vi" type="number" id="nps" value="4.5" min="0" max="40" step="0.1" oninput="si('sps','nps',null)"><span class="vu">bar</span></div></div><input type="range" id="sps" min="0" max="40" step="0.1" value="4.5" oninput="ss('sps','nps',1,null)"><div class="rl"><span>0</span><span>40 bar</span></div></div>
         <!-- Advanced toggle -->
         <div class="adv-row" onclick="toggleAdv()">
           <span data-i18n="adv_params">Advanced parameters</span>
           <svg id="advChv" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:13px;height:13px;transition:transform .2s"><path d="M19 9l-7 7-7-7" stroke-width="2" stroke-linecap="round"/></svg>
         </div>
         <div id="advParams" style="display:none;padding-top:4px">
-          <div class="sensor"><div class="srow"><span class="sname" data-i18n="air_temp">Air temperature</span><div class="vwrap"><input class="vi" type="number" id="nta" value="300" min="290" max="320" step="0.1" data-raw="300" oninput="si('sta','nta','temp')"><span class="vu" id="vu-ta">K</span></div></div><input type="range" id="sta" min="290" max="320" step="0.1" value="300" oninput="ss('sta','nta',1,'temp')"><div class="rl"><span id="rl-ta-min">290K</span><span id="rl-ta-max">320K</span></div></div>
-          <div class="sensor"><div class="srow"><span class="sname" data-i18n="proc_temp">Process temperature</span><div class="vwrap"><input class="vi" type="number" id="ntp" value="310" min="300" max="330" step="0.1" data-raw="310" oninput="si('stp','ntp','temp')"><span class="vu" id="vu-tp">K</span></div></div><input type="range" id="stp" min="300" max="330" step="0.1" value="310" oninput="ss('stp','ntp',1,'temp')"><div class="rl"><span id="rl-tp-min">300K</span><span id="rl-tp-max">330K</span></div></div>
+          <div class="sensor"><div class="srow"><span class="sname" data-i18n="p_courant">Motor current</span><div class="vwrap"><input class="vi" type="number" id="nim" value="18" min="0" max="150" step="0.5" oninput="si('sim','nim',null)"><span class="vu">A</span></div></div><input type="range" id="sim" min="0" max="150" step="0.5" value="18" oninput="ss('sim','nim',1,null)"><div class="rl"><span>0</span><span>150 A</span></div></div>
+          <div class="sensor"><div class="srow"><span class="sname" data-i18n="p_temp_moteur">Motor temp.</span><div class="vwrap"><input class="vi" type="number" id="ntm" value="75" min="20" max="200" step="1" oninput="si('stm','ntm',null)"><span class="vu">°C</span></div></div><input type="range" id="stm" min="20" max="200" step="1" value="75" oninput="ss('stm','ntm',0,null)"><div class="rl"><span>20</span><span>200°C</span></div></div>
+          <div class="sensor"><div class="srow"><span class="sname" data-i18n="p_heure">Run hours</span><div class="vwrap"><input class="vi" type="number" id="nhf" value="5000" min="0" max="100000" step="100" oninput="si('shf','nhf',null)"><span class="vu">h</span></div></div><input type="range" id="shf" min="0" max="100000" step="100" value="5000" oninput="ss('shf','nhf',0,null)"><div class="rl"><span>0</span><span>100k h</span></div></div>
         </div>
         <button class="btn" id="btn" onclick="analyse()" data-i18n="run_btn">Run Analysis</button>
       </div>
@@ -1570,12 +1533,12 @@ HTML = _HEAD.replace("{FAV}","iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAHxU
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
           <div>
-            <label class="sname" style="display:block;margin-bottom:5px" data-i18n="cust_rpm_lbl">Typical RPM range</label>
-            <input class="fi" id="cust-rpm" placeholder="e.g. 1400-2200">
+            <label class="sname" style="display:block;margin-bottom:5px" data-i18n="cust_rpm_lbl">Typical flow range (m³/h)</label>
+            <input class="fi" id="cust-rpm" placeholder="e.g. 20-80">
           </div>
           <div>
-            <label class="sname" style="display:block;margin-bottom:5px" data-i18n="cust_torque_lbl">Torque range (Nm)</label>
-            <input class="fi" id="cust-torque" placeholder="e.g. 30-80">
+            <label class="sname" style="display:block;margin-bottom:5px" data-i18n="cust_torque_lbl">Pressure range (bar)</label>
+            <input class="fi" id="cust-torque" placeholder="e.g. 2-10">
           </div>
         </div>
         <div style="margin-bottom:14px">
@@ -1614,46 +1577,43 @@ HTML = _HEAD.replace("{FAV}","iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAHxU
 .adv-row:hover{color:var(--text2)}
 </style>
 <script>
+// Pump catalog — fields: vib(mm/s), tp(°C bearing), dbt(m³/h), pe(bar in), ps(bar out), im(A), tm(°C motor), hf(h run)
 const MCATALOG=[
-  {id:'cnc',        label:'CNC Machining Center', cls:2, ta:298.0, tp:313.0, v:1800, c:38.0, u:180},
-  {id:'lathe',      label:'CNC Lathe',             cls:2, ta:297.5, tp:312.5, v:2000, c:40.0, u:200},
-  {id:'mill',       label:'Milling Machine',       cls:1, ta:298.5, tp:312.0, v:1600, c:42.0, u:150},
-  {id:'press',      label:'Hydraulic Press',       cls:1, ta:300.0, tp:315.0, v:800,  c:120.0, u:60},
-  {id:'motor',      label:'Industrial Motor',      cls:1, ta:299.0, tp:312.0, v:2200, c:45.0, u:90},
-  {id:'compressor', label:'Air Compressor',        cls:0, ta:302.0, tp:318.0, v:1450, c:65.0, u:120},
-  {id:'pump',       label:'Centrifugal Pump',      cls:0, ta:298.0, tp:311.0, v:1200, c:30.0, u:80},
-  {id:'conveyor',   label:'Conveyor Drive',        cls:0, ta:298.0, tp:310.0, v:600,  c:55.0, u:50},
-  {id:'robot',      label:'Industrial Robot',      cls:2, ta:299.0, tp:313.0, v:1600, c:58.0, u:140},
-  {id:'injection',  label:'Injection Moulder',     cls:1, ta:301.0, tp:317.0, v:1100, c:72.0, u:70},
-  {id:'grinder',    label:'Surface Grinder',       cls:2, ta:297.0, tp:311.0, v:2500, c:25.0, u:220},
-  {id:'drill',      label:'Drilling Machine',      cls:1, ta:298.0, tp:312.0, v:1400, c:50.0, u:130},
+  {id:'standard',   label:'Standard Centrifugal',      cat:'General', vib:2.5, tp:65,  dbt:45,  pe:1.5, ps:4.5,  im:18, tm:75,  hf:5000},
+  {id:'chemical',   label:'Chemical Process Pump',     cat:'Process', vib:2.0, tp:70,  dbt:30,  pe:2.0, ps:6.0,  im:22, tm:80,  hf:4000},
+  {id:'water',      label:'Water Supply Pump',         cat:'Utility', vib:1.8, tp:55,  dbt:80,  pe:0.5, ps:3.5,  im:15, tm:65,  hf:8000},
+  {id:'food',       label:'Food-Grade Pump',           cat:'Sanitary',vib:1.5, tp:50,  dbt:25,  pe:1.0, ps:3.0,  im:12, tm:60,  hf:3000},
+  {id:'fire',       label:'Fire Fighting Pump',        cat:'Safety',  vib:3.0, tp:60,  dbt:120, pe:1.0, ps:8.0,  im:35, tm:70,  hf:500},
+  {id:'wastewater', label:'Wastewater Pump',           cat:'Utility', vib:3.5, tp:68,  dbt:60,  pe:0.8, ps:4.0,  im:20, tm:78,  hf:6000},
+  {id:'oil',        label:'Oil Transfer Pump',         cat:'Petro',   vib:2.8, tp:80,  dbt:20,  pe:3.0, ps:10.0, im:25, tm:90,  hf:7000},
+  {id:'multistage', label:'Multistage High-Pressure',  cat:'Process', vib:2.2, tp:72,  dbt:15,  pe:2.5, ps:25.0, im:30, tm:85,  hf:4500},
+  {id:'inline',     label:'Vertical Inline Pump',      cat:'HVAC',    vib:1.6, tp:58,  dbt:35,  pe:1.2, ps:5.0,  im:14, tm:68,  hf:6500},
+  {id:'submersible',label:'Submersible Borehole Pump', cat:'Deep',    vib:2.0, tp:50,  dbt:18,  pe:0.3, ps:12.0, im:16, tm:55,  hf:9000},
 ];
-const CLSLABEL=['L — Standard','M — Precision','H — High precision'];
-let mT=0,lastR=null,lastD=null,selectedMachine=null;
+const CLSLABEL=['General','Process','Sanitary'];
+let lastR=null,lastD=null,selectedMachine=null;
 
 function buildCatalog(){
   const c=document.getElementById('mcatalog');if(!c)return;
-  const TYPE=['L','M','H'];
   c.innerHTML=MCATALOG.map(m=>'<div class="mcard" onclick="selectMachine(\''+m.id+'\')">'
     +'<span class="mcard-name">'+m.label+'</span>'
-    +'<span class="mcard-badge type-'+TYPE[m.cls]+'">'+TYPE[m.cls]+'</span>'
+    +'<span class="mcard-badge type-M">'+m.cat+'</span>'
     +'</div>').join('');
 }
 
 function selectMachine(id){
   const m=MCATALOG.find(x=>x.id===id);if(!m)return;
-  selectedMachine=m;mT=m.cls;
-  const fr=LANG==='fr';
-  var ta_d=fr?+(m.ta-273.15).toFixed(1):m.ta;
-  var tp_d=fr?+(m.tp-273.15).toFixed(1):m.tp;
-  var u_d=fr?+(m.u/60).toFixed(3):m.u;
-  document.getElementById('nta').value=ta_d;document.getElementById('nta').dataset.raw=m.ta;document.getElementById('sta').value=ta_d;
-  document.getElementById('ntp').value=tp_d;document.getElementById('ntp').dataset.raw=m.tp;document.getElementById('stp').value=tp_d;
-  document.getElementById('nv').value=m.v;document.getElementById('sv').value=m.v;
-  document.getElementById('nc').value=m.c;document.getElementById('sc').value=m.c;
-  document.getElementById('nu').value=u_d;document.getElementById('nu').dataset.raw=m.u;document.getElementById('su').value=u_d;
+  selectedMachine=m;
+  document.getElementById('nvib').value=m.vib;document.getElementById('svib').value=m.vib;
+  document.getElementById('ntp').value=m.tp;document.getElementById('stp').value=m.tp;
+  document.getElementById('ndbt').value=m.dbt;document.getElementById('sdbt').value=m.dbt;
+  document.getElementById('npe').value=m.pe;document.getElementById('spe').value=m.pe;
+  document.getElementById('nps').value=m.ps;document.getElementById('sps').value=m.ps;
+  document.getElementById('nim').value=m.im;document.getElementById('sim').value=m.im;
+  document.getElementById('ntm').value=m.tm;document.getElementById('stm').value=m.tm;
+  document.getElementById('nhf').value=m.hf;document.getElementById('shf').value=m.hf;
   document.getElementById('mSelName').textContent=m.label;
-  document.getElementById('mSelType').textContent=CLSLABEL[m.cls];
+  document.getElementById('mSelType').textContent=m.cat;
   document.getElementById('mStep1').style.display='none';
   document.getElementById('mCustom').style.display='none';
   document.getElementById('mStep2').style.display='block';
@@ -1723,12 +1683,10 @@ function gv(id){return parseFloat(document.getElementById(id).value);}
 async function analyse(){
   if(!selectedMachine)return;
   const btn=document.getElementById('btn');btn.disabled=true;btn.textContent=t('run_btn')+'\u2026';
-  lastD={type:mT,
-    machine_id:selectedMachine.label,
-    temp_air:toRaw(gv('nta'),'temp'),
-    temp_process:toRaw(gv('ntp'),'temp'),
-    vitesse:gv('nv'),couple:gv('nc'),
-    usure:toRaw(gv('nu'),'wear')};
+  lastD={machine_id:selectedMachine.label,
+    vibration:gv('nvib'),temp_palier:gv('ntp'),
+    debit:gv('ndbt'),pression_entree:gv('npe'),pression_sortie:gv('nps'),
+    courant_moteur:gv('nim'),temp_moteur:gv('ntm'),heure_fonctionnement:gv('nhf')};
   try{
     const res=await fetch('/predire',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(lastD)});
     let r;
@@ -1829,7 +1787,7 @@ async function _lfProcess(text){
       document.getElementById('liveChk').textContent=t('csv_bad')+': '+_CSV_FIELDS.filter(function(f){return !_lfMap[f];}).join(', ');
       stopLiveMonitor();return;
     }
-    var hint=t('csv_detect')+' ('+found+'/6)';
+    var hint=t('csv_detect')+' ('+found+'/8)';
     if(optFound>0)hint+=' +'+optFound+' opt';
     if(ukCount>0)hint+=' +'+ukCount+' ?';
     document.getElementById('liveChk').textContent=hint;
@@ -2171,8 +2129,8 @@ async function load(){
   if(!d.has_data){document.getElementById('tc').innerHTML='<div class="idle"><span class="l1">'+t('twin_no_data')+'</span><span class="l2">'+t('twin_no_data2')+'</span><a href="/" style="margin-top:16px;padding:12px 20px;background:var(--teal);color:#fff;border-radius:6px;text-decoration:none;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;">'+t('twin_go')+'</a></div>';return;}
   const bCls=d.failure_hours===null?'ok':d.failure_hours<6?'alert':'amber';
   const bT=d.failure_hours===null?t('twin_healthy'):t('twin_failure')+d.failure_hours+'h';
-  const wta_disp=toDisplay(d.last_params.temp_air,'temp');
-  const wu_disp=toDisplay(d.last_params.usure,'wear');
+  const wta_disp=d.last_params.vibration||2.5;
+  const wu_disp=d.last_params.heure_fonctionnement||5000;
   document.getElementById('tc').innerHTML=`
     <div class="rh ${bCls}"><div><div class="sb ${bCls}"><span class="dot ${bCls}"></span>${bT}</div><div style="font-size:10px;color:var(--text3);margin-top:4px">${t('twin_trend')} ${d.trend}</div></div><div><div class="rnum ${bCls}">${d.current_risk}<span class="runit">%</span></div><div class="rlbl">${t('twin_cur_risk')}</div></div></div>
     <div class="kgrid"><div class="kc"><div class="kv amber">${d.avg_risk_24h}%</div><div class="kl">${t('twin_avg')}</div></div><div class="kc"><div class="kv ${d.anomaly_rate>=30?'alert':'ok'}">${d.anomaly_rate}%</div><div class="kl">${t('twin_anom')}</div></div></div>
@@ -2181,10 +2139,10 @@ async function load(){
     <div class="card"><div class="ctitle">${t('twin_c_temp')}</div><div id="ct" style="height:180px"></div></div>
     <div class="card"><div class="ctitle">${t('twin_c_sim')}</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
-        <div><label class="flbl">${t('twin_speed')}</label><input class="fi" type="number" id="wv" value="${d.last_params.vitesse}" step="10"></div>
-        <div><label class="flbl">${t('twin_torque')}</label><input class="fi" type="number" id="wc" value="${d.last_params.couple}" step="0.1"></div>
-        <div><label class="flbl">${t('twin_wear')}</label><input class="fi" type="number" id="wu" value="${wu_disp}" step="0.001" data-raw="${d.last_params.usure}"></div>
-        <div><label class="flbl">${t('twin_airtemp')}</label><input class="fi" type="number" id="wta" value="${wta_disp}" step="0.1" data-raw="${d.last_params.temp_air}"></div>
+        <div><label class="flbl">${t('twin_speed')}</label><input class="fi" type="number" id="wv" value="${d.last_params.debit||45}" step="1"></div>
+        <div><label class="flbl">${t('twin_torque')}</label><input class="fi" type="number" id="wc" value="${d.last_params.pression_sortie||4.5}" step="0.1"></div>
+        <div><label class="flbl">${t('twin_wear')}</label><input class="fi" type="number" id="wu" value="${wu_disp}" step="1"></div>
+        <div><label class="flbl">${t('twin_airtemp')}</label><input class="fi" type="number" id="wta" value="${wta_disp}" step="0.1"></div>
       </div>
       <button class="btn" onclick="sim()">${t('twin_sim')}</button>
       <div id="wr" style="margin-top:12px"></div>
@@ -2194,9 +2152,7 @@ async function load(){
   Plotly.newPlot('ct',[{x:d.history_times,y:d.history_temp,name:'Actual',type:'scatter',mode:'lines',line:{color:'#dc2626',width:2}},{x:d.future_times,y:d.future_temp,name:'Projected',type:'scatter',mode:'lines',line:{color:'#dc2626',width:2,dash:'dot'}}],PL,PC);
 }
 async function sim(){
-  const wta_raw=parseFloat(document.getElementById('wta').dataset.raw)||toRaw(parseFloat(document.getElementById('wta').value),'temp');
-  const wu_raw=parseFloat(document.getElementById('wu').dataset.raw)||toRaw(parseFloat(document.getElementById('wu').value),'wear');
-  const p={type:1,temp_air:wta_raw,temp_process:wta_raw+10,vitesse:parseFloat(document.getElementById('wv').value),couple:parseFloat(document.getElementById('wc').value),usure:wu_raw};
+  const p={vibration:parseFloat(document.getElementById('wta').value),debit:parseFloat(document.getElementById('wv').value),pression_sortie:parseFloat(document.getElementById('wc').value),heure_fonctionnement:parseFloat(document.getElementById('wu').value)};
   const res=await fetch('/api/whatif',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});
   const d=await res.json();const c={ok:'#059669',amber:'#d97706',alert:'#dc2626'};const cls=d.risk>=50?'alert':d.risk>=22?'amber':'ok';
   document.getElementById('wr').innerHTML='<div style="padding:14px;background:var(--bg);border:1px solid '+c[cls]+';border-radius:6px"><div style="font-size:9px;letter-spacing:1.5px;color:var(--text3);text-transform:uppercase">'+t('twin_sim_r')+'</div><div style="font-size:32px;font-weight:800;color:'+c[cls]+';margin:4px 0">'+d.risk+'%</div><div style="font-size:12px;font-weight:600;color:'+c[cls]+'">'+d.status+'</div><div style="font-size:11px;color:var(--text3);margin-top:3px">'+d.message+'</div>'+(d.zones.length?'<div style="font-size:10px;color:var(--amber);margin-top:6px">Zones: '+d.zones.map(z=>z.nom+' '+z.proba+'%').join(' · ')+'</div>':'')+'</div>';
@@ -2382,17 +2338,19 @@ TUTORIAL_HTML = _HEAD.replace("{FAV}", FAV_B64) + """
     <div class="ctitle" data-i18n="tut_format">CSV Format</div>
     <p style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:12px" data-i18n="tut_csv_desc">Your CSV must contain these columns (order does not matter):</p>
     <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:12px;overflow-x:auto;margin-bottom:12px">
-      <code style="font-size:11px;color:var(--teal-light);white-space:nowrap">type, temp_air, temp_process, vitesse, couple, usure</code>
+      <code style="font-size:11px;color:var(--teal-light);white-space:nowrap">vibration, temp_palier, debit, pression_entree, pression_sortie, courant_moteur, temp_moteur, heure_fonctionnement</code>
     </div>
     <table style="font-size:11px;margin-top:0">
       <thead><tr><th data-i18n="tut_cols">Column</th><th data-i18n="tut_unit">Unit</th><th data-i18n="tut_range">Range</th><th data-i18n="tut_desc">Description</th></tr></thead>
       <tbody>
-        <tr><td style="color:var(--teal-light)">type</td><td>—</td><td>0, 1 or 2</td><td>Machine class (L=0, M=1, H=2)</td></tr>
-        <tr><td style="color:var(--teal-light)">temp_air</td><td>K</td><td>295–310</td><td>Air temperature (Kelvin)</td></tr>
-        <tr><td style="color:var(--teal-light)">temp_process</td><td>K</td><td>305–320</td><td>Process temperature (Kelvin)</td></tr>
-        <tr><td style="color:var(--teal-light)">vitesse</td><td>rpm</td><td>1000–3000</td><td>Rotational speed</td></tr>
-        <tr><td style="color:var(--teal-light)">couple</td><td>Nm</td><td>3–80</td><td>Torque</td></tr>
-        <tr><td style="color:var(--teal-light)">usure</td><td>min</td><td>0–250</td><td>Tool wear time</td></tr>
+        <tr><td style="color:var(--teal-light)">vibration</td><td>mm/s</td><td>0–30</td><td>Vibration RMS on bearing</td></tr>
+        <tr><td style="color:var(--teal-light)">temp_palier</td><td>°C</td><td>20–150</td><td>Bearing temperature</td></tr>
+        <tr><td style="color:var(--teal-light)">debit</td><td>m³/h</td><td>0–300</td><td>Flow rate</td></tr>
+        <tr><td style="color:var(--teal-light)">pression_entree</td><td>bar</td><td>0–15</td><td>Inlet (suction) pressure</td></tr>
+        <tr><td style="color:var(--teal-light)">pression_sortie</td><td>bar</td><td>0–40</td><td>Outlet (discharge) pressure</td></tr>
+        <tr><td style="color:var(--teal-light)">courant_moteur</td><td>A</td><td>0–150</td><td>Motor current draw</td></tr>
+        <tr><td style="color:var(--teal-light)">temp_moteur</td><td>°C</td><td>20–200</td><td>Motor temperature</td></tr>
+        <tr><td style="color:var(--teal-light)">heure_fonctionnement</td><td>h</td><td>0–100000</td><td>Cumulative run hours</td></tr>
       </tbody>
     </table>
     <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
@@ -2501,15 +2459,15 @@ TUTORIAL_HTML = _HEAD.replace("{FAV}", FAV_B64) + """
 var rows=[],idx=0,timer=null,paused=false,nFail=0,nOk=0,sumRisk=0;
 
 function dlSample(){
-  var csv='type,temp_air,temp_process,vitesse,couple,usure\\n'+
-    '0,300.1,310.5,1500,40.2,45\\n'+
-    '1,301.3,311.8,1800,55.0,120\\n'+
-    '2,299.7,309.2,2200,65.3,200\\n'+
-    '0,302.0,312.1,1200,30.5,210\\n'+
-    '1,300.5,310.9,1600,48.0,80\\n';
+  var csv='vibration,temp_palier,debit,pression_entree,pression_sortie,courant_moteur,temp_moteur,heure_fonctionnement\\n'+
+    '2.3,63,46,1.5,4.4,17.8,74,4800\\n'+
+    '1.8,58,52,1.6,4.7,16.2,70,2300\\n'+
+    '5.4,82,31,0.9,3.2,21.5,88,9500\\n'+
+    '9.1,95,22,0.4,2.8,19.0,79,14200\\n'+
+    '2.5,66,44,1.4,4.3,18.0,75,5000\\n';
   var a=document.createElement('a');
   a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-  a.download='pilar_sample.csv';a.click();
+  a.download='pilar_pump_sample.csv';a.click();
 }
 
 function onFile(inp){
@@ -2524,7 +2482,7 @@ function onFile(inp){
     var rawHdr=lines[0].split(delim).map(s=>s.trim());
     var map=detectCsvMapping(rawHdr);
     var found=Object.keys(map).length;
-    if(found<6){
+    if(found<1){
       var missing=_CSV_FIELDS.filter(function(field){return !map[field];}).join(', ');
       alert(t('csv_bad')+': '+missing);return;
     }
@@ -2534,7 +2492,7 @@ function onFile(inp){
       var obj=buildPilarRow(vals,map);
       if(obj)rows.push(obj);
     }
-    var info=found+'/6 '+t('csv_detect');
+    var info=found+'/8 '+t('csv_detect');
     document.getElementById('fname').textContent=f.name+' — '+rows.length+' '+t('csv_rows')+' ('+info+')';
     document.getElementById('btnStart').disabled=rows.length===0;
   };
@@ -2592,8 +2550,9 @@ function showRow(i,row,r,err){
   div.style.cssText='background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:10px';
   var left='<div style="font-size:10px;color:var(--text3)">#'+(i+1)+'</div>';
   left+='<div style="font-size:12px;color:var(--text2);margin-top:2px">'+
-    'Type '+(row.type===0?'L':row.type===1?'M':'H')+
-    ' | '+row.vitesse+'rpm | '+row.usure+'min wear</div>';
+    'vib '+(row.vibration||'—')+' mm/s'+
+    ' | '++(row.temp_palier||'—')+'°C bearing'+
+    ' | '+(row.debit||'—')+' m³/h flow</div>';
   var col=err?'var(--amber)':r.prediction===1?'var(--red)':'var(--green)';
   var right='<div style="text-align:right"><div style="font-size:20px;font-weight:800;color:'+col+'">'+(err?'—':pct+'%')+'</div>';
   right+='<div style="font-size:9px;color:'+col+';letter-spacing:1px;text-transform:uppercase">'+label+'</div></div>';
@@ -2665,13 +2624,13 @@ async function liveCheck(){
       liveDelim=_csvDelim(lines[0]);
       var rawHdr=lines[0].split(liveDelim).map(s=>s.trim());
       liveMap=detectCsvMapping(rawHdr);
-      var found=Object.keys(liveMap).length;
-      if(found<6){
+      var coreFound=_CSV_FIELDS.filter(function(f){return !!liveMap[f];}).length;
+      if(coreFound<1){
         var missing=_CSV_FIELDS.filter(function(f){return !liveMap[f];}).join(', ');
         document.getElementById('liveStatus').textContent=t('csv_bad')+': '+missing;
         document.getElementById('liveStatus').style.color='var(--red)';return;
       }
-      document.getElementById('liveStatus').textContent=t('csv_detect')+' ('+found+'/6)';
+      document.getElementById('liveStatus').textContent=t('csv_detect')+' ('+coreFound+'/8)';
       document.getElementById('liveStatus').style.color='var(--green)';
     }
     var total=lines.length-1;
@@ -2777,10 +2736,10 @@ ADAPTER_HTML = _HEAD.replace("{FAV}", FAV_B64) + """
 <script>
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 var _adpRaw=null,_adpDelim=',',_adpHdr=[],_adpMap=[];
-var _ADP_KEYS=['type','temp_air','temp_process','vitesse','couple','usure','humidite','vibration','pression','courant','tension'];
-var _ADP_LBL_FR={type:'Type machine',temp_air:'Temp. air',temp_process:'Temp. process',vitesse:'Vitesse (rpm)',couple:'Couple (Nm)',usure:'Usure outil',humidite:'Humidité (%)',vibration:'Vibration (mm/s)',pression:'Pression (bar)',courant:'Courant (A)',tension:'Tension (V)'};
-var _ADP_LBL_EN={type:'Machine type',temp_air:'Air temp',temp_process:'Process temp',vitesse:'Speed (rpm)',couple:'Torque (Nm)',usure:'Tool wear',humidite:'Humidity (%)',vibration:'Vibration (mm/s)',pression:'Pressure (bar)',courant:'Current (A)',tension:'Voltage (V)'};
-var _ADP_OUT={type:'type',temp_air:'air_temperature_k',temp_process:'process_temperature_k',vitesse:'rotational_speed_rpm',couple:'torque_nm',usure:'tool_wear_min',humidite:'humidity_pct',vibration:'vibration_mms',pression:'pressure_bar',courant:'current_a',tension:'voltage_v'};
+var _ADP_KEYS=['vibration','temp_palier','debit','pression_entree','pression_sortie','courant_moteur','temp_moteur','heure_fonctionnement','temperature_ambiante','niveau_huile','tension_reseau'];
+var _ADP_LBL_FR={vibration:'Vibration (mm/s)',temp_palier:'Temp. palier (°C)',debit:'Débit (m³/h)',pression_entree:'Pression entrée (bar)',pression_sortie:'Pression sortie (bar)',courant_moteur:'Courant moteur (A)',temp_moteur:'Temp. moteur (°C)',heure_fonctionnement:'Heures fonct. (h)',temperature_ambiante:'Temp. ambiante (°C)',niveau_huile:'Niveau huile (%)',tension_reseau:'Tension réseau (V)'};
+var _ADP_LBL_EN={vibration:'Vibration (mm/s)',temp_palier:'Bearing temp (°C)',debit:'Flow rate (m³/h)',pression_entree:'Inlet pressure (bar)',pression_sortie:'Outlet pressure (bar)',courant_moteur:'Motor current (A)',temp_moteur:'Motor temp (°C)',heure_fonctionnement:'Run hours (h)',temperature_ambiante:'Ambient temp (°C)',niveau_huile:'Oil level (%)',tension_reseau:'Supply voltage (V)'};
+var _ADP_OUT={vibration:'vibration_mms',temp_palier:'bearing_temp_c',debit:'flow_rate_m3h',pression_entree:'inlet_pressure_bar',pression_sortie:'outlet_pressure_bar',courant_moteur:'motor_current_a',temp_moteur:'motor_temp_c',heure_fonctionnement:'run_hours_h',temperature_ambiante:'ambient_temp_c',niveau_huile:'oil_level_pct',tension_reseau:'supply_voltage_v'};
 
 function adpLoad(inp){
   var f=inp.files[0];if(!f)return;
@@ -2823,15 +2782,7 @@ function adpRenderTable(){
     var sel=baseOpts.replace('value="'+(m.pf||'')+'"','value="'+(m.pf||'')+'" selected');
     var selEl='<select onchange="adpSetField('+i+',this.value)" style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:5px 6px;font-size:10px;width:100%">'+sel+'</select>';
     var unitEl='<span style="font-size:10px;color:var(--text3)">—</span>';
-    if(m.pf==='temp_air'||m.pf==='temp_process'){
-      unitEl='<select id="u'+i+'" onchange="adpSetUnit('+i+',this.value)" style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:5px 6px;font-size:10px">';
-      ['K','°C','°F'].forEach(function(u){unitEl+='<option'+(u===(m.unit||'K')?' selected':'')+'>'+u+'</option>';});
-      unitEl+='</select>';
-    } else if(m.pf==='usure'){
-      unitEl='<select id="u'+i+'" onchange="adpSetUnit('+i+',this.value)" style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:5px 6px;font-size:10px">';
-      ['min','h'].forEach(function(u){unitEl+='<option'+(u===(m.unit||'min')?' selected':'')+'>'+u+'</option>';});
-      unitEl+='</select>';
-    }
+    // Pump fields use fixed SI units — no unit selector needed
     html+='<tr>'+tds('<span style="display:flex;align-items:center">'+dot+'<strong style="font-size:11px;color:var(--text)">'+esc(m.col)+'</strong></span>')+tds('<span style="color:var(--text3);font-size:10px">'+esc(m.samples.slice(0,3).join(', '))+'</span>')+tds(selEl)+tds(unitEl)+'</tr>';
   });
   html+='</tbody></table>';
@@ -2847,10 +2798,8 @@ function adpSetField(i,val){
 function adpSetUnit(i,val){_adpMap[i].unit=val;}
 
 function _adpConv(raw,pf,unit){
-  if(pf==='type'){var s=raw.toLowerCase();return s==='l'||s==='low'?'0':s==='m'||s==='medium'||s==='med'?'1':s==='h'||s==='high'?'2':raw;}
+  // Pump fields — all values are already in SI units, no conversion needed
   var v=parseFloat(raw.replace(',','.'));if(isNaN(v))return '';
-  if(pf==='temp_air'||pf==='temp_process'){var u=unit||(v<200?'°C':'K');if(u==='°C')v+=273.15;else if(u==='°F')v=(v-32)*5/9+273.15;}
-  if(pf==='usure'){var u=unit||(v<20?'h':'min');if(u==='h')v*=60;}
   return Math.round(v*1000)/1000;
 }
 
@@ -3201,9 +3150,14 @@ footer{border-top:1px solid var(--border);padding:40px 32px;display:grid;grid-te
 </head>
 <body>
 
+<!-- BETA BANNER -->
+<div style="background:rgba(13,148,136,.12);border-bottom:1px solid rgba(13,148,136,.25);padding:9px 32px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--teal2);letter-spacing:.5px">
+  <span style="opacity:.7">We are in</span> <strong>Public Beta</strong> <span style="opacity:.7">— early access, free to use. Your feedback shapes the product.</span>
+</div>
+
 <!-- NAV -->
-<nav>
-  <a href="/" class="nav-logo">PILAR</a>
+<nav style="top:38px">
+  <a href="/" class="nav-logo">PILAR <span style="font-size:9px;letter-spacing:2px;color:var(--teal2);vertical-align:middle;opacity:.8">BETA</span></a>
   <div class="nav-links">
     <div style="display:flex;gap:2px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:3px;padding:3px;margin-right:6px">
       <button id="_lEN" onclick="_lp('en')" style="padding:4px 10px;border:none;border-radius:2px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1px;cursor:pointer;background:transparent;color:#4e6278;transition:all .15s">EN</button>
@@ -3216,10 +3170,10 @@ footer{border-top:1px solid var(--border);padding:40px 32px;display:grid;grid-te
 </nav>
 
 <!-- HERO -->
-<div style="min-height:100vh;display:flex;align-items:stretch;padding-top:58px">
-  <div class="hero" style="width:100%;min-height:calc(100vh - 58px)">
+<div style="min-height:100vh;display:flex;align-items:stretch;padding-top:96px">
+  <div class="hero" style="width:100%;min-height:calc(100vh - 96px)">
     <div class="hero-left">
-      <div class="hero-eyebrow" data-ilp="hero_badge">AI-Powered Predictive Maintenance</div>
+      <div class="hero-eyebrow" data-ilp="hero_badge">AI-Powered Predictive Maintenance &mdash; Public Beta</div>
       <h1 data-ilp="hero_h">Stop fixing machines.<br><span>Predict failures first.</span></h1>
       <p class="hero-sub" data-ilp="hero_sub">Pilar analyzes your industrial sensors in real time and alerts you hours before a breakdown — before it costs you anything.</p>
       <div class="hero-cta">
@@ -3240,34 +3194,34 @@ footer{border-top:1px solid var(--border);padding:40px 32px;display:grid;grid-te
         <div class="terminal-body">
           <div><span class="t-comment">// sensor reading — 14:32:07 UTC</span></div>
           <div style="margin-top:8px">
-            <span class="t-key">air_temp</span><span class="t-dim">  &nbsp;&nbsp;&nbsp;</span><span class="t-val">308.6 K</span>
+            <span class="t-key">vibration</span><span class="t-dim">  &nbsp;&nbsp;</span><span class="t-warn">9.4 mm/s</span>
           </div>
           <div>
-            <span class="t-key">proc_temp</span><span class="t-dim"> &nbsp;&nbsp;</span><span class="t-val">309.8 K</span>
+            <span class="t-key">temp_palier</span><span class="t-dim"> &nbsp;</span><span class="t-error">107 °C</span>
           </div>
           <div>
-            <span class="t-key">rpm</span><span class="t-dim">      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="t-warn">1 486 rpm</span>
+            <span class="t-key">debit</span><span class="t-dim">     &nbsp;&nbsp;&nbsp;&nbsp;</span><span class="t-warn">22 m³/h</span>
           </div>
           <div>
-            <span class="t-key">torque</span><span class="t-dim">    &nbsp;&nbsp;&nbsp;</span><span class="t-val">42.8 Nm</span>
+            <span class="t-key">pression_e</span><span class="t-dim"> &nbsp;&nbsp;</span><span class="t-error">0.38 bar</span>
           </div>
           <div>
-            <span class="t-key">tool_wear</span><span class="t-dim"> &nbsp;&nbsp;</span><span class="t-warn">198 min</span>
+            <span class="t-key">heure_fonct</span><span class="t-dim"> </span><span class="t-val">14 208 h</span>
           </div>
           <hr class="t-divider">
           <div><span class="t-comment">// model: GradientBoosting — inference</span></div>
           <div style="margin-top:8px">
-            <span class="t-key">failure_prob</span><span class="t-dim"> </span><span class="t-error">72.4%</span>
+            <span class="t-key">failure_prob</span><span class="t-dim"> </span><span class="t-error">78.2%</span>
           </div>
           <div class="t-risk-bar"><div class="t-risk-fill"></div></div>
           <div style="margin-top:4px;font-size:10px">
-            <span class="t-dim">TWF </span><span class="t-error">HIGH</span>
-            <span class="t-dim" style="margin-left:12px">HDF </span><span class="t-ok">LOW</span>
-            <span class="t-dim" style="margin-left:12px">PWF </span><span class="t-ok">LOW</span>
-            <span class="t-dim" style="margin-left:12px">OSF </span><span class="t-warn">MED</span>
+            <span class="t-dim">ROL </span><span class="t-error">HIGH</span>
+            <span class="t-dim" style="margin-left:12px">CAV </span><span class="t-warn">MED</span>
+            <span class="t-dim" style="margin-left:12px">ETN </span><span class="t-ok">LOW</span>
+            <span class="t-dim" style="margin-left:12px">MOT </span><span class="t-ok">LOW</span>
           </div>
           <div class="t-alert">
-            <div style="font-size:11px;color:#f87171;font-weight:500">ALERT — TWF zone — tool wear failure imminent</div>
+            <div style="font-size:11px;color:#f87171;font-weight:500">ALERT — ROL zone — bearing failure imminent</div>
             <div style="font-size:10px;color:var(--text3);margin-top:3px">email dispatched to maintenance@plant.local</div>
           </div>
         </div>
@@ -3281,7 +3235,7 @@ footer{border-top:1px solid var(--border);padding:40px 32px;display:grid;grid-te
   <div class="stat-item"><div class="stat-num">98.1%</div><div class="stat-lbl" data-ilp="stat1">Recall — failures caught</div></div>
   <div class="stat-item"><div class="stat-num">5</div><div class="stat-lbl" data-ilp="stat2">Failure zones detected</div></div>
   <div class="stat-item"><div class="stat-num">&lt;5s</div><div class="stat-lbl" data-ilp="stat3">Analysis per reading</div></div>
-  <div class="stat-item"><div class="stat-num">20K+</div><div class="stat-lbl" data-ilp="stat4">Industrial records trained</div></div>
+  <div class="stat-item"><div class="stat-num">23K+</div><div class="stat-lbl" data-ilp="stat4">Pump records trained</div></div>
 </div>
 
 <!-- HOW IT WORKS -->
@@ -3296,7 +3250,7 @@ footer{border-top:1px solid var(--border);padding:40px 32px;display:grid;grid-te
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--teal2)" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
       </div>
       <div class="step-title" data-ilp="s1t">Connect your sensors</div>
-      <div class="step-desc" data-ilp="s1d">Send readings via REST API from your PLCs, SCADA systems, or CSV files. Pilar accepts temperature, speed, torque, vibration, and more.</div>
+      <div class="step-desc" data-ilp="s1d">Send readings via REST API from your PLCs, SCADA systems, or CSV files. Pilar accepts vibration, flow rate, pressure, bearing temp, motor current, and more.</div>
     </div>
     <div class="step">
       <div class="step-num">02 / 03</div>
@@ -3304,7 +3258,7 @@ footer{border-top:1px solid var(--border);padding:40px 32px;display:grid;grid-te
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--teal2)" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
       </div>
       <div class="step-title" data-ilp="s2t">AI detects anomalies</div>
-      <div class="step-desc" data-ilp="s2d">Our ML model — trained on 20,000+ industrial records — analyzes each reading across 5 failure zones in real time with 98.1% recall.</div>
+      <div class="step-desc" data-ilp="s2d">Our ML model — trained on 23,400+ pump sensor records — analyzes each reading across 5 failure zones in real time with 98.1% recall.</div>
     </div>
     <div class="step">
       <div class="step-num">03 / 03</div>
@@ -3323,7 +3277,7 @@ footer{border-top:1px solid var(--border);padding:40px 32px;display:grid;grid-te
 <section>
   <div class="section-eyebrow" data-ilp="perf_lbl">Model Performance</div>
   <div class="section-title" data-ilp="perf_title">Built on <span>real industrial data</span></div>
-  <div class="section-sub" data-ilp="perf_sub">Trained on 20,902 machine readings across multiple industrial environments — not just synthetic data.</div>
+  <div class="section-sub" data-ilp="perf_sub">Trained on 23,400 centrifugal pump readings across 5 failure modes — physically realistic sensor profiles calibrated for industrial pumps.</div>
   <div class="perf-grid">
     <div class="perf-metrics">
       <div class="metric-row">
@@ -3344,7 +3298,7 @@ footer{border-top:1px solid var(--border);padding:40px 32px;display:grid;grid-te
       <div class="metric-row">
         <div class="metric-name">Zones detected</div>
         <div class="metric-bar-wrap"><div class="metric-bar" style="width:100%"></div></div>
-        <div class="metric-val" style="font-size:10px;min-width:fit-content">TWF HDF PWF OSF RNF</div>
+        <div class="metric-val" style="font-size:10px;min-width:fit-content">CAV ROL ETN IMP MOT</div>
       </div>
     </div>
     <div class="perf-card">
@@ -3397,12 +3351,12 @@ footer{border-top:1px solid var(--border);padding:40px 32px;display:grid;grid-te
     <div class="feature-card">
       <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--teal2)" stroke-width="1.5"><path d="M4.93 4.93a10 10 0 000 14.14M19.07 4.93a10 10 0 010 14.14M9 12a3 3 0 106 0 3 3 0 00-6 0"/></svg></div>
       <div class="feature-title">Live Sensor Monitoring</div>
-      <div class="feature-desc">Real-time analysis of temperature, speed, torque, tool wear and more. Upload CSV files or connect directly via API.</div>
+      <div class="feature-desc">Real-time analysis of vibration, bearing temp, flow rate, pressure, motor current, and run hours. Upload CSV files or connect via API.</div>
     </div>
     <div class="feature-card">
       <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--teal2)" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg></div>
       <div class="feature-title">5-Zone Failure Detection</div>
-      <div class="feature-desc">Identifies Tool Wear (TWF), Heat Dissipation (HDF), Power Failure (PWF), Overstrain (OSF), and Random (RNF) failure modes.</div>
+      <div class="feature-desc">Identifies Cavitation (CAV), Bearing Failure (ROL), Seal Failure (ETN), Impeller Wear (IMP), and Motor Fault (MOT) — specific to centrifugal pumps.</div>
     </div>
     <div class="feature-card">
       <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--teal2)" stroke-width="1.5"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 01-2.06 0L2 7"/></svg></div>
@@ -3433,7 +3387,7 @@ footer{border-top:1px solid var(--border);padding:40px 32px;display:grid;grid-te
 <section>
   <div class="section-eyebrow" data-ilp="ind_lbl">Industries</div>
   <div class="section-title" data-ilp="ind_title">Built for <span>industrial environments</span></div>
-  <div class="section-sub" data-ilp="ind_sub">Any process that uses rotating machinery, temperature-controlled equipment, or precision tools can benefit from predictive monitoring.</div>
+  <div class="section-sub" data-ilp="ind_sub">Any process that relies on centrifugal pumps — from water treatment to chemical processing — can benefit from predictive monitoring.</div>
   <div class="industries">
     <div class="industry-chip">Chemical Processing</div>
     <div class="industry-chip">Automotive Manufacturing</div>
@@ -3494,15 +3448,15 @@ footer{border-top:1px solid var(--border);padding:40px 32px;display:grid;grid-te
 <div class="cta-section">
   <div style="max-width:1200px;margin:0 auto;padding:0 32px">
     <h2 data-ilp="cta_h">Your machines are sending signals.<br><span>Are you listening?</span></h2>
-    <p data-ilp="cta_p">Join the teams that stopped reacting to breakdowns and started preventing them. Free to start, no setup fees.</p>
+    <p data-ilp="cta_p">Join the teams that stopped reacting to breakdowns and started preventing them. Free to start, no setup fees — and as a beta user, your feedback directly shapes the product.</p>
     <a href="/register" class="btn-hero" data-ilp="cta_btn">Start monitoring for free</a>
   </div>
 </div>
 
 <script>
 var _TLP={
-en:{nav_signin:'Sign In',nav_start:'Get Started Free',hero_badge:'AI-Powered Predictive Maintenance',hero_h:'Stop fixing machines.<br><span>Predict failures first.</span>',hero_sub:'Pilar analyzes your industrial sensors in real time and alerts you hours before a breakdown \u2014 before it costs you anything.',hero_cta1:'Start for free',hero_cta2:'See how it works',stat1:'Recall \u2014 failures caught',stat2:'Failure zones detected',stat3:'Analysis per reading',stat4:'Industrial records trained',how_lbl:'Process',how_title:'Three steps to <span>zero unplanned downtime</span>',how_sub:'Connect your machines, let Pilar learn, and receive precise alerts before failures happen.',s1t:'Connect your sensors',s1d:'Send readings via REST API from your PLCs, SCADA systems, or CSV files. Pilar accepts temperature, speed, torque, vibration, and more.',s2t:'AI detects anomalies',s2d:'Our ML model \u2014 trained on 20,000+ industrial records \u2014 analyzes each reading across 5 failure zones in real time with 98.1% recall.',s3t:'Your team gets alerted',s3d:'When risk exceeds threshold, Pilar sends an instant email alert with the failure zone, risk level, and recommended action \u2014 before breakdown occurs.',perf_lbl:'Model Performance',perf_title:'Built on <span>real industrial data</span>',perf_sub:'Trained on 20,902 machine readings across multiple industrial environments \u2014 not just synthetic data.',roi_lbl:'Business Impact',roi_title:'The real cost of <span>reactive maintenance</span>',roi_sub:'Every unplanned breakdown costs production time, emergency repairs, and team morale. Pilar changes the equation.',roi_before:'Without Pilar',roi_after:'With Pilar',feat_lbl:'Features',feat_title:'Everything your maintenance<br><span>team needs</span>',ind_lbl:'Industries',ind_title:'Built for <span>industrial environments</span>',ind_sub:'Any process that uses rotating machinery, temperature-controlled equipment, or precision tools can benefit from predictive monitoring.',pricing_lbl:'Pricing',pricing_title:'Simple pricing, <span>built around you</span>',plan_free_desc:'Get started immediately. No credit card required.',plan_free_btn:'Get started free',plan_custom_badge:'Custom Contract',plan_custom_name:'Your Plan',plan_custom_price:'On demand',plan_custom_desc:'No fixed tiers. You choose the features, we adapt the contract to your operations and budget.',plan_custom_btn:'Contact us',cta_h:'Your machines are sending signals.<br><span>Are you listening?</span>',cta_p:'Join the teams that stopped reacting to breakdowns and started preventing them. Free to start, no setup fees.',cta_btn:'Start monitoring for free',footer_sign:'Sign In',footer_reg:'Create Account',footer_rights:'All rights reserved.'},
-fr:{nav_signin:'Connexion',nav_start:'Commencer gratuitement',hero_badge:'Maintenance Pr\u00e9dictive par IA',hero_h:'Arr\u00eatez de r\u00e9parer.<br><span>Pr\u00e9disez les pannes.</span>',hero_sub:'Pilar analyse vos capteurs industriels en temps r\u00e9el et vous alerte des heures avant une panne \u2014 avant que \u00e7a ne co\u00fbte quoi que ce soit.',hero_cta1:'Commencer gratuitement',hero_cta2:'Voir comment \u00e7a marche',stat1:'Rappel \u2014 pannes d\u00e9tect\u00e9es',stat2:'Zones de panne identifi\u00e9es',stat3:'Analyse par mesure',stat4:'Enregistrements industriels entra\u00een\u00e9s',how_lbl:'Processus',how_title:'Trois \u00e9tapes vers <span>z\u00e9ro arr\u00eat impr\u00e9vu</span>',how_sub:'Connectez vos machines, laissez Pilar apprendre, recevez des alertes pr\u00e9cises avant les pannes.',s1t:'Connectez vos capteurs',s1d:'Envoyez des mesures via API REST depuis vos automates, SCADA ou fichiers CSV. Pilar accepte temp\u00e9rature, vitesse, couple, usure et bien plus.',s2t:"L'IA d\u00e9tecte les anomalies",s2d:"Notre mod\u00e8le ML \u2014 entra\u00een\u00e9 sur 20 000+ enregistrements industriels \u2014 analyse chaque mesure sur 5 zones de panne en temps r\u00e9el avec 98,1% de rappel.",s3t:"Votre \u00e9quipe est alert\u00e9e",s3d:"Quand le risque d\u00e9passe le seuil, Pilar envoie un email d'alerte instantan\u00e9 avec la zone de panne, le niveau de risque et l'action recommand\u00e9e \u2014 avant la panne.",perf_lbl:'Performance du mod\u00e8le',perf_title:'Bas\u00e9 sur des <span>donn\u00e9es industrielles r\u00e9elles</span>',perf_sub:'Entra\u00een\u00e9 sur 20 902 mesures machines dans plusieurs environnements industriels \u2014 pas seulement des donn\u00e9es synth\u00e9tiques.',roi_lbl:'Impact business',roi_title:'Le vrai co\u00fbt de la <span>maintenance r\u00e9active</span>',roi_sub:'Chaque arr\u00eat impr\u00e9vu co\u00fbte du temps de production, des r\u00e9parations en urgence et du moral. Pilar change la donne.',roi_before:'Sans Pilar',roi_after:'Avec Pilar',feat_lbl:'Fonctionnalit\u00e9s',feat_title:'Tout ce dont votre \u00e9quipe de<br><span>maintenance a besoin</span>',ind_lbl:'Secteurs',ind_title:'Con\u00e7u pour les <span>environnements industriels</span>',ind_sub:"Tout proc\u00e9d\u00e9 utilisant des machines tournantes, des \u00e9quipements \u00e0 temp\u00e9rature contr\u00f4l\u00e9e ou des outils de pr\u00e9cision peut b\u00e9n\u00e9ficier de la surveillance pr\u00e9dictive.",pricing_lbl:'Tarifs',pricing_title:'Tarif simple, <span>adapt\u00e9 \u00e0 vous</span>',plan_free_desc:'D\u00e9marrez imm\u00e9diatement. Aucune carte bancaire requise.',plan_free_btn:'Commencer gratuitement',plan_custom_badge:'Contrat sur mesure',plan_custom_name:'Votre Plan',plan_custom_price:'Sur devis',plan_custom_desc:"Pas de niveaux fixes. Vous choisissez les fonctionnalit\u00e9s, on adapte le contrat \u00e0 vos op\u00e9rations et votre budget.",plan_custom_btn:'Nous contacter',cta_h:'Vos machines envoient des signaux.<br><span>Les \u00e9coutez-vous\u00a0?</span>',cta_p:'Rejoignez les \u00e9quipes qui ont arr\u00eat\u00e9 de r\u00e9agir aux pannes et ont commenc\u00e9 \u00e0 les pr\u00e9venir. Gratuit pour commencer, sans frais de mise en place.',cta_btn:'Commencer la surveillance gratuitement',footer_sign:'Connexion',footer_reg:'Cr\u00e9er un compte',footer_rights:'Tous droits r\u00e9serv\u00e9s.'}
+en:{nav_signin:'Sign In',nav_start:'Get Started Free',hero_badge:'AI-Powered Predictive Maintenance \u2014 Public Beta',hero_h:'Stop fixing machines.<br><span>Predict failures first.</span>',hero_sub:'Pilar analyzes your industrial sensors in real time and alerts you hours before a breakdown \u2014 before it costs you anything.',hero_cta1:'Start for free',hero_cta2:'See how it works',stat1:'Recall \u2014 failures caught',stat2:'Failure zones detected',stat3:'Analysis per reading',stat4:'Pump records trained',how_lbl:'Process',how_title:'Three steps to <span>zero unplanned downtime</span>',how_sub:'Connect your machines, let Pilar learn, and receive precise alerts before failures happen.',s1t:'Connect your sensors',s1d:'Send readings via REST API from your PLCs, SCADA systems, or CSV files. Pilar accepts vibration, flow rate, pressure, bearing temp, motor current, and more.',s2t:'AI detects anomalies',s2d:'Our ML model \u2014 trained on 23,400+ pump sensor records \u2014 analyzes each reading across 5 failure zones in real time with 98.1% recall.',s3t:'Your team gets alerted',s3d:'When risk exceeds threshold, Pilar sends an instant email alert with the failure zone, risk level, and recommended action \u2014 before breakdown occurs.',perf_lbl:'Model Performance',perf_title:'Built on <span>real industrial data</span>',perf_sub:'Trained on 23,400+ centrifugal pump readings across 5 failure modes \u2014 physically realistic sensor profiles calibrated for industrial pumps.',roi_lbl:'Business Impact',roi_title:'The real cost of <span>reactive maintenance</span>',roi_sub:'Every unplanned breakdown costs production time, emergency repairs, and team morale. Pilar changes the equation.',roi_before:'Without Pilar',roi_after:'With Pilar',feat_lbl:'Features',feat_title:'Everything your maintenance<br><span>team needs</span>',ind_lbl:'Industries',ind_title:'Built for <span>industrial environments</span>',ind_sub:'Any process that relies on centrifugal pumps \u2014 from water treatment to chemical processing \u2014 can benefit from predictive monitoring.',pricing_lbl:'Pricing',pricing_title:'Simple pricing, <span>built around you</span>',plan_free_desc:'Get started immediately. No credit card required.',plan_free_btn:'Get started free',plan_custom_badge:'Custom Contract',plan_custom_name:'Your Plan',plan_custom_price:'On demand',plan_custom_desc:'No fixed tiers. You choose the features, we adapt the contract to your operations and budget.',plan_custom_btn:'Contact us',cta_h:'Your machines are sending signals.<br><span>Are you listening?</span>',cta_p:'Join the teams that stopped reacting to breakdowns and started preventing them. Free to start, no setup fees \u2014 and as a beta user, your feedback directly shapes the product.',cta_btn:'Start monitoring for free',footer_sign:'Sign In',footer_reg:'Create Account',footer_rights:'All rights reserved.'},
+fr:{nav_signin:'Connexion',nav_start:'Commencer gratuitement',hero_badge:'Maintenance Pr\u00e9dictive par IA \u2014 B\u00eata Public',hero_h:'Arr\u00eatez de r\u00e9parer.<br><span>Pr\u00e9disez les pannes.</span>',hero_sub:'Pilar analyse vos capteurs industriels en temps r\u00e9el et vous alerte des heures avant une panne \u2014 avant que \u00e7a ne co\u00fbte quoi que ce soit.',hero_cta1:'Commencer gratuitement',hero_cta2:'Voir comment \u00e7a marche',stat1:'Rappel \u2014 pannes d\u00e9tect\u00e9es',stat2:'Zones de panne identifi\u00e9es',stat3:'Analyse par mesure',stat4:'Mesures pompes entra\u00een\u00e9es',how_lbl:'Processus',how_title:'Trois \u00e9tapes vers <span>z\u00e9ro arr\u00eat impr\u00e9vu</span>',how_sub:'Connectez vos machines, laissez Pilar apprendre, recevez des alertes pr\u00e9cises avant les pannes.',s1t:'Connectez vos capteurs',s1d:'Envoyez des mesures via API REST depuis vos automates, SCADA ou fichiers CSV. Pilar accepte vibration, d\u00e9bit, pression, temp. palier, courant moteur et bien plus.',s2t:"L'IA d\u00e9tecte les anomalies",s2d:"Notre mod\u00e8le ML \u2014 entra\u00een\u00e9 sur 23 400+ mesures de pompes centrifuges \u2014 analyse chaque mesure sur 5 zones de panne en temps r\u00e9el avec 98,1% de rappel.",s3t:"Votre \u00e9quipe est alert\u00e9e",s3d:"Quand le risque d\u00e9passe le seuil, Pilar envoie un email d'alerte instantan\u00e9 avec la zone de panne, le niveau de risque et l'action recommand\u00e9e \u2014 avant la panne.",perf_lbl:'Performance du mod\u00e8le',perf_title:'Bas\u00e9 sur des <span>donn\u00e9es industrielles r\u00e9elles</span>',perf_sub:'Entra\u00een\u00e9 sur 23 400+ mesures de pompes centrifuges sur 5 modes de panne \u2014 profils capteurs physiquement r\u00e9alistes calibr\u00e9s pour pompes industrielles.',roi_lbl:'Impact business',roi_title:'Le vrai co\u00fbt de la <span>maintenance r\u00e9active</span>',roi_sub:'Chaque arr\u00eat impr\u00e9vu co\u00fbte du temps de production, des r\u00e9parations en urgence et du moral. Pilar change la donne.',roi_before:'Sans Pilar',roi_after:'Avec Pilar',feat_lbl:'Fonctionnalit\u00e9s',feat_title:'Tout ce dont votre \u00e9quipe de<br><span>maintenance a besoin</span>',ind_lbl:'Secteurs',ind_title:'Con\u00e7u pour les <span>environnements industriels</span>',ind_sub:"Tout proc\u00e9d\u00e9 qui s\u2019appuie sur des pompes centrifuges \u2014 du traitement de l\u2019eau \u00e0 la chimie industrielle \u2014 peut b\u00e9n\u00e9ficier de la surveillance pr\u00e9dictive.",pricing_lbl:'Tarifs',pricing_title:'Tarif simple, <span>adapt\u00e9 \u00e0 vous</span>',plan_free_desc:'D\u00e9marrez imm\u00e9diatement. Aucune carte bancaire requise.',plan_free_btn:'Commencer gratuitement',plan_custom_badge:'Contrat sur mesure',plan_custom_name:'Votre Plan',plan_custom_price:'Sur devis',plan_custom_desc:"Pas de niveaux fixes. Vous choisissez les fonctionnalit\u00e9s, on adapte le contrat \u00e0 vos op\u00e9rations et votre budget.",plan_custom_btn:'Nous contacter',cta_h:'Vos machines envoient des signaux.<br><span>Les \u00e9coutez-vous\u00a0?</span>',cta_p:'Rejoignez les \u00e9quipes qui ont arr\u00eat\u00e9 de r\u00e9agir aux pannes et ont commenc\u00e9 \u00e0 les pr\u00e9venir. Gratuit pour commencer, sans frais \u2014 et en tant qu\u2019utilisateur b\u00eata, votre retour fa\u00e7onne directement le produit.',cta_btn:'Commencer la surveillance gratuitement',footer_sign:'Connexion',footer_reg:'Cr\u00e9er un compte',footer_rights:'Tous droits r\u00e9serv\u00e9s.'}
 };
 function _lp(l){
   localStorage.setItem('pilar_lang',l);
@@ -3692,41 +3646,38 @@ body{font-family:'IBM Plex Sans',sans-serif;background:#050d1a;color:var(--text)
       <div style="font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:1px;color:#fff;margin-bottom:8px">Enter your machine data</div>
       <p>Fill in the current readings from your machine. Don't worry about being exact — you can refine this later.</p>
     </div>
-    <div class="form-note">These are the same parameters described in the audio walkthrough: machine class, temperatures, rotation speed, torque, and tool wear.</div>
+    <div class="form-note">Enter your pump's sensor readings. All fields are optional — missing values will be estimated from typical pump baselines.</div>
     <div id="err-box" class="err-box"></div>
     <div class="field-grid">
       <div class="field">
-        <label>Machine type</label>
-        <select id="f-type">
-          <option value="0">Low (L)</option>
-          <option value="1" selected>Medium (M)</option>
-          <option value="2">High (H)</option>
-        </select>
+        <label>Vibration (mm/s)</label>
+        <input type="number" id="f-vib" value="2.5" step="0.1" min="0" max="30">
+        <div class="field-hint">Normal range: 0.5 – 4.5 mm/s</div>
       </div>
       <div class="field">
-        <label>Air temperature (K)</label>
-        <input type="number" id="f-air" value="300.0" step="0.1" min="250" max="450">
-        <div class="field-hint">Typical range: 295 – 305 K</div>
+        <label>Bearing temperature (°C)</label>
+        <input type="number" id="f-tp" value="65" step="1" min="20" max="150">
+        <div class="field-hint">Normal range: 40 – 85 °C</div>
       </div>
       <div class="field">
-        <label>Process temperature (K)</label>
-        <input type="number" id="f-proc" value="310.0" step="0.1" min="250" max="450">
-        <div class="field-hint">Usually air temp + 8–12 K</div>
+        <label>Flow rate (m³/h)</label>
+        <input type="number" id="f-dbt" value="45" step="1" min="0" max="300">
+        <div class="field-hint">Depends on pump rated capacity</div>
       </div>
       <div class="field">
-        <label>Rotation speed (rpm)</label>
-        <input type="number" id="f-rpm" value="1500" step="10" min="0" max="3000">
-        <div class="field-hint">Typical range: 1200 – 2000 rpm</div>
+        <label>Inlet pressure (bar)</label>
+        <input type="number" id="f-pe" value="1.5" step="0.1" min="0" max="15">
+        <div class="field-hint">Suction side pressure</div>
       </div>
       <div class="field">
-        <label>Torque (Nm)</label>
-        <input type="number" id="f-torque" value="40.0" step="0.1" min="0" max="200">
-        <div class="field-hint">Typical range: 20 – 80 Nm</div>
+        <label>Outlet pressure (bar)</label>
+        <input type="number" id="f-ps" value="4.5" step="0.1" min="0" max="40">
+        <div class="field-hint">Discharge pressure</div>
       </div>
       <div class="field">
-        <label>Tool wear (min)</label>
-        <input type="number" id="f-wear" value="0" step="1" min="0" max="300">
-        <div class="field-hint">Minutes since last tool change</div>
+        <label>Run hours (h)</label>
+        <input type="number" id="f-hf" value="5000" step="100" min="0" max="100000">
+        <div class="field-hint">Total cumulative operating hours</div>
       </div>
     </div>
     <button class="btn-next" id="btn-analyse" onclick="runAnalysis()">Analyse my machine &rarr;</button>
@@ -3774,12 +3725,12 @@ function runAnalysis(){
   btn.disabled=true;
   btn.textContent='Analysing...';
   var data={
-    type:parseInt(document.getElementById('f-type').value),
-    temp_air:parseFloat(document.getElementById('f-air').value),
-    temp_process:parseFloat(document.getElementById('f-proc').value),
-    vitesse:parseFloat(document.getElementById('f-rpm').value),
-    couple:parseFloat(document.getElementById('f-torque').value),
-    usure:parseFloat(document.getElementById('f-wear').value)
+    vibration:parseFloat(document.getElementById('f-vib').value),
+    temp_palier:parseFloat(document.getElementById('f-tp').value),
+    debit:parseFloat(document.getElementById('f-dbt').value),
+    pression_entree:parseFloat(document.getElementById('f-pe').value),
+    pression_sortie:parseFloat(document.getElementById('f-ps').value),
+    heure_fonctionnement:parseFloat(document.getElementById('f-hf').value)
   };
   fetch('/onboarding/analyse',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
     .then(function(r){return r.json()})
@@ -3803,15 +3754,15 @@ function showResult(d){
   bar.style.width=risk+'%';
   bar.style.background=color;
   document.getElementById('res-verdict').textContent=d.verdict||verdict;
-  var zones=['TWF','HDF','PWF','OSF','RNF'];
   var zc=document.getElementById('res-zones');
   zc.innerHTML='';
-  zones.forEach(function(z,i){
-    var v=d.zones&&d.zones[z]?d.zones[z]:0;
-    var level=v>0.5?'high':v>0.2?'med':'low';
-    var pct=Math.round(v*100);
-    zc.innerHTML+='<div class="zone-chip '+level+'"><div class="zone-chip-name">'+z+'</div><div class="zone-chip-val">'+pct+'%</div></div>';
-  });
+  if(d.zones&&d.zones.length>0){
+    d.zones.forEach(function(z){
+      var pct=z.proba||0;
+      var level=pct>65?'high':pct>35?'med':'low';
+      zc.innerHTML+='<div class="zone-chip '+level+'"><div class="zone-chip-name">'+(z.nom||z)+'</div><div class="zone-chip-val">'+pct+'%</div></div>';
+    });
+  }
 }
 
 function markDone(e){
@@ -4391,7 +4342,7 @@ function renderFleet() {
     const rColor = riskColor(risk);
     const badge = m.is_active ? riskBadge(risk) : '<span class="badge badge-inactive">Inactive</span>';
     const lastSeen = m.last_seen ? new Date(m.last_seen).toLocaleString() : 'Never';
-    const typeLabel = {L:'Low quality',M:'Medium quality',H:'High quality'}[m.machine_type] || m.machine_type;
+    const typeLabel = m.machine_type || 'Centrifugal Pump';
     return `<div class="machine-card${m.is_active?'':' inactive'}">
       <div class="card-header">
         <div>
@@ -4631,14 +4582,15 @@ API_DOCS_HTML = _AUTH_HEAD + """
         <div style="padding:16px;border-right:1px solid #1e2433">
           <div style="font-size:9px;letter-spacing:1px;color:#64748b;text-transform:uppercase;margin-bottom:10px">Request body</div>
           <pre style="font-size:11px;color:#94a3b8;line-height:1.7;margin:0;overflow-x:auto">{
-  "type": 1,
-  "temp_air": 377.0,
-  "temp_process": 314.6,
-  "vitesse": 1298,
-  "couple": 257.8,
-  "usure": 8248,
   "machine_id": "PUMP-01",
-  "humidite": 65
+  "vibration": 2.5,
+  "temp_palier": 65.0,
+  "debit": 45,
+  "pression_entree": 1.5,
+  "pression_sortie": 4.5,
+  "courant_moteur": 18,
+  "temp_moteur": 75,
+  "heure_fonctionnement": 5000
 }</pre>
         </div>
         <div style="padding:16px">
@@ -4662,7 +4614,7 @@ API_DOCS_HTML = _AUTH_HEAD + """
         <pre style="font-size:11px;color:#14b8a6;margin:0;overflow-x:auto;white-space:pre-wrap">curl -X POST https://trypilar.com/api/v1/analyze \
   -H "X-Api-Key: {{ ak }}" \
   -H "Content-Type: application/json" \
-  -d '{"type":1,"temp_air":377,"temp_process":314,"vitesse":1298,"couple":258,"usure":8248}'</pre>
+  -d '{"machine_id":"PUMP-01","vibration":2.5,"temp_palier":65,"debit":45,"pression_entree":1.5,"pression_sortie":4.5}'</pre>
       </div>
     </div>
   </div>
@@ -4680,10 +4632,10 @@ API_DOCS_HTML = _AUTH_HEAD + """
           <div style="font-size:9px;letter-spacing:1px;color:#64748b;text-transform:uppercase;margin-bottom:10px">Request body</div>
           <pre style="font-size:11px;color:#94a3b8;line-height:1.7;margin:0;overflow-x:auto">{
   "readings": [
-    {"machine_id":"M1","temp_air":377,
-     "vitesse":1300,"couple":260},
-    {"machine_id":"M2","temp_air":390,
-     "vitesse":850,"couple":420}
+    {"machine_id":"P1","vibration":2.5,
+     "temp_palier":65,"debit":45},
+    {"machine_id":"P2","vibration":8.1,
+     "temp_palier":92,"debit":28}
   ]
 }</pre>
         </div>
@@ -4747,19 +4699,18 @@ API_DOCS_HTML = _AUTH_HEAD + """
           <th style="padding:10px 14px;text-align:left;color:#64748b;font-size:9px;letter-spacing:1px;text-transform:uppercase">Required</th>
         </tr></thead>
         <tbody>
-          <tr style="border-bottom:1px solid #1e2433"><td style="padding:9px 14px;color:#14b8a6"><code>type</code></td><td style="padding:9px 14px;color:#94a3b8">0/1/2 or L/M/H</td><td style="padding:9px 14px;color:#64748b">1</td><td style="padding:9px 14px;color:#64748b">optional</td></tr>
-          <tr style="border-bottom:1px solid #1e2433"><td style="padding:9px 14px;color:#14b8a6"><code>temp_air</code></td><td style="padding:9px 14px;color:#94a3b8">K</td><td style="padding:9px 14px;color:#64748b">377.0</td><td style="padding:9px 14px;color:#64748b">optional</td></tr>
-          <tr style="border-bottom:1px solid #1e2433"><td style="padding:9px 14px;color:#14b8a6"><code>temp_air_c</code></td><td style="padding:9px 14px;color:#94a3b8">°C (auto-converted)</td><td style="padding:9px 14px;color:#64748b">103.85</td><td style="padding:9px 14px;color:#64748b">optional</td></tr>
-          <tr style="border-bottom:1px solid #1e2433"><td style="padding:9px 14px;color:#14b8a6"><code>temp_process</code></td><td style="padding:9px 14px;color:#94a3b8">K</td><td style="padding:9px 14px;color:#64748b">314.6</td><td style="padding:9px 14px;color:#64748b">optional</td></tr>
-          <tr style="border-bottom:1px solid #1e2433"><td style="padding:9px 14px;color:#14b8a6"><code>vitesse</code></td><td style="padding:9px 14px;color:#94a3b8">rpm</td><td style="padding:9px 14px;color:#64748b">1298</td><td style="padding:9px 14px;color:#64748b">optional</td></tr>
-          <tr style="border-bottom:1px solid #1e2433"><td style="padding:9px 14px;color:#14b8a6"><code>couple</code></td><td style="padding:9px 14px;color:#94a3b8">Nm</td><td style="padding:9px 14px;color:#64748b">257.8</td><td style="padding:9px 14px;color:#64748b">optional</td></tr>
-          <tr style="border-bottom:1px solid #1e2433"><td style="padding:9px 14px;color:#14b8a6"><code>usure</code></td><td style="padding:9px 14px;color:#94a3b8">min</td><td style="padding:9px 14px;color:#64748b">8248</td><td style="padding:9px 14px;color:#64748b">optional</td></tr>
+          <tr style="border-bottom:1px solid #1e2433"><td style="padding:9px 14px;color:#14b8a6"><code>vibration</code></td><td style="padding:9px 14px;color:#94a3b8">mm/s</td><td style="padding:9px 14px;color:#64748b">2.5</td><td style="padding:9px 14px;color:#64748b">optional</td></tr>
+          <tr style="border-bottom:1px solid #1e2433"><td style="padding:9px 14px;color:#14b8a6"><code>temp_palier</code></td><td style="padding:9px 14px;color:#94a3b8">°C</td><td style="padding:9px 14px;color:#64748b">65.0</td><td style="padding:9px 14px;color:#64748b">optional</td></tr>
+          <tr style="border-bottom:1px solid #1e2433"><td style="padding:9px 14px;color:#14b8a6"><code>debit</code></td><td style="padding:9px 14px;color:#94a3b8">m³/h</td><td style="padding:9px 14px;color:#64748b">45.0</td><td style="padding:9px 14px;color:#64748b">optional</td></tr>
+          <tr style="border-bottom:1px solid #1e2433"><td style="padding:9px 14px;color:#14b8a6"><code>pression_entree</code></td><td style="padding:9px 14px;color:#94a3b8">bar</td><td style="padding:9px 14px;color:#64748b">1.5</td><td style="padding:9px 14px;color:#64748b">optional</td></tr>
+          <tr style="border-bottom:1px solid #1e2433"><td style="padding:9px 14px;color:#14b8a6"><code>pression_sortie</code></td><td style="padding:9px 14px;color:#94a3b8">bar</td><td style="padding:9px 14px;color:#64748b">4.5</td><td style="padding:9px 14px;color:#64748b">optional</td></tr>
+          <tr style="border-bottom:1px solid #1e2433"><td style="padding:9px 14px;color:#14b8a6"><code>courant_moteur</code></td><td style="padding:9px 14px;color:#94a3b8">A</td><td style="padding:9px 14px;color:#64748b">18.0</td><td style="padding:9px 14px;color:#64748b">optional</td></tr>
+          <tr style="border-bottom:1px solid #1e2433"><td style="padding:9px 14px;color:#14b8a6"><code>temp_moteur</code></td><td style="padding:9px 14px;color:#94a3b8">°C</td><td style="padding:9px 14px;color:#64748b">75.0</td><td style="padding:9px 14px;color:#64748b">optional</td></tr>
+          <tr style="border-bottom:1px solid #1e2433"><td style="padding:9px 14px;color:#14b8a6"><code>heure_fonctionnement</code></td><td style="padding:9px 14px;color:#94a3b8">h</td><td style="padding:9px 14px;color:#64748b">5000</td><td style="padding:9px 14px;color:#64748b">optional</td></tr>
           <tr style="border-bottom:1px solid #1e2433"><td style="padding:9px 14px;color:#14b8a6"><code>machine_id</code></td><td style="padding:9px 14px;color:#94a3b8">string</td><td style="padding:9px 14px;color:#64748b">"PUMP-01"</td><td style="padding:9px 14px;color:#64748b">optional</td></tr>
-          <tr style="border-bottom:1px solid #1e2433"><td style="padding:9px 14px;color:#14b8a6"><code>humidite</code></td><td style="padding:9px 14px;color:#94a3b8">%</td><td style="padding:9px 14px;color:#64748b">65</td><td style="padding:9px 14px;color:#94a3b8">optional+</td></tr>
-          <tr style="border-bottom:1px solid #1e2433"><td style="padding:9px 14px;color:#14b8a6"><code>vibration</code></td><td style="padding:9px 14px;color:#94a3b8">mm/s</td><td style="padding:9px 14px;color:#64748b">2.1</td><td style="padding:9px 14px;color:#94a3b8">optional+</td></tr>
-          <tr style="border-bottom:1px solid #1e2433"><td style="padding:9px 14px;color:#14b8a6"><code>pression</code></td><td style="padding:9px 14px;color:#94a3b8">bar</td><td style="padding:9px 14px;color:#64748b">4.8</td><td style="padding:9px 14px;color:#94a3b8">optional+</td></tr>
-          <tr style="border-bottom:1px solid #1e2433"><td style="padding:9px 14px;color:#14b8a6"><code>courant</code></td><td style="padding:9px 14px;color:#94a3b8">A</td><td style="padding:9px 14px;color:#64748b">12.4</td><td style="padding:9px 14px;color:#94a3b8">optional+</td></tr>
-          <tr><td style="padding:9px 14px;color:#14b8a6"><code>tension</code></td><td style="padding:9px 14px;color:#94a3b8">V</td><td style="padding:9px 14px;color:#64748b">380</td><td style="padding:9px 14px;color:#94a3b8">optional+</td></tr>
+          <tr style="border-bottom:1px solid #1e2433"><td style="padding:9px 14px;color:#14b8a6"><code>temperature_ambiante</code></td><td style="padding:9px 14px;color:#94a3b8">°C</td><td style="padding:9px 14px;color:#64748b">25</td><td style="padding:9px 14px;color:#94a3b8">optional+</td></tr>
+          <tr style="border-bottom:1px solid #1e2433"><td style="padding:9px 14px;color:#14b8a6"><code>niveau_huile</code></td><td style="padding:9px 14px;color:#94a3b8">%</td><td style="padding:9px 14px;color:#64748b">85</td><td style="padding:9px 14px;color:#94a3b8">optional+</td></tr>
+          <tr><td style="padding:9px 14px;color:#14b8a6"><code>tension_reseau</code></td><td style="padding:9px 14px;color:#94a3b8">V</td><td style="padding:9px 14px;color:#64748b">400</td><td style="padding:9px 14px;color:#94a3b8">optional+</td></tr>
         </tbody>
       </table>
     </div>
@@ -4776,16 +4727,17 @@ API_DOCS_HTML = _AUTH_HEAD + """
 API_KEY = "{{ ak }}"
 BASE    = "https://trypilar.com"
 
-# Single reading
+# Single reading — centrifugal pump
 resp = requests.post(f"{BASE}/api/v1/analyze",
     headers={"X-Api-Key": API_KEY},
-    json={"machine_id": "PUMP-01", "temp_air": 377, "vitesse": 1298,
-          "couple": 258, "usure": 8248}
+    json={"machine_id": "PUMP-01", "vibration": 2.5, "temp_palier": 65,
+          "debit": 45, "pression_entree": 1.5, "pression_sortie": 4.5,
+          "courant_moteur": 18, "temp_moteur": 75, "heure_fonctionnement": 5000}
 )
 print(resp.json())
 
 # Batch (PLC loop)
-readings = [{"machine_id": f"M{i}", "vitesse": 1200+i*50, "couple": 250+i*10}
+readings = [{"machine_id": f"P{i}", "vibration": 2.0+i*0.5, "temp_palier": 65+i*3}
             for i in range(5)]
 resp = requests.post(f"{BASE}/api/v1/analyze/batch",
     headers={"X-Api-Key": API_KEY},
@@ -4817,15 +4769,13 @@ for r in resp.json()["results"]:
 
 # ── BACKEND ───────────────────────────────────────────────────────────────────
 def predict_risk(params, threshold=45):
-    # Analyse partielle : imputer les features manquantes avec les médianes AI4I
+    # Analyse partielle : imputer les features manquantes avec les médianes pompe
     missing_keys = [k for k in CORE_FEATURES if params.get(k) is None]
     for k in missing_keys:
         params[k] = FEATURE_MEDIANS[k]
     confidence = round((len(CORE_FEATURES) - len(missing_keys)) / len(CORE_FEATURES) * 100)
-    ecart_temp = params['temp_process'] - params['temp_air']
-    puissance = params['vitesse'] * params['couple']
-    donnees = pd.DataFrame([[params['type'], params['temp_air'], params['temp_process'],
-        params['vitesse'], params['couple'], params['usure'], ecart_temp, puissance]], columns=COLONNES)
+    row = [params[c] for c in COLONNES]
+    donnees = pd.DataFrame([row], columns=COLONNES)
     donnees_scaled = scaler.transform(donnees)
     probabilite = round(float(model.predict_proba(donnees_scaled)[0][1]) * 100, 1)
     prediction = 1 if probabilite >= threshold else 0
@@ -4840,8 +4790,6 @@ def predict_risk(params, threshold=45):
     return probabilite, prediction, zones_risque, confidence, missing_keys
 
 def envoyer_alerte(email_to, probabilite, zones_risque, data, ack_token=None):
-    machine_types = {0: 'Low', 1: 'Medium', 2: 'High'}
-    mtype = machine_types.get(data.get('type', 0), 'Unknown')
     severity = "CRITICAL" if probabilite >= 75 else "HIGH"
     sc = "#dc2626"
     zones_rows = "".join(f'<tr><td style="padding:8px 12px;border-bottom:1px solid #1e2433;color:#94a3b8;font-size:12px;">{z["nom"]}</td><td style="padding:8px 12px;border-bottom:1px solid #1e2433;text-align:right;color:#dc2626;font-weight:700;">{z["proba"]}%</td></tr>' for z in zones_risque) or '<tr><td colspan="2" style="padding:8px 12px;color:#64748b;">No specific zone identified</td></tr>'
@@ -4855,7 +4803,7 @@ def envoyer_alerte(email_to, probabilite, zones_risque, data, ack_token=None):
 <table width="520" cellpadding="0" cellspacing="0" style="background:#0e1118;border:1px solid #1e2433;border-radius:8px;">
 <tr><td style="padding:24px 28px;border-bottom:1px solid #1e2433;"><table width="100%" cellpadding="0" cellspacing="0"><tr><td><div style="font-size:11px;font-weight:700;letter-spacing:4px;color:#14b8a6;text-transform:uppercase;">PILAR</div></td><td align="right"><span style="padding:4px 10px;background:rgba(220,38,38,0.12);border:1px solid #dc2626;border-radius:3px;color:#dc2626;font-size:10px;font-weight:700;letter-spacing:2px;">FAILURE ALERT</span></td></tr></table></td></tr>
 <tr><td style="padding:28px;"><div style="font-size:9px;letter-spacing:2px;color:#64748b;text-transform:uppercase;margin-bottom:6px;">Failure Probability</div><div style="font-size:52px;font-weight:800;color:{sc};line-height:1;">{probabilite}<span style="font-size:22px;color:#64748b;">%</span></div><div style="margin-top:8px;"><span style="padding:3px 10px;background:rgba(220,38,38,0.1);border:1px solid {sc};border-radius:3px;font-size:10px;font-weight:700;color:{sc};">SEVERITY: {severity}</span></div></td></tr>
-<tr><td style="padding:0 28px 24px;"><table width="100%" cellpadding="0" cellspacing="0" style="background:#07090f;border:1px solid #1e2433;border-radius:6px;"><tr><td style="padding:8px 12px;border-bottom:1px solid #1e2433;color:#64748b;font-size:11px;">Class</td><td style="padding:8px 12px;border-bottom:1px solid #1e2433;text-align:right;color:#e2e8f0;font-weight:600;font-size:11px;">{mtype}</td></tr><tr><td style="padding:8px 12px;border-bottom:1px solid #1e2433;color:#64748b;font-size:11px;">Air temp</td><td style="padding:8px 12px;border-bottom:1px solid #1e2433;text-align:right;color:#e2e8f0;font-weight:600;font-size:11px;">{data.get("temp_air")} K</td></tr><tr><td style="padding:8px 12px;border-bottom:1px solid #1e2433;color:#64748b;font-size:11px;">Speed</td><td style="padding:8px 12px;border-bottom:1px solid #1e2433;text-align:right;color:#e2e8f0;font-weight:600;font-size:11px;">{data.get("vitesse")} rpm</td></tr><tr><td style="padding:8px 12px;color:#64748b;font-size:11px;">Tool wear</td><td style="padding:8px 12px;text-align:right;color:#e2e8f0;font-weight:600;font-size:11px;">{data.get("usure")} min</td></tr></table></td></tr>
+<tr><td style="padding:0 28px 24px;"><table width="100%" cellpadding="0" cellspacing="0" style="background:#07090f;border:1px solid #1e2433;border-radius:6px;"><tr><td style="padding:8px 12px;border-bottom:1px solid #1e2433;color:#64748b;font-size:11px;">Vibration</td><td style="padding:8px 12px;border-bottom:1px solid #1e2433;text-align:right;color:#e2e8f0;font-weight:600;font-size:11px;">{data.get("vibration")} mm/s</td></tr><tr><td style="padding:8px 12px;border-bottom:1px solid #1e2433;color:#64748b;font-size:11px;">Bearing temp</td><td style="padding:8px 12px;border-bottom:1px solid #1e2433;text-align:right;color:#e2e8f0;font-weight:600;font-size:11px;">{data.get("temp_palier")} °C</td></tr><tr><td style="padding:8px 12px;border-bottom:1px solid #1e2433;color:#64748b;font-size:11px;">Flow rate</td><td style="padding:8px 12px;border-bottom:1px solid #1e2433;text-align:right;color:#e2e8f0;font-weight:600;font-size:11px;">{data.get("debit")} m³/h</td></tr><tr><td style="padding:8px 12px;color:#64748b;font-size:11px;">Motor temp</td><td style="padding:8px 12px;text-align:right;color:#e2e8f0;font-weight:600;font-size:11px;">{data.get("temp_moteur")} °C</td></tr></table></td></tr>
 <tr><td style="padding:0 28px 24px;"><div style="font-size:9px;letter-spacing:2px;color:#64748b;text-transform:uppercase;margin-bottom:10px;">Failure Zones</div><table width="100%" cellpadding="0" cellspacing="0" style="background:#07090f;border:1px solid #1e2433;border-radius:6px;">{zones_rows}</table></td></tr>
 {ack_row}
 <tr><td style="padding:16px 28px;border-top:1px solid #1e2433;background:#0a0d16;"><div style="font-size:10px;color:#64748b;">Pilar · {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC</div></td></tr>
@@ -5481,15 +5429,17 @@ def api_machine_analyze_csv(mid):
         df = pd.read_csv(_io.StringIO(content), sep=delim)
     except Exception as e:
         return jsonify({'error': f'CSV parse error: {e}'}), 400
-    # auto-map columns (case-insensitive keyword matching)
+    # auto-map columns — pump fields (case-insensitive keyword matching)
     col_map = {}
     kw = {
-        'temp_air':     ['air temp','air_temp','temperature air','temp_air','air temperature'],
-        'temp_process': ['process temp','process_temp','temperature process','proc_temp','process temperature'],
-        'vitesse':      ['speed','vitesse','rpm','rotational speed','rotational_speed'],
-        'couple':       ['torque','couple','torque [nm]','couple [nm]'],
-        'usure':        ['wear','usure','tool wear','tool_wear','wear [min]'],
-        'type':         ['type','machine type','machine_type'],
+        'vibration':          ['vibration','vib','vibration_mm','vib_mms'],
+        'temp_palier':        ['temp_palier','bearing_temp','palier_temp','t_palier','bearing_temperature'],
+        'debit':              ['debit','flow','flow_rate','flowrate'],
+        'pression_entree':    ['pression_entree','inlet_pressure','pressure_in','suction_pressure'],
+        'pression_sortie':    ['pression_sortie','outlet_pressure','discharge_pressure','pressure_out'],
+        'courant_moteur':     ['courant_moteur','motor_current','current_motor','courant_a'],
+        'temp_moteur':        ['temp_moteur','motor_temp','motor_temperature'],
+        'heure_fonctionnement':['heure_fonctionnement','run_hours','operating_hours','runtime','hours'],
     }
     lower_cols = {c.lower().strip(): c for c in df.columns}
     for field, keywords in kw.items():
@@ -5498,30 +5448,24 @@ def api_machine_analyze_csv(mid):
                 col_map[field] = lower_cols[kword]
                 break
     if not col_map:
-        return jsonify({'error': 'No recognizable columns found. Expected: speed/rpm, torque, wear/usure, temperature.'}), 400
+        return jsonify({'error': 'No recognizable columns found. Expected pump fields: vibration, temp_palier, debit, pression_entree/sortie, courant_moteur, temp_moteur, heure_fonctionnement.'}), 400
     threshold = float(m.threshold) if m.threshold else 45.0
-    machine_types_rev = {'L': 0, 'M': 1, 'H': 2, 'l': 0, 'm': 1, 'h': 2, '0': 0, '1': 1, '2': 2, 0: 0, 1: 1, 2: 2}
     results = []
     for _, row in df.iterrows():
         try:
             params = {}
             for field, col in col_map.items():
                 v = row[col]
-                if field == 'type':
-                    params[field] = machine_types_rev.get(str(v).strip(), m.machine_type == 'H' and 2 or m.machine_type == 'L' and 0 or 1)
-                else:
-                    params[field] = float(v) if pd.notna(v) else None
+                params[field] = float(v) if pd.notna(v) else None
             if not params:
                 continue
-            # default machine type from machine record if not in CSV
-            if 'type' not in params:
-                params['type'] = {'L': 0, 'M': 1, 'H': 2}.get(m.machine_type, 1)
             probabilite, prediction, zones_risque, confidence, _ = predict_risk(dict(params), threshold=threshold)
             zones_str = ', '.join([z['nom'] for z in zones_risque]) if zones_risque else ''
             a = Analysis(
-                machine_type={'L': 'Low', 'M': 'Medium', 'H': 'High'}.get(m.machine_type, 'Medium'),
-                temp_air=params.get('temp_air'), temp_process=params.get('temp_process'),
-                vitesse=params.get('vitesse'), couple=params.get('couple'), usure=params.get('usure'),
+                machine_type='pump',
+                temp_air=params.get('temp_palier'), temp_process=params.get('temp_moteur'),
+                vitesse=params.get('debit'), couple=params.get('pression_sortie'),
+                usure=params.get('heure_fonctionnement'),
                 risk=probabilite, prediction=prediction, zones=zones_str,
                 confidence=confidence, user_id=uid, machine_id=m.name)
             db.session.add(a)
@@ -5591,15 +5535,16 @@ def onboarding():
 def onboarding_analyse():
     try:
         data = request.json or {}
-        required = ['type','temp_air','temp_process','vitesse','couple','usure']
-        if not all(k in data for k in required):
+        # Accept at least one pump field
+        if not any(k in data for k in CORE_FEATURES):
             return jsonify({'error': 'Missing parameters'}), 400
         prob, pred, zones, conf, _ = predict_risk(data)
         uid = current_uid()
-        a = Analysis(user_id=uid, temp_air=data['temp_air'], temp_process=data['temp_process'],
-                     vitesse=data['vitesse'], couple=data['couple'], usure=data['usure'],
-                     probabilite=prob, prediction=pred, confidence=conf,
-                     extra_params=str({'type': data['type']}))
+        a = Analysis(user_id=uid, machine_type='pump',
+                     temp_air=data.get('temp_palier'), temp_process=data.get('temp_moteur'),
+                     vitesse=data.get('debit'), couple=data.get('pression_sortie'),
+                     usure=data.get('heure_fonctionnement'),
+                     risk=prob, prediction=pred, confidence=conf)
         db.session.add(a)
         db.session.commit()
         verdict = ('High risk — intervention recommended before next operation cycle.' if prob >= 50
@@ -5897,8 +5842,8 @@ def predire():
                 data[field] = None
         if all(data.get(f) is None for f in CORE_FEATURES):
             return jsonify({'error': 'Au moins un paramètre requis'}), 400
-        # Bornes physiques des capteurs
-        _bounds = {'temp_air':(200,600),'temp_process':(200,700),'vitesse':(0,50000),'couple':(0,2000),'usure':(0,500000),'type':(0,3)}
+        # Bornes physiques des capteurs pompe
+        _bounds = {'vibration':(0,50),'temp_palier':(0,200),'debit':(0,500),'pression_entree':(0,20),'pression_sortie':(0,50),'courant_moteur':(0,200),'temp_moteur':(0,250),'heure_fonctionnement':(0,200000)}
         for fld, (lo, hi) in _bounds.items():
             v = data.get(fld)
             if v is not None and not (lo <= v <= hi):
@@ -5931,12 +5876,11 @@ def predire():
                 email_to=email, probabilite=probabilite,
                 ack_token=ack_tok, escalation_email=esc_email)
             db.session.add(_al)
-        machine_types = {0: 'Low', 1: 'Medium', 2: 'High'}
         zones_str = ', '.join([z['nom'] for z in zones_risque]) if zones_risque else ''
         extra_json = _json.dumps(extra_params) if extra_params else None
-        _a = Analysis(machine_type=machine_types.get(int(data.get('type') or 1), 'Unknown'),
-            temp_air=data.get('temp_air'), temp_process=data.get('temp_process'),
-            vitesse=data.get('vitesse'), couple=data.get('couple'), usure=data.get('usure'),
+        _a = Analysis(machine_type='pump',
+            temp_air=data.get('temp_palier'), temp_process=data.get('temp_moteur'),
+            vitesse=data.get('debit'), couple=data.get('pression_sortie'), usure=data.get('heure_fonctionnement'),
             risk=probabilite, prediction=prediction, zones=zones_str, mail_sent=mail_envoye,
             extra_params=extra_json, confidence=confidence, user_id=uid,
             machine_id=machine_id_str)
@@ -5961,17 +5905,30 @@ def api_twin():
         last = analyses[-1]
         history_times = [a.timestamp.strftime('%H:%M') for a in analyses]
         history_risks = [a.risk for a in analyses]
-        history_wear  = [a.usure for a in analyses]
-        history_temp  = [a.temp_process for a in analyses]
+        history_wear  = [a.usure for a in analyses]          # heure_fonctionnement
+        history_temp  = [a.temp_air for a in analyses]       # temp_palier (bearing temp)
         future_times, future_risks, future_wear, future_temp = [], [], [], []
         now = datetime.utcnow()
-        cu, ctp = last.usure, last.temp_process
+        # Simulate degradation: run hours increase, bearing temp slowly rises
+        chf = last.usure or FEATURE_MEDIANS['heure_fonctionnement']
+        ctp = last.temp_air or FEATURE_MEDIANS['temp_palier']
         failure_hours = None
         for h in range(1, 25):
-            cu = min(cu + 1.5, 250); ctp = min(ctp + 0.05, 315)
-            risk, pred, _, _, _ = predict_risk({'type':1,'temp_air':last.temp_air,'temp_process':ctp,'vitesse':last.vitesse,'couple':last.couple,'usure':cu})
+            chf = chf + 1.0
+            ctp = min(ctp + 0.1, 150.0)
+            _p = {
+                'vibration': FEATURE_MEDIANS['vibration'],
+                'temp_palier': ctp,
+                'debit': last.vitesse or FEATURE_MEDIANS['debit'],
+                'pression_entree': FEATURE_MEDIANS['pression_entree'],
+                'pression_sortie': last.couple or FEATURE_MEDIANS['pression_sortie'],
+                'courant_moteur': FEATURE_MEDIANS['courant_moteur'],
+                'temp_moteur': last.temp_process or FEATURE_MEDIANS['temp_moteur'],
+                'heure_fonctionnement': chf,
+            }
+            risk, pred, _, _, _ = predict_risk(_p)
             future_times.append((now + timedelta(hours=h)).strftime('%H:%M'))
-            future_risks.append(risk); future_wear.append(round(cu,1)); future_temp.append(round(ctp,2))
+            future_risks.append(risk); future_wear.append(round(chf,1)); future_temp.append(round(ctp,1))
             if failure_hours is None and risk >= 50: failure_hours = h
         total = len(analyses)
         avg_risk = round(sum(a.risk for a in analyses) / total, 1)
@@ -5984,7 +5941,7 @@ def api_twin():
             'anomaly_rate':anomaly_rate,'total_analyses':total,'failure_hours':failure_hours,'trend':trend,
             'history_times':history_times,'history_risks':history_risks,'history_wear':history_wear,'history_temp':history_temp,
             'future_times':future_times,'future_risks':future_risks,'future_wear':future_wear,'future_temp':future_temp,
-            'last_params':{'temp_air':last.temp_air,'vitesse':last.vitesse,'couple':last.couple,'usure':last.usure}})
+            'last_params':{'vibration':FEATURE_MEDIANS['vibration'],'debit':last.vitesse,'pression_sortie':last.couple,'heure_fonctionnement':last.usure,'temp_palier':last.temp_air}})
     except Exception as e:
         import traceback
         print(f"[Pilar/api_twin] ERROR: {type(e).__name__}: {e}\n{traceback.format_exc()}")
@@ -6102,15 +6059,10 @@ def _resolve_api_user():
     return None, (jsonify({'error': 'Authentication required — pass X-Api-Key header', 'code': 'AUTH_REQUIRED'}), 401)
 
 def _parse_sensor_input(data):
-    """Parse et convertit les champs capteurs. Retourne (params, extra, machine_id, err)."""
+    """Parse et convertit les champs capteurs pompe. Retourne (params, extra, machine_id, err)."""
     import json as _json
     if not data:
         return None, None, None, (jsonify({'error': 'Empty JSON body', 'code': 'BAD_REQUEST'}), 400)
-    # Support Celsius alternative keys
-    if 'temp_air_c' in data:
-        data['temp_air'] = float(data['temp_air_c']) + 273.15
-    if 'temp_process_c' in data:
-        data['temp_process'] = float(data['temp_process_c']) + 273.15
     machine_id = str(data.get('machine_id', '') or '')[:100] or None
     for field in CORE_FEATURES:
         if field in data and data[field] is not None:
@@ -6123,7 +6075,7 @@ def _parse_sensor_input(data):
     if all(data.get(f) is None for f in CORE_FEATURES):
         return None, None, None, (jsonify({'error': 'At least one sensor field required',
                                            'code': 'NO_FIELDS'}), 400)
-    _bounds = {'temp_air':(200,600),'temp_process':(200,700),'vitesse':(0,50000),'couple':(0,2000),'usure':(0,500000),'type':(0,3)}
+    _bounds = {'vibration':(0,50),'temp_palier':(0,200),'debit':(0,500),'pression_entree':(0,20),'pression_sortie':(0,50),'courant_moteur':(0,200),'temp_moteur':(0,250),'heure_fonctionnement':(0,200000)}
     for fld, (lo, hi) in _bounds.items():
         v = data.get(fld)
         if v is not None and not (lo <= v <= hi):
@@ -6163,11 +6115,10 @@ def api_v1_analyze():
                 email_to=email, probabilite=probabilite,
                 ack_token=ack_tok, escalation_email=esc_email)
             db.session.add(_al)
-        machine_types = {0: 'Low', 1: 'Medium', 2: 'High'}
         zones_str = ', '.join([z['nom'] for z in zones_risque]) if zones_risque else ''
-        a = Analysis(machine_type=machine_types.get(int(data.get('type') or 1), 'Unknown'),
-            temp_air=data.get('temp_air'), temp_process=data.get('temp_process'),
-            vitesse=data.get('vitesse'), couple=data.get('couple'), usure=data.get('usure'),
+        a = Analysis(machine_type='pump',
+            temp_air=data.get('temp_palier'), temp_process=data.get('temp_moteur'),
+            vitesse=data.get('debit'), couple=data.get('pression_sortie'), usure=data.get('heure_fonctionnement'),
             risk=probabilite, prediction=prediction, zones=zones_str, mail_sent=mail_envoye,
             extra_params=_json.dumps(extra) if extra else None, confidence=confidence,
             machine_id=machine_id, user_id=_uid)
@@ -6216,9 +6167,9 @@ def api_v1_batch():
                 results.append({'index': i, 'ok': False, 'error': 'Invalid input'})
                 continue
             probabilite, prediction, zones_risque, confidence, imputed = predict_risk(data)
-            a = Analysis(machine_type={0:'Low',1:'Medium',2:'High'}.get(int(data.get('type') or 1),'Unknown'),
-                temp_air=data.get('temp_air'), temp_process=data.get('temp_process'),
-                vitesse=data.get('vitesse'), couple=data.get('couple'), usure=data.get('usure'),
+            a = Analysis(machine_type='pump',
+                temp_air=data.get('temp_palier'), temp_process=data.get('temp_moteur'),
+                vitesse=data.get('debit'), couple=data.get('pression_sortie'), usure=data.get('heure_fonctionnement'),
                 risk=probabilite, prediction=prediction,
                 zones=', '.join([z['nom'] for z in zones_risque]) if zones_risque else '',
                 extra_params=_json.dumps(extra) if extra else None, confidence=confidence,
@@ -6281,8 +6232,8 @@ def api_v1_history():
         {'id': a.id, 'timestamp': a.timestamp.isoformat() + 'Z',
          'machine_id': a.machine_id, 'machine_type': a.machine_type,
          'risk': a.risk, 'prediction': a.prediction, 'confidence': a.confidence,
-         'zones': a.zones, 'temp_air': a.temp_air, 'temp_process': a.temp_process,
-         'vitesse': a.vitesse, 'couple': a.couple, 'usure': a.usure}
+         'zones': a.zones, 'temp_palier': a.temp_air, 'temp_moteur': a.temp_process,
+         'debit': a.vitesse, 'pression_sortie': a.couple, 'heure_fonctionnement': a.usure}
         for a in rows
     ]})
 
@@ -6304,11 +6255,10 @@ def api_whatif():
     try:
         params = request.json
         if not params: return jsonify({'error': 'Données manquantes'}), 400
-        params['temp_process'] = params['temp_air'] + 10
         risk, pred, zones, _, _ = predict_risk(params)
         if pred == 0: status, message = 'Normal Operation', 'No failure predicted under these conditions.'
         elif risk < 50: status, message = 'Low Risk', 'Minor anomaly. Continue monitoring.'
-        else: status, message = 'High Failure Risk', 'Reduce tool wear or torque immediately.'
+        else: status, message = 'High Failure Risk', 'Check vibration, bearing temperature, and run hours.'
         return jsonify({'risk':risk,'status':status,'message':message,'zones':zones})
     except Exception as e:
         print(f"[Pilar/api_whatif] ERROR: {type(e).__name__}: {e}")
@@ -6361,29 +6311,27 @@ def chat():
     if context:
         r = context.get('result', {})
         d = context.get('data', {})
-        machine_types = {0: 'Low (L)', 1: 'Medium (M)', 2: 'High (H)'}
-        mtype = machine_types.get(d.get('type', 0), 'Unknown')
         zones_str = ', '.join([f"{z['nom']} ({z['proba']}%)" for z in r.get('zones', [])]) or 'aucune zone identifiée'
         status_str = 'ANOMALIE DÉTECTÉE' if r.get('prediction') else 'Fonctionnement normal'
         ctx_block = f"""
-=== DERNIÈRE ANALYSE MACHINE ===
-Statut      : {status_str}
-Risque      : {r.get('probabilite')}%
-Classe      : {mtype}
-Temp. air   : {d.get('temp_air')} K  |  Temp. process : {d.get('temp_process')} K
-Vitesse     : {d.get('vitesse')} rpm |  Couple         : {d.get('couple')} Nm
-Usure outil : {d.get('usure')} min
-Zones risque: {zones_str}
-================================
+=== DERNIÈRE ANALYSE POMPE ===
+Statut          : {status_str}
+Risque          : {r.get('probabilite')}%
+Vibration       : {d.get('vibration')} mm/s  |  Temp. palier    : {d.get('temp_palier')} °C
+Débit           : {d.get('debit')} m³/h      |  Pression entrée : {d.get('pression_entree')} bar
+Pression sortie : {d.get('pression_sortie')} bar  |  Courant moteur  : {d.get('courant_moteur')} A
+Temp. moteur    : {d.get('temp_moteur')} °C  |  Heures fonct.   : {d.get('heure_fonctionnement')} h
+Zones risque    : {zones_str}
+==============================
 """
     else:
         ctx_block = "\n[Aucune analyse machine disponible. Si l'utilisateur pose une question sur sa machine, invite-le à lancer une analyse depuis l'onglet Monitor.]\n"
 
     # ── System prompt expert maintenance ─────────────────────────────────────
-    system_prompt = f"""Tu es Pilar, un assistant IA expert en maintenance prédictive industrielle, intégré dans une plateforme SaaS B2B pour PME industrielles.
+    system_prompt = f"""Tu es Pilar, un assistant IA expert en maintenance prédictive de pompes centrifuges industrielles, intégré dans une plateforme SaaS B2B pour PME industrielles.
 {ctx_block}
 Directives strictes :
-- Tu es UNIQUEMENT un assistant de maintenance industrielle. Tu ne réponds qu'aux sujets liés à : capteurs, thermique, vibrations, usure, défaillances mécaniques/électriques, maintenance préventive/prédictive, machines industrielles, analyse de données capteurs.
+- Tu es UNIQUEMENT un assistant de maintenance industrielle, spécialisé pompes centrifuges. Tu ne réponds qu'aux sujets liés à : capteurs de pompe (vibration, débit, pression, température palier/moteur, courant), cavitation, usure roue, défaillances paliers, étanchéité, fautes moteur, maintenance préventive/prédictive.
 - Si des données d'analyse sont disponibles, analyse-les précisément et donne des recommandations concrètes et actionnables.
 - Si l'utilisateur décrit un symptôme machine, propose un diagnostic différentiel et des actions correctives priorisées.
 - Réponds en français si l'utilisateur écrit en français, en anglais sinon.
