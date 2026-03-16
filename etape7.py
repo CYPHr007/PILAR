@@ -6,7 +6,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta
-import pandas as pd, warnings, time, collections
+import pandas as pd, numpy as np, warnings, time, collections
 warnings.filterwarnings("ignore")
 
 # Rate limiting : {ip: [(timestamp, failed_bool), ...]}
@@ -260,12 +260,82 @@ except Exception as _e:
     model = scaler = None
     modeles_zones = {}
 
+# ── ISOLATION FOREST ──────────────────────────────────────────────────────────
+_iso_forest = None
+_normal_samples = []   # accumulates normal scaled vectors for lazy IsoForest training
+try:
+    with open("isolation_forest.pkl","rb") as f: _iso_forest = pickle.load(f)
+    print("[Pilar] Isolation Forest chargé")
+except FileNotFoundError: pass
+except Exception as _e: print(f"[Pilar] Isolation Forest load error: {_e}")
+
 FAILURE_ZONES = {"CAV":"Cavitation","ROL":"Bearing Failure","ETN":"Seal Failure","IMP":"Impeller Wear","MOT":"Motor Fault"}
 COLONNES = ["vibration","temp_palier","debit","pression_entree","pression_sortie","courant_moteur","temp_moteur","heure_fonctionnement"]
 # Médianes pompe centrifuge — utilisées pour imputer les features manquantes (analyse partielle)
 FEATURE_MEDIANS = {'vibration':2.5,'temp_palier':65.0,'debit':45.0,'pression_entree':1.5,'pression_sortie':4.5,'courant_moteur':18.0,'temp_moteur':75.0,'heure_fonctionnement':5000.0}
 CORE_FEATURES   = list(FEATURE_MEDIANS.keys())
 OPTIONAL_FIELDS = ['temperature_ambiante','niveau_huile','tension_reseau']
+
+# ── SHAP EXPLAINER ─────────────────────────────────────────────────────────────
+_shap_explainer = None
+
+def _init_shap_explainer():
+    global _shap_explainer
+    if model is None or scaler is None:
+        return
+    try:
+        import shap
+        bg = np.array([[FEATURE_MEDIANS[c] for c in COLONNES]])
+        bg_scaled = scaler.transform(bg)
+        _shap_explainer = shap.KernelExplainer(model.predict_proba, bg_scaled)
+        print("[Pilar] SHAP explainer initialisé")
+    except Exception as _e:
+        print(f"[Pilar] SHAP init error: {_e}")
+
+def _compute_shap(x_scaled):
+    """Return top-3 SHAP feature impacts list, or [] on failure."""
+    global _shap_explainer
+    try:
+        import shap
+        # Try TreeExplainer first (instant for XGBoost/RF)
+        try:
+            exp = shap.TreeExplainer(model)
+            sv = exp.shap_values(x_scaled)
+            vals = sv[1][0] if isinstance(sv, list) else sv[0]
+        except Exception:
+            if _shap_explainer is None:
+                _init_shap_explainer()
+            if _shap_explainer is None:
+                return []
+            sv = _shap_explainer.shap_values(x_scaled, nsamples=50, silent=True)
+            vals = sv[1][0] if isinstance(sv, list) else sv[0]
+        labels = {
+            'vibration': 'Vibration', 'temp_palier': 'Bearing temp',
+            'debit': 'Flow rate', 'pression_entree': 'Inlet pressure',
+            'pression_sortie': 'Outlet pressure', 'courant_moteur': 'Motor current',
+            'temp_moteur': 'Motor temp', 'heure_fonctionnement': 'Run hours'
+        }
+        total_abs = sum(abs(v) for v in vals) or 1.0
+        top3 = sorted(zip(COLONNES, vals), key=lambda x: abs(x[1]), reverse=True)[:3]
+        return [{'feature': labels.get(f, f),
+                 'impact': ('+' if v > 0 else '') + str(round(abs(v) / total_abs * 100)) + '%',
+                 'direction': 'up' if v > 0 else 'down'} for f, v in top3]
+    except Exception as _e:
+        print(f"[Pilar] SHAP compute error: {_e}")
+        return []
+
+def _compute_anomaly_score(x_scaled):
+    """Return 0–100 anomaly score (0=normal, 100=very anomalous), or None if model not ready."""
+    if _iso_forest is None:
+        return None
+    try:
+        raw = float(_iso_forest.score_samples(x_scaled)[0])
+        # score_samples: ~0.15 = very normal, ~-0.5 = very anomalous
+        return round(min(100.0, max(0.0, (0.15 - raw) / 0.65 * 100)), 1)
+    except Exception as _e:
+        print(f"[Pilar] IsoForest score error: {_e}")
+        return None
+
 GMAIL     = os.environ.get("GMAIL_ADDRESS", "")
 GMAIL_PWD = os.environ.get("GMAIL_APP_PASSWORD", "")
 FAVICON = "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"
@@ -1175,7 +1245,7 @@ set_notif:'Notifications navigateur',set_notif_desc:'Recevez des alertes quand l
 set_sys:'Infos système',set_version:'Version',set_aimodel:'Modèle IA',set_db:'Base de données',set_lang:'Langue',
 acc_guest_title:'Mode invité',acc_guest_desc:"Connectez-vous pour sauvegarder vos données,<br>rejoindre une équipe et accéder à la collaboration.",
 acc_signin:'Se connecter',acc_register:'Créer un compte',acc_card_title:'Compte',acc_signout:'Déconnexion',
-acc_team_title:'Équipe',acc_no_team_desc:"Créez une équipe pour collaborer. Jusqu'à 2 responsables peuvent gérer l'équipe.",
+acc_team_title:'Équipe',acc_no_team_desc:"Créez une équipe pour partager les analyses, les scores d'anomalie et les prévisions RUL en temps réel. Jusqu'à 2 responsables peuvent gérer l'équipe.",
 acc_create_ph:"Nom de l'équipe (optionnel)",acc_create_btn:'Créer une équipe',
 acc_role_leader:'Responsable',acc_role_member:'Membre',acc_you:'(vous)',
 acc_promote:'Promouvoir',acc_kick:'Retirer',
@@ -1231,7 +1301,7 @@ set_notif:'Browser notifications',set_notif_desc:'Receive alerts when failure ri
 set_sys:'System info',set_version:'Version',set_aimodel:'AI Model',set_db:'Database',set_lang:'Language',
 acc_guest_title:'Guest Mode',acc_guest_desc:'Sign in to save your data,<br>join a team and access collaboration.',
 acc_signin:'Sign In',acc_register:'Create Account',acc_card_title:'Account',acc_signout:'Sign Out',
-acc_team_title:'Team',acc_no_team_desc:'Create a team to collaborate with colleagues. Up to 2 leaders can manage the team.',
+acc_team_title:'Team',acc_no_team_desc:'Create a team to share live AI insights — anomaly scores, SHAP explanations, and RUL forecasts — with your colleagues. Up to 2 leaders can manage the team.',
 acc_create_ph:'Team name (optional)',acc_create_btn:'Create Team',
 acc_role_leader:'Leader',acc_role_member:'Member',acc_you:'(you)',
 acc_promote:'Promote',acc_kick:'Remove',
@@ -1717,7 +1787,17 @@ function render(r){
   }
   let zH='';
   if(al&&r.zones&&r.zones.length>0){zH='<div class="card"><div class="ctitle">'+t('zone_title')+'</div>'+r.zones.map(z=>'<div class="zrow"><span class="zname">'+z.nom+'</span><div class="zbw"><div class="zbf" style="width:'+z.proba+'%"></div></div><span class="zp">'+z.proba+'%</span></div>').join('')+'</div>';}
-  document.getElementById('res').innerHTML='<div class="rh '+cls+'"><div><div class="sb '+cls+'"><span class="dot '+cls+'"></span>'+st+'</div><div style="font-size:10px;color:var(--text3);margin-top:4px">'+localTimeNow()+'</div>'+confH+'</div><div><div class="rnum '+cls+'">'+r.probabilite+'<span class="runit">%</span></div><div class="rlbl">'+t('failure_prob')+'</div></div></div>'+zH;
+  let anomH='';
+  if(r.anomaly_score!=null){
+    var aCl=r.anomaly_score>=70?'#dc2626':r.anomaly_score>=35?'#d97706':'#059669';
+    anomH='<div style="margin-top:8px;padding:5px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:5px;display:flex;align-items:center;justify-content:space-between"><span style="font-size:9px;letter-spacing:1.5px;color:var(--text3);text-transform:uppercase">Anomaly score</span><span style="font-size:12px;font-weight:700;color:'+aCl+'">'+r.anomaly_score+'/100</span></div>';
+  }
+  let shapH='';
+  if(r.shap_explanations&&r.shap_explanations.length){
+    var shapBody=r.shap_explanations.map(function(s){return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="font-size:11px;color:var(--text2);flex:1">'+s.feature+'</span><span style="font-size:12px;font-weight:700;color:'+(s.direction==='up'?'#dc2626':'#0d9488')+'">'+s.impact+' '+(s.direction==='up'?'\u2191':'\u2193')+'</span></div>';}).join('');
+    shapH='<div class="card"><div class="ctitle">AI Explanation</div>'+(al?'<div style="font-size:11px;color:var(--text2);margin-bottom:10px;line-height:1.6">High risk mainly due to:</div>':'')+shapBody+'</div>';
+  }
+  document.getElementById('res').innerHTML='<div class="rh '+cls+'"><div><div class="sb '+cls+'"><span class="dot '+cls+'"></span>'+st+'</div><div style="font-size:10px;color:var(--text3);margin-top:4px">'+localTimeNow()+'</div>'+confH+anomH+'</div><div><div class="rnum '+cls+'">'+r.probabilite+'<span class="runit">%</span></div><div class="rlbl">'+t('failure_prob')+'</div></div></div>'+zH+shapH;
 }
 
 // ── LIVE FILE MONITOR ─────────────────────────────────────────────────────
@@ -1887,7 +1967,7 @@ ACCOUNT_HTML = _HEAD.replace("{FAV}", FAV_B64) + """
 {% if not team %}
 <div class="card">
   <div class="ctitle" data-i18n="acc_team_title">Team</div>
-  <p style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:14px" data-i18n="acc_no_team_desc">Create a team to collaborate with colleagues.</p>
+  <p style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:14px" data-i18n="acc_no_team_desc">Create a team to share live AI insights — anomaly scores, SHAP explanations, and RUL forecasts — with your colleagues.</p>
   <input class="fi" id="tname" placeholder="Team name (optional)" data-i18n="acc_create_ph" style="margin-bottom:10px">
   <button class="btn" onclick="createTeam()" data-i18n="acc_create_btn">Create Team</button>
 </div>
@@ -2131,8 +2211,9 @@ async function load(){
   const bT=d.failure_hours===null?t('twin_healthy'):t('twin_failure')+d.failure_hours+'h';
   const wta_disp=d.last_params.vibration||2.5;
   const wu_disp=d.last_params.heure_fonctionnement||5000;
+  const rulH=d.rul_hours!=null?('<div style="margin-top:6px;padding:5px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:5px;font-size:11px;color:var(--text2)">&#x23F1; Est. remaining life: <strong style="color:'+(d.rul_hours<24?'#dc2626':d.rul_hours<72?'#d97706':'#0d9488')+'">~'+d.rul_hours+'h</strong>'+(d.rul_confidence?' <span style="font-size:9px;color:var(--text3)">('+d.rul_confidence+')</span>':'')+'</div>'):'';
   document.getElementById('tc').innerHTML=`
-    <div class="rh ${bCls}"><div><div class="sb ${bCls}"><span class="dot ${bCls}"></span>${bT}</div><div style="font-size:10px;color:var(--text3);margin-top:4px">${t('twin_trend')} ${d.trend}</div></div><div><div class="rnum ${bCls}">${d.current_risk}<span class="runit">%</span></div><div class="rlbl">${t('twin_cur_risk')}</div></div></div>
+    <div class="rh ${bCls}"><div><div class="sb ${bCls}"><span class="dot ${bCls}"></span>${bT}</div><div style="font-size:10px;color:var(--text3);margin-top:4px">${t('twin_trend')} ${d.trend}</div>${rulH}</div><div><div class="rnum ${bCls}">${d.current_risk}<span class="runit">%</span></div><div class="rlbl">${t('twin_cur_risk')}</div></div></div>
     <div class="kgrid"><div class="kc"><div class="kv amber">${d.avg_risk_24h}%</div><div class="kl">${t('twin_avg')}</div></div><div class="kc"><div class="kv ${d.anomaly_rate>=30?'alert':'ok'}">${d.anomaly_rate}%</div><div class="kl">${t('twin_anom')}</div></div></div>
     <div class="card"><div class="ctitle">${t('twin_c_risk')}</div><div id="cr" style="height:220px"></div></div>
     <div class="card"><div class="ctitle">${t('twin_c_wear')}</div><div id="cw" style="height:180px"></div></div>
@@ -3209,9 +3290,15 @@ footer{border-top:1px solid var(--border);padding:40px 32px;display:grid;grid-te
             <span class="t-key">heure_fonct</span><span class="t-dim"> </span><span class="t-val">14 208 h</span>
           </div>
           <hr class="t-divider">
-          <div><span class="t-comment">// model: GradientBoosting — inference</span></div>
+          <div><span class="t-comment">// AI pipeline — SVM · IsoForest · SHAP</span></div>
           <div style="margin-top:8px">
             <span class="t-key">failure_prob</span><span class="t-dim"> </span><span class="t-error">78.2%</span>
+          </div>
+          <div>
+            <span class="t-key">anomaly_score</span><span class="t-dim"> </span><span class="t-error">84/100</span>
+          </div>
+          <div>
+            <span class="t-key">rul_hours</span><span class="t-dim">     </span><span class="t-warn">~23h</span>
           </div>
           <div class="t-risk-bar"><div class="t-risk-fill"></div></div>
           <div style="margin-top:4px;font-size:10px">
@@ -3220,6 +3307,7 @@ footer{border-top:1px solid var(--border);padding:40px 32px;display:grid;grid-te
             <span class="t-dim" style="margin-left:12px">ETN </span><span class="t-ok">LOW</span>
             <span class="t-dim" style="margin-left:12px">MOT </span><span class="t-ok">LOW</span>
           </div>
+          <div style="margin-top:5px;font-size:10px"><span class="t-dim">top factors: </span><span class="t-warn">vibration &#x2191;42%</span><span class="t-dim"> &middot; bearing_temp &#x2191;28%</span></div>
           <div class="t-alert">
             <div style="font-size:11px;color:#f87171;font-weight:500">ALERT — ROL zone — bearing failure imminent</div>
             <div style="font-size:10px;color:var(--text3);margin-top:3px">email dispatched to maintenance@plant.local</div>
@@ -3257,8 +3345,8 @@ footer{border-top:1px solid var(--border);padding:40px 32px;display:grid;grid-te
       <div class="step-icon">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--teal2)" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
       </div>
-      <div class="step-title" data-ilp="s2t">AI detects anomalies</div>
-      <div class="step-desc" data-ilp="s2d">Our ML model — trained on 23,400+ pump sensor records — analyzes each reading across 5 failure zones in real time with 98.1% recall.</div>
+      <div class="step-title" data-ilp="s2t">Three AI layers analyze every reading</div>
+      <div class="step-desc" data-ilp="s2d">SVM classifies failure probability across 5 zones. Isolation Forest flags unseen anomalies without labels. SHAP tells you exactly which sensors drove the result — no black box.</div>
     </div>
     <div class="step">
       <div class="step-num">03 / 03</div>
@@ -3378,6 +3466,21 @@ footer{border-top:1px solid var(--border);padding:40px 32px;display:grid;grid-te
       <div class="feature-title">REST API Integration</div>
       <div class="feature-desc">Connect any PLC, SCADA, or IoT device via our documented REST API. Python examples and Curl snippets included.</div>
     </div>
+    <div class="feature-card">
+      <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--teal2)" stroke-width="1.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
+      <div class="feature-title">Unsupervised Anomaly Detection</div>
+      <div class="feature-desc">Isolation Forest detects abnormal sensor behavior without any labeled failure data — active from day one, before you have a single recorded breakdown.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--teal2)" stroke-width="1.5"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg></div>
+      <div class="feature-title">SHAP Explainability</div>
+      <div class="feature-desc">Every prediction shows the top 3 sensors that drove the risk and their exact contribution. Your team understands why — not just what.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--teal2)" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
+      <div class="feature-title">Remaining Useful Life (RUL)</div>
+      <div class="feature-desc">Linear regression on your risk trend extrapolates when the 80% failure threshold will be reached — giving your team a precise, data-driven maintenance window.</div>
+    </div>
   </div>
 </section>
 
@@ -3432,10 +3535,13 @@ footer{border-top:1px solid var(--border);padding:40px 32px;display:grid;grid-te
       <div class="plan-desc" data-ilp="plan_custom_desc">No fixed tiers. You choose the features, we adapt the contract to your operations and budget.</div>
       <ul class="plan-features">
         <li>Full analysis history &amp; Digital Twin</li>
+        <li>Anomaly detection (Isolation Forest)</li>
+        <li>AI explainability (SHAP — top contributing sensors)</li>
+        <li>Remaining Useful Life (RUL) forecasting</li>
         <li>AI maintenance assistant</li>
         <li>REST API access</li>
-        <li>Email alerts &amp; reports</li>
-        <li>Team collaboration</li>
+        <li>Email alerts &amp; escalation</li>
+        <li>Team collaboration &amp; shared alerts</li>
         <li>Custom sensor variables</li>
         <li>Dedicated onboarding &amp; support</li>
       </ul>
@@ -3455,8 +3561,8 @@ footer{border-top:1px solid var(--border);padding:40px 32px;display:grid;grid-te
 
 <script>
 var _TLP={
-en:{nav_signin:'Sign In',nav_start:'Get Started Free',hero_badge:'AI-Powered Predictive Maintenance \u2014 Public Beta',hero_h:'Stop fixing machines.<br><span>Predict failures first.</span>',hero_sub:'Pilar analyzes your industrial sensors in real time and alerts you hours before a breakdown \u2014 before it costs you anything.',hero_cta1:'Start for free',hero_cta2:'See how it works',stat1:'Recall \u2014 failures caught',stat2:'Failure zones detected',stat3:'Analysis per reading',stat4:'Pump records trained',how_lbl:'Process',how_title:'Three steps to <span>zero unplanned downtime</span>',how_sub:'Connect your machines, let Pilar learn, and receive precise alerts before failures happen.',s1t:'Connect your sensors',s1d:'Send readings via REST API from your PLCs, SCADA systems, or CSV files. Pilar accepts vibration, flow rate, pressure, bearing temp, motor current, and more.',s2t:'AI detects anomalies',s2d:'Our ML model \u2014 trained on 23,400+ pump sensor records \u2014 analyzes each reading across 5 failure zones in real time with 98.1% recall.',s3t:'Your team gets alerted',s3d:'When risk exceeds threshold, Pilar sends an instant email alert with the failure zone, risk level, and recommended action \u2014 before breakdown occurs.',perf_lbl:'Model Performance',perf_title:'Built on <span>real industrial data</span>',perf_sub:'Trained on 23,400+ centrifugal pump readings across 5 failure modes \u2014 physically realistic sensor profiles calibrated for industrial pumps.',roi_lbl:'Business Impact',roi_title:'The real cost of <span>reactive maintenance</span>',roi_sub:'Every unplanned breakdown costs production time, emergency repairs, and team morale. Pilar changes the equation.',roi_before:'Without Pilar',roi_after:'With Pilar',feat_lbl:'Features',feat_title:'Everything your maintenance<br><span>team needs</span>',ind_lbl:'Industries',ind_title:'Built for <span>industrial environments</span>',ind_sub:'Any process that relies on centrifugal pumps \u2014 from water treatment to chemical processing \u2014 can benefit from predictive monitoring.',pricing_lbl:'Pricing',pricing_title:'Simple pricing, <span>built around you</span>',plan_free_desc:'Get started immediately. No credit card required.',plan_free_btn:'Get started free',plan_custom_badge:'Custom Contract',plan_custom_name:'Your Plan',plan_custom_price:'On demand',plan_custom_desc:'No fixed tiers. You choose the features, we adapt the contract to your operations and budget.',plan_custom_btn:'Contact us',cta_h:'Your machines are sending signals.<br><span>Are you listening?</span>',cta_p:'Join the teams that stopped reacting to breakdowns and started preventing them. Free to start, no setup fees \u2014 and as a beta user, your feedback directly shapes the product.',cta_btn:'Start monitoring for free',footer_sign:'Sign In',footer_reg:'Create Account',footer_rights:'All rights reserved.'},
-fr:{nav_signin:'Connexion',nav_start:'Commencer gratuitement',hero_badge:'Maintenance Pr\u00e9dictive par IA \u2014 B\u00eata Public',hero_h:'Arr\u00eatez de r\u00e9parer.<br><span>Pr\u00e9disez les pannes.</span>',hero_sub:'Pilar analyse vos capteurs industriels en temps r\u00e9el et vous alerte des heures avant une panne \u2014 avant que \u00e7a ne co\u00fbte quoi que ce soit.',hero_cta1:'Commencer gratuitement',hero_cta2:'Voir comment \u00e7a marche',stat1:'Rappel \u2014 pannes d\u00e9tect\u00e9es',stat2:'Zones de panne identifi\u00e9es',stat3:'Analyse par mesure',stat4:'Mesures pompes entra\u00een\u00e9es',how_lbl:'Processus',how_title:'Trois \u00e9tapes vers <span>z\u00e9ro arr\u00eat impr\u00e9vu</span>',how_sub:'Connectez vos machines, laissez Pilar apprendre, recevez des alertes pr\u00e9cises avant les pannes.',s1t:'Connectez vos capteurs',s1d:'Envoyez des mesures via API REST depuis vos automates, SCADA ou fichiers CSV. Pilar accepte vibration, d\u00e9bit, pression, temp. palier, courant moteur et bien plus.',s2t:"L'IA d\u00e9tecte les anomalies",s2d:"Notre mod\u00e8le ML \u2014 entra\u00een\u00e9 sur 23 400+ mesures de pompes centrifuges \u2014 analyse chaque mesure sur 5 zones de panne en temps r\u00e9el avec 98,1% de rappel.",s3t:"Votre \u00e9quipe est alert\u00e9e",s3d:"Quand le risque d\u00e9passe le seuil, Pilar envoie un email d'alerte instantan\u00e9 avec la zone de panne, le niveau de risque et l'action recommand\u00e9e \u2014 avant la panne.",perf_lbl:'Performance du mod\u00e8le',perf_title:'Bas\u00e9 sur des <span>donn\u00e9es industrielles r\u00e9elles</span>',perf_sub:'Entra\u00een\u00e9 sur 23 400+ mesures de pompes centrifuges sur 5 modes de panne \u2014 profils capteurs physiquement r\u00e9alistes calibr\u00e9s pour pompes industrielles.',roi_lbl:'Impact business',roi_title:'Le vrai co\u00fbt de la <span>maintenance r\u00e9active</span>',roi_sub:'Chaque arr\u00eat impr\u00e9vu co\u00fbte du temps de production, des r\u00e9parations en urgence et du moral. Pilar change la donne.',roi_before:'Sans Pilar',roi_after:'Avec Pilar',feat_lbl:'Fonctionnalit\u00e9s',feat_title:'Tout ce dont votre \u00e9quipe de<br><span>maintenance a besoin</span>',ind_lbl:'Secteurs',ind_title:'Con\u00e7u pour les <span>environnements industriels</span>',ind_sub:"Tout proc\u00e9d\u00e9 qui s\u2019appuie sur des pompes centrifuges \u2014 du traitement de l\u2019eau \u00e0 la chimie industrielle \u2014 peut b\u00e9n\u00e9ficier de la surveillance pr\u00e9dictive.",pricing_lbl:'Tarifs',pricing_title:'Tarif simple, <span>adapt\u00e9 \u00e0 vous</span>',plan_free_desc:'D\u00e9marrez imm\u00e9diatement. Aucune carte bancaire requise.',plan_free_btn:'Commencer gratuitement',plan_custom_badge:'Contrat sur mesure',plan_custom_name:'Votre Plan',plan_custom_price:'Sur devis',plan_custom_desc:"Pas de niveaux fixes. Vous choisissez les fonctionnalit\u00e9s, on adapte le contrat \u00e0 vos op\u00e9rations et votre budget.",plan_custom_btn:'Nous contacter',cta_h:'Vos machines envoient des signaux.<br><span>Les \u00e9coutez-vous\u00a0?</span>',cta_p:'Rejoignez les \u00e9quipes qui ont arr\u00eat\u00e9 de r\u00e9agir aux pannes et ont commenc\u00e9 \u00e0 les pr\u00e9venir. Gratuit pour commencer, sans frais \u2014 et en tant qu\u2019utilisateur b\u00eata, votre retour fa\u00e7onne directement le produit.',cta_btn:'Commencer la surveillance gratuitement',footer_sign:'Connexion',footer_reg:'Cr\u00e9er un compte',footer_rights:'Tous droits r\u00e9serv\u00e9s.'}
+en:{nav_signin:'Sign In',nav_start:'Get Started Free',hero_badge:'AI-Powered Predictive Maintenance \u2014 Public Beta',hero_h:'Stop fixing machines.<br><span>Predict failures first.</span>',hero_sub:'Pilar analyzes your industrial sensors in real time and alerts you hours before a breakdown \u2014 before it costs you anything.',hero_cta1:'Start for free',hero_cta2:'See how it works',stat1:'Recall \u2014 failures caught',stat2:'Failure zones detected',stat3:'Analysis per reading',stat4:'Pump records trained',how_lbl:'Process',how_title:'Three steps to <span>zero unplanned downtime</span>',how_sub:'Connect your machines, let Pilar learn, and receive precise alerts before failures happen.',s1t:'Connect your sensors',s1d:'Send readings via REST API from your PLCs, SCADA systems, or CSV files. Pilar accepts vibration, flow rate, pressure, bearing temp, motor current, and more.',s2t:'Three AI layers analyze every reading',s2d:'SVM classifies failure probability across 5 zones. Isolation Forest flags unseen anomalies without labels. SHAP tells you exactly which sensors drove the result \u2014 no black box.',s3t:'Your team gets alerted',s3d:'When risk exceeds threshold, Pilar sends an instant email alert with the failure zone, risk level, and recommended action \u2014 before breakdown occurs.',perf_lbl:'Model Performance',perf_title:'Built on <span>real industrial data</span>',perf_sub:'Trained on 23,400+ centrifugal pump readings across 5 failure modes \u2014 physically realistic sensor profiles calibrated for industrial pumps.',roi_lbl:'Business Impact',roi_title:'The real cost of <span>reactive maintenance</span>',roi_sub:'Every unplanned breakdown costs production time, emergency repairs, and team morale. Pilar changes the equation.',roi_before:'Without Pilar',roi_after:'With Pilar',feat_lbl:'Features',feat_title:'Everything your maintenance<br><span>team needs</span>',ind_lbl:'Industries',ind_title:'Built for <span>industrial environments</span>',ind_sub:'Any process that relies on centrifugal pumps \u2014 from water treatment to chemical processing \u2014 can benefit from predictive monitoring.',pricing_lbl:'Pricing',pricing_title:'Simple pricing, <span>built around you</span>',plan_free_desc:'Get started immediately. No credit card required.',plan_free_btn:'Get started free',plan_custom_badge:'Custom Contract',plan_custom_name:'Your Plan',plan_custom_price:'On demand',plan_custom_desc:'No fixed tiers. You choose the features, we adapt the contract to your operations and budget.',plan_custom_btn:'Contact us',cta_h:'Your machines are sending signals.<br><span>Are you listening?</span>',cta_p:'Join the teams that stopped reacting to breakdowns and started preventing them. Free to start, no setup fees \u2014 and as a beta user, your feedback directly shapes the product.',cta_btn:'Start monitoring for free',footer_sign:'Sign In',footer_reg:'Create Account',footer_rights:'All rights reserved.'},
+fr:{nav_signin:'Connexion',nav_start:'Commencer gratuitement',hero_badge:'Maintenance Pr\u00e9dictive par IA \u2014 B\u00eata Public',hero_h:'Arr\u00eatez de r\u00e9parer.<br><span>Pr\u00e9disez les pannes.</span>',hero_sub:'Pilar analyse vos capteurs industriels en temps r\u00e9el et vous alerte des heures avant une panne \u2014 avant que \u00e7a ne co\u00fbte quoi que ce soit.',hero_cta1:'Commencer gratuitement',hero_cta2:'Voir comment \u00e7a marche',stat1:'Rappel \u2014 pannes d\u00e9tect\u00e9es',stat2:'Zones de panne identifi\u00e9es',stat3:'Analyse par mesure',stat4:'Mesures pompes entra\u00een\u00e9es',how_lbl:'Processus',how_title:'Trois \u00e9tapes vers <span>z\u00e9ro arr\u00eat impr\u00e9vu</span>',how_sub:'Connectez vos machines, laissez Pilar apprendre, recevez des alertes pr\u00e9cises avant les pannes.',s1t:'Connectez vos capteurs',s1d:'Envoyez des mesures via API REST depuis vos automates, SCADA ou fichiers CSV. Pilar accepte vibration, d\u00e9bit, pression, temp. palier, courant moteur et bien plus.',s2t:"Trois couches IA analysent chaque mesure",s2d:"Le SVM classe la probabilit\u00e9 de panne sur 5 zones. L\u2019Isolation Forest d\u00e9tecte les anomalies sans historique de labels. SHAP explique quels capteurs ont d\u00e9clench\u00e9 l\u2019alerte \u2014 sans bo\u00eete noire.",s3t:"Votre \u00e9quipe est alert\u00e9e",s3d:"Quand le risque d\u00e9passe le seuil, Pilar envoie un email d'alerte instantan\u00e9 avec la zone de panne, le niveau de risque et l'action recommand\u00e9e \u2014 avant la panne.",perf_lbl:'Performance du mod\u00e8le',perf_title:'Bas\u00e9 sur des <span>donn\u00e9es industrielles r\u00e9elles</span>',perf_sub:'Entra\u00een\u00e9 sur 23 400+ mesures de pompes centrifuges sur 5 modes de panne \u2014 profils capteurs physiquement r\u00e9alistes calibr\u00e9s pour pompes industrielles.',roi_lbl:'Impact business',roi_title:'Le vrai co\u00fbt de la <span>maintenance r\u00e9active</span>',roi_sub:'Chaque arr\u00eat impr\u00e9vu co\u00fbte du temps de production, des r\u00e9parations en urgence et du moral. Pilar change la donne.',roi_before:'Sans Pilar',roi_after:'Avec Pilar',feat_lbl:'Fonctionnalit\u00e9s',feat_title:'Tout ce dont votre \u00e9quipe de<br><span>maintenance a besoin</span>',ind_lbl:'Secteurs',ind_title:'Con\u00e7u pour les <span>environnements industriels</span>',ind_sub:"Tout proc\u00e9d\u00e9 qui s\u2019appuie sur des pompes centrifuges \u2014 du traitement de l\u2019eau \u00e0 la chimie industrielle \u2014 peut b\u00e9n\u00e9ficier de la surveillance pr\u00e9dictive.",pricing_lbl:'Tarifs',pricing_title:'Tarif simple, <span>adapt\u00e9 \u00e0 vous</span>',plan_free_desc:'D\u00e9marrez imm\u00e9diatement. Aucune carte bancaire requise.',plan_free_btn:'Commencer gratuitement',plan_custom_badge:'Contrat sur mesure',plan_custom_name:'Votre Plan',plan_custom_price:'Sur devis',plan_custom_desc:"Pas de niveaux fixes. Vous choisissez les fonctionnalit\u00e9s, on adapte le contrat \u00e0 vos op\u00e9rations et votre budget.",plan_custom_btn:'Nous contacter',cta_h:'Vos machines envoient des signaux.<br><span>Les \u00e9coutez-vous\u00a0?</span>',cta_p:'Rejoignez les \u00e9quipes qui ont arr\u00eat\u00e9 de r\u00e9agir aux pannes et ont commenc\u00e9 \u00e0 les pr\u00e9venir. Gratuit pour commencer, sans frais \u2014 et en tant qu\u2019utilisateur b\u00eata, votre retour fa\u00e7onne directement le produit.',cta_btn:'Commencer la surveillance gratuitement',footer_sign:'Connexion',footer_reg:'Cr\u00e9er un compte',footer_rights:'Tous droits r\u00e9serv\u00e9s.'}
 };
 function _lp(l){
   localStorage.setItem('pilar_lang',l);
@@ -3934,33 +4040,33 @@ audio::-webkit-media-controls-panel{background:var(--surface2)}
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));border:1px solid var(--border)">
       <div style="padding:20px 22px;border-right:1px solid var(--border);background:var(--surface)">
         <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--teal2);letter-spacing:2px;margin-bottom:10px">01 / 06</div>
-        <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:6px">Enter your parameters</div>
-        <div style="font-size:12px;color:var(--text2);line-height:1.7">Temperature, speed, torque, tool wear — manually or via CSV upload.</div>
+        <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:6px">Enter sensor readings</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.7">Vibration, bearing temp, flow rate, pressures, motor current, run hours — manually or via API/CSV.</div>
       </div>
       <div style="padding:20px 22px;border-right:1px solid var(--border);background:var(--surface)">
         <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--teal2);letter-spacing:2px;margin-bottom:10px">02 / 06</div>
-        <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:6px">Upload your data file</div>
-        <div style="font-size:12px;color:var(--text2);line-height:1.7">CSV with columns: machine class, air temp, process temp, RPM, torque, tool wear.</div>
+        <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:6px">Or upload a CSV file</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.7">Columns: vibration, temp_palier, debit, pression_entree, pression_sortie, courant_moteur, temp_moteur, heure_fonctionnement.</div>
       </div>
       <div style="padding:20px 22px;border-right:1px solid var(--border);background:var(--surface)">
         <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--teal2);letter-spacing:2px;margin-bottom:10px">03 / 06</div>
-        <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:6px">Map your columns</div>
-        <div style="font-size:12px;color:var(--text2);line-height:1.7">Review detected columns and confirm each one matches the correct Pilar field.</div>
+        <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:6px">Auto-detect &amp; map columns</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.7">Pilar auto-detects your column names and maps them — confirm or correct before analysis.</div>
       </div>
       <div style="padding:20px 22px;border-right:1px solid var(--border);background:var(--surface)">
         <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--teal2);letter-spacing:2px;margin-bottom:10px">04 / 06</div>
-        <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:6px">Launch the analysis</div>
-        <div style="font-size:12px;color:var(--text2);line-height:1.7">Pilar processes your data and runs the ML model across all 5 failure zones.</div>
+        <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:6px">Three AI layers run in parallel</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.7">SVM failure probability + Isolation Forest anomaly score + SHAP explanation — all in one request.</div>
       </div>
       <div style="padding:20px 22px;border-right:1px solid var(--border);background:var(--surface)">
         <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--teal2);letter-spacing:2px;margin-bottom:10px">05 / 06</div>
-        <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:6px">Instant risk result</div>
-        <div style="font-size:12px;color:var(--text2);line-height:1.7">In seconds, a clear risk level is displayed — see the live simulation below.</div>
+        <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:6px">Full AI result instantly</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.7">Risk %, anomaly score, top contributing sensors, failure zones — and estimated remaining life.</div>
       </div>
       <div style="padding:20px 22px;background:var(--surface)">
         <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--teal2);letter-spacing:2px;margin-bottom:10px">06 / 06</div>
-        <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:6px">History &amp; alerts</div>
-        <div style="font-size:12px;color:var(--text2);line-height:1.7">Review all previous analyses in History. Enable email alerts in Settings.</div>
+        <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:6px">History, Twin &amp; alerts</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.7">Full analysis history in History. Digital Twin shows RUL trend. Email alerts auto-escalate.</div>
       </div>
     </div>
   </div>
@@ -3995,38 +4101,38 @@ audio::-webkit-media-controls-panel{background:var(--surface2)}
       <div class="block-label">Live sensor reading</div>
       <div class="sensor-grid">
         <div class="sensor-card">
-          <div class="sensor-label">Air temp</div>
-          <div class="sensor-val" id="v-air">300.1<span class="sensor-unit">K</span></div>
+          <div class="sensor-label">Vibration</div>
+          <div class="sensor-val ok" id="v-vib">2.1<span class="sensor-unit">mm/s</span></div>
         </div>
         <div class="sensor-card">
-          <div class="sensor-label">Process temp</div>
-          <div class="sensor-val" id="v-proc">310.5<span class="sensor-unit">K</span></div>
+          <div class="sensor-label">Bearing temp</div>
+          <div class="sensor-val ok" id="v-tbear">52.4<span class="sensor-unit">°C</span></div>
         </div>
         <div class="sensor-card">
-          <div class="sensor-label">Rotation speed</div>
-          <div class="sensor-val" id="v-rpm">1500<span class="sensor-unit">rpm</span></div>
+          <div class="sensor-label">Flow rate</div>
+          <div class="sensor-val ok" id="v-debit">42.0<span class="sensor-unit">m³/h</span></div>
         </div>
         <div class="sensor-card">
-          <div class="sensor-label">Torque</div>
-          <div class="sensor-val" id="v-torque">40.2<span class="sensor-unit">Nm</span></div>
+          <div class="sensor-label">Outlet pressure</div>
+          <div class="sensor-val ok" id="v-pout">3.8<span class="sensor-unit">bar</span></div>
         </div>
         <div class="sensor-card">
-          <div class="sensor-label">Tool wear</div>
-          <div class="sensor-val" id="v-wear">45<span class="sensor-unit">min</span></div>
+          <div class="sensor-label">Run hours</div>
+          <div class="sensor-val ok" id="v-hrun">1240<span class="sensor-unit">h</span></div>
         </div>
         <div class="sensor-card">
-          <div class="sensor-label">Machine type</div>
-          <div class="sensor-val ok" id="v-type" style="font-size:16px">Medium</div>
+          <div class="sensor-label">Status</div>
+          <div class="sensor-val ok" id="v-status" style="font-size:16px">Normal</div>
         </div>
       </div>
 
       <div class="block-label">Failure zones</div>
       <div class="zones" id="zones-row">
-        <div class="zone low"><div class="zone-name">TWF</div><div class="zone-status">LOW</div></div>
-        <div class="zone low"><div class="zone-name">HDF</div><div class="zone-status">LOW</div></div>
-        <div class="zone low"><div class="zone-name">PWF</div><div class="zone-status">LOW</div></div>
-        <div class="zone low"><div class="zone-name">OSF</div><div class="zone-status">LOW</div></div>
-        <div class="zone low"><div class="zone-name">RNF</div><div class="zone-status">LOW</div></div>
+        <div class="zone low"><div class="zone-name">CAV</div><div class="zone-status">LOW</div></div>
+        <div class="zone low"><div class="zone-name">ROL</div><div class="zone-status">LOW</div></div>
+        <div class="zone low"><div class="zone-name">ETN</div><div class="zone-status">LOW</div></div>
+        <div class="zone low"><div class="zone-name">IMP</div><div class="zone-status">LOW</div></div>
+        <div class="zone low"><div class="zone-name">MOT</div><div class="zone-status">LOW</div></div>
       </div>
 
       <div class="risk-block ok" id="risk-block">
@@ -4036,6 +4142,24 @@ audio::-webkit-media-controls-panel{background:var(--surface2)}
         </div>
         <div class="risk-bar-bg"><div class="risk-bar-fill" id="risk-bar" style="width:3%;background:var(--green)"></div></div>
         <div class="risk-verdict" id="risk-verdict">All systems nominal. No intervention required.</div>
+      </div>
+
+      <div id="ai-insights" style="margin-top:16px;display:flex;flex-direction:column;gap:10px">
+        <div style="padding:10px 14px;background:rgba(255,255,255,.025);border:1px solid var(--border);border-radius:5px;display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div style="font-size:9px;letter-spacing:1.5px;color:var(--text3);text-transform:uppercase;margin-bottom:2px">Anomaly score</div>
+            <div style="font-size:9px;color:var(--text3)">Isolation Forest · unsupervised</div>
+          </div>
+          <span id="demo-anomaly" style="font-size:18px;font-weight:800;color:#059669">12/100</span>
+        </div>
+        <div style="padding:10px 14px;background:rgba(255,255,255,.025);border:1px solid var(--border);border-radius:5px">
+          <div style="font-size:9px;letter-spacing:1.5px;color:var(--text3);text-transform:uppercase;margin-bottom:10px">AI Explanation · SHAP top-3</div>
+          <div id="demo-shap"></div>
+        </div>
+        <div id="demo-rul-wrap" style="display:none;padding:10px 14px;background:rgba(255,255,255,.025);border:1px solid var(--border);border-radius:5px;font-size:11px;color:var(--text2)">
+          &#x23F1; Est. remaining life: <strong id="demo-rul-val" style="color:#0d9488"></strong>
+          <span id="demo-rul-conf" style="font-size:9px;color:var(--text3);margin-left:4px"></span>
+        </div>
       </div>
     </div>
   </div>
@@ -4054,50 +4178,63 @@ audio::-webkit-media-controls-panel{background:var(--surface2)}
 var SCENARIOS=[
   {
     name:'Normal operation',
-    air:300.1,proc:310.5,rpm:1500,torque:40.2,wear:45,type:'Medium',
+    vib:2.1,tbear:52.4,debit:42.0,pout:3.8,hrun:1240,status:'Normal',
     risk:3,bar_color:'var(--green)',block_class:'ok',
     verdict:'All systems nominal. No intervention required.',
     zones:['low','low','low','low','low'],
-    zone_labels:['LOW','LOW','LOW','LOW','LOW']
+    zone_labels:['LOW','LOW','LOW','LOW','LOW'],
+    anomaly:12,anomaly_color:'#059669',
+    shap:[{f:'Vibration',v:'18%',d:'down'},{f:'Run hours',v:'12%',d:'down'},{f:'Flow rate',v:'8%',d:'up'}],
+    rul:null
   },
   {
-    name:'Tool wear developing',
-    air:302.4,proc:313.2,rpm:1620,torque:52.8,wear:195,type:'Medium',
+    name:'Bearing wear developing',
+    vib:5.8,tbear:74.2,debit:38.5,pout:3.4,hrun:3820,status:'Warning',
     risk:38,bar_color:'var(--amber)',block_class:'warn',
-    verdict:'Tool wear approaching warning threshold. Schedule inspection within 48h.',
-    zones:['med','low','low','low','low'],
-    zone_labels:['MED','LOW','LOW','LOW','LOW']
+    verdict:'Bearing temperature elevated. Schedule inspection within 48h.',
+    zones:['low','med','low','low','low'],
+    zone_labels:['LOW','MED','LOW','LOW','LOW'],
+    anomaly:44,anomaly_color:'#d97706',
+    shap:[{f:'Bearing temp',v:'41%',d:'up'},{f:'Vibration',v:'28%',d:'up'},{f:'Run hours',v:'15%',d:'up'}],
+    rul:312,rul_conf:'medium'
   },
   {
-    name:'Overheat + high torque',
-    air:310.8,proc:335.6,rpm:1320,torque:72.1,wear:280,type:'High',
+    name:'Cavitation + motor stress',
+    vib:9.3,tbear:81.6,debit:22.1,pout:2.1,hrun:5600,status:'Critical',
     risk:67,bar_color:'var(--amber)',block_class:'warn',
-    verdict:'Heat dissipation stress detected. Reduce load and inspect cooling system.',
-    zones:['med','high','low','med','low'],
-    zone_labels:['MED','HIGH','LOW','MED','LOW']
+    verdict:'Low flow and pressure drop detected. Inspect inlet and impeller for cavitation.',
+    zones:['high','med','low','med','low'],
+    zone_labels:['HIGH','MED','LOW','MED','LOW'],
+    anomaly:71,anomaly_color:'#dc2626',
+    shap:[{f:'Flow rate',v:'38%',d:'down'},{f:'Outlet pressure',v:'29%',d:'down'},{f:'Vibration',v:'21%',d:'up'}],
+    rul:74,rul_conf:'high'
   },
   {
     name:'Critical — imminent failure',
-    air:315.2,proc:342.7,rpm:1140,torque:89.4,wear:420,type:'High',
+    vib:15.7,tbear:96.4,debit:14.8,pout:1.3,hrun:7200,status:'STOP',
     risk:91,bar_color:'var(--red)',block_class:'danger',
-    verdict:'CRITICAL — Multiple failure zones active. Stop machine and inspect immediately.',
-    zones:['high','high','low','high','low'],
-    zone_labels:['HIGH','HIGH','LOW','HIGH','LOW']
+    verdict:'CRITICAL — Multiple failure zones active. Stop pump and inspect immediately.',
+    zones:['high','high','low','high','med'],
+    zone_labels:['HIGH','HIGH','LOW','HIGH','MED'],
+    anomaly:88,anomaly_color:'#dc2626',
+    shap:[{f:'Vibration',v:'35%',d:'up'},{f:'Bearing temp',v:'31%',d:'up'},{f:'Flow rate',v:'22%',d:'down'}],
+    rul:8,rul_conf:'high'
   }
 ];
 
 function loadScenario(i){
   document.querySelectorAll('.scenario-btn').forEach(function(b,j){b.classList.toggle('active',j===i)});
   var s=SCENARIOS[i];
-  function setVal(id,v,cls){var el=document.getElementById(id);el.childNodes[0].textContent=v;el.className='sensor-val'+(cls?' '+cls:'');}
-  document.getElementById('v-air').childNodes[0].textContent=s.air;
-  document.getElementById('v-proc').childNodes[0].textContent=s.proc;
-  var rpmEl=document.getElementById('v-rpm');rpmEl.childNodes[0].textContent=s.rpm;rpmEl.className='sensor-val'+(s.rpm>1800?' warn':s.rpm<1200?' danger':' ok');
-  var torqueEl=document.getElementById('v-torque');torqueEl.childNodes[0].textContent=s.torque;torqueEl.className='sensor-val'+(s.torque>70?' danger':s.torque>50?' warn':' ok');
-  var wearEl=document.getElementById('v-wear');wearEl.childNodes[0].textContent=s.wear;wearEl.className='sensor-val'+(s.wear>300?' danger':s.wear>150?' warn':' ok');
-  var typeEl=document.getElementById('v-type');typeEl.textContent=s.type;typeEl.className='sensor-val ok';
 
-  var zones=['TWF','HDF','PWF','OSF','RNF'];
+  function setSensor(id,v,cls){var el=document.getElementById(id);if(!el)return;el.childNodes[0].textContent=v;el.className='sensor-val'+(cls?' '+cls:'');}
+  setSensor('v-vib',s.vib,s.vib>10?' danger':s.vib>6?' warn':' ok');
+  setSensor('v-tbear',s.tbear,s.tbear>85?' danger':s.tbear>70?' warn':' ok');
+  setSensor('v-debit',s.debit,s.debit<20?' danger':s.debit<30?' warn':' ok');
+  setSensor('v-pout',s.pout,s.pout<1.5?' danger':s.pout<2.5?' warn':' ok');
+  setSensor('v-hrun',s.hrun,s.hrun>6000?' warn':' ok');
+  var stEl=document.getElementById('v-status');if(stEl){stEl.textContent=s.status;stEl.className='sensor-val'+(s.status==='STOP'?' danger':s.status==='Critical'?' warn':' ok');}
+
+  var zones=['CAV','ROL','ETN','IMP','MOT'];
   var zRow=document.getElementById('zones-row');
   zRow.innerHTML='';
   for(var z=0;z<5;z++){
@@ -4114,6 +4251,32 @@ function loadScenario(i){
   bar.style.width=s.risk+'%';
   bar.style.background=s.bar_color;
   document.getElementById('risk-verdict').textContent=s.verdict;
+
+  // Anomaly score
+  var aEl=document.getElementById('demo-anomaly');
+  if(aEl){aEl.textContent=s.anomaly+'/100';aEl.style.color=s.anomaly_color;}
+
+  // SHAP top-3
+  var shapEl=document.getElementById('demo-shap');
+  if(shapEl&&s.shap){
+    shapEl.innerHTML=s.shap.map(function(x){
+      return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="font-size:11px;color:var(--text2);flex:1">'+x.f+'</span><span style="font-size:12px;font-weight:700;color:'+(x.d==='up'?'#dc2626':'#0d9488')+'">'+x.v+' '+(x.d==='up'?'\u2191':'\u2193')+'</span></div>';
+    }).join('');
+  }
+
+  // RUL
+  var rulWrap=document.getElementById('demo-rul-wrap');
+  if(rulWrap){
+    if(s.rul!=null){
+      rulWrap.style.display='block';
+      var rulColor=s.rul<24?'#dc2626':s.rul<72?'#d97706':'#0d9488';
+      document.getElementById('demo-rul-val').textContent='~'+s.rul+'h';
+      document.getElementById('demo-rul-val').style.color=rulColor;
+      document.getElementById('demo-rul-conf').textContent=s.rul_conf?'('+s.rul_conf+')':'';
+    } else {
+      rulWrap.style.display='none';
+    }
+  }
 }
 
 function switchAudio(lang){
@@ -4225,7 +4388,7 @@ body{font-family:'IBM Plex Sans',system-ui,sans-serif;background:var(--bg);color
   <div class="page-header">
     <div>
       <div class="page-title">Fleet Dashboard</div>
-      <div class="page-sub">All machines at a glance</div>
+      <div class="page-sub">AI-powered monitoring — SVM · Isolation Forest · SHAP · RUL forecasting</div>
     </div>
     <button class="btn btn-primary" onclick="openAdd()">+ Add Machine</button>
   </div>
@@ -4234,6 +4397,15 @@ body{font-family:'IBM Plex Sans',system-ui,sans-serif;background:var(--bg);color
     <div class="stat-box"><div class="stat-label">Active Alerts</div><div class="stat-val" id="s-alerts" style="color:var(--red)">—</div></div>
     <div class="stat-box"><div class="stat-label">Avg Fleet Risk</div><div class="stat-val" id="s-avg">—</div></div>
     <div class="stat-box"><div class="stat-label">Critical</div><div class="stat-val" id="s-crit" style="color:var(--red)">—</div></div>
+    <div class="stat-box" style="border-color:rgba(13,148,136,.3);background:rgba(13,148,136,.04)">
+      <div class="stat-label" style="color:var(--teal2)">AI Layers</div>
+      <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap">
+        <span style="font-size:8px;font-weight:700;letter-spacing:1px;color:var(--teal2);background:rgba(13,148,136,.12);border:1px solid rgba(13,148,136,.3);padding:2px 6px;border-radius:2px">SVM</span>
+        <span style="font-size:8px;font-weight:700;letter-spacing:1px;color:var(--teal2);background:rgba(13,148,136,.12);border:1px solid rgba(13,148,136,.3);padding:2px 6px;border-radius:2px">ISOFOREST</span>
+        <span style="font-size:8px;font-weight:700;letter-spacing:1px;color:var(--teal2);background:rgba(13,148,136,.12);border:1px solid rgba(13,148,136,.3);padding:2px 6px;border-radius:2px">SHAP</span>
+        <span style="font-size:8px;font-weight:700;letter-spacing:1px;color:var(--teal2);background:rgba(13,148,136,.12);border:1px solid rgba(13,148,136,.3);padding:2px 6px;border-radius:2px">RUL</span>
+      </div>
+    </div>
   </div>
   <div class="fleet-grid" id="fleet-grid"><div class="empty-state" id="loading-state" style="grid-column:1/-1"><p style="color:var(--text3)">Loading fleet...</p></div></div>
 </div>
@@ -4768,7 +4940,8 @@ for r in resp.json()["results"]:
 </body></html>"""
 
 # ── BACKEND ───────────────────────────────────────────────────────────────────
-def predict_risk(params, threshold=45):
+def predict_risk(params, threshold=45, return_extra=False):
+    global _iso_forest, _normal_samples
     # Analyse partielle : imputer les features manquantes avec les médianes pompe
     missing_keys = [k for k in CORE_FEATURES if params.get(k) is None]
     for k in missing_keys:
@@ -4787,7 +4960,28 @@ def predict_risk(params, threshold=45):
                 if pz >= 30:
                     zones_risque.append({'nom': nom, 'proba': pz})
         zones_risque.sort(key=lambda x: x['proba'], reverse=True)
-    return probabilite, prediction, zones_risque, confidence, missing_keys
+    if not return_extra:
+        return probabilite, prediction, zones_risque, confidence, missing_keys
+    # ── Extra: Isolation Forest anomaly scoring + lazy training ───────────────
+    anomaly_score = None
+    try:
+        if prediction == 0:
+            _normal_samples.append(donnees_scaled[0].tolist())
+            if len(_normal_samples) >= 30 and _iso_forest is None:
+                from sklearn.ensemble import IsolationForest
+                clf = IsolationForest(contamination=0.1, random_state=42)
+                clf.fit(np.array(_normal_samples))
+                _iso_forest = clf
+                try:
+                    with open("isolation_forest.pkl","wb") as _f: pickle.dump(clf, _f)
+                except Exception: pass
+                print(f"[Pilar] Isolation Forest entraîné ({len(_normal_samples)} normaux)")
+        anomaly_score = _compute_anomaly_score(donnees_scaled)
+    except Exception as _ie:
+        print(f"[Pilar] IsoForest pipeline error: {_ie}")
+    # ── Extra: SHAP explanations ───────────────────────────────────────────────
+    shap_explanations = _compute_shap(donnees_scaled)
+    return probabilite, prediction, zones_risque, confidence, missing_keys, anomaly_score, shap_explanations
 
 def envoyer_alerte(email_to, probabilite, zones_risque, data, ack_token=None):
     severity = "CRITICAL" if probabilite >= 75 else "HIGH"
@@ -5862,7 +6056,7 @@ def predire():
         machine_id_str = (data.get('machine_id') or '').strip() or None
         _machine = Machine.query.filter_by(user_id=uid, name=machine_id_str, is_active=True).first() if (uid and machine_id_str) else None
         _threshold = float(_machine.threshold) if (_machine and _machine.threshold) else 45.0
-        probabilite, prediction, zones_risque, confidence, imputed = predict_risk(data, threshold=_threshold)
+        probabilite, prediction, zones_risque, confidence, imputed, anomaly_score, shap_explanations = predict_risk(data, threshold=_threshold, return_extra=True)
         mail_envoye = False
         email = (_machine.alert_email if _machine and _machine.alert_email else None) or get_setting('responsible_email')
         alert_threshold = _threshold  # alert fires at same threshold as prediction
@@ -5888,7 +6082,9 @@ def predire():
         db.session.commit()
         return jsonify({'prediction': prediction, 'probabilite': probabilite,
                         'zones': zones_risque, 'mail_envoye': mail_envoye,
-                        'confidence': confidence, 'imputed': imputed})
+                        'confidence': confidence, 'imputed': imputed,
+                        'anomaly_score': anomaly_score,
+                        'shap_explanations': shap_explanations})
     except Exception as e:
         db.session.rollback()
         import traceback
@@ -5937,10 +6133,33 @@ def api_twin():
         if len(history_risks) >= 3:
             diff = history_risks[-1] - history_risks[-3]
             trend = 'Increasing' if diff > 2 else 'Decreasing' if diff < -2 else 'Stable'
+        # ── RUL: Remaining Useful Life via linear regression on risk trend ───
+        rul_hours = None
+        rul_confidence = None
+        try:
+            if len(analyses) >= 3:
+                t_ref = analyses[0].timestamp
+                t_arr = np.array([(a.timestamp - t_ref).total_seconds() / 3600 for a in analyses], dtype=float)
+                r_arr = np.array([a.risk for a in analyses], dtype=float)
+                t_mean = t_arr.mean(); r_mean = r_arr.mean()
+                denom = ((t_arr - t_mean) ** 2).sum()
+                if denom > 0:
+                    slope = ((t_arr - t_mean) * (r_arr - r_mean)).sum() / denom
+                    intercept = r_mean - slope * t_mean
+                    ss_res = ((r_arr - (slope * t_arr + intercept)) ** 2).sum()
+                    ss_tot = ((r_arr - r_mean) ** 2).sum()
+                    r2 = max(0.0, 1.0 - ss_res / ss_tot) if ss_tot > 0 else 0.0
+                    if slope > 0.01 and last.risk < 80:
+                        t_fail = (80 - intercept) / slope
+                        rul_hours = max(0, round(t_fail - t_arr[-1]))
+                        rul_confidence = 'high' if r2 > 0.7 else 'medium' if r2 > 0.3 else 'low'
+        except Exception as _re:
+            print(f"[Pilar/RUL] {_re}")
         return jsonify({'has_data':True,'current_risk':last.risk,'avg_risk_24h':avg_risk,
             'anomaly_rate':anomaly_rate,'total_analyses':total,'failure_hours':failure_hours,'trend':trend,
             'history_times':history_times,'history_risks':history_risks,'history_wear':history_wear,'history_temp':history_temp,
             'future_times':future_times,'future_risks':future_risks,'future_wear':future_wear,'future_temp':future_temp,
+            'rul_hours':rul_hours,'rul_confidence':rul_confidence,
             'last_params':{'vibration':FEATURE_MEDIANS['vibration'],'debit':last.vitesse,'pression_sortie':last.couple,'heure_fonctionnement':last.usure,'temp_palier':last.temp_air}})
     except Exception as e:
         import traceback

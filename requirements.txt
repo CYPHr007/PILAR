@@ -11,3 +11,4 @@ plotly
 gunicorn
 fpdf2
 APScheduler
+shap
