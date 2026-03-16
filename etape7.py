@@ -2967,12 +2967,23 @@ section{padding:96px 32px;max-width:1200px;margin:0 auto}
 .cta-section p{font-size:17px;color:var(--text2);margin-bottom:36px;max-width:500px;line-height:1.8;font-weight:400}
 
 /* FOOTER */
-footer{padding:32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px}
-.footer-logo{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;letter-spacing:4px;color:var(--text3)}
-.footer-text{font-size:11px;color:var(--text3);line-height:1.7}
-.footer-links{display:flex;flex-wrap:wrap;gap:20px}
-.footer-links a{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text3);text-decoration:none;letter-spacing:.5px;transition:color .15s}
+footer{border-top:1px solid var(--border);padding:40px 32px;display:grid;grid-template-columns:1fr auto;gap:32px;align-items:end}
+.footer-left{}
+.footer-logo{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;letter-spacing:5px;color:#fff;margin-bottom:8px}
+.footer-text{font-size:12px;color:var(--text3);line-height:1.7;margin-bottom:20px}
+.footer-legal{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text3);line-height:1.8}
+.footer-legal a{color:var(--text3);text-decoration:underline;text-underline-offset:3px}
+.footer-legal a:hover{color:var(--teal2)}
+.footer-right{display:flex;flex-direction:column;align-items:flex-end;gap:20px}
+.footer-links{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:20px}
+.footer-links a{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text3);text-decoration:none;letter-spacing:.5px;transition:color .15s}
 .footer-links a:hover{color:var(--teal2)}
+.footer-hiring{border:1px solid var(--border2);padding:16px 20px;text-align:right}
+.footer-hiring-tag{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--teal2);text-transform:uppercase;margin-bottom:4px}
+.footer-hiring-text{font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.6}
+.footer-hiring a{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--teal2);text-decoration:none;letter-spacing:.5px;border-bottom:1px solid rgba(20,184,166,.3);padding-bottom:1px}
+.footer-hiring a:hover{border-color:var(--teal2)}
+@media(max-width:700px){footer{grid-template-columns:1fr}.footer-right{align-items:flex-start}.footer-links{justify-content:flex-start}.footer-hiring{text-align:left}}
 
 /* DIVIDER */
 .full-divider{width:100%;height:1px;background:var(--border)}
@@ -3320,16 +3331,27 @@ function _lp(l){
 </script>
 <!-- FOOTER -->
 <footer>
-  <div>
+  <div class="footer-left">
     <div class="footer-logo">PILAR</div>
     <div class="footer-text">Predictive Maintenance Intelligence &mdash; Built for industrial teams worldwide</div>
+    <div class="footer-legal">
+      &copy; <span id="_copy_yr"></span> Pilar. <span data-ilp="footer_rights">All rights reserved.</span><br>
+      Pilar is a registered trademark. Unauthorized reproduction or distribution is prohibited.<br>
+      <a href="mailto:contact@trypilar.com">contact@trypilar.com</a>
+    </div>
   </div>
-  <div class="footer-links">
-    <a href="/login" data-ilp="footer_sign">Sign In</a>
-    <a href="/register" data-ilp="footer_reg">Create Account</a>
-    <a href="/api/docs">API Docs</a>
-    <a href="mailto:contact@trypilar.com">Contact</a>
-    <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text3)">&copy; <span id="_copy_yr"></span> Pilar. <span data-ilp="footer_rights">All rights reserved.</span></span>
+  <div class="footer-right">
+    <div class="footer-links">
+      <a href="/login" data-ilp="footer_sign">Sign In</a>
+      <a href="/register" data-ilp="footer_reg">Create Account</a>
+      <a href="/api/docs">API Docs</a>
+      <a href="mailto:contact@trypilar.com">Contact</a>
+    </div>
+    <div class="footer-hiring">
+      <div class="footer-hiring-tag">We're hiring</div>
+      <div class="footer-hiring-text">Looking for engineers passionate about<br>industrial AI and predictive systems.</div>
+      <a href="mailto:aliguenbou07r@gmail.com?subject=Pilar%20%E2%80%94%20Job%20Application&body=Hi%2C%20I%27d%20like%20to%20apply%20to%20join%20the%20Pilar%20team.">Send your application</a>
+    </div>
   </div>
 </footer>
 
