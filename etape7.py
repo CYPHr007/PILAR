@@ -2822,9 +2822,7 @@ LANDING_HTML = """<!DOCTYPE html>
   --red:#ef4444;--amber:#f59e0b;--green:#22c55e;
 }
 html{scroll-behavior:smooth}
-body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden}
-body::before{content:'';position:fixed;inset:0;background-image:repeating-linear-gradient(0deg,transparent,transparent 71px,rgba(255,255,255,.018) 72px),repeating-linear-gradient(90deg,transparent,transparent 71px,rgba(255,255,255,.018) 72px);pointer-events:none;z-index:0}
-*{position:relative;z-index:1}
+body{font-family:'IBM Plex Sans',sans-serif;background-color:var(--bg);background-image:repeating-linear-gradient(0deg,transparent,transparent 71px,rgba(255,255,255,.018) 72px),repeating-linear-gradient(90deg,transparent,transparent 71px,rgba(255,255,255,.018) 72px);color:var(--text);overflow-x:hidden}
 
 /* NAV */
 nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:0 32px;height:58px;display:flex;align-items:center;justify-content:space-between;background:rgba(5,13,26,0.92);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}
