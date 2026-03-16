@@ -3020,6 +3020,7 @@ footer{border-top:1px solid var(--border);padding:40px 32px;display:grid;grid-te
       <button id="_lEN" onclick="_lp('en')" style="padding:4px 10px;border:none;border-radius:2px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1px;cursor:pointer;background:transparent;color:#4e6278;transition:all .15s">EN</button>
       <button id="_lFR" onclick="_lp('fr')" style="padding:4px 10px;border:none;border-radius:2px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1px;cursor:pointer;background:transparent;color:#4e6278;transition:all .15s">FR</button>
     </div>
+    <a href="/demo" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--teal2);text-decoration:none;letter-spacing:.5px;padding:7px 14px;border:1px solid rgba(20,184,166,.3);border-radius:3px;transition:border-color .18s" onmouseover="this.style.borderColor='var(--teal2)'" onmouseout="this.style.borderColor='rgba(20,184,166,.3)'">Try Demo</a>
     <a href="/login" class="btn-ghost" data-ilp="nav_signin">Sign In</a>
     <a href="/register" class="btn-teal" data-ilp="nav_start">Get Started Free</a>
   </div>
@@ -3034,7 +3035,7 @@ footer{border-top:1px solid var(--border);padding:40px 32px;display:grid;grid-te
       <p class="hero-sub" data-ilp="hero_sub">Pilar analyzes your industrial sensors in real time and alerts you hours before a breakdown — before it costs you anything.</p>
       <div class="hero-cta">
         <a href="/register" class="btn-hero" data-ilp="hero_cta1">Start for free</a>
-        <a href="#how-it-works" class="btn-hero-ghost" data-ilp="hero_cta2">See how it works</a>
+        <a href="/demo" class="btn-hero-ghost">Try the demo</a>
       </div>
     </div>
     <div class="hero-right">
@@ -3355,6 +3356,324 @@ function _lp(l){
   </div>
 </footer>
 
+</body>
+</html>"""
+
+# ── DEMO PAGE ─────────────────────────────────────────────────────────────────
+DEMO_HTML = """<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pilar — Interactive Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#050d1a;--surface:#0c1828;--surface2:#0f1e30;
+  --border:#1a2d44;--border2:#22364f;
+  --teal:#0d9488;--teal2:#14b8a6;
+  --text:#e8f0f8;--text2:#a0b8cc;--text3:#64809a;
+  --red:#ef4444;--amber:#f59e0b;--green:#22c55e;
+}
+html{scroll-behavior:smooth}
+body{font-family:'IBM Plex Sans',sans-serif;background-color:var(--bg);background-image:repeating-linear-gradient(0deg,transparent,transparent 71px,rgba(255,255,255,.018) 72px),repeating-linear-gradient(90deg,transparent,transparent 71px,rgba(255,255,255,.018) 72px);color:var(--text);min-height:100vh}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:0 32px;height:58px;display:flex;align-items:center;justify-content:space-between;background:rgba(5,13,26,0.92);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}
+.nav-logo{font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;letter-spacing:4px;color:#fff;text-decoration:none}
+.nav-right{display:flex;align-items:center;gap:8px}
+.nav-tag{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--teal2);text-transform:uppercase;border:1px solid rgba(20,184,166,.3);padding:4px 10px}
+.nav-right a{font-family:'IBM Plex Mono',monospace;font-size:11px;text-decoration:none;padding:8px 16px;border-radius:3px}
+.nav-login{color:var(--text2);border:1px solid var(--border2)}
+.nav-login:hover{border-color:var(--teal);color:var(--teal2)}
+.nav-register{background:var(--teal);color:#fff}
+.nav-register:hover{background:var(--teal2)}
+
+/* LAYOUT */
+.wrap{max-width:1100px;margin:0 auto;padding:90px 32px 80px}
+.page-eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:3px;color:var(--teal2);text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:10px}
+.page-eyebrow::before{content:'';display:inline-block;width:20px;height:1px;background:var(--teal2)}
+h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(48px,6vw,80px);line-height:1;letter-spacing:1px;color:#fff;margin-bottom:16px}
+h1 span{color:var(--teal2)}
+.page-sub{font-size:16px;color:var(--text2);line-height:1.8;max-width:600px;margin-bottom:56px}
+
+/* AUDIO PLAYER */
+.audio-section{background:var(--surface);border:1px solid var(--border);padding:28px 32px;margin-bottom:48px}
+.audio-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px}
+.audio-title{font-size:14px;font-weight:600;color:#fff}
+.audio-title span{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text3);font-weight:400;margin-left:8px;letter-spacing:1px}
+.lang-toggle{display:flex;gap:2px;background:rgba(255,255,255,.03);border:1px solid var(--border);padding:3px;border-radius:3px}
+.lang-btn{padding:5px 14px;border:none;border-radius:2px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;cursor:pointer;background:transparent;color:var(--text3);transition:all .15s}
+.lang-btn.active{background:var(--teal);color:#fff}
+audio{width:100%;height:40px;margin-top:4px;filter:invert(1) sepia(1) saturate(2) hue-rotate(145deg);opacity:.85}
+audio::-webkit-media-controls-panel{background:var(--surface2)}
+
+/* DEMO GRID */
+.demo-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start}
+
+/* SCENARIO PICKER */
+.scenarios{background:var(--surface);border:1px solid var(--border);padding:28px}
+.block-label{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--teal2);text-transform:uppercase;margin-bottom:20px}
+.scenario-list{display:grid;gap:10px}
+.scenario-btn{width:100%;text-align:left;padding:14px 18px;background:rgba(255,255,255,.02);border:1px solid var(--border);cursor:pointer;transition:all .18s;font-family:'IBM Plex Sans',sans-serif}
+.scenario-btn:hover{border-color:var(--teal2);background:rgba(13,148,136,.06)}
+.scenario-btn.active{border-color:var(--teal2);background:rgba(13,148,136,.08)}
+.sc-name{font-size:14px;font-weight:600;color:#fff;margin-bottom:4px}
+.sc-desc{font-size:12px;color:var(--text3)}
+.scenario-btn.active .sc-name{color:var(--teal2)}
+
+/* RESULT PANEL */
+.result-panel{background:var(--surface);border:1px solid var(--border);padding:28px}
+.sensor-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px}
+.sensor-card{background:rgba(255,255,255,.025);border:1px solid var(--border);padding:14px 16px}
+.sensor-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:6px}
+.sensor-val{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:600;color:#fff}
+.sensor-val.warn{color:var(--amber)}
+.sensor-val.danger{color:var(--red)}
+.sensor-val.ok{color:var(--teal2)}
+.sensor-unit{font-size:11px;font-weight:400;color:var(--text3);margin-left:3px}
+
+/* RISK RESULT */
+.risk-block{border:1px solid var(--border);padding:20px 24px;margin-bottom:16px}
+.risk-block.danger{border-color:rgba(239,68,68,.4);background:rgba(239,68,68,.04)}
+.risk-block.warn{border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.04)}
+.risk-block.ok{border-color:rgba(34,197,94,.3);background:rgba(34,197,94,.04)}
+.risk-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.risk-label{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--text3);text-transform:uppercase}
+.risk-pct{font-family:'IBM Plex Mono',monospace;font-size:36px;font-weight:600;line-height:1}
+.risk-block.danger .risk-pct{color:var(--red)}
+.risk-block.warn .risk-pct{color:var(--amber)}
+.risk-block.ok .risk-pct{color:var(--green)}
+.risk-bar-bg{height:6px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:8px}
+.risk-bar-fill{height:100%;border-radius:2px;transition:width .6s ease}
+.risk-verdict{font-size:13px;color:var(--text2);line-height:1.6}
+
+/* ZONES */
+.zones{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:16px}
+.zone{padding:8px;text-align:center;border:1px solid var(--border)}
+.zone-name{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:1px}
+.zone-status{font-family:'IBM Plex Mono',monospace;font-size:9px;margin-top:4px}
+.zone.high{border-color:rgba(239,68,68,.4);background:rgba(239,68,68,.06)}
+.zone.high .zone-name{color:var(--red)}
+.zone.high .zone-status{color:#f87171}
+.zone.med{border-color:rgba(245,158,11,.3);background:rgba(245,158,11,.04)}
+.zone.med .zone-name{color:var(--amber)}
+.zone.med .zone-status{color:#fbbf24}
+.zone.low .zone-name{color:var(--text3)}
+.zone.low .zone-status{color:var(--text3)}
+
+/* CTA */
+.demo-cta{margin-top:40px;border:1px solid var(--border);padding:32px;background:var(--surface);display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap}
+.demo-cta-text h3{font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:1px;color:#fff;margin-bottom:6px}
+.demo-cta-text p{font-size:14px;color:var(--text2);line-height:1.7}
+.btn-register{display:inline-block;padding:14px 32px;background:var(--teal);color:#fff;text-decoration:none;font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:1px;border-radius:3px;transition:background .18s;white-space:nowrap}
+.btn-register:hover{background:var(--teal2)}
+
+@media(max-width:800px){
+  .demo-grid{grid-template-columns:1fr}
+  .zones{grid-template-columns:repeat(5,1fr)}
+  .sensor-grid{grid-template-columns:1fr 1fr}
+  .demo-cta{flex-direction:column}
+}
+@media(max-width:480px){
+  .zones{grid-template-columns:repeat(3,1fr)}
+  .wrap{padding:80px 20px 60px}
+  nav{padding:0 20px}
+}
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" class="nav-logo">PILAR</a>
+  <div class="nav-right">
+    <div class="nav-tag">Interactive Demo</div>
+    <a href="/login" class="nav-login">Sign In</a>
+    <a href="/register" class="nav-register">Get Started Free</a>
+  </div>
+</nav>
+
+<div class="wrap">
+  <div class="page-eyebrow">Live Demo</div>
+  <h1>See Pilar<br><span>in action</span></h1>
+  <p class="page-sub">No account required. Explore real failure scenarios, listen to the walkthrough, and understand how Pilar detects breakdowns before they happen.</p>
+
+  <!-- AUDIO PLAYER -->
+  <div class="audio-section">
+    <div class="audio-header">
+      <div class="audio-title">Guided walkthrough <span>// how Pilar works</span></div>
+      <div class="lang-toggle">
+        <button class="lang-btn active" id="aud-en" onclick="switchAudio('en')">EN</button>
+        <button class="lang-btn" id="aud-fr" onclick="switchAudio('fr')">FR</button>
+      </div>
+    </div>
+    <audio id="demo-audio" controls preload="metadata">
+      <source id="demo-audio-src" src="/static/pilar_tuto_en.mp3" type="audio/mpeg">
+    </audio>
+  </div>
+
+  <!-- DEMO SCENARIOS + RESULT -->
+  <div class="demo-grid">
+    <!-- SCENARIO PICKER -->
+    <div class="scenarios">
+      <div class="block-label">Choose a scenario</div>
+      <div class="scenario-list">
+        <button class="scenario-btn active" onclick="loadScenario(0)">
+          <div class="sc-name">Normal operation</div>
+          <div class="sc-desc">All parameters within safe range</div>
+        </button>
+        <button class="scenario-btn" onclick="loadScenario(1)">
+          <div class="sc-name">Tool wear developing</div>
+          <div class="sc-desc">Progressive wear, risk building up</div>
+        </button>
+        <button class="scenario-btn" onclick="loadScenario(2)">
+          <div class="sc-name">Overheat + high torque</div>
+          <div class="sc-desc">Heat dissipation failure likely</div>
+        </button>
+        <button class="scenario-btn" onclick="loadScenario(3)">
+          <div class="sc-name">Critical — imminent failure</div>
+          <div class="sc-desc">Multiple zones in alert, action required</div>
+        </button>
+      </div>
+    </div>
+
+    <!-- RESULT PANEL -->
+    <div class="result-panel">
+      <div class="block-label">Live sensor reading</div>
+      <div class="sensor-grid">
+        <div class="sensor-card">
+          <div class="sensor-label">Air temp</div>
+          <div class="sensor-val" id="v-air">300.1<span class="sensor-unit">K</span></div>
+        </div>
+        <div class="sensor-card">
+          <div class="sensor-label">Process temp</div>
+          <div class="sensor-val" id="v-proc">310.5<span class="sensor-unit">K</span></div>
+        </div>
+        <div class="sensor-card">
+          <div class="sensor-label">Rotation speed</div>
+          <div class="sensor-val" id="v-rpm">1500<span class="sensor-unit">rpm</span></div>
+        </div>
+        <div class="sensor-card">
+          <div class="sensor-label">Torque</div>
+          <div class="sensor-val" id="v-torque">40.2<span class="sensor-unit">Nm</span></div>
+        </div>
+        <div class="sensor-card">
+          <div class="sensor-label">Tool wear</div>
+          <div class="sensor-val" id="v-wear">45<span class="sensor-unit">min</span></div>
+        </div>
+        <div class="sensor-card">
+          <div class="sensor-label">Machine type</div>
+          <div class="sensor-val ok" id="v-type" style="font-size:16px">Medium</div>
+        </div>
+      </div>
+
+      <div class="block-label">Failure zones</div>
+      <div class="zones" id="zones-row">
+        <div class="zone low"><div class="zone-name">TWF</div><div class="zone-status">LOW</div></div>
+        <div class="zone low"><div class="zone-name">HDF</div><div class="zone-status">LOW</div></div>
+        <div class="zone low"><div class="zone-name">PWF</div><div class="zone-status">LOW</div></div>
+        <div class="zone low"><div class="zone-name">OSF</div><div class="zone-status">LOW</div></div>
+        <div class="zone low"><div class="zone-name">RNF</div><div class="zone-status">LOW</div></div>
+      </div>
+
+      <div class="risk-block ok" id="risk-block">
+        <div class="risk-row">
+          <div class="risk-label">Failure risk</div>
+          <div class="risk-pct" id="risk-pct">3%</div>
+        </div>
+        <div class="risk-bar-bg"><div class="risk-bar-fill" id="risk-bar" style="width:3%;background:var(--green)"></div></div>
+        <div class="risk-verdict" id="risk-verdict">All systems nominal. No intervention required.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div class="demo-cta">
+    <div class="demo-cta-text">
+      <h3>Ready to connect your machines?</h3>
+      <p>Free account — upload your first CSV in under 2 minutes. No credit card required.</p>
+    </div>
+    <a href="/register" class="btn-register">Create free account</a>
+  </div>
+</div>
+
+<script>
+var SCENARIOS=[
+  {
+    name:'Normal operation',
+    air:300.1,proc:310.5,rpm:1500,torque:40.2,wear:45,type:'Medium',
+    risk:3,bar_color:'var(--green)',block_class:'ok',
+    verdict:'All systems nominal. No intervention required.',
+    zones:['low','low','low','low','low'],
+    zone_labels:['LOW','LOW','LOW','LOW','LOW']
+  },
+  {
+    name:'Tool wear developing',
+    air:302.4,proc:313.2,rpm:1620,torque:52.8,wear:195,type:'Medium',
+    risk:38,bar_color:'var(--amber)',block_class:'warn',
+    verdict:'Tool wear approaching warning threshold. Schedule inspection within 48h.',
+    zones:['med','low','low','low','low'],
+    zone_labels:['MED','LOW','LOW','LOW','LOW']
+  },
+  {
+    name:'Overheat + high torque',
+    air:310.8,proc:335.6,rpm:1320,torque:72.1,wear:280,type:'High',
+    risk:67,bar_color:'var(--amber)',block_class:'warn',
+    verdict:'Heat dissipation stress detected. Reduce load and inspect cooling system.',
+    zones:['med','high','low','med','low'],
+    zone_labels:['MED','HIGH','LOW','MED','LOW']
+  },
+  {
+    name:'Critical — imminent failure',
+    air:315.2,proc:342.7,rpm:1140,torque:89.4,wear:420,type:'High',
+    risk:91,bar_color:'var(--red)',block_class:'danger',
+    verdict:'CRITICAL — Multiple failure zones active. Stop machine and inspect immediately.',
+    zones:['high','high','low','high','low'],
+    zone_labels:['HIGH','HIGH','LOW','HIGH','LOW']
+  }
+];
+
+function loadScenario(i){
+  document.querySelectorAll('.scenario-btn').forEach(function(b,j){b.classList.toggle('active',j===i)});
+  var s=SCENARIOS[i];
+  function setVal(id,v,cls){var el=document.getElementById(id);el.childNodes[0].textContent=v;el.className='sensor-val'+(cls?' '+cls:'');}
+  document.getElementById('v-air').childNodes[0].textContent=s.air;
+  document.getElementById('v-proc').childNodes[0].textContent=s.proc;
+  var rpmEl=document.getElementById('v-rpm');rpmEl.childNodes[0].textContent=s.rpm;rpmEl.className='sensor-val'+(s.rpm>1800?' warn':s.rpm<1200?' danger':' ok');
+  var torqueEl=document.getElementById('v-torque');torqueEl.childNodes[0].textContent=s.torque;torqueEl.className='sensor-val'+(s.torque>70?' danger':s.torque>50?' warn':' ok');
+  var wearEl=document.getElementById('v-wear');wearEl.childNodes[0].textContent=s.wear;wearEl.className='sensor-val'+(s.wear>300?' danger':s.wear>150?' warn':' ok');
+  var typeEl=document.getElementById('v-type');typeEl.textContent=s.type;typeEl.className='sensor-val ok';
+
+  var zones=['TWF','HDF','PWF','OSF','RNF'];
+  var zRow=document.getElementById('zones-row');
+  zRow.innerHTML='';
+  for(var z=0;z<5;z++){
+    var d=document.createElement('div');
+    d.className='zone '+s.zones[z];
+    d.innerHTML='<div class="zone-name">'+zones[z]+'</div><div class="zone-status">'+s.zone_labels[z]+'</div>';
+    zRow.appendChild(d);
+  }
+
+  var block=document.getElementById('risk-block');
+  block.className='risk-block '+s.block_class;
+  document.getElementById('risk-pct').textContent=s.risk+'%';
+  var bar=document.getElementById('risk-bar');
+  bar.style.width=s.risk+'%';
+  bar.style.background=s.bar_color;
+  document.getElementById('risk-verdict').textContent=s.verdict;
+}
+
+function switchAudio(lang){
+  document.getElementById('aud-en').classList.toggle('active',lang==='en');
+  document.getElementById('aud-fr').classList.toggle('active',lang==='fr');
+  var audio=document.getElementById('demo-audio');
+  var t=audio.currentTime;
+  document.getElementById('demo-audio-src').src='/static/pilar_tuto_'+lang+'.mp3';
+  audio.load();
+}
+</script>
 </body>
 </html>"""
 
@@ -3979,6 +4298,10 @@ def impersonate(uid):
 @app.route('/')
 def index():
     return LANDING_HTML
+
+@app.route('/demo')
+def demo():
+    return DEMO_HTML
 
 @app.route('/monitor')
 def monitor():
