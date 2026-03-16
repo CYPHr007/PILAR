@@ -3929,8 +3929,6 @@ def impersonate(uid):
 # ── ROUTES PAGES ──────────────────────────────────────────────────────────────
 @app.route('/')
 def index():
-    if current_uid():
-        return redirect('/monitor')
     return LANDING_HTML
 
 @app.route('/monitor')
