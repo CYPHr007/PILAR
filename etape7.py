@@ -87,6 +87,7 @@ class User(db.Model):
     is_admin       = db.Column(db.Boolean, default=False)
     is_banned      = db.Column(db.Boolean, default=False)
     team_id        = db.Column(db.Integer, nullable=True)
+    onboarded      = db.Column(db.Boolean, default=False)
     created_at     = db.Column(db.DateTime, default=datetime.utcnow)
 
 class BannedEmail(db.Model):
@@ -170,6 +171,7 @@ with app.app_context():
             "ALTER TABLE saved_file ADD COLUMN team_id INTEGER",
             "ALTER TABLE user ADD COLUMN is_banned INTEGER DEFAULT 0",
             "ALTER TABLE analysis ADD COLUMN feedback VARCHAR(10)",
+            "ALTER TABLE user ADD COLUMN onboarded INTEGER DEFAULT 0",
         ]
     else:
         _migrations = [
@@ -185,6 +187,7 @@ with app.app_context():
             "ALTER TABLE saved_file ADD COLUMN IF NOT EXISTS team_id INTEGER",
             'ALTER TABLE "user" ADD COLUMN IF NOT EXISTS is_banned BOOLEAN DEFAULT FALSE',
             "ALTER TABLE analysis ADD COLUMN IF NOT EXISTS feedback VARCHAR(10)",
+            'ALTER TABLE "user" ADD COLUMN IF NOT EXISTS onboarded BOOLEAN DEFAULT FALSE',
         ]
     for sql in _migrations:
         try:
@@ -3359,6 +3362,280 @@ function _lp(l){
 </body>
 </html>"""
 
+# ── ONBOARDING PAGE ───────────────────────────────────────────────────────────
+ONBOARDING_HTML = """<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pilar — Get started</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#050d1a;--surface:#0c1828;--surface2:#0f1e30;
+  --border:#1a2d44;--border2:#22364f;
+  --teal:#0d9488;--teal2:#14b8a6;
+  --text:#e8f0f8;--text2:#a0b8cc;--text3:#64809a;
+  --red:#ef4444;--amber:#f59e0b;--green:#22c55e;
+}
+html,body{height:100%}
+body{font-family:'IBM Plex Sans',sans-serif;background:#050d1a;color:var(--text);display:flex;flex-direction:column;min-height:100vh}
+
+/* TOP BAR */
+.topbar{padding:0 32px;height:56px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);flex-shrink:0}
+.topbar-logo{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;letter-spacing:4px;color:#fff;text-decoration:none}
+.topbar-skip{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text3);text-decoration:none;letter-spacing:.5px}
+.topbar-skip:hover{color:var(--teal2)}
+
+/* STEP BAR */
+.stepbar{display:flex;align-items:stretch;border-bottom:1px solid var(--border);flex-shrink:0}
+.step-tab{flex:1;padding:14px 20px;display:flex;align-items:center;gap:12px;border-right:1px solid var(--border);cursor:default;transition:background .18s}
+.step-tab:last-child{border-right:none}
+.step-tab.active{background:var(--surface)}
+.step-tab.done{background:rgba(13,148,136,.04)}
+.step-tab.inactive{opacity:.4}
+.step-num{font-family:'IBM Plex Mono',monospace;font-size:11px;width:26px;height:26px;border-radius:50%;border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text3)}
+.step-tab.active .step-num{border-color:var(--teal2);color:var(--teal2)}
+.step-tab.done .step-num{border-color:var(--teal);background:var(--teal);color:#fff}
+.step-label{font-size:13px;font-weight:500;color:var(--text2)}
+.step-tab.active .step-label{color:#fff}
+
+/* CONTENT */
+.content{flex:1;display:flex;align-items:flex-start;justify-content:center;padding:48px 24px}
+.panel{width:100%;max-width:640px}
+
+/* STEP 1 — WELCOME */
+.welcome-icon{width:56px;height:56px;border:1px solid var(--teal);background:rgba(13,148,136,.1);display:flex;align-items:center;justify-content:center;margin-bottom:24px}
+.welcome-h{font-family:'Bebas Neue',sans-serif;font-size:clamp(40px,6vw,64px);line-height:1;letter-spacing:1px;color:#fff;margin-bottom:12px}
+.welcome-h span{color:var(--teal2)}
+.welcome-sub{font-size:16px;color:var(--text2);line-height:1.8;margin-bottom:36px}
+.checklist{list-style:none;margin-bottom:40px;display:grid;gap:12px}
+.checklist li{display:flex;align-items:flex-start;gap:12px;padding:14px 18px;background:var(--surface);border:1px solid var(--border);font-size:14px;color:var(--text2)}
+.checklist li::before{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--teal2);margin-top:6px;flex-shrink:0}
+.checklist li strong{color:#fff;display:block;margin-bottom:2px;font-size:13px}
+
+/* STEP 2 — FORM */
+.form-intro{margin-bottom:28px}
+.form-intro p{font-size:15px;color:var(--text2);line-height:1.75}
+.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text3)}
+.field input,.field select{background:var(--surface);border:1px solid var(--border2);color:var(--text);padding:11px 14px;font-family:'IBM Plex Mono',monospace;font-size:13px;border-radius:3px;outline:none;transition:border-color .18s;width:100%}
+.field input:focus,.field select:focus{border-color:var(--teal2)}
+.field select option{background:#0c1828}
+.field-hint{font-size:11px;color:var(--text3);line-height:1.5}
+.form-note{background:rgba(20,184,166,.05);border:1px solid rgba(20,184,166,.2);padding:12px 16px;font-size:13px;color:var(--text2);line-height:1.65;margin-bottom:24px;border-radius:2px}
+
+/* STEP 3 — RESULT */
+.result-hero{border:1px solid var(--border);padding:28px;margin-bottom:20px;background:var(--surface)}
+.result-hero.ok{border-color:rgba(34,197,94,.4);background:rgba(34,197,94,.04)}
+.result-hero.warn{border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.04)}
+.result-hero.danger{border-color:rgba(239,68,68,.4);background:rgba(239,68,68,.04)}
+.result-row{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px}
+.result-label{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--text3);text-transform:uppercase}
+.result-pct{font-family:'IBM Plex Mono',monospace;font-size:48px;font-weight:600;line-height:1}
+.result-hero.ok .result-pct{color:var(--green)}
+.result-hero.warn .result-pct{color:var(--amber)}
+.result-hero.danger .result-pct{color:var(--red)}
+.result-bar-bg{height:6px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:12px}
+.result-bar-fill{height:100%;border-radius:2px;transition:width .6s ease}
+.result-verdict{font-size:14px;color:var(--text2);line-height:1.7}
+.zones-row{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:20px}
+.zone-chip{padding:8px;text-align:center;border:1px solid var(--border);background:var(--surface)}
+.zone-chip-name{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600}
+.zone-chip-val{font-family:'IBM Plex Mono',monospace;font-size:10px;margin-top:4px;color:var(--text3)}
+.zone-chip.high{border-color:rgba(239,68,68,.4)}.zone-chip.high .zone-chip-name{color:var(--red)}.zone-chip.high .zone-chip-val{color:#f87171}
+.zone-chip.med{border-color:rgba(245,158,11,.3)}.zone-chip.med .zone-chip-name{color:var(--amber)}.zone-chip.med .zone-chip-val{color:#fbbf24}
+.zone-chip.low .zone-chip-name{color:var(--text3)}
+.result-saved{font-size:13px;color:var(--teal2);margin-bottom:24px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.5px}
+
+/* BUTTONS */
+.btn-next{display:block;width:100%;padding:15px;background:var(--teal);color:#fff;border:none;border-radius:3px;font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:background .18s;text-align:center;text-decoration:none}
+.btn-next:hover{background:var(--teal2)}
+.btn-next:disabled{opacity:.5;cursor:not-allowed}
+.btn-back{display:inline-block;padding:8px 16px;background:transparent;border:1px solid var(--border2);color:var(--text3);border-radius:3px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.5px;cursor:pointer;transition:all .18s;margin-bottom:20px}
+.btn-back:hover{border-color:var(--teal);color:var(--teal2)}
+.err-box{background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.3);color:#f87171;padding:12px 16px;font-size:13px;border-radius:2px;margin-bottom:16px;display:none}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="/" class="topbar-logo">PILAR</a>
+  <a href="/onboarding/skip" class="topbar-skip">Skip setup &rarr;</a>
+</div>
+
+<div class="stepbar">
+  <div class="step-tab active" id="tab0">
+    <div class="step-num">1</div>
+    <div class="step-label">Welcome</div>
+  </div>
+  <div class="step-tab inactive" id="tab1">
+    <div class="step-num">2</div>
+    <div class="step-label">Your machine</div>
+  </div>
+  <div class="step-tab inactive" id="tab2">
+    <div class="step-num">3</div>
+    <div class="step-label">First result</div>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- STEP 1: WELCOME -->
+  <div class="panel" id="step0">
+    <div class="welcome-icon">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--teal2)" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+    </div>
+    <div class="welcome-h">Connect your<br><span>first machine</span></div>
+    <div class="welcome-sub">You're 3 steps away from your first failure prediction. Here's what we'll do:</div>
+    <ul class="checklist">
+      <li><div><strong>Enter your machine parameters</strong>Temperature, rotation speed, torque, and tool wear — the same data your sensors already produce.</div></li>
+      <li><div><strong>Run the AI analysis</strong>Pilar's model analyzes your data across 5 failure zones and returns a risk score in seconds.</div></li>
+      <li><div><strong>See your result</strong>A clear risk level, failure zone breakdown, and what to do next. Saved to your history automatically.</div></li>
+    </ul>
+    <button class="btn-next" onclick="goTo(1)">Let's start &rarr;</button>
+  </div>
+
+  <!-- STEP 2: MACHINE FORM -->
+  <div class="panel" id="step1" style="display:none">
+    <button class="btn-back" onclick="goTo(0)">&larr; Back</button>
+    <div class="form-intro">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:3px;color:var(--teal2);text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:8px"><span style="display:inline-block;width:16px;height:1px;background:var(--teal2)"></span>Step 2 of 3</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:1px;color:#fff;margin-bottom:8px">Enter your machine data</div>
+      <p>Fill in the current readings from your machine. Don't worry about being exact — you can refine this later.</p>
+    </div>
+    <div class="form-note">These are the same parameters described in the audio walkthrough: machine class, temperatures, rotation speed, torque, and tool wear.</div>
+    <div id="err-box" class="err-box"></div>
+    <div class="field-grid">
+      <div class="field">
+        <label>Machine type</label>
+        <select id="f-type">
+          <option value="0">Low (L)</option>
+          <option value="1" selected>Medium (M)</option>
+          <option value="2">High (H)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Air temperature (K)</label>
+        <input type="number" id="f-air" value="300.0" step="0.1" min="250" max="450">
+        <div class="field-hint">Typical range: 295 – 305 K</div>
+      </div>
+      <div class="field">
+        <label>Process temperature (K)</label>
+        <input type="number" id="f-proc" value="310.0" step="0.1" min="250" max="450">
+        <div class="field-hint">Usually air temp + 8–12 K</div>
+      </div>
+      <div class="field">
+        <label>Rotation speed (rpm)</label>
+        <input type="number" id="f-rpm" value="1500" step="10" min="0" max="3000">
+        <div class="field-hint">Typical range: 1200 – 2000 rpm</div>
+      </div>
+      <div class="field">
+        <label>Torque (Nm)</label>
+        <input type="number" id="f-torque" value="40.0" step="0.1" min="0" max="200">
+        <div class="field-hint">Typical range: 20 – 80 Nm</div>
+      </div>
+      <div class="field">
+        <label>Tool wear (min)</label>
+        <input type="number" id="f-wear" value="0" step="1" min="0" max="300">
+        <div class="field-hint">Minutes since last tool change</div>
+      </div>
+    </div>
+    <button class="btn-next" id="btn-analyse" onclick="runAnalysis()">Analyse my machine &rarr;</button>
+  </div>
+
+  <!-- STEP 3: RESULT -->
+  <div class="panel" id="step2" style="display:none">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:3px;color:var(--teal2);text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:8px"><span style="display:inline-block;width:16px;height:1px;background:var(--teal2)"></span>Step 3 of 3 — Your first result</div>
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:1px;color:#fff;margin-bottom:24px">Analysis complete</div>
+
+    <div class="result-hero" id="res-block">
+      <div class="result-row">
+        <div class="result-label">Failure risk</div>
+        <div class="result-pct" id="res-pct">—</div>
+      </div>
+      <div class="result-bar-bg"><div class="result-bar-fill" id="res-bar" style="width:0%"></div></div>
+      <div class="result-verdict" id="res-verdict"></div>
+    </div>
+
+    <div class="zones-row" id="res-zones"></div>
+
+    <div class="result-saved">&#10003; Analysis saved to your history</div>
+
+    <a href="/monitor" class="btn-next" onclick="markDone(event)">Go to your dashboard &rarr;</a>
+    <div style="text-align:center;margin-top:16px">
+      <a href="/history" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text3);text-decoration:none" onmouseover="this.style.color='var(--teal2)'" onmouseout="this.style.color='var(--text3)'">View analysis history</a>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function goTo(n){
+  document.querySelectorAll('[id^="step"]').forEach(function(el,i){el.style.display=i===n?'':'none'});
+  ['tab0','tab1','tab2'].forEach(function(id,i){
+    var t=document.getElementById(id);
+    t.className='step-tab '+(i<n?'done':i===n?'active':'inactive');
+  });
+}
+
+function runAnalysis(){
+  var btn=document.getElementById('btn-analyse');
+  var err=document.getElementById('err-box');
+  err.style.display='none';
+  btn.disabled=true;
+  btn.textContent='Analysing...';
+  var data={
+    type:parseInt(document.getElementById('f-type').value),
+    temp_air:parseFloat(document.getElementById('f-air').value),
+    temp_process:parseFloat(document.getElementById('f-proc').value),
+    vitesse:parseFloat(document.getElementById('f-rpm').value),
+    couple:parseFloat(document.getElementById('f-torque').value),
+    usure:parseFloat(document.getElementById('f-wear').value)
+  };
+  fetch('/onboarding/analyse',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
+    .then(function(r){return r.json()})
+    .then(function(d){
+      if(d.error){err.textContent=d.error;err.style.display='block';btn.disabled=false;btn.textContent='Analyse my machine \u2192';return;}
+      showResult(d);
+      goTo(2);
+    })
+    .catch(function(){err.textContent='Network error. Please try again.';err.style.display='block';btn.disabled=false;btn.textContent='Analyse my machine \u2192';});
+}
+
+function showResult(d){
+  var risk=d.risk;
+  var cls=risk>=50?'danger':risk>=20?'warn':'ok';
+  var color=risk>=50?'var(--red)':risk>=20?'var(--amber)':'var(--green)';
+  var verdict=risk>=50?'High risk — intervention recommended before next operation cycle.':risk>=20?'Moderate risk — schedule inspection within 48 hours.':'All systems nominal. Continue monitoring normally.';
+  var block=document.getElementById('res-block');
+  block.className='result-hero '+cls;
+  document.getElementById('res-pct').textContent=risk+'%';
+  var bar=document.getElementById('res-bar');
+  bar.style.width=risk+'%';
+  bar.style.background=color;
+  document.getElementById('res-verdict').textContent=d.verdict||verdict;
+  var zones=['TWF','HDF','PWF','OSF','RNF'];
+  var zc=document.getElementById('res-zones');
+  zc.innerHTML='';
+  zones.forEach(function(z,i){
+    var v=d.zones&&d.zones[z]?d.zones[z]:0;
+    var level=v>0.5?'high':v>0.2?'med':'low';
+    var pct=Math.round(v*100);
+    zc.innerHTML+='<div class="zone-chip '+level+'"><div class="zone-chip-name">'+z+'</div><div class="zone-chip-val">'+pct+'%</div></div>';
+  });
+}
+
+function markDone(e){
+  e.preventDefault();
+  fetch('/onboarding/complete',{method:'POST'}).then(function(){window.location='/monitor';});
+}
+</script>
+</body>
+</html>"""
+
 # ── DEMO PAGE ─────────────────────────────────────────────────────────────────
 DEMO_HTML = """<!DOCTYPE html>
 <html lang="en">
@@ -4045,7 +4322,7 @@ def register():
             return render_template_string(REGISTER_HTML, error=None, pending=True, resent=False, pending_email=email)
         session['user_id'] = user.id
         session.permanent = True
-        return redirect('/monitor')
+        return redirect('/onboarding')
     except Exception as e:
         db.session.rollback()
         print(f"[Pilar/auth] Register error: {type(e).__name__}: {e}")
@@ -4104,7 +4381,7 @@ def login():
         session['user_id'] = user.id
         session.permanent = True
         print(f"[Pilar/auth] Login OK: {email} IP={ip}")
-        return redirect('/monitor')
+        return redirect('/monitor' if user.onboarded else '/onboarding')
     except Exception as e:
         db.session.rollback()
         print(f"[Pilar/auth] Login error: {type(e).__name__}: {e}")
@@ -4339,6 +4616,55 @@ def index():
 @app.route('/demo')
 def demo():
     return DEMO_HTML
+
+@app.route('/onboarding')
+@login_required
+def onboarding():
+    return ONBOARDING_HTML
+
+@app.route('/onboarding/analyse', methods=['POST'])
+@login_required
+def onboarding_analyse():
+    try:
+        data = request.json or {}
+        required = ['type','temp_air','temp_process','vitesse','couple','usure']
+        if not all(k in data for k in required):
+            return jsonify({'error': 'Missing parameters'}), 400
+        prob, pred, zones, conf, _ = predict_risk(data)
+        uid = current_uid()
+        a = Analysis(user_id=uid, temp_air=data['temp_air'], temp_process=data['temp_process'],
+                     vitesse=data['vitesse'], couple=data['couple'], usure=data['usure'],
+                     probabilite=prob, prediction=pred, confidence=conf,
+                     extra_params=str({'type': data['type']}))
+        db.session.add(a)
+        db.session.commit()
+        verdict = ('High risk — intervention recommended before next operation cycle.' if prob >= 50
+                   else 'Moderate risk — schedule inspection within 48 hours.' if prob >= 20
+                   else 'All systems nominal. Continue monitoring normally.')
+        return jsonify({'risk': prob, 'pred': pred, 'zones': zones, 'verdict': verdict})
+    except Exception as e:
+        print(f"[Pilar/onboarding] ERROR: {type(e).__name__}: {e}")
+        return jsonify({'error': 'Analysis failed. Please try again.'}), 500
+
+@app.route('/onboarding/complete', methods=['POST'])
+@login_required
+def onboarding_complete():
+    uid = current_uid()
+    user = db.session.get(User, uid)
+    if user:
+        user.onboarded = True
+        db.session.commit()
+    return jsonify({'ok': True})
+
+@app.route('/onboarding/skip')
+@login_required
+def onboarding_skip():
+    uid = current_uid()
+    user = db.session.get(User, uid)
+    if user:
+        user.onboarded = True
+        db.session.commit()
+    return redirect('/monitor')
 
 @app.route('/monitor')
 def monitor():
