@@ -1194,7 +1194,8 @@ ast_placeholder:'Posez votre question sur la machine...',ast_send:'Envoyer',
 ast_hello:"Bonjour. Je suis votre assistant maintenance prédictive. Partagez vos relevés capteurs ou posez-moi vos questions.",
 csv_detect:'Colonnes détectées',csv_bad:'Colonnes non reconnues',csv_rows:'lignes',
 live_hint:'CSV · noms de colonnes libres · conversion auto',manual_title:'Analyse manuelle',
-select_machine:'Choisissez votre machine',adv_params:'Paramètres avancés',
+select_machine:'Choisissez votre machine',adv_params:'Paramètres avancés',not_listed:'Ma machine n\u2019est pas listée',
+idle_l2b:'Sélectionnez une machine ci-dessous et lancez l\u2019analyse',
 custom_machine_title:'Machine personnalisée',custom_machine_desc:'Décrivez votre machine ci-dessous. Nous l\u2019intégrerons à Pilar sous 48h.',
 cust_name_lbl:'Nom / type de machine',cust_mfr_lbl:'Fabricant',cust_rpm_lbl:'Plage RPM typique',cust_torque_lbl:'Plage couple (Nm)',cust_desc_lbl:'Description',
 cust_submit:'Envoyer la demande',cust_sent:'Demande reçue. Votre machine sera intégrée sous 48h.',
@@ -1248,7 +1249,8 @@ ast_placeholder:'Ask about your machine...',ast_send:'Send',
 ast_hello:'Hello. I am your predictive maintenance assistant. Share your sensor readings or ask me anything about your machine health.',
 csv_detect:'Columns detected',csv_bad:'Columns not recognized',csv_rows:'rows',
 live_hint:'CSV · any column names · auto unit conversion',manual_title:'Manual Analysis',
-select_machine:'Select your machine',adv_params:'Advanced parameters',
+select_machine:'Select your machine',adv_params:'Advanced parameters',not_listed:'My machine is not listed',
+idle_l2b:'Select a machine below and run analysis',
 custom_machine_title:'Custom Machine',custom_machine_desc:'Describe your machine below. We will integrate it into Pilar within 48 hours.',
 cust_name_lbl:'Machine name / type',cust_mfr_lbl:'Manufacturer',cust_rpm_lbl:'Typical RPM range',cust_torque_lbl:'Torque range (Nm)',cust_desc_lbl:'Description',
 cust_submit:'Submit Request',cust_sent:'Request received. Your machine will be integrated within 48 hours.',
@@ -1503,54 +1505,21 @@ HTML = _HEAD.replace("{FAV}","iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAHxU
   <div class="ab" id="abn" data-i18n="status_alert">Anomaly Detected</div>
 
   <!-- RESULT — hero -->
-  <div id="res"><div class="idle"><span class="l1" data-i18n="idle_l1">No analysis yet</span><span class="l2" data-i18n="idle_l2">Connect a file or use manual input</span></div></div>
+  <div id="res"><div class="idle"><span class="l1" data-i18n="idle_l1">No analysis yet</span><span class="l2" data-i18n="idle_l2">Select a machine below and run analysis</span></div></div>
 
-  <!-- LIVE FILE ZONE — primary -->
-  <div class="lz-wrap">
-    <input type="file" id="lfInput" accept=".csv" style="display:none" onchange="onLiveFile(this)">
-    <div id="lzEmpty" class="lz-empty">
-      <label for="lfInput" class="lz-cta">
-        <svg style="width:18px;height:18px;stroke:currentColor;fill:none;flex-shrink:0" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        <span data-i18n="live_connect">Connect File</span>
-      </label>
-      <span class="lz-hint" data-i18n="live_hint">CSV · any column names · auto unit conversion</span>
-    </div>
-    <div id="lzConn" class="lz-conn" style="display:none">
-      <div class="lz-ch">
-        <span class="lz-dot"></span>
-        <span class="lz-fname" id="liveFileName">—</span>
-        <button class="lz-disc" onclick="stopLiveMonitor()" data-i18n="live_disconnect">Disconnect</button>
-      </div>
-      <div class="lz-sg">
-        <div class="lz-si"><span class="lz-sv" id="liveRowCount">0</span><span class="lz-sl" data-i18n="live_rows">Rows</span></div>
-        <div class="lz-si alert"><span class="lz-sv" id="liveFailCount">0</span><span class="lz-sl" data-i18n="live_fail">Failures</span></div>
-        <div class="lz-si ok"><span class="lz-sv" id="liveOkCount">0</span><span class="lz-sl" data-i18n="live_ok">Normal</span></div>
-      </div>
-      <div class="lz-foot">
-        <span class="lz-ck" id="liveChk"></span>
-        <select id="liveIntv" class="lz-sel" onchange="resetLiveTimer()">
-          <option value="2000">2s</option>
-          <option value="5000" selected>5s</option>
-          <option value="10000">10s</option>
-          <option value="30000">30s</option>
-        </select>
-      </div>
-    </div>
-  </div>
-
-  <!-- MANUAL INPUT — machine picker + sensors -->
+  <!-- MANUAL INPUT — machine picker + sensors (open by default) -->
   <div class="card">
     <div class="man-hdr" onclick="toggleManual()">
       <span class="ctitle" style="margin-bottom:0" data-i18n="manual_title">Manual Analysis</span>
-      <svg class="man-chv" id="manChv" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <svg class="man-chv" id="manChv" viewBox="0 0 24 24" style="transform:rotate(180deg)"><path d="M19 9l-7 7-7-7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </div>
-    <div id="manBody" style="display:none;margin-top:14px">
+    <div id="manBody" style="display:block;margin-top:14px">
 
       <!-- STEP 1 — Machine catalog -->
       <div id="mStep1">
         <div class="ctitle" data-i18n="select_machine">Select your machine</div>
         <div class="mcatalog" id="mcatalog"></div>
-        <button class="not-listed-btn" onclick="showCustom()">My machine is not listed</button>
+        <button class="not-listed-btn" onclick="showCustom()" data-i18n="not_listed">My machine is not listed</button>
       </div>
 
       <!-- STEP 2 — Sensor readings -->
@@ -1727,12 +1696,14 @@ async function submitCustom(){
   }catch(e){btn.disabled=false;btn.textContent=t('cust_submit');}
 }
 
+var _catalogBuilt=false;
 function toggleManual(){
   var b=document.getElementById('manBody'),c=document.getElementById('manChv'),o=b.style.display==='block';
   b.style.display=o?'none':'block';
   c.style.transform=o?'':'rotate(180deg)';
-  if(!o)buildCatalog();
+  if(!o&&!_catalogBuilt){buildCatalog();_catalogBuilt=true;}
 }
+window.addEventListener('DOMContentLoaded',function(){if(!_catalogBuilt){buildCatalog();_catalogBuilt=true;}});
 function updN(){const b=document.getElementById('nb');if(!b)return;const p=Notification.permission;if(p==='granted'){b.textContent='Notifs ON';b.className='nb on';}else{b.textContent='Enable Notifs';b.className='nb';}}
 async function toggleN(){if(Notification.permission==='granted')return;await Notification.requestPermission();updN();}
 function sendN(risk,zones){if(Notification.permission!=='granted')return;new Notification('Pilar — Risk: '+risk+'%',{body:zones.length?'Zones: '+zones.map(z=>z.nom).join(', '):'No specific zone',requireInteraction:true,tag:'pilar'});}
@@ -4443,8 +4414,11 @@ function renderFleet() {
         <div class="meta-item"><div class="meta-label">Last seen</div><div class="meta-val" style="font-size:11px">${lastSeen}</div></div>
       </div>
       <div class="card-actions">
+        <button class="btn btn-primary" style="flex:1;justify-content:center" onclick="openUpload(${m.id})">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:12px;height:12px;flex-shrink:0"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Upload data
+        </button>
         <button class="btn btn-ghost" style="flex:1;justify-content:center" onclick="openEdit(${m.id})">Edit</button>
-        <button class="btn ${m.is_active?'btn-ghost':'btn-primary'}" style="flex:1;justify-content:center" onclick="toggleActive(${m.id},${!m.is_active})">${m.is_active?'Disable':'Enable'}</button>
         <button class="btn btn-danger" onclick="deleteMachine(${m.id})">Delete</button>
       </div>
     </div>`;
@@ -4516,7 +4490,93 @@ async function deleteMachine(id) {
 }
 
 loadFleet();
+
+// ── CSV UPLOAD ─────────────────────────────────────────────────────────────
+let _uploadMid = null;
+
+function openUpload(id) {
+  _uploadMid = id;
+  document.getElementById('upload-overlay').classList.add('open');
+  document.getElementById('upload-input').value = '';
+  document.getElementById('upload-result').style.display = 'none';
+  document.getElementById('upload-result').innerHTML = '';
+  document.getElementById('upload-submit').disabled = false;
+  document.getElementById('upload-submit').textContent = 'Run Analysis';
+  document.getElementById('upload-fname').textContent = '';
+  document.getElementById('upload-fname').style.display = 'none';
+}
+
+function closeUpload() {
+  document.getElementById('upload-overlay').classList.remove('open');
+  _uploadMid = null;
+  loadFleet();
+}
+
+document.getElementById('upload-input').addEventListener('change', function() {
+  var f = this.files[0];
+  var span = document.getElementById('upload-fname');
+  if (f) { span.textContent = f.name; span.style.display = 'block'; }
+  else { span.style.display = 'none'; }
+});
+
+async function runUpload() {
+  if (!_uploadMid) return;
+  var input = document.getElementById('upload-input');
+  if (!input.files[0]) { alert('Please select a CSV file.'); return; }
+  var btn = document.getElementById('upload-submit');
+  btn.disabled = true; btn.textContent = 'Analysing...';
+  var fd = new FormData();
+  fd.append('file', input.files[0]);
+  try {
+    var r = await fetch('/api/machines/' + _uploadMid + '/analyze-csv', { method: 'POST', body: fd });
+    var d = await r.json();
+    var res = document.getElementById('upload-result');
+    res.style.display = 'block';
+    if (!r.ok || d.error) {
+      res.innerHTML = '<div style="color:#f87171;font-size:13px;">' + (d.error || 'Error') + '</div>';
+      btn.disabled = false; btn.textContent = 'Run Analysis';
+      return;
+    }
+    var status = d.failures > 0 ? '#f97316' : '#34d399';
+    res.innerHTML = '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px">'
+      + '<div style="font-size:9px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:12px">Analysis complete — ' + d.machine_name + '</div>'
+      + '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">'
+      + '<div style="text-align:center"><div style="font-size:28px;font-weight:800;color:var(--text)">' + d.total + '</div><div style="font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-top:3px">Rows</div></div>'
+      + '<div style="text-align:center"><div style="font-size:28px;font-weight:800;color:' + status + '">' + d.failures + '</div><div style="font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-top:3px">Failures</div></div>'
+      + '<div style="text-align:center"><div style="font-size:28px;font-weight:800;color:' + status + '">' + d.max_risk + '%</div><div style="font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-top:3px">Peak risk</div></div>'
+      + '</div>'
+      + '<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--text3)">Avg risk: ' + d.avg_risk + '% — All rows saved to history</div>'
+      + '</div>';
+    btn.textContent = 'Upload another';
+    btn.disabled = false;
+    btn.onclick = function() { document.getElementById('upload-input').value=''; document.getElementById('upload-fname').style.display='none'; document.getElementById('upload-result').style.display='none'; btn.textContent='Run Analysis'; btn.onclick=runUpload; };
+  } catch(e) {
+    document.getElementById('upload-result').innerHTML = '<div style="color:#f87171;font-size:13px;">Network error: ' + e.message + '</div>';
+    btn.disabled = false; btn.textContent = 'Run Analysis';
+  }
+}
 </script>
+
+<!-- CSV Upload Modal -->
+<div class="modal-overlay" id="upload-overlay" onclick="if(event.target===this)closeUpload()">
+  <div class="modal">
+    <div class="modal-title">Upload Machine Data</div>
+    <p style="font-size:12px;color:var(--text3);margin-bottom:20px;line-height:1.6">Upload a CSV file exported from your SCADA, PLC, or sensor system. Pilar auto-detects columns and runs a full analysis on every row. Results are saved to history with this machine's ID.</p>
+    <div style="border:2px dashed var(--border2);border-radius:8px;padding:28px;text-align:center;margin-bottom:16px;cursor:pointer;transition:border-color .15s" onclick="document.getElementById('upload-input').click()" onmouseover="this.style.borderColor='var(--teal)'" onmouseout="this.style.borderColor='var(--border2)'">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:28px;height:28px;color:var(--text3);margin:0 auto 10px;display:block"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div style="font-size:12px;color:var(--text2);font-weight:600">Click to select CSV file</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:4px">Any column names · any delimiter · auto unit conversion</div>
+      <input type="file" id="upload-input" accept=".csv" style="display:none">
+      <div id="upload-fname" style="display:none;margin-top:10px;font-size:11px;color:var(--teal2);font-weight:600"></div>
+    </div>
+    <div id="upload-result"></div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-ghost" onclick="closeUpload()">Close</button>
+      <button type="button" class="btn btn-primary" id="upload-submit" onclick="runUpload()">Run Analysis</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>"""
 
@@ -5400,6 +5460,85 @@ def fleet_dashboard():
     r = _paid_required()
     if r: return r
     return DASHBOARD_HTML
+
+@app.route('/api/machines/<int:mid>/analyze-csv', methods=['POST'])
+@login_required
+def api_machine_analyze_csv(mid):
+    uid = current_uid()
+    m = Machine.query.filter_by(id=mid, user_id=uid).first_or_404()
+    if model is None:
+        return jsonify({'error': 'Model not loaded'}), 503
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file provided'}), 400
+    f = request.files['file']
+    try:
+        import io as _io, json as _json
+        content = f.read().decode('utf-8', errors='replace')
+        # detect delimiter
+        for delim in [',', ';', '\t', '|']:
+            if delim in content.split('\n')[0]:
+                break
+        df = pd.read_csv(_io.StringIO(content), sep=delim)
+    except Exception as e:
+        return jsonify({'error': f'CSV parse error: {e}'}), 400
+    # auto-map columns (case-insensitive keyword matching)
+    col_map = {}
+    kw = {
+        'temp_air':     ['air temp','air_temp','temperature air','temp_air','air temperature'],
+        'temp_process': ['process temp','process_temp','temperature process','proc_temp','process temperature'],
+        'vitesse':      ['speed','vitesse','rpm','rotational speed','rotational_speed'],
+        'couple':       ['torque','couple','torque [nm]','couple [nm]'],
+        'usure':        ['wear','usure','tool wear','tool_wear','wear [min]'],
+        'type':         ['type','machine type','machine_type'],
+    }
+    lower_cols = {c.lower().strip(): c for c in df.columns}
+    for field, keywords in kw.items():
+        for kword in keywords:
+            if kword in lower_cols:
+                col_map[field] = lower_cols[kword]
+                break
+    if not col_map:
+        return jsonify({'error': 'No recognizable columns found. Expected: speed/rpm, torque, wear/usure, temperature.'}), 400
+    threshold = float(m.threshold) if m.threshold else 45.0
+    machine_types_rev = {'L': 0, 'M': 1, 'H': 2, 'l': 0, 'm': 1, 'h': 2, '0': 0, '1': 1, '2': 2, 0: 0, 1: 1, 2: 2}
+    results = []
+    for _, row in df.iterrows():
+        try:
+            params = {}
+            for field, col in col_map.items():
+                v = row[col]
+                if field == 'type':
+                    params[field] = machine_types_rev.get(str(v).strip(), m.machine_type == 'H' and 2 or m.machine_type == 'L' and 0 or 1)
+                else:
+                    params[field] = float(v) if pd.notna(v) else None
+            if not params:
+                continue
+            # default machine type from machine record if not in CSV
+            if 'type' not in params:
+                params['type'] = {'L': 0, 'M': 1, 'H': 2}.get(m.machine_type, 1)
+            probabilite, prediction, zones_risque, confidence, _ = predict_risk(dict(params), threshold=threshold)
+            zones_str = ', '.join([z['nom'] for z in zones_risque]) if zones_risque else ''
+            a = Analysis(
+                machine_type={'L': 'Low', 'M': 'Medium', 'H': 'High'}.get(m.machine_type, 'Medium'),
+                temp_air=params.get('temp_air'), temp_process=params.get('temp_process'),
+                vitesse=params.get('vitesse'), couple=params.get('couple'), usure=params.get('usure'),
+                risk=probabilite, prediction=prediction, zones=zones_str,
+                confidence=confidence, user_id=uid, machine_id=m.name)
+            db.session.add(a)
+            results.append({'risk': probabilite, 'prediction': prediction})
+        except Exception:
+            continue
+    if not results:
+        return jsonify({'error': 'No valid rows processed'}), 400
+    db.session.commit()
+    failures = sum(1 for r in results if r['prediction'] == 1)
+    avg_risk = round(sum(r['risk'] for r in results) / len(results), 1)
+    max_risk = round(max(r['risk'] for r in results), 1)
+    return jsonify({
+        'ok': True, 'total': len(results), 'failures': failures,
+        'avg_risk': avg_risk, 'max_risk': max_risk,
+        'machine_name': m.name,
+    })
 
 @app.route('/api/machine-request', methods=['POST'])
 @login_required
