@@ -176,6 +176,17 @@ class AlertLog(db.Model):
     escalated_at     = db.Column(db.DateTime, nullable=True)
     escalation_email = db.Column(db.String(200))
 
+class MachineRequest(db.Model):
+    id           = db.Column(db.Integer, primary_key=True)
+    user_id      = db.Column(db.Integer, nullable=True)
+    name         = db.Column(db.String(200))
+    manufacturer = db.Column(db.String(200))
+    rpm_range    = db.Column(db.String(100))
+    torque_range = db.Column(db.String(100))
+    description  = db.Column(db.Text)
+    submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
+    status       = db.Column(db.String(20), default='pending')  # pending / integrated
+
 with app.app_context():
     try:
         db.create_all()
@@ -1182,7 +1193,11 @@ tut_connect:'Connecter fichier',tut_no_file:'Aucun fichier connecté',tut_discon
 ast_placeholder:'Posez votre question sur la machine...',ast_send:'Envoyer',
 ast_hello:"Bonjour. Je suis votre assistant maintenance prédictive. Partagez vos relevés capteurs ou posez-moi vos questions.",
 csv_detect:'Colonnes détectées',csv_bad:'Colonnes non reconnues',csv_rows:'lignes',
-live_hint:'CSV · noms de colonnes libres · conversion auto',manual_title:'Saisie manuelle',
+live_hint:'CSV · noms de colonnes libres · conversion auto',manual_title:'Analyse manuelle',
+select_machine:'Choisissez votre machine',adv_params:'Paramètres avancés',
+custom_machine_title:'Machine personnalisée',custom_machine_desc:'Décrivez votre machine ci-dessous. Nous l\u2019intégrerons à Pilar sous 48h.',
+cust_name_lbl:'Nom / type de machine',cust_mfr_lbl:'Fabricant',cust_rpm_lbl:'Plage RPM typique',cust_torque_lbl:'Plage couple (Nm)',cust_desc_lbl:'Description',
+cust_submit:'Envoyer la demande',cust_sent:'Demande reçue. Votre machine sera intégrée sous 48h.',
 partial_analysis:'Analyse partielle',imputed:'estimés',discovered_param:'Paramètre découvert',
 page_adapter:'Adaptateur CSV',adp_upload:'Importer CSV',adp_hint:'Tout délimiteur · noms libres · conversion unités incluse',
 adp_change:'Changer',adp_preview:'Aperçu (5 lignes)',adp_download:'Convertir & Télécharger',
@@ -1232,7 +1247,11 @@ tut_connect:'Connect File',tut_no_file:'No file connected',tut_disconnected:'Dis
 ast_placeholder:'Ask about your machine...',ast_send:'Send',
 ast_hello:'Hello. I am your predictive maintenance assistant. Share your sensor readings or ask me anything about your machine health.',
 csv_detect:'Columns detected',csv_bad:'Columns not recognized',csv_rows:'rows',
-live_hint:'CSV · any column names · auto unit conversion',manual_title:'Manual Input',
+live_hint:'CSV · any column names · auto unit conversion',manual_title:'Manual Analysis',
+select_machine:'Select your machine',adv_params:'Advanced parameters',
+custom_machine_title:'Custom Machine',custom_machine_desc:'Describe your machine below. We will integrate it into Pilar within 48 hours.',
+cust_name_lbl:'Machine name / type',cust_mfr_lbl:'Manufacturer',cust_rpm_lbl:'Typical RPM range',cust_torque_lbl:'Torque range (Nm)',cust_desc_lbl:'Description',
+cust_submit:'Submit Request',cust_sent:'Request received. Your machine will be integrated within 48 hours.',
 partial_analysis:'Partial analysis',imputed:'estimated',discovered_param:'Discovered parameter',
 page_adapter:'CSV Adapter',adp_upload:'Upload CSV',adp_hint:'Any delimiter · any column names · unit conversion included',
 adp_change:'Change',adp_preview:'Preview (5 rows)',adp_download:'Convert & Download',
@@ -1519,37 +1538,205 @@ HTML = _HEAD.replace("{FAV}","iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAHxU
     </div>
   </div>
 
-  <!-- MANUAL INPUT — secondary, collapsible -->
+  <!-- MANUAL INPUT — machine picker + sensors -->
   <div class="card">
     <div class="man-hdr" onclick="toggleManual()">
-      <span class="ctitle" style="margin-bottom:0" data-i18n="manual_title">Manual Input</span>
+      <span class="ctitle" style="margin-bottom:0" data-i18n="manual_title">Manual Analysis</span>
       <svg class="man-chv" id="manChv" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </div>
     <div id="manBody" style="display:none;margin-top:14px">
-      <div class="ctitle" data-i18n="machine_class">Machine class</div>
-      <div class="tgrid">
-        <div class="tbtn on" data-val="0" onclick="selT(this)">L — Low</div>
-        <div class="tbtn" data-val="1" onclick="selT(this)">M — Med</div>
-        <div class="tbtn" data-val="2" onclick="selT(this)">H — High</div>
+
+      <!-- STEP 1 — Machine catalog -->
+      <div id="mStep1">
+        <div class="ctitle" data-i18n="select_machine">Select your machine</div>
+        <div class="mcatalog" id="mcatalog"></div>
+        <button class="not-listed-btn" onclick="showCustom()">My machine is not listed</button>
       </div>
-      <div class="ctitle" data-i18n="sensor_params">Sensor parameters</div>
-      <div class="sensor"><div class="srow"><span class="sname" data-i18n="air_temp">Air temperature</span><div class="vwrap"><input class="vi" type="number" id="nta" value="300" min="295" max="305" step="0.1" data-raw="300" oninput="si('sta','nta','temp')"><span class="vu" id="vu-ta">K</span></div></div><input type="range" id="sta" min="295" max="305" step="0.1" value="300" oninput="ss('sta','nta',1,'temp')"><div class="rl"><span id="rl-ta-min">295K</span><span id="rl-ta-max">305K</span></div></div>
-      <div class="sensor"><div class="srow"><span class="sname" data-i18n="proc_temp">Process temperature</span><div class="vwrap"><input class="vi" type="number" id="ntp" value="310" min="305" max="315" step="0.1" data-raw="310" oninput="si('stp','ntp','temp')"><span class="vu" id="vu-tp">K</span></div></div><input type="range" id="stp" min="305" max="315" step="0.1" value="310" oninput="ss('stp','ntp',1,'temp')"><div class="rl"><span id="rl-tp-min">305K</span><span id="rl-tp-max">315K</span></div></div>
-      <div class="sensor"><div class="srow"><span class="sname" data-i18n="rot_speed">Rotational speed</span><div class="vwrap"><input class="vi" type="number" id="nv" value="1500" min="1000" max="3000" step="10" oninput="si('sv','nv',null)"><span class="vu" id="vu-v">rpm</span></div></div><input type="range" id="sv" min="1000" max="3000" step="10" value="1500" oninput="ss('sv','nv',0,null)"><div class="rl"><span id="rl-v-min">1000</span><span id="rl-v-max">3000</span></div></div>
-      <div class="sensor"><div class="srow"><span class="sname" data-i18n="torque">Torque</span><div class="vwrap"><input class="vi" type="number" id="nc" value="40" min="3" max="80" step="0.1" oninput="si('sc','nc',null)"><span class="vu" id="vu-c">Nm</span></div></div><input type="range" id="sc" min="3" max="80" step="0.1" value="40" oninput="ss('sc','nc',1,null)"><div class="rl"><span id="rl-c-min">3</span><span id="rl-c-max">80Nm</span></div></div>
-      <div class="sensor"><div class="srow"><span class="sname" data-i18n="tool_wear">Tool wear</span><div class="vwrap"><input class="vi" type="number" id="nu" value="100" min="0" max="250" step="1" data-raw="100" oninput="si('su','nu','wear')"><span class="vu" id="vu-u">min</span></div></div><input type="range" id="su" min="0" max="250" step="1" value="100" oninput="ss('su','nu',0,'wear')"><div class="rl"><span id="rl-u-min">0</span><span id="rl-u-max">250</span></div></div>
-      <button class="btn" id="btn" onclick="analyse()" data-i18n="run_btn">Run Analysis</button>
+
+      <!-- STEP 2 — Sensor readings -->
+      <div id="mStep2" style="display:none">
+        <div class="msel-hdr">
+          <button class="back-btn" onclick="backToMachines()" title="Change machine">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:16px;height:16px"><path d="M19 12H5M12 5l-7 7 7 7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div>
+            <div class="msel-name" id="mSelName">Machine</div>
+            <div class="msel-type" id="mSelType"></div>
+          </div>
+        </div>
+        <div class="ctitle" data-i18n="sensor_params">Sensor readings</div>
+        <div class="sensor"><div class="srow"><span class="sname" data-i18n="rot_speed">Rotational speed</span><div class="vwrap"><input class="vi" type="number" id="nv" value="1500" min="100" max="4000" step="10" oninput="si('sv','nv',null)"><span class="vu" id="vu-v">rpm</span></div></div><input type="range" id="sv" min="100" max="4000" step="10" value="1500" oninput="ss('sv','nv',0,null)"><div class="rl"><span id="rl-v-min">100</span><span id="rl-v-max">4000rpm</span></div></div>
+        <div class="sensor"><div class="srow"><span class="sname" data-i18n="torque">Torque</span><div class="vwrap"><input class="vi" type="number" id="nc" value="40" min="1" max="200" step="0.5" oninput="si('sc','nc',null)"><span class="vu" id="vu-c">Nm</span></div></div><input type="range" id="sc" min="1" max="200" step="0.5" value="40" oninput="ss('sc','nc',1,null)"><div class="rl"><span id="rl-c-min">1</span><span id="rl-c-max">200Nm</span></div></div>
+        <div class="sensor"><div class="srow"><span class="sname" data-i18n="tool_wear">Tool wear</span><div class="vwrap"><input class="vi" type="number" id="nu" value="100" min="0" max="300" step="1" data-raw="100" oninput="si('su','nu','wear')"><span class="vu" id="vu-u">min</span></div></div><input type="range" id="su" min="0" max="300" step="1" value="100" oninput="ss('su','nu',0,'wear')"><div class="rl"><span id="rl-u-min">0</span><span id="rl-u-max">300</span></div></div>
+        <!-- Advanced toggle -->
+        <div class="adv-row" onclick="toggleAdv()">
+          <span data-i18n="adv_params">Advanced parameters</span>
+          <svg id="advChv" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:13px;height:13px;transition:transform .2s"><path d="M19 9l-7 7-7-7" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+        <div id="advParams" style="display:none;padding-top:4px">
+          <div class="sensor"><div class="srow"><span class="sname" data-i18n="air_temp">Air temperature</span><div class="vwrap"><input class="vi" type="number" id="nta" value="300" min="290" max="320" step="0.1" data-raw="300" oninput="si('sta','nta','temp')"><span class="vu" id="vu-ta">K</span></div></div><input type="range" id="sta" min="290" max="320" step="0.1" value="300" oninput="ss('sta','nta',1,'temp')"><div class="rl"><span id="rl-ta-min">290K</span><span id="rl-ta-max">320K</span></div></div>
+          <div class="sensor"><div class="srow"><span class="sname" data-i18n="proc_temp">Process temperature</span><div class="vwrap"><input class="vi" type="number" id="ntp" value="310" min="300" max="330" step="0.1" data-raw="310" oninput="si('stp','ntp','temp')"><span class="vu" id="vu-tp">K</span></div></div><input type="range" id="stp" min="300" max="330" step="0.1" value="310" oninput="ss('stp','ntp',1,'temp')"><div class="rl"><span id="rl-tp-min">300K</span><span id="rl-tp-max">330K</span></div></div>
+        </div>
+        <button class="btn" id="btn" onclick="analyse()" data-i18n="run_btn">Run Analysis</button>
+      </div>
+
+      <!-- Custom machine request form -->
+      <div id="mCustom" style="display:none">
+        <div class="msel-hdr">
+          <button class="back-btn" onclick="backToMachines()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:16px;height:16px"><path d="M19 12H5M12 5l-7 7 7 7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="msel-name" data-i18n="custom_machine_title">Custom Machine</div>
+        </div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:18px;line-height:1.6" data-i18n="custom_machine_desc">
+          Describe your machine below. We will integrate it into Pilar within 48 hours and notify you.
+        </div>
+        <div style="margin-bottom:12px">
+          <label class="sname" style="display:block;margin-bottom:5px" data-i18n="cust_name_lbl">Machine name / type <span style="color:var(--red)">*</span></label>
+          <input class="fi" id="cust-name" placeholder="e.g. Rotary compressor K-2200">
+        </div>
+        <div style="margin-bottom:12px">
+          <label class="sname" style="display:block;margin-bottom:5px" data-i18n="cust_mfr_lbl">Manufacturer</label>
+          <input class="fi" id="cust-mfr" placeholder="e.g. ABB, Siemens, Atlas Copco">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+          <div>
+            <label class="sname" style="display:block;margin-bottom:5px" data-i18n="cust_rpm_lbl">Typical RPM range</label>
+            <input class="fi" id="cust-rpm" placeholder="e.g. 1400-2200">
+          </div>
+          <div>
+            <label class="sname" style="display:block;margin-bottom:5px" data-i18n="cust_torque_lbl">Torque range (Nm)</label>
+            <input class="fi" id="cust-torque" placeholder="e.g. 30-80">
+          </div>
+        </div>
+        <div style="margin-bottom:14px">
+          <label class="sname" style="display:block;margin-bottom:5px" data-i18n="cust_desc_lbl">Description</label>
+          <textarea class="fi" id="cust-desc" rows="3" placeholder="What does it do? Any special operating conditions?" style="resize:vertical"></textarea>
+        </div>
+        <div id="cust-msg" style="display:none;margin-bottom:12px;padding:10px 14px;background:rgba(13,148,136,.1);border:1px solid var(--teal);border-radius:6px;font-size:12px;color:var(--teal2)" data-i18n="cust_sent">
+          Request received. We will integrate your machine and notify you within 48 hours.
+        </div>
+        <button class="btn" id="cust-btn" onclick="submitCustom()" data-i18n="cust_submit">Submit Request</button>
+      </div>
+
     </div>
   </div>
 </div>""" + nav("m") + """
+<style>
+.mcatalog{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:14px}
+.mcard{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;cursor:pointer;transition:border-color .15s,background .15s;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.mcard:hover{border-color:var(--border2);background:var(--surface)}
+.mcard.mcard-custom{border-style:dashed;border-color:var(--border2)}
+.mcard.mcard-custom:hover{border-color:var(--teal);background:rgba(13,148,136,.04)}
+.mcard-name{font-size:12px;font-weight:600;color:var(--text2);line-height:1.3}
+.mcard-badge{font-size:9px;font-weight:700;letter-spacing:1.5px;padding:2px 7px;border-radius:3px;flex-shrink:0}
+.type-H{background:rgba(13,148,136,.14);color:var(--teal2);border:1px solid rgba(13,148,136,.3)}
+.type-M{background:rgba(234,179,8,.1);color:#fbbf24;border:1px solid rgba(234,179,8,.3)}
+.type-L{background:rgba(100,116,139,.1);color:#94a3b8;border:1px solid rgba(100,116,139,.25)}
+.type-custom{background:rgba(168,85,247,.1);color:#c084fc;border:1px solid rgba(168,85,247,.25)}
+.not-listed-btn{width:100%;padding:9px;background:none;border:1px dashed var(--border2);border-radius:6px;color:var(--text3);font-size:11px;cursor:pointer;text-align:center;transition:border-color .15s,color .15s}
+.not-listed-btn:hover{border-color:var(--teal);color:var(--teal2)}
+.msel-hdr{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.back-btn{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:7px 9px;cursor:pointer;color:var(--text2);display:flex;align-items:center;transition:border-color .15s}
+.back-btn:hover{border-color:var(--teal)}
+.msel-name{font-size:15px;font-weight:700;color:var(--text)}
+.msel-type{font-size:10px;color:var(--text3);margin-top:2px;letter-spacing:.5px}
+.adv-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;margin:8px 0;border-top:1px solid var(--border);cursor:pointer;font-size:10px;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase}
+.adv-row:hover{color:var(--text2)}
+</style>
 <script>
-let mT=0,lastR=null,lastD=null;
-function toggleManual(){var b=document.getElementById('manBody'),c=document.getElementById('manChv'),o=b.style.display==='block';b.style.display=o?'none':'block';c.style.transform=o?'':'rotate(180deg)';}
+const MCATALOG=[
+  {id:'cnc',        label:'CNC Machining Center', cls:2, ta:298.0, tp:313.0, v:1800, c:38.0, u:180},
+  {id:'lathe',      label:'CNC Lathe',             cls:2, ta:297.5, tp:312.5, v:2000, c:40.0, u:200},
+  {id:'mill',       label:'Milling Machine',       cls:1, ta:298.5, tp:312.0, v:1600, c:42.0, u:150},
+  {id:'press',      label:'Hydraulic Press',       cls:1, ta:300.0, tp:315.0, v:800,  c:120.0, u:60},
+  {id:'motor',      label:'Industrial Motor',      cls:1, ta:299.0, tp:312.0, v:2200, c:45.0, u:90},
+  {id:'compressor', label:'Air Compressor',        cls:0, ta:302.0, tp:318.0, v:1450, c:65.0, u:120},
+  {id:'pump',       label:'Centrifugal Pump',      cls:0, ta:298.0, tp:311.0, v:1200, c:30.0, u:80},
+  {id:'conveyor',   label:'Conveyor Drive',        cls:0, ta:298.0, tp:310.0, v:600,  c:55.0, u:50},
+  {id:'robot',      label:'Industrial Robot',      cls:2, ta:299.0, tp:313.0, v:1600, c:58.0, u:140},
+  {id:'injection',  label:'Injection Moulder',     cls:1, ta:301.0, tp:317.0, v:1100, c:72.0, u:70},
+  {id:'grinder',    label:'Surface Grinder',       cls:2, ta:297.0, tp:311.0, v:2500, c:25.0, u:220},
+  {id:'drill',      label:'Drilling Machine',      cls:1, ta:298.0, tp:312.0, v:1400, c:50.0, u:130},
+];
+const CLSLABEL=['L — Standard','M — Precision','H — High precision'];
+let mT=0,lastR=null,lastD=null,selectedMachine=null;
+
+function buildCatalog(){
+  const c=document.getElementById('mcatalog');if(!c)return;
+  const TYPE=['L','M','H'];
+  c.innerHTML=MCATALOG.map(m=>'<div class="mcard" onclick="selectMachine(\''+m.id+'\')">'
+    +'<span class="mcard-name">'+m.label+'</span>'
+    +'<span class="mcard-badge type-'+TYPE[m.cls]+'">'+TYPE[m.cls]+'</span>'
+    +'</div>').join('');
+}
+
+function selectMachine(id){
+  const m=MCATALOG.find(x=>x.id===id);if(!m)return;
+  selectedMachine=m;mT=m.cls;
+  const fr=LANG==='fr';
+  var ta_d=fr?+(m.ta-273.15).toFixed(1):m.ta;
+  var tp_d=fr?+(m.tp-273.15).toFixed(1):m.tp;
+  var u_d=fr?+(m.u/60).toFixed(3):m.u;
+  document.getElementById('nta').value=ta_d;document.getElementById('nta').dataset.raw=m.ta;document.getElementById('sta').value=ta_d;
+  document.getElementById('ntp').value=tp_d;document.getElementById('ntp').dataset.raw=m.tp;document.getElementById('stp').value=tp_d;
+  document.getElementById('nv').value=m.v;document.getElementById('sv').value=m.v;
+  document.getElementById('nc').value=m.c;document.getElementById('sc').value=m.c;
+  document.getElementById('nu').value=u_d;document.getElementById('nu').dataset.raw=m.u;document.getElementById('su').value=u_d;
+  document.getElementById('mSelName').textContent=m.label;
+  document.getElementById('mSelType').textContent=CLSLABEL[m.cls];
+  document.getElementById('mStep1').style.display='none';
+  document.getElementById('mCustom').style.display='none';
+  document.getElementById('mStep2').style.display='block';
+}
+
+function backToMachines(){
+  selectedMachine=null;
+  document.getElementById('mStep2').style.display='none';
+  document.getElementById('mCustom').style.display='none';
+  document.getElementById('mStep1').style.display='block';
+}
+
+function toggleAdv(){
+  var p=document.getElementById('advParams'),c=document.getElementById('advChv');
+  var open=p.style.display==='block';
+  p.style.display=open?'none':'block';
+  c.style.transform=open?'':'rotate(180deg)';
+}
+
+function showCustom(){
+  document.getElementById('mStep1').style.display='none';
+  document.getElementById('mStep2').style.display='none';
+  document.getElementById('mCustom').style.display='block';
+}
+
+async function submitCustom(){
+  var name=document.getElementById('cust-name').value.trim();
+  if(!name){document.getElementById('cust-name').focus();return;}
+  var btn=document.getElementById('cust-btn');
+  btn.disabled=true;btn.textContent='Sending...';
+  try{
+    await fetch('/api/machine-request',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({name,manufacturer:document.getElementById('cust-mfr').value.trim(),
+        rpm_range:document.getElementById('cust-rpm').value.trim(),
+        torque_range:document.getElementById('cust-torque').value.trim(),
+        description:document.getElementById('cust-desc').value.trim()})});
+    document.getElementById('cust-msg').style.display='block';
+    document.querySelectorAll('#mCustom input,#mCustom textarea').forEach(e=>e.disabled=true);
+    btn.style.display='none';
+  }catch(e){btn.disabled=false;btn.textContent=t('cust_submit');}
+}
+
+function toggleManual(){
+  var b=document.getElementById('manBody'),c=document.getElementById('manChv'),o=b.style.display==='block';
+  b.style.display=o?'none':'block';
+  c.style.transform=o?'':'rotate(180deg)';
+  if(!o)buildCatalog();
+}
 function updN(){const b=document.getElementById('nb');if(!b)return;const p=Notification.permission;if(p==='granted'){b.textContent='Notifs ON';b.className='nb on';}else{b.textContent='Enable Notifs';b.className='nb';}}
 async function toggleN(){if(Notification.permission==='granted')return;await Notification.requestPermission();updN();}
 function sendN(risk,zones){if(Notification.permission!=='granted')return;new Notification('Pilar — Risk: '+risk+'%',{body:zones.length?'Zones: '+zones.map(z=>z.nom).join(', '):'No specific zone',requireInteraction:true,tag:'pilar'});}
 updN();
-function selT(el){document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('on'));el.classList.add('on');mT=parseInt(el.dataset.val);}
 function ss(s,n,d,type){
   var el=document.getElementById(n);
   var from=parseFloat(el.value)||0;
@@ -1563,8 +1750,10 @@ function si(s,n,type){
 }
 function gv(id){return parseFloat(document.getElementById(id).value);}
 async function analyse(){
+  if(!selectedMachine)return;
   const btn=document.getElementById('btn');btn.disabled=true;btn.textContent=t('run_btn')+'\u2026';
   lastD={type:mT,
+    machine_id:selectedMachine.label,
     temp_air:toRaw(gv('nta'),'temp'),
     temp_process:toRaw(gv('ntp'),'temp'),
     vitesse:gv('nv'),couple:gv('nc'),
@@ -5211,6 +5400,47 @@ def fleet_dashboard():
     r = _paid_required()
     if r: return r
     return DASHBOARD_HTML
+
+@app.route('/api/machine-request', methods=['POST'])
+@login_required
+def api_machine_request():
+    uid = current_uid()
+    d = request.json or {}
+    name = (d.get('name') or '').strip()
+    if not name:
+        return jsonify({'error': 'name required'}), 400
+    mr = MachineRequest(user_id=uid, name=name,
+        manufacturer=(d.get('manufacturer') or '').strip(),
+        rpm_range=(d.get('rpm_range') or '').strip(),
+        torque_range=(d.get('torque_range') or '').strip(),
+        description=(d.get('description') or '').strip())
+    db.session.add(mr)
+    db.session.commit()
+    # Email admin
+    if GMAIL and GMAIL_PWD:
+        def _notify():
+            user = db.session.get(User, uid)
+            user_email = user.email if user else 'unknown'
+            html = (f'<b>New machine request from {user_email}</b><br><br>'
+                    f'<b>Machine:</b> {name}<br>'
+                    f'<b>Manufacturer:</b> {mr.manufacturer or "—"}<br>'
+                    f'<b>RPM range:</b> {mr.rpm_range or "—"}<br>'
+                    f'<b>Torque range:</b> {mr.torque_range or "—"}<br>'
+                    f'<b>Description:</b> {mr.description or "—"}<br>')
+            msg = MIMEMultipart('alternative')
+            msg['Subject'] = f'Pilar — Machine Request: {name}'
+            msg['From'] = f'Pilar <{GMAIL}>'
+            msg['To'] = 'aliguenbou07r@gmail.com'
+            msg.attach(MIMEText(html, 'html'))
+            try:
+                with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+                    smtp.login(GMAIL, GMAIL_PWD)
+                    smtp.sendmail(GMAIL, 'aliguenbou07r@gmail.com', msg.as_string())
+            except Exception as _e:
+                print(f'[Pilar/machine-request] email error: {_e}')
+        with app.app_context():
+            threading.Thread(target=_notify, daemon=True).start()
+    return jsonify({'ok': True, 'id': mr.id})
 
 @app.route('/onboarding')
 @login_required
