@@ -1535,166 +1535,76 @@ HTML = _HEAD.replace("{FAV}","iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAHxU
   <div class="ab" id="abn" data-i18n="status_alert">Anomaly Detected</div>
 
   <!-- RESULT — hero -->
-  <div id="res"><div class="idle"><span class="l1" data-i18n="idle_l1">No analysis yet</span><span class="l2" data-i18n="idle_l2">Select a machine below and run analysis</span></div></div>
+  <div id="res"><div class="idle"><span class="l1" data-i18n="idle_l1">No analysis yet</span><span class="l2" data-i18n="idle_l2">Connect a CSV file below to start live monitoring</span></div></div>
 
-  <!-- MANUAL INPUT — machine picker + sensors (open by default) -->
+  <!-- LIVE FILE ZONE -->
+  <div class="lz-wrap">
+    <!-- Empty state -->
+    <div id="lzEmpty" class="lz-empty">
+      <svg style="width:32px;height:32px;stroke:var(--text3);fill:none;flex-shrink:0" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div class="lz-hint" data-i18n="live_hint">Connect a CSV file — Pilar analyses each new row automatically as data arrives</div>
+      <label class="lz-cta">
+        <svg style="width:16px;height:16px;stroke:currentColor;fill:none;flex-shrink:0" viewBox="0 0 24 24"><path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z" stroke-width="2"/><polyline points="13 2 13 9 20 9" stroke-width="2"/></svg>
+        <span data-i18n="live_connect">Connect CSV file</span>
+        <input type="file" id="lfInput" accept=".csv" style="display:none" onchange="onLiveFile(this)">
+      </label>
+    </div>
+    <!-- Connected state -->
+    <div id="lzConn" class="lz-conn" style="display:none">
+      <div class="lz-ch">
+        <span class="lz-dot"></span>
+        <span class="lz-fname" id="liveFileName">—</span>
+        <button class="lz-disc" onclick="stopLiveMonitor()" data-i18n="live_disconnect">Disconnect</button>
+      </div>
+      <div class="lz-sg">
+        <div class="lz-si"><span class="lz-sv" id="liveRowCount">0</span><span class="lz-sl" data-i18n="live_rows">Rows</span></div>
+        <div class="lz-si alert"><span class="lz-sv" id="liveFailCount">0</span><span class="lz-sl" data-i18n="live_fail">Failures</span></div>
+        <div class="lz-si ok"><span class="lz-sv" id="liveOkCount">0</span><span class="lz-sl" data-i18n="live_ok">Normal</span></div>
+      </div>
+      <div class="lz-foot">
+        <span class="lz-ck" id="liveChk"></span>
+        <select class="lz-sel" id="liveIntv">
+          <option value="2000">2s</option>
+          <option value="5000" selected>5s</option>
+          <option value="10000">10s</option>
+          <option value="30000">30s</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- MANUAL INPUT — sensor sliders (collapsed by default) -->
   <div class="card">
     <div class="man-hdr" onclick="toggleManual()">
       <span class="ctitle" style="margin-bottom:0" data-i18n="manual_title">Manual Analysis</span>
-      <svg class="man-chv" id="manChv" viewBox="0 0 24 24" style="transform:rotate(180deg)"><path d="M19 9l-7 7-7-7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <svg class="man-chv" id="manChv" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </div>
-    <div id="manBody" style="display:block;margin-top:14px">
-
-      <!-- STEP 1 — Machine catalog -->
-      <div id="mStep1">
-        <div class="ctitle" data-i18n="select_machine">Select your machine</div>
-        <div class="mcatalog" id="mcatalog"></div>
-        <button class="not-listed-btn" onclick="showCustom()" data-i18n="not_listed">My machine is not listed</button>
+    <div id="manBody" style="display:none;margin-top:14px">
+      <div class="ctitle" data-i18n="sensor_params">Sensor readings</div>
+      <div class="sensor"><div class="srow"><span class="sname" data-i18n="p_vibration">Vibration</span><div class="vwrap"><input class="vi" type="number" id="nvib" value="2.5" min="0" max="30" step="0.1" oninput="si('svib','nvib',null)"><span class="vu">mm/s</span></div></div><input type="range" id="svib" min="0" max="30" step="0.1" value="2.5" oninput="ss('svib','nvib',1,null)"><div class="rl"><span>0</span><span>30 mm/s</span></div></div>
+      <div class="sensor"><div class="srow"><span class="sname" data-i18n="p_temp_palier">Bearing temp.</span><div class="vwrap"><input class="vi" type="number" id="ntp" value="65" min="20" max="150" step="1" oninput="si('stp','ntp',null)"><span class="vu">°C</span></div></div><input type="range" id="stp" min="20" max="150" step="1" value="65" oninput="ss('stp','ntp',0,null)"><div class="rl"><span>20</span><span>150°C</span></div></div>
+      <div class="sensor"><div class="srow"><span class="sname" data-i18n="p_debit">Flow rate</span><div class="vwrap"><input class="vi" type="number" id="ndbt" value="45" min="0" max="300" step="1" oninput="si('sdbt','ndbt',null)"><span class="vu">m³/h</span></div></div><input type="range" id="sdbt" min="0" max="300" step="1" value="45" oninput="ss('sdbt','ndbt',0,null)"><div class="rl"><span>0</span><span>300 m³/h</span></div></div>
+      <div class="sensor"><div class="srow"><span class="sname" data-i18n="p_pression_e">Inlet pressure</span><div class="vwrap"><input class="vi" type="number" id="npe" value="1.5" min="0" max="15" step="0.1" oninput="si('spe','npe',null)"><span class="vu">bar</span></div></div><input type="range" id="spe" min="0" max="15" step="0.1" value="1.5" oninput="ss('spe','npe',1,null)"><div class="rl"><span>0</span><span>15 bar</span></div></div>
+      <div class="sensor"><div class="srow"><span class="sname" data-i18n="p_pression_s">Outlet pressure</span><div class="vwrap"><input class="vi" type="number" id="nps" value="4.5" min="0" max="40" step="0.1" oninput="si('sps','nps',null)"><span class="vu">bar</span></div></div><input type="range" id="sps" min="0" max="40" step="0.1" value="4.5" oninput="ss('sps','nps',1,null)"><div class="rl"><span>0</span><span>40 bar</span></div></div>
+      <div class="adv-row" onclick="toggleAdv()">
+        <span data-i18n="adv_params">Advanced parameters</span>
+        <svg id="advChv" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:13px;height:13px;transition:transform .2s"><path d="M19 9l-7 7-7-7" stroke-width="2" stroke-linecap="round"/></svg>
       </div>
-
-      <!-- STEP 2 — Sensor readings -->
-      <div id="mStep2" style="display:none">
-        <div class="msel-hdr">
-          <button class="back-btn" onclick="backToMachines()" title="Change machine">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:16px;height:16px"><path d="M19 12H5M12 5l-7 7 7 7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </button>
-          <div>
-            <div class="msel-name" id="mSelName">Machine</div>
-            <div class="msel-type" id="mSelType"></div>
-          </div>
-        </div>
-        <div class="ctitle" data-i18n="sensor_params">Sensor readings</div>
-        <div class="sensor"><div class="srow"><span class="sname" data-i18n="p_vibration">Vibration</span><div class="vwrap"><input class="vi" type="number" id="nvib" value="2.5" min="0" max="30" step="0.1" oninput="si('svib','nvib',null)"><span class="vu">mm/s</span></div></div><input type="range" id="svib" min="0" max="30" step="0.1" value="2.5" oninput="ss('svib','nvib',1,null)"><div class="rl"><span>0</span><span>30 mm/s</span></div></div>
-        <div class="sensor"><div class="srow"><span class="sname" data-i18n="p_temp_palier">Bearing temp.</span><div class="vwrap"><input class="vi" type="number" id="ntp" value="65" min="20" max="150" step="1" oninput="si('stp','ntp',null)"><span class="vu">°C</span></div></div><input type="range" id="stp" min="20" max="150" step="1" value="65" oninput="ss('stp','ntp',0,null)"><div class="rl"><span>20</span><span>150°C</span></div></div>
-        <div class="sensor"><div class="srow"><span class="sname" data-i18n="p_debit">Flow rate</span><div class="vwrap"><input class="vi" type="number" id="ndbt" value="45" min="0" max="300" step="1" oninput="si('sdbt','ndbt',null)"><span class="vu">m³/h</span></div></div><input type="range" id="sdbt" min="0" max="300" step="1" value="45" oninput="ss('sdbt','ndbt',0,null)"><div class="rl"><span>0</span><span>300 m³/h</span></div></div>
-        <div class="sensor"><div class="srow"><span class="sname" data-i18n="p_pression_e">Inlet pressure</span><div class="vwrap"><input class="vi" type="number" id="npe" value="1.5" min="0" max="15" step="0.1" oninput="si('spe','npe',null)"><span class="vu">bar</span></div></div><input type="range" id="spe" min="0" max="15" step="0.1" value="1.5" oninput="ss('spe','npe',1,null)"><div class="rl"><span>0</span><span>15 bar</span></div></div>
-        <div class="sensor"><div class="srow"><span class="sname" data-i18n="p_pression_s">Outlet pressure</span><div class="vwrap"><input class="vi" type="number" id="nps" value="4.5" min="0" max="40" step="0.1" oninput="si('sps','nps',null)"><span class="vu">bar</span></div></div><input type="range" id="sps" min="0" max="40" step="0.1" value="4.5" oninput="ss('sps','nps',1,null)"><div class="rl"><span>0</span><span>40 bar</span></div></div>
-        <!-- Advanced toggle -->
-        <div class="adv-row" onclick="toggleAdv()">
-          <span data-i18n="adv_params">Advanced parameters</span>
-          <svg id="advChv" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:13px;height:13px;transition:transform .2s"><path d="M19 9l-7 7-7-7" stroke-width="2" stroke-linecap="round"/></svg>
-        </div>
-        <div id="advParams" style="display:none;padding-top:4px">
-          <div class="sensor"><div class="srow"><span class="sname" data-i18n="p_courant">Motor current</span><div class="vwrap"><input class="vi" type="number" id="nim" value="18" min="0" max="150" step="0.5" oninput="si('sim','nim',null)"><span class="vu">A</span></div></div><input type="range" id="sim" min="0" max="150" step="0.5" value="18" oninput="ss('sim','nim',1,null)"><div class="rl"><span>0</span><span>150 A</span></div></div>
-          <div class="sensor"><div class="srow"><span class="sname" data-i18n="p_temp_moteur">Motor temp.</span><div class="vwrap"><input class="vi" type="number" id="ntm" value="75" min="20" max="200" step="1" oninput="si('stm','ntm',null)"><span class="vu">°C</span></div></div><input type="range" id="stm" min="20" max="200" step="1" value="75" oninput="ss('stm','ntm',0,null)"><div class="rl"><span>20</span><span>200°C</span></div></div>
-          <div class="sensor"><div class="srow"><span class="sname" data-i18n="p_heure">Run hours</span><div class="vwrap"><input class="vi" type="number" id="nhf" value="5000" min="0" max="100000" step="100" oninput="si('shf','nhf',null)"><span class="vu">h</span></div></div><input type="range" id="shf" min="0" max="100000" step="100" value="5000" oninput="ss('shf','nhf',0,null)"><div class="rl"><span>0</span><span>100k h</span></div></div>
-        </div>
-        <button class="btn" id="btn" onclick="analyse()" data-i18n="run_btn">Run Analysis</button>
+      <div id="advParams" style="display:none;padding-top:4px">
+        <div class="sensor"><div class="srow"><span class="sname" data-i18n="p_courant">Motor current</span><div class="vwrap"><input class="vi" type="number" id="nim" value="18" min="0" max="150" step="0.5" oninput="si('sim','nim',null)"><span class="vu">A</span></div></div><input type="range" id="sim" min="0" max="150" step="0.5" value="18" oninput="ss('sim','nim',1,null)"><div class="rl"><span>0</span><span>150 A</span></div></div>
+        <div class="sensor"><div class="srow"><span class="sname" data-i18n="p_temp_moteur">Motor temp.</span><div class="vwrap"><input class="vi" type="number" id="ntm" value="75" min="20" max="200" step="1" oninput="si('stm','ntm',null)"><span class="vu">°C</span></div></div><input type="range" id="stm" min="20" max="200" step="1" value="75" oninput="ss('stm','ntm',0,null)"><div class="rl"><span>20</span><span>200°C</span></div></div>
+        <div class="sensor"><div class="srow"><span class="sname" data-i18n="p_heure">Run hours</span><div class="vwrap"><input class="vi" type="number" id="nhf" value="5000" min="0" max="100000" step="100" oninput="si('shf','nhf',null)"><span class="vu">h</span></div></div><input type="range" id="shf" min="0" max="100000" step="100" value="5000" oninput="ss('shf','nhf',0,null)"><div class="rl"><span>0</span><span>100k h</span></div></div>
       </div>
-
-      <!-- Custom machine request form -->
-      <div id="mCustom" style="display:none">
-        <div class="msel-hdr">
-          <button class="back-btn" onclick="backToMachines()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:16px;height:16px"><path d="M19 12H5M12 5l-7 7 7 7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </button>
-          <div class="msel-name" data-i18n="custom_machine_title">Custom Machine</div>
-        </div>
-        <div style="font-size:12px;color:var(--text3);margin-bottom:18px;line-height:1.6" data-i18n="custom_machine_desc">
-          Describe your machine below. We will integrate it into Pilar within 48 hours and notify you.
-        </div>
-        <div style="margin-bottom:12px">
-          <label class="sname" style="display:block;margin-bottom:5px" data-i18n="cust_name_lbl">Machine name / type <span style="color:var(--red)">*</span></label>
-          <input class="fi" id="cust-name" placeholder="e.g. Rotary compressor K-2200">
-        </div>
-        <div style="margin-bottom:12px">
-          <label class="sname" style="display:block;margin-bottom:5px" data-i18n="cust_mfr_lbl">Manufacturer</label>
-          <input class="fi" id="cust-mfr" placeholder="e.g. ABB, Siemens, Atlas Copco">
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
-          <div>
-            <label class="sname" style="display:block;margin-bottom:5px" data-i18n="cust_rpm_lbl">Typical flow range (m³/h)</label>
-            <input class="fi" id="cust-rpm" placeholder="e.g. 20-80">
-          </div>
-          <div>
-            <label class="sname" style="display:block;margin-bottom:5px" data-i18n="cust_torque_lbl">Pressure range (bar)</label>
-            <input class="fi" id="cust-torque" placeholder="e.g. 2-10">
-          </div>
-        </div>
-        <div style="margin-bottom:14px">
-          <label class="sname" style="display:block;margin-bottom:5px" data-i18n="cust_desc_lbl">Description</label>
-          <textarea class="fi" id="cust-desc" rows="3" placeholder="What does it do? Any special operating conditions?" style="resize:vertical"></textarea>
-        </div>
-        <div id="cust-msg" style="display:none;margin-bottom:12px;padding:10px 14px;background:rgba(13,148,136,.1);border:1px solid var(--teal);border-radius:6px;font-size:12px;color:var(--teal2)" data-i18n="cust_sent">
-          Request received. We will integrate your machine and notify you within 48 hours.
-        </div>
-        <button class="btn" id="cust-btn" onclick="submitCustom()" data-i18n="cust_submit">Submit Request</button>
-      </div>
-
+      <button class="btn" id="btn" onclick="analyse()" data-i18n="run_btn">Run Analysis</button>
     </div>
   </div>
 </div>""" + nav("m") + """
 <style>
-.mcatalog{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:14px}
-.mcard{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;cursor:pointer;transition:border-color .15s,background .15s;display:flex;align-items:center;justify-content:space-between;gap:8px}
-.mcard:hover{border-color:var(--border2);background:var(--surface)}
-.mcard.mcard-custom{border-style:dashed;border-color:var(--border2)}
-.mcard.mcard-custom:hover{border-color:var(--teal);background:rgba(13,148,136,.04)}
-.mcard-name{font-size:12px;font-weight:600;color:var(--text2);line-height:1.3}
-.mcard-badge{font-size:9px;font-weight:700;letter-spacing:1.5px;padding:2px 7px;border-radius:3px;flex-shrink:0}
-.type-H{background:rgba(13,148,136,.14);color:var(--teal2);border:1px solid rgba(13,148,136,.3)}
-.type-M{background:rgba(234,179,8,.1);color:#fbbf24;border:1px solid rgba(234,179,8,.3)}
-.type-L{background:rgba(100,116,139,.1);color:#94a3b8;border:1px solid rgba(100,116,139,.25)}
-.type-custom{background:rgba(168,85,247,.1);color:#c084fc;border:1px solid rgba(168,85,247,.25)}
-.not-listed-btn{width:100%;padding:9px;background:none;border:1px dashed var(--border2);border-radius:6px;color:var(--text3);font-size:11px;cursor:pointer;text-align:center;transition:border-color .15s,color .15s}
-.not-listed-btn:hover{border-color:var(--teal);color:var(--teal2)}
-.msel-hdr{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border)}
-.back-btn{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:7px 9px;cursor:pointer;color:var(--text2);display:flex;align-items:center;transition:border-color .15s}
-.back-btn:hover{border-color:var(--teal)}
-.msel-name{font-size:15px;font-weight:700;color:var(--text)}
-.msel-type{font-size:10px;color:var(--text3);margin-top:2px;letter-spacing:.5px}
 .adv-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;margin:8px 0;border-top:1px solid var(--border);cursor:pointer;font-size:10px;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase}
 .adv-row:hover{color:var(--text2)}
 </style>
 <script>
-// Pump catalog — fields: vib(mm/s), tp(°C bearing), dbt(m³/h), pe(bar in), ps(bar out), im(A), tm(°C motor), hf(h run)
-const MCATALOG=[
-  {id:'standard',   label:'Standard Centrifugal',      cat:'General', vib:2.5, tp:65,  dbt:45,  pe:1.5, ps:4.5,  im:18, tm:75,  hf:5000},
-  {id:'chemical',   label:'Chemical Process Pump',     cat:'Process', vib:2.0, tp:70,  dbt:30,  pe:2.0, ps:6.0,  im:22, tm:80,  hf:4000},
-  {id:'water',      label:'Water Supply Pump',         cat:'Utility', vib:1.8, tp:55,  dbt:80,  pe:0.5, ps:3.5,  im:15, tm:65,  hf:8000},
-  {id:'food',       label:'Food-Grade Pump',           cat:'Sanitary',vib:1.5, tp:50,  dbt:25,  pe:1.0, ps:3.0,  im:12, tm:60,  hf:3000},
-  {id:'fire',       label:'Fire Fighting Pump',        cat:'Safety',  vib:3.0, tp:60,  dbt:120, pe:1.0, ps:8.0,  im:35, tm:70,  hf:500},
-  {id:'wastewater', label:'Wastewater Pump',           cat:'Utility', vib:3.5, tp:68,  dbt:60,  pe:0.8, ps:4.0,  im:20, tm:78,  hf:6000},
-  {id:'oil',        label:'Oil Transfer Pump',         cat:'Petro',   vib:2.8, tp:80,  dbt:20,  pe:3.0, ps:10.0, im:25, tm:90,  hf:7000},
-  {id:'multistage', label:'Multistage High-Pressure',  cat:'Process', vib:2.2, tp:72,  dbt:15,  pe:2.5, ps:25.0, im:30, tm:85,  hf:4500},
-  {id:'inline',     label:'Vertical Inline Pump',      cat:'HVAC',    vib:1.6, tp:58,  dbt:35,  pe:1.2, ps:5.0,  im:14, tm:68,  hf:6500},
-  {id:'submersible',label:'Submersible Borehole Pump', cat:'Deep',    vib:2.0, tp:50,  dbt:18,  pe:0.3, ps:12.0, im:16, tm:55,  hf:9000},
-];
-const CLSLABEL=['General','Process','Sanitary'];
-let lastR=null,lastD=null,selectedMachine=null;
-
-function buildCatalog(){
-  const c=document.getElementById('mcatalog');if(!c)return;
-  c.innerHTML=MCATALOG.map(m=>'<div class="mcard" onclick="selectMachine(\''+m.id+'\')">'
-    +'<span class="mcard-name">'+m.label+'</span>'
-    +'<span class="mcard-badge type-M">'+m.cat+'</span>'
-    +'</div>').join('');
-}
-
-function selectMachine(id){
-  const m=MCATALOG.find(x=>x.id===id);if(!m)return;
-  selectedMachine=m;
-  document.getElementById('nvib').value=m.vib;document.getElementById('svib').value=m.vib;
-  document.getElementById('ntp').value=m.tp;document.getElementById('stp').value=m.tp;
-  document.getElementById('ndbt').value=m.dbt;document.getElementById('sdbt').value=m.dbt;
-  document.getElementById('npe').value=m.pe;document.getElementById('spe').value=m.pe;
-  document.getElementById('nps').value=m.ps;document.getElementById('sps').value=m.ps;
-  document.getElementById('nim').value=m.im;document.getElementById('sim').value=m.im;
-  document.getElementById('ntm').value=m.tm;document.getElementById('stm').value=m.tm;
-  document.getElementById('nhf').value=m.hf;document.getElementById('shf').value=m.hf;
-  document.getElementById('mSelName').textContent=m.label;
-  document.getElementById('mSelType').textContent=m.cat;
-  document.getElementById('mStep1').style.display='none';
-  document.getElementById('mCustom').style.display='none';
-  document.getElementById('mStep2').style.display='block';
-}
-
-function backToMachines(){
-  selectedMachine=null;
-  document.getElementById('mStep2').style.display='none';
-  document.getElementById('mCustom').style.display='none';
-  document.getElementById('mStep1').style.display='block';
-}
+let lastR=null,lastD=null;
 
 function toggleAdv(){
   var p=document.getElementById('advParams'),c=document.getElementById('advChv');
@@ -1703,37 +1613,11 @@ function toggleAdv(){
   c.style.transform=open?'':'rotate(180deg)';
 }
 
-function showCustom(){
-  document.getElementById('mStep1').style.display='none';
-  document.getElementById('mStep2').style.display='none';
-  document.getElementById('mCustom').style.display='block';
-}
-
-async function submitCustom(){
-  var name=document.getElementById('cust-name').value.trim();
-  if(!name){document.getElementById('cust-name').focus();return;}
-  var btn=document.getElementById('cust-btn');
-  btn.disabled=true;btn.textContent='Sending...';
-  try{
-    await fetch('/api/machine-request',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({name,manufacturer:document.getElementById('cust-mfr').value.trim(),
-        rpm_range:document.getElementById('cust-rpm').value.trim(),
-        torque_range:document.getElementById('cust-torque').value.trim(),
-        description:document.getElementById('cust-desc').value.trim()})});
-    document.getElementById('cust-msg').style.display='block';
-    document.querySelectorAll('#mCustom input,#mCustom textarea').forEach(e=>e.disabled=true);
-    btn.style.display='none';
-  }catch(e){btn.disabled=false;btn.textContent=t('cust_submit');}
-}
-
-var _catalogBuilt=false;
 function toggleManual(){
   var b=document.getElementById('manBody'),c=document.getElementById('manChv'),o=b.style.display==='block';
   b.style.display=o?'none':'block';
   c.style.transform=o?'':'rotate(180deg)';
-  if(!o&&!_catalogBuilt){buildCatalog();_catalogBuilt=true;}
 }
-window.addEventListener('DOMContentLoaded',function(){if(!_catalogBuilt){buildCatalog();_catalogBuilt=true;}});
 function updN(){const b=document.getElementById('nb');if(!b)return;const p=Notification.permission;if(p==='granted'){b.textContent='Notifs ON';b.className='nb on';}else{b.textContent='Enable Notifs';b.className='nb';}}
 async function toggleN(){if(Notification.permission==='granted')return;await Notification.requestPermission();updN();}
 function sendN(risk,zones){if(Notification.permission!=='granted')return;new Notification('Pilar — Risk: '+risk+'%',{body:zones.length?'Zones: '+zones.map(z=>z.nom).join(', '):'No specific zone',requireInteraction:true,tag:'pilar'});}
@@ -1751,10 +1635,8 @@ function si(s,n,type){
 }
 function gv(id){return parseFloat(document.getElementById(id).value);}
 async function analyse(){
-  if(!selectedMachine)return;
   const btn=document.getElementById('btn');btn.disabled=true;btn.textContent=t('run_btn')+'\u2026';
-  lastD={machine_id:selectedMachine.label,
-    vibration:gv('nvib'),temp_palier:gv('ntp'),
+  lastD={vibration:gv('nvib'),temp_palier:gv('ntp'),
     debit:gv('ndbt'),pression_entree:gv('npe'),pression_sortie:gv('nps'),
     courant_moteur:gv('nim'),temp_moteur:gv('ntm'),heure_fonctionnement:gv('nhf')};
   try{
