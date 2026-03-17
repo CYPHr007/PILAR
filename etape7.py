@@ -4491,12 +4491,10 @@ function renderFleet() {
         <div class="meta-item"><div class="meta-label">Last seen</div><div class="meta-val" style="font-size:11px">${lastSeen}</div></div>
       </div>
       <div class="card-actions">
-        <button class="btn btn-primary" style="flex:1;justify-content:center" onclick="openUpload(${m.id})">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:12px;height:12px;flex-shrink:0"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          Upload data
-        </button>
-        <button class="btn btn-ghost" style="flex:1;justify-content:center" onclick="openEdit(${m.id})">Edit</button>
-        <button class="btn btn-danger" onclick="deleteMachine(${m.id})">Delete</button>
+        <button class="btn btn-primary" style="flex:1;justify-content:center" onclick="openAnalyse(${m.id})">&#9889; Analyse</button>
+        <button class="btn btn-ghost" style="flex:1;justify-content:center" onclick="openUpload(${m.id})">CSV</button>
+        <button class="btn btn-ghost" onclick="openEdit(${m.id})">Edit</button>
+        <button class="btn btn-danger" onclick="deleteMachine(${m.id})">&#x2715;</button>
       </div>
     </div>`;
   }).join('');
@@ -4568,6 +4566,77 @@ async function deleteMachine(id) {
 
 loadFleet();
 
+// ── QUICK ANALYSE ──────────────────────────────────────────────────────────
+let _analyseMid = null;
+const _MEDIANS = {vibration:0.61,temp_palier:44.8,debit:0.395,pression_entree:1.5,pression_sortie:107.73,courant_moteur:18.0,temp_moteur:44.8,heure_fonctionnement:1103.0};
+
+function openAnalyse(id) {
+  _analyseMid = id;
+  const m = _machines.find(x => x.id === id);
+  document.getElementById('an-title').textContent = 'Analyse — ' + (m ? esc(m.name) : '');
+  // reset form to medians
+  document.getElementById('an-vib').value  = _MEDIANS.vibration;
+  document.getElementById('an-tp').value   = _MEDIANS.temp_palier;
+  document.getElementById('an-dbt').value  = _MEDIANS.debit;
+  document.getElementById('an-pe').value   = _MEDIANS.pression_entree;
+  document.getElementById('an-ps').value   = _MEDIANS.pression_sortie;
+  document.getElementById('an-im').value   = _MEDIANS.courant_moteur;
+  document.getElementById('an-tm').value   = _MEDIANS.temp_moteur;
+  document.getElementById('an-hf').value   = _MEDIANS.heure_fonctionnement;
+  document.getElementById('an-result').style.display = 'none';
+  document.getElementById('an-result').innerHTML = '';
+  var btn = document.getElementById('an-submit');
+  btn.disabled = false; btn.textContent = 'Run Analysis';
+  document.getElementById('analyse-overlay').classList.add('open');
+}
+
+function closeAnalyse() {
+  document.getElementById('analyse-overlay').classList.remove('open');
+  _analyseMid = null;
+}
+
+function _anGv(id) { return parseFloat(document.getElementById(id).value) || 0; }
+
+async function runAnalyse() {
+  if (!_analyseMid) return;
+  const m = _machines.find(x => x.id === _analyseMid);
+  var btn = document.getElementById('an-submit');
+  btn.disabled = true; btn.textContent = 'Analysing...';
+  var payload = {
+    vibration: _anGv('an-vib'), temp_palier: _anGv('an-tp'),
+    debit: _anGv('an-dbt'), pression_entree: _anGv('an-pe'),
+    pression_sortie: _anGv('an-ps'), courant_moteur: _anGv('an-im'),
+    temp_moteur: _anGv('an-tm'), heure_fonctionnement: _anGv('an-hf'),
+    machine_id: m ? m.name : String(_analyseMid),
+    threshold: m ? m.threshold : 45
+  };
+  try {
+    var r = await fetch('/predire', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+    var d = await r.json();
+    var res = document.getElementById('an-result');
+    res.style.display = 'block';
+    if (d.error) { res.innerHTML = '<div style="color:#f87171;font-size:13px">' + d.error + '</div>'; btn.disabled=false; btn.textContent='Run Analysis'; return; }
+    var risk = d.probabilite;
+    var rCol = risk >= 70 ? '#f87171' : risk >= 45 ? '#fbbf24' : '#34d399';
+    var status = d.prediction === 1 ? '<span style="color:#f87171;font-weight:700">⚠ FAILURE</span>' : '<span style="color:#34d399;font-weight:700">✓ NORMAL</span>';
+    var zonesHtml = (d.zones && d.zones.length) ? d.zones.map(z => '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--text2)">' + z.nom + '</span><span style="font-size:11px;font-weight:700;color:#f87171">' + z.proba + '%</span></div>').join('') : '<div style="font-size:11px;color:var(--text3)">No specific zone</div>';
+    var anomHtml = d.anomaly_score != null ? '<div style="margin-top:10px;font-size:11px;color:var(--text3)">Anomaly score: <strong style="color:var(--text)">' + d.anomaly_score + '/100</strong></div>' : '';
+    res.innerHTML = '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'
+      + '<div style="font-size:42px;font-weight:800;color:' + rCol + ';line-height:1">' + risk + '<span style="font-size:16px;color:var(--text3)">%</span></div>'
+      + '<div>' + status + '</div></div>'
+      + '<div style="height:4px;background:var(--border);border-radius:2px;margin-bottom:14px;overflow:hidden"><div style="height:100%;width:' + Math.min(risk,100) + '%;background:' + rCol + ';border-radius:2px"></div></div>'
+      + '<div style="font-size:9px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:8px">Failure Zones</div>'
+      + zonesHtml + anomHtml
+      + '</div>';
+    btn.textContent = 'Run Again'; btn.disabled = false;
+    loadFleet();
+  } catch(e) {
+    document.getElementById('an-result').innerHTML = '<div style="color:#f87171;font-size:13px">Network error</div>';
+    btn.disabled=false; btn.textContent='Run Analysis';
+  }
+}
+
 // ── CSV UPLOAD ─────────────────────────────────────────────────────────────
 let _uploadMid = null;
 
@@ -4633,6 +4702,52 @@ async function runUpload() {
   }
 }
 </script>
+
+<!-- Quick Analyse Modal -->
+<div class="modal-overlay" id="analyse-overlay" onclick="if(event.target===this)closeAnalyse()">
+  <div class="modal" style="width:520px">
+    <div class="modal-title" id="an-title">Analyse Machine</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:4px">
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Vibration <span style="color:var(--text3);font-weight:400;letter-spacing:0">mm/s</span></label>
+        <input class="form-input" id="an-vib" type="number" step="0.01" min="0">
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Bearing Temp <span style="color:var(--text3);font-weight:400;letter-spacing:0">°C</span></label>
+        <input class="form-input" id="an-tp" type="number" step="0.1" min="0">
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Flow Rate <span style="color:var(--text3);font-weight:400;letter-spacing:0">m³/h</span></label>
+        <input class="form-input" id="an-dbt" type="number" step="0.001" min="0">
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Inlet Pressure <span style="color:var(--text3);font-weight:400;letter-spacing:0">bar</span></label>
+        <input class="form-input" id="an-pe" type="number" step="0.01" min="0">
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Outlet Pressure <span style="color:var(--text3);font-weight:400;letter-spacing:0">bar</span></label>
+        <input class="form-input" id="an-ps" type="number" step="0.01" min="0">
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Motor Current <span style="color:var(--text3);font-weight:400;letter-spacing:0">A</span></label>
+        <input class="form-input" id="an-im" type="number" step="0.1" min="0">
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Motor Temp <span style="color:var(--text3);font-weight:400;letter-spacing:0">°C</span></label>
+        <input class="form-input" id="an-tm" type="number" step="0.1" min="0">
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Run Hours <span style="color:var(--text3);font-weight:400;letter-spacing:0">h</span></label>
+        <input class="form-input" id="an-hf" type="number" step="1" min="0">
+      </div>
+    </div>
+    <div id="an-result" style="margin-top:16px;display:none"></div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-ghost" onclick="closeAnalyse()">Close</button>
+      <button type="button" class="btn btn-primary" id="an-submit" onclick="runAnalyse()">Run Analysis</button>
+    </div>
+  </div>
+</div>
 
 <!-- CSV Upload Modal -->
 <div class="modal-overlay" id="upload-overlay" onclick="if(event.target===this)closeUpload()">
