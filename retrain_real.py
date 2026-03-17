@@ -37,17 +37,33 @@ COLONNES = [
 
 # Patterns de détection auto des colonnes (noms alternatifs acceptés)
 COL_PATTERNS = {
-    'vibration':           ['vibration','vib','vibration_mm','vib_mms','vibration_mmps','accel','acceleration','vibr'],
-    'temp_palier':         ['temp_palier','bearing_temp','palier_temp','t_palier','tpalier','bearing_temperature','temp_roulement'],
-    'debit':               ['debit','flow','flow_rate','flowrate','debit_m3h','flow_m3h','caudal'],
-    'pression_entree':     ['pression_entree','inlet_pressure','pressure_in','p_in','pe','suction_pressure','pression_aspiration'],
-    'pression_sortie':     ['pression_sortie','outlet_pressure','discharge_pressure','pressure_out','p_out','ps','pression_refoulement'],
-    'courant_moteur':      ['courant_moteur','motor_current','current_motor','im','courant_a','current_a','ampere_moteur','motor_amp'],
-    'temp_moteur':         ['temp_moteur','motor_temp','motor_temperature','tm','temperature_moteur','t_moteur'],
-    'heure_fonctionnement':['heure_fonctionnement','run_hours','operating_hours','runtime','heures','hours','hf','total_hours'],
+    'vibration':           ['vibration','vib','vibration_mm','vib_mms','vibration_mmps','vibrations_mm_s',
+                            'vibrations','accel','acceleration','vibr','vs1','vs2'],
+    'temp_palier':         ['temp_palier','bearing_temp','palier_temp','t_palier','tpalier',
+                            'bearing_temperature','temp_roulement','temperature_palier_c',
+                            'temperature_palier','ts1','ts2','ts3','ts4','bearing_t'],
+    'debit':               ['debit','flow','flow_rate','flowrate','debit_m3h','flow_m3h',
+                            'debit_l_min','debit_lmin','fs1','fs2','caudal'],
+    'pression_entree':     ['pression_entree','inlet_pressure','pressure_in','p_in','pe',
+                            'suction_pressure','pression_aspiration','pression_entree_bar',
+                            'ps1','ps2_in','pressure_inlet'],
+    'pression_sortie':     ['pression_sortie','outlet_pressure','discharge_pressure','pressure_out',
+                            'p_out','ps','pression_refoulement','pression_sortie_bar',
+                            'ps2','ps3','ps4','ps5','ps6','pressure_outlet','discharge_p'],
+    'courant_moteur':      ['courant_moteur','motor_current','current_motor','im','courant_a',
+                            'current_a','ampere_moteur','motor_amp','eps1','current'],
+    'temp_moteur':         ['temp_moteur','motor_temp','motor_temperature','tm',
+                            'temperature_moteur','t_moteur','motor_t'],
+    'heure_fonctionnement':['heure_fonctionnement','run_hours','operating_hours','runtime',
+                            'heures','hours','hf','total_hours','cycle_id'],
 }
 
-TARGET_PATTERNS = ['panne','failure','fault','label','target','defaut','defaillance','anomalie','anomaly','broken']
+TARGET_PATTERNS = ['panne','failure','fault','label','target','defaut','defaillance','anomalie','anomaly','broken',
+                   'etat_pompe_code','etat_pompe','status','machine_status','pump_status','condition']
+
+# Colonnes à convertir d'unité avant entraînement (pour rester cohérent avec le live monitor)
+# débit : L/min -> m³/h  (× 0.06)
+DEBIT_LMIN_PATTERNS = ['l_min','lmin','l/min','litre_min','litres_min']
 
 print('=' * 65)
 print('PILAR — Retraining pompe centrifuge')
@@ -88,7 +104,8 @@ target_col = find_col(TARGET_PATTERNS)
 if not target_col:
     # Essaie les colonnes binaires 0/1
     for c in df.columns:
-        if df[c].dropna().isin([0, 1]).all() and df[c].sum() > 0:
+        vals = df[c].dropna()
+        if set(vals.unique()).issubset({0, 1}) and vals.sum() > 0:
             target_col = c
             break
 if not target_col:
@@ -102,11 +119,32 @@ print('\n[3/7] Construction features...')
 feat_df = pd.DataFrame(index=df.index)
 for feat in COLONNES:
     if feat in col_map:
-        feat_df[feat] = pd.to_numeric(df[col_map[feat]], errors='coerce')
+        raw_col = col_map[feat]
+        feat_df[feat] = pd.to_numeric(df[raw_col], errors='coerce')
+        # Conversion L/min -> m³/h pour le débit (cohérence avec live monitor)
+        if feat == 'debit' and any(p in raw_col.lower() for p in DEBIT_LMIN_PATTERNS):
+            feat_df[feat] = feat_df[feat] * 0.06
+            print(f'  debit: conversion L/min -> m³/h (×0.06)')
     else:
         feat_df[feat] = np.nan
 
-y = pd.to_numeric(df[target_col], errors='coerce').fillna(0).astype(int).values
+# Conversion cible -> binaire 0/1
+raw_target = df[target_col]
+if raw_target.dtype == object or str(raw_target.dtype) == 'category':
+    # Texte : 'panne'/'panne_proche' -> 1, 'bon_fonctionnement'/'normal'/0 -> 0
+    PANNE_WORDS = ['panne','failure','fault','defaut','broken','anomal','leak','wear','error']
+    y = raw_target.astype(str).str.lower().apply(
+        lambda v: 1 if any(w in v for w in PANNE_WORDS) else 0
+    ).values.astype(int)
+else:
+    numeric = pd.to_numeric(raw_target, errors='coerce').fillna(0)
+    unique_vals = sorted(numeric.dropna().unique())
+    if set(unique_vals).issubset({0, 1}):
+        y = numeric.astype(int).values
+    else:
+        # Multi-classe : 0 = normal, tout le reste = anomalie
+        y = (numeric > 0).astype(int).values
+print(f'  Distribution cible    : normal={int((y==0).sum())}  panne={int((y==1).sum())}  ({y.mean()*100:.1f}% pannes)')
 
 # Imputation par médiane pour les colonnes manquantes / NaN
 medians = {}
