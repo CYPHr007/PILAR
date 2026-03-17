@@ -4914,6 +4914,16 @@ def predict_risk(params, threshold=45, return_extra=False):
                 if pz >= 30:
                     zones_risque.append({'nom': nom, 'proba': pz})
         zones_risque.sort(key=lambda x: x['proba'], reverse=True)
+        # MOT: threshold rule — no trained model (constant data in training CSV)
+        if 'MOT' not in modeles_zones:
+            _curr = params.get('courant_moteur', FEATURE_MEDIANS['courant_moteur'])
+            _tmot = params.get('temp_moteur', FEATURE_MEDIANS['temp_moteur'])
+            _curr_score = min(100.0, max(0.0, (_curr - 18.0) / 12.0 * 100)) if _curr > 22.0 else 0.0
+            _temp_score = min(100.0, max(0.0, (_tmot - 75.0) / 35.0 * 100)) if _tmot > 85.0 else 0.0
+            _pz_mot = round(max(_curr_score, _temp_score), 1)
+            if _pz_mot >= 30:
+                zones_risque.append({'nom': FAILURE_ZONES['MOT'], 'proba': _pz_mot})
+                zones_risque.sort(key=lambda x: x['proba'], reverse=True)
     if not return_extra:
         return probabilite, prediction, zones_risque, confidence, missing_keys
     # ── Extra: Isolation Forest anomaly scoring + lazy training ───────────────
@@ -5117,6 +5127,93 @@ def _send_weekly_reports():
             except Exception as _pdf_e:
                 print(f"[Pilar/pdf] Error for user {u.id}: {_pdf_e}")
 
+# ── AUTO-RETRAIN ──────────────────────────────────────────────────────────────
+_retrain_lock = threading.Lock()
+_new_analyses_since_retrain = 0
+_RETRAIN_TRIGGER = 150  # retrain when this many new analyses accumulated
+
+def _reload_models():
+    """Reload pkl files into global model variables after a retrain."""
+    global model, scaler, modeles_zones, _shap_explainer, _iso_forest
+    try:
+        with open('modele_pannes.pkl', 'rb') as f: model = pickle.load(f)
+        with open('scaler.pkl', 'rb') as f: scaler = pickle.load(f)
+        with open('modeles_zones.pkl', 'rb') as f: modeles_zones = pickle.load(f)
+        _shap_explainer = None  # reset so it's rebuilt on next prediction
+        _iso_forest = None
+        print('[Pilar/retrain] Models reloaded into memory')
+    except Exception as _e:
+        print(f'[Pilar/retrain] Reload error: {_e}')
+
+def _auto_retrain():
+    """Export Analysis DB rows to CSV and retrain the model pipeline."""
+    global _new_analyses_since_retrain
+    if not _retrain_lock.acquire(blocking=False):
+        print('[Pilar/retrain] Retrain already in progress — skipped')
+        return
+    try:
+        with app.app_context():
+            import csv as _csv, tempfile as _tmp, subprocess as _sp, json as _js
+            analyses = Analysis.query.order_by(Analysis.timestamp.asc()).all()
+            if len(analyses) < 50:
+                print(f'[Pilar/retrain] Not enough data ({len(analyses)} rows) — skipped')
+                return
+            print(f'[Pilar/retrain] Building training CSV from {len(analyses)} analyses...')
+            rows = []
+            for a in analyses:
+                ep = {}
+                try: ep = _js.loads(a.extra_params) if a.extra_params else {}
+                except Exception: pass
+                # Map Analysis columns back to feature names
+                row = {
+                    'vibration':            ep.get('vibration', FEATURE_MEDIANS['vibration']),
+                    'temp_palier':          a.temp_air          if a.temp_air          is not None else FEATURE_MEDIANS['temp_palier'],
+                    'debit':                a.vitesse            if a.vitesse            is not None else FEATURE_MEDIANS['debit'],
+                    'pression_entree':      ep.get('pression_entree', FEATURE_MEDIANS['pression_entree']),
+                    'pression_sortie':      a.couple             if a.couple             is not None else FEATURE_MEDIANS['pression_sortie'],
+                    'courant_moteur':       ep.get('courant_moteur', FEATURE_MEDIANS['courant_moteur']),
+                    'temp_moteur':          a.temp_process       if a.temp_process       is not None else FEATURE_MEDIANS['temp_moteur'],
+                    'heure_fonctionnement': a.usure              if a.usure              is not None else FEATURE_MEDIANS['heure_fonctionnement'],
+                    # target: use feedback if available, else model prediction
+                    'etat_pompe_code': (1 if a.feedback == 'tp' else 0 if a.feedback == 'fp' else a.prediction),
+                }
+                rows.append(row)
+            # Write temp CSV
+            tmp = _tmp.NamedTemporaryFile(mode='w', suffix='.csv', delete=False, newline='', encoding='utf-8')
+            writer = _csv.DictWriter(tmp, fieldnames=list(rows[0].keys()))
+            writer.writeheader()
+            writer.writerows(rows)
+            tmp.close()
+            csv_path = tmp.name
+            print(f'[Pilar/retrain] Temp CSV: {csv_path}')
+            # Run retrain_real.py as subprocess
+            result = _sp.run(
+                ['python', 'retrain_real.py', csv_path],
+                capture_output=True, text=True, timeout=300
+            )
+            print('[Pilar/retrain] stdout:', result.stdout[-2000:] if result.stdout else '')
+            if result.returncode == 0:
+                print('[Pilar/retrain] Success — reloading models')
+                _reload_models()
+                _new_analyses_since_retrain = 0
+                # Record retrain timestamp in settings
+                try:
+                    s = Setting.query.filter_by(key='last_auto_retrain', user_id=None).first()
+                    ts = datetime.utcnow().isoformat()
+                    if s: s.value = ts
+                    else: db.session.add(Setting(key='last_auto_retrain', value=ts, user_id=None))
+                    db.session.commit()
+                except Exception: pass
+            else:
+                print(f'[Pilar/retrain] FAILED (rc={result.returncode}): {result.stderr[-1000:]}')
+            try:
+                import os as _os; _os.unlink(csv_path)
+            except Exception: pass
+    except Exception as _re:
+        print(f'[Pilar/retrain] Error: {_re}')
+    finally:
+        _retrain_lock.release()
+
 def _start_scheduler():
     try:
         from apscheduler.schedulers.background import BackgroundScheduler
@@ -5124,8 +5221,10 @@ def _start_scheduler():
         _sched = BackgroundScheduler()
         _sched.add_job(_send_weekly_reports, CronTrigger(day_of_week='mon', hour=8, minute=0),
                        id='weekly_pdf_reports', replace_existing=True)
+        _sched.add_job(_auto_retrain, CronTrigger(day_of_week='sun', hour=3, minute=0),
+                       id='weekly_auto_retrain', replace_existing=True)
         _sched.start()
-        print("[Pilar] APScheduler started — weekly reports on Monday 08:00 UTC")
+        print("[Pilar] APScheduler started — weekly reports Mon 08:00 UTC | auto-retrain Sun 03:00 UTC")
     except Exception as _se:
         print(f"[Pilar] APScheduler not available: {_se}")
 
@@ -5376,6 +5475,27 @@ def admin_delete_user(uid):
     db.session.commit()
     print(f"[Pilar/admin] DELETE_USER by {me.email}: deleted={email}")
     return jsonify({'ok': True})
+
+@app.route('/admin/retrain', methods=['POST'])
+@admin_required
+def admin_retrain():
+    """Manually trigger an auto-retrain from the admin panel."""
+    threading.Thread(target=_auto_retrain, daemon=True).start()
+    return jsonify({'ok': True, 'message': 'Retrain started in background — check server logs'})
+
+@app.route('/admin/retrain/status')
+@admin_required
+def admin_retrain_status():
+    locked = not _retrain_lock.acquire(blocking=False)
+    if not locked:
+        _retrain_lock.release()
+    s = Setting.query.filter_by(key='last_auto_retrain', user_id=None).first()
+    return jsonify({
+        'in_progress': locked,
+        'last_retrain': s.value if s else None,
+        'analyses_since_retrain': _new_analyses_since_retrain,
+        'trigger_at': _RETRAIN_TRIGGER,
+    })
 
 @app.route('/admin/block_email', methods=['POST'])
 @admin_required
@@ -6034,6 +6154,11 @@ def predire():
             machine_id=machine_id_str)
         db.session.add(_a)
         db.session.commit()
+        # Trigger auto-retrain when enough new data has accumulated
+        global _new_analyses_since_retrain
+        _new_analyses_since_retrain += 1
+        if _new_analyses_since_retrain >= _RETRAIN_TRIGGER:
+            threading.Thread(target=_auto_retrain, daemon=True).start()
         return jsonify({'prediction': prediction, 'probabilite': probabilite,
                         'zones': zones_risque, 'mail_envoye': mail_envoye,
                         'confidence': confidence, 'imputed': imputed,
@@ -6087,33 +6212,67 @@ def api_twin():
         if len(history_risks) >= 3:
             diff = history_risks[-1] - history_risks[-3]
             trend = 'Increasing' if diff > 2 else 'Decreasing' if diff < -2 else 'Stable'
-        # ── RUL: Remaining Useful Life via linear regression on risk trend ───
+        # ── RUL: Multi-signal Health Index + polynomial regression (degree 2) ──
         rul_hours = None
         rul_confidence = None
+        rul_degradation_rates = {}
         try:
             if len(analyses) >= 3:
+                import json as _json2
                 t_ref = analyses[0].timestamp
                 t_arr = np.array([(a.timestamp - t_ref).total_seconds() / 3600 for a in analyses], dtype=float)
                 r_arr = np.array([a.risk for a in analyses], dtype=float)
-                t_mean = t_arr.mean(); r_mean = r_arr.mean()
-                denom = ((t_arr - t_mean) ** 2).sum()
-                if denom > 0:
-                    slope = ((t_arr - t_mean) * (r_arr - r_mean)).sum() / denom
-                    intercept = r_mean - slope * t_mean
-                    ss_res = ((r_arr - (slope * t_arr + intercept)) ** 2).sum()
-                    ss_tot = ((r_arr - r_mean) ** 2).sum()
-                    r2 = max(0.0, 1.0 - ss_res / ss_tot) if ss_tot > 0 else 0.0
-                    if slope > 0.01 and last.risk < 80:
-                        t_fail = (80 - intercept) / slope
-                        rul_hours = max(0, round(t_fail - t_arr[-1]))
-                        rul_confidence = 'high' if r2 > 0.7 else 'medium' if r2 > 0.3 else 'low'
+                # bearing temp degradation component (0=healthy 44°C → 1=critical 70°C)
+                t_bear = np.array([a.temp_air if a.temp_air is not None else FEATURE_MEDIANS['temp_palier'] for a in analyses], dtype=float)
+                bear_deg = np.clip((t_bear - 44.5) / 25.5, 0.0, 1.0)
+                # vibration from extra_params if stored
+                vib_vals = []
+                for a in analyses:
+                    try:
+                        ep = _json2.loads(a.extra_params) if a.extra_params else {}
+                        vib_vals.append(float(ep.get('vibration', FEATURE_MEDIANS['vibration'])))
+                    except Exception:
+                        vib_vals.append(FEATURE_MEDIANS['vibration'])
+                vib_arr = np.array(vib_vals, dtype=float)
+                vib_deg = np.clip((vib_arr - 0.6) / 1.4, 0.0, 1.0)  # 0.6=ok → 2.0=critical
+                # Composite Health Index: weighted combination of risk + bearing temp + vibration
+                hi_arr = np.clip(0.5 * (r_arr / 100.0) + 0.3 * bear_deg + 0.2 * vib_deg, 0.0, 1.0) * 100.0
+                # Polynomial fit (degree 2 if ≥5 points, linear if fewer)
+                deg = min(2, len(t_arr) - 1)
+                coeffs = np.polyfit(t_arr, hi_arr, deg)
+                hi_pred = np.polyval(coeffs, t_arr)
+                ss_res = ((hi_arr - hi_pred) ** 2).sum()
+                ss_tot = ((hi_arr - hi_arr.mean()) ** 2).sum()
+                r2 = max(0.0, 1.0 - ss_res / ss_tot) if ss_tot > 0 else 0.0
+                # Find time when HI hits 80 (failure threshold)
+                threshold = 80.0
+                c_shifted = coeffs.copy(); c_shifted[-1] -= threshold
+                if deg == 2:
+                    roots = np.roots(c_shifted)
+                    future_roots = [r.real for r in roots if abs(r.imag) < 1e-6 and r.real > t_arr[-1]]
+                else:  # linear: slope*t + intercept = 80
+                    future_roots = [(-c_shifted[1] / c_shifted[0])] if c_shifted[0] != 0 else []
+                    future_roots = [x for x in future_roots if x > t_arr[-1]]
+                if future_roots and hi_arr[-1] < threshold:
+                    t_fail = min(future_roots)
+                    rul_hours = max(0, round(t_fail - t_arr[-1]))
+                    rul_confidence = 'high' if r2 > 0.7 else 'medium' if r2 > 0.3 else 'low'
+                # Per-feature degradation rates (unit/hour)
+                span = max(t_arr[-1] - t_arr[0], 1e-9)
+                rul_degradation_rates = {
+                    'risk_per_h': round(float(r_arr[-1] - r_arr[0]) / span, 4),
+                    'bearing_temp_per_h': round(float(t_bear[-1] - t_bear[0]) / span, 4),
+                    'vibration_per_h': round(float(vib_arr[-1] - vib_arr[0]) / span, 4),
+                    'hi_current': round(float(hi_arr[-1]), 1),
+                    'hi_slope_per_h': round(float(np.polyval(np.polyder(coeffs), t_arr[-1])), 4),
+                }
         except Exception as _re:
             print(f"[Pilar/RUL] {_re}")
         return jsonify({'has_data':True,'current_risk':last.risk,'avg_risk_24h':avg_risk,
             'anomaly_rate':anomaly_rate,'total_analyses':total,'failure_hours':failure_hours,'trend':trend,
             'history_times':history_times,'history_risks':history_risks,'history_wear':history_wear,'history_temp':history_temp,
             'future_times':future_times,'future_risks':future_risks,'future_wear':future_wear,'future_temp':future_temp,
-            'rul_hours':rul_hours,'rul_confidence':rul_confidence,
+            'rul_hours':rul_hours,'rul_confidence':rul_confidence,'rul_degradation':rul_degradation_rates,
             'last_params':{'vibration':FEATURE_MEDIANS['vibration'],'debit':last.vitesse,'pression_sortie':last.couple,'heure_fonctionnement':last.usure,'temp_palier':last.temp_air}})
     except Exception as e:
         import traceback
