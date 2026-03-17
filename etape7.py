@@ -1219,6 +1219,10 @@ tr:last-child td{border-bottom:none;}
 .lz-sel{background:var(--surface2);border:1px solid var(--border2);border-radius:4px;color:var(--text2);font-size:10px;padding:4px 8px;outline:none;}
 .man-hdr{display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;margin-bottom:0;}
 .man-chv{width:14px;height:14px;stroke:var(--text3);fill:none;flex-shrink:0;transition:transform 0.2s;}
+.ai-chip{display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:7px 12px;flex:1;min-width:0;}
+.ai-dot{width:7px;height:7px;border-radius:50%;background:#64809a;flex-shrink:0;}
+.ai-label{font-size:10px;font-weight:700;letter-spacing:1px;color:var(--text2);white-space:nowrap;}
+.ai-val{font-size:9px;color:var(--text3);margin-left:auto;white-space:nowrap;}
 </style>
 <script>
 const T={
@@ -1543,11 +1547,11 @@ HTML = _HEAD.replace("{FAV}","iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAHxU
     <div id="lzEmpty" class="lz-empty">
       <svg style="width:32px;height:32px;stroke:var(--text3);fill:none;flex-shrink:0" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <div class="lz-hint" data-i18n="live_hint">Connect a CSV file — Pilar analyses each new row automatically as data arrives</div>
-      <label class="lz-cta">
+      <button class="lz-cta" onclick="openLiveFile()">
         <svg style="width:16px;height:16px;stroke:currentColor;fill:none;flex-shrink:0" viewBox="0 0 24 24"><path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z" stroke-width="2"/><polyline points="13 2 13 9 20 9" stroke-width="2"/></svg>
         <span data-i18n="live_connect">Connect CSV file</span>
-        <input type="file" id="lfInput" accept=".csv" style="display:none" onchange="onLiveFile(this)">
-      </label>
+      </button>
+      <input type="file" id="lfInput" accept=".csv" style="display:none" onchange="onLiveFileFallback(this)">
     </div>
     <!-- Connected state -->
     <div id="lzConn" class="lz-conn" style="display:none">
@@ -1569,6 +1573,43 @@ HTML = _HEAD.replace("{FAV}","iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAHxU
           <option value="10000">10s</option>
           <option value="30000">30s</option>
         </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI STACK — always visible -->
+  <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+    <div class="ai-chip" id="ai-isoforest">
+      <span class="ai-dot" id="ai-isoforest-dot"></span>
+      <span class="ai-label">Isolation Forest</span>
+      <span class="ai-val" id="ai-isoforest-val" data-i18n="ai_warming">warming up</span>
+    </div>
+    <div class="ai-chip">
+      <span class="ai-dot" style="background:var(--teal2)"></span>
+      <span class="ai-label">SHAP</span>
+      <span class="ai-val" data-i18n="ai_ready">ready</span>
+    </div>
+    <div class="ai-chip">
+      <span class="ai-dot" style="background:var(--teal2)"></span>
+      <span class="ai-label">RUL</span>
+      <span class="ai-val" data-i18n="ai_in_twin">Digital Twin</span>
+    </div>
+  </div>
+
+  <!-- AI RESULTS — shown after each prediction -->
+  <div id="ai-panel" style="display:none;margin-bottom:12px">
+    <div class="card" style="padding:14px 16px">
+      <div style="font-size:9px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:12px">AI Insights</div>
+      <div id="ai-anomaly-row" style="display:none;display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border)">
+        <div>
+          <div style="font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase">Anomaly score</div>
+          <div style="font-size:9px;color:var(--text3);margin-top:2px">Isolation Forest · unsupervised</div>
+        </div>
+        <span id="ai-anomaly-val" style="font-size:20px;font-weight:800">—</span>
+      </div>
+      <div id="ai-shap-section" style="display:none">
+        <div style="font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">Top drivers · SHAP</div>
+        <div id="ai-shap-body"></div>
       </div>
     </div>
   </div>
@@ -1669,54 +1710,81 @@ function render(r){
   }
   let zH='';
   if(al&&r.zones&&r.zones.length>0){zH='<div class="card"><div class="ctitle">'+t('zone_title')+'</div>'+r.zones.map(z=>'<div class="zrow"><span class="zname">'+z.nom+'</span><div class="zbw"><div class="zbf" style="width:'+z.proba+'%"></div></div><span class="zp">'+z.proba+'%</span></div>').join('')+'</div>';}
-  let anomH='';
+  document.getElementById('res').innerHTML='<div class="rh '+cls+'"><div><div class="sb '+cls+'"><span class="dot '+cls+'"></span>'+st+'</div><div style="font-size:10px;color:var(--text3);margin-top:4px">'+localTimeNow()+'</div>'+confH+'</div><div><div class="rnum '+cls+'">'+r.probabilite+'<span class="runit">%</span></div><div class="rlbl">'+t('failure_prob')+'</div></div></div>'+zH;
+
+  // ── AI PANEL ──
+  var aiPanel=document.getElementById('ai-panel');
+  var hasAI=(r.anomaly_score!=null)||(r.shap_explanations&&r.shap_explanations.length);
+  aiPanel.style.display=hasAI?'block':'none';
+
+  // Anomaly score
+  var anomRow=document.getElementById('ai-anomaly-row');
+  var anomVal=document.getElementById('ai-anomaly-val');
+  var isoChipDot=document.getElementById('ai-isoforest-dot');
+  var isoChipVal=document.getElementById('ai-isoforest-val');
   if(r.anomaly_score!=null){
     var aCl=r.anomaly_score>=70?'#dc2626':r.anomaly_score>=35?'#d97706':'#059669';
-    anomH='<div style="margin-top:8px;padding:5px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:5px;display:flex;align-items:center;justify-content:space-between"><span style="font-size:9px;letter-spacing:1.5px;color:var(--text3);text-transform:uppercase">Anomaly score</span><span style="font-size:12px;font-weight:700;color:'+aCl+'">'+r.anomaly_score+'/100</span></div>';
+    anomRow.style.display='flex';
+    anomVal.textContent=r.anomaly_score+'/100';
+    anomVal.style.color=aCl;
+    if(isoChipDot)isoChipDot.style.background=aCl;
+    if(isoChipVal)isoChipVal.textContent=r.anomaly_score+'/100';
+  }else{
+    anomRow.style.display='none';
+    if(isoChipDot)isoChipDot.style.background='#64809a';
+    if(isoChipVal)isoChipVal.textContent=t('ai_warming')||'warming up';
   }
-  let shapH='';
+
+  // SHAP top-3
+  var shapSection=document.getElementById('ai-shap-section');
+  var shapBody=document.getElementById('ai-shap-body');
   if(r.shap_explanations&&r.shap_explanations.length){
-    var shapBody=r.shap_explanations.map(function(s){return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="font-size:11px;color:var(--text2);flex:1">'+s.feature+'</span><span style="font-size:12px;font-weight:700;color:'+(s.direction==='up'?'#dc2626':'#0d9488')+'">'+s.impact+' '+(s.direction==='up'?'\u2191':'\u2193')+'</span></div>';}).join('');
-    shapH='<div class="card"><div class="ctitle">AI Explanation</div>'+(al?'<div style="font-size:11px;color:var(--text2);margin-bottom:10px;line-height:1.6">High risk mainly due to:</div>':'')+shapBody+'</div>';
+    shapSection.style.display='block';
+    shapBody.innerHTML=r.shap_explanations.map(function(s){
+      return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'
+        +'<span style="font-size:11px;color:var(--text2);flex:1">'+s.feature+'</span>'
+        +'<span style="font-size:13px;font-weight:700;color:'+(s.direction==='up'?'#dc2626':'#0d9488')+'">'+s.impact+' '+(s.direction==='up'?'\u2191':'\u2193')+'</span>'
+        +'</div>';
+    }).join('');
+  }else{
+    shapSection.style.display='none';
   }
-  document.getElementById('res').innerHTML='<div class="rh '+cls+'"><div><div class="sb '+cls+'"><span class="dot '+cls+'"></span>'+st+'</div><div style="font-size:10px;color:var(--text3);margin-top:4px">'+localTimeNow()+'</div>'+confH+anomH+'</div><div><div class="rnum '+cls+'">'+r.probabilite+'<span class="runit">%</span></div><div class="rlbl">'+t('failure_prob')+'</div></div></div>'+zH+shapH;
 }
 
 // ── LIVE FILE MONITOR ─────────────────────────────────────────────────────
 var _lfHandle=null,_lfTimer=null,_lfKnown=0,_lfFail=0,_lfOk=0,_lfMap=null,_lfDelim=',',_lfFallback=false,_lfUnknown={};
 
-function onLiveFile(inp){
+async function openLiveFile(){
+  if(window.showOpenFilePicker){
+    try{
+      var picks=await window.showOpenFilePicker({types:[{description:'CSV',accept:{'text/csv':['.csv']}}]});
+      _lfHandle=picks[0];
+      _lfKnown=0;_lfFail=0;_lfOk=0;_lfMap=null;_lfFallback=false;clearTimeout(_lfTimer);
+      var fname=(await _lfHandle.getFile()).name;
+      _showLzConn(fname);
+      _lfLoop();
+    }catch(e){if(e.name!=='AbortError')console.error('LiveFile open error',e);}
+  }else{
+    document.getElementById('lfInput').click();
+  }
+}
+
+function onLiveFileFallback(inp){
   var f=inp.files[0];if(!f)return;
-  _lfKnown=0;_lfFail=0;_lfOk=0;_lfMap=null;_lfFallback=false;clearTimeout(_lfTimer);
-  document.getElementById('liveFileName').textContent=f.name;
+  _lfHandle=null;_lfKnown=0;_lfFail=0;_lfOk=0;_lfMap=null;_lfFallback=true;clearTimeout(_lfTimer);
+  _showLzConn(f.name);
+  _readSnapshot(f);
+  document.getElementById('liveChk').innerHTML='<label for="lfInput" style="padding:3px 10px;background:var(--teal);border-radius:3px;color:#fff;font-size:10px;cursor:pointer">'+t('live_refresh')+'</label>';
+}
+
+function _showLzConn(fname){
+  document.getElementById('liveFileName').textContent=fname;
   document.getElementById('lzEmpty').style.display='none';
   document.getElementById('lzConn').style.display='block';
   document.getElementById('liveRowCount').textContent='0';
   document.getElementById('liveFailCount').textContent='0';
   document.getElementById('liveOkCount').textContent='0';
   document.getElementById('liveChk').textContent='';
-  if(window.showOpenFilePicker){
-    _connectWithAPI(f.name);
-  }else{
-    _lfFallback=true;
-    _readSnapshot(f);
-    _showRefreshBtn();
-  }
-}
-
-async function _connectWithAPI(targetName){
-  try{
-    var picks=await window.showOpenFilePicker({types:[{description:'CSV',accept:{'text/csv':['.csv']}}]});
-    _lfHandle=picks[0];
-    _lfLoop();
-  }catch(e){
-    _lfFallback=true;
-    _showRefreshBtn();
-  }
-}
-
-function _showRefreshBtn(){
-  document.getElementById('liveChk').innerHTML='<label for="lfInput" style="padding:3px 10px;background:var(--teal);border-radius:3px;color:#fff;font-size:10px;cursor:pointer">'+t('live_refresh')+'</label>';
 }
 
 function resetLiveTimer(){clearTimeout(_lfTimer);if(_lfHandle)_lfLoop();}
