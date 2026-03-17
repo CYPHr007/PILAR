@@ -1826,43 +1826,47 @@ async function _lfProcess(text){
   document.getElementById('liveRowCount').textContent=total;
   if(total>_lfKnown){
     var newLines=lines.slice(_lfKnown+1);
-    var lastRow=null;
-    newLines.forEach(function(line){
-      var vals=line.split(_lfDelim);
-      var obj=buildPilarRow(vals,_lfMap);
-      if(obj)lastRow=obj;
-    });
     _lfKnown=total;
-    if(lastRow){
-      try{
-        var payload=Object.assign({},lastRow);
-        if(lastRow._extra)Object.assign(payload,lastRow._extra);
-        delete payload._extra;delete payload._unknown;
-        var res=await fetch('/predire',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-        var r=await res.json();
-        if(!r.error){
-          if(r.prediction===1){_lfFail++;if(r.probabilite>=50){sendN(r.probabilite,r.zones);var a=document.getElementById('abn');a.style.display='block';setTimeout(function(){a.style.display='none';},4000);}}
-          else _lfOk++;
-          document.getElementById('liveFailCount').textContent=_lfFail;
-          document.getElementById('liveOkCount').textContent=_lfOk;
-          lastR=r;render(r);
-          localStorage.setItem('pilar_last_result',JSON.stringify(r));
-          if(lastRow._unknown){
-            Object.keys(lastRow._unknown).forEach(function(colName){
-              var val=lastRow._unknown[colName];
-              if(!_lfUnknown[colName])_lfUnknown[colName]={vals:[],risks:[]};
-              _lfUnknown[colName].vals.push(val);
-              _lfUnknown[colName].risks.push(r.probabilite);
-              if(_lfUnknown[colName].vals.length>=20){
-                var disc=_lfUnknown[colName];
-                _lfUnknown[colName]={vals:[],risks:[]};
-                fetch('/api/discover',{method:'POST',headers:{'Content-Type':'application/json'},
-                  body:JSON.stringify({name:colName,values:disc.vals,risks:disc.risks})}).catch(function(){});
-              }
-            });
+    var BATCH=10;
+    for(var bi=0;bi<newLines.length;bi+=BATCH){
+      var chunk=newLines.slice(bi,bi+BATCH);
+      var rows=chunk.map(function(line){
+        var vals=line.split(_lfDelim);
+        return buildPilarRow(vals,_lfMap);
+      }).filter(Boolean);
+      await Promise.all(rows.map(async function(row){
+        try{
+          var payload=Object.assign({},row);
+          if(row._extra)Object.assign(payload,row._extra);
+          delete payload._extra;delete payload._unknown;
+          var res=await fetch('/predire',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+          var r=await res.json();
+          if(!r.error){
+            if(r.prediction===1){_lfFail++;if(r.probabilite>=50){sendN(r.probabilite,r.zones);var a=document.getElementById('abn');a.style.display='block';setTimeout(function(){a.style.display='none';},4000);}}
+            else _lfOk++;
+            document.getElementById('liveFailCount').textContent=_lfFail;
+            document.getElementById('liveOkCount').textContent=_lfOk;
+            lastR=r;render(r);
+            localStorage.setItem('pilar_last_result',JSON.stringify(r));
+            if(row._unknown){
+              Object.keys(row._unknown).forEach(function(colName){
+                var val=row._unknown[colName];
+                if(!_lfUnknown[colName])_lfUnknown[colName]={vals:[],risks:[]};
+                _lfUnknown[colName].vals.push(val);
+                _lfUnknown[colName].risks.push(r.probabilite);
+                if(_lfUnknown[colName].vals.length>=20){
+                  var disc=_lfUnknown[colName];
+                  _lfUnknown[colName]={vals:[],risks:[]};
+                  fetch('/api/discover',{method:'POST',headers:{'Content-Type':'application/json'},
+                    body:JSON.stringify({name:colName,values:disc.vals,risks:disc.risks})}).catch(function(){});
+                }
+              });
+            }
           }
-        }
-      }catch(e){}
+        }catch(e){}
+      }));
+      document.getElementById('liveChk').textContent='Processing '+(Math.min(bi+BATCH,newLines.length))+'/'+newLines.length+'...';
+      await new Promise(function(resolve){setTimeout(resolve,0);});
     }
   }
   if(!_lfFallback)document.getElementById('liveChk').textContent=t('live_last')+': '+new Date().toLocaleTimeString();
