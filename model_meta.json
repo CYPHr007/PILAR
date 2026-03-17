@@ -1,11 +1,11 @@
 {
   "model_name": "RandomForest",
   "recall": 100.0,
-  "precision": 100.0,
-  "f1": 100.0,
-  "n_train": 1449,
-  "n_failures": 960,
-  "failure_rate": 66.3,
+  "precision": 99.5,
+  "f1": 99.7,
+  "n_train": 2205,
+  "n_failures": 984,
+  "failure_rate": 44.6,
   "colonnes": [
     "vibration",
     "temp_palier",
@@ -20,18 +20,19 @@
     "CAV",
     "ROL",
     "ETN",
-    "IMP"
+    "IMP",
+    "MOT"
   ],
   "feature_medians": {
-    "vibration": 0.614,
-    "temp_palier": 44.566,
-    "debit": 0.387,
+    "vibration": 0.61,
+    "temp_palier": 44.837,
+    "debit": 0.395,
     "pression_entree": 1.5,
-    "pression_sortie": 107.994,
+    "pression_sortie": 107.73,
     "courant_moteur": 18.0,
-    "temp_moteur": 75.0,
-    "heure_fonctionnement": 1214.0
+    "temp_moteur": 44.837,
+    "heure_fonctionnement": 1103.0
   },
-  "source": "pompes_reelles_open_source_pannes_et_bon_fonctionnement.csv",
-  "trained_at": "2026-03-18T00:10:06"
+  "source": "pompes_reelles_v2_temp_power_cv.csv",
+  "trained_at": "2026-03-18T00:36:44"
 }

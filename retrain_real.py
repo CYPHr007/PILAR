@@ -51,9 +51,9 @@ COL_PATTERNS = {
                             'p_out','ps','pression_refoulement','pression_sortie_bar',
                             'ps2','ps3','ps4','ps5','ps6','pressure_outlet','discharge_p'],
     'courant_moteur':      ['courant_moteur','motor_current','current_motor','im','courant_a',
-                            'current_a','ampere_moteur','motor_amp','eps1','current'],
+                            'courant_moteur_a','current_a','ampere_moteur','motor_amp','eps1','current'],
     'temp_moteur':         ['temp_moteur','motor_temp','motor_temperature','tm',
-                            'temperature_moteur','t_moteur','motor_t'],
+                            'temperature_moteur','t_moteur','motor_t','temp_moteur_c'],
     'heure_fonctionnement':['heure_fonctionnement','run_hours','operating_hours','runtime',
                             'heures','hours','hf','total_hours','cycle_id'],
 }
@@ -64,6 +64,12 @@ TARGET_PATTERNS = ['panne','failure','fault','label','target','defaut','defailla
 # Colonnes à convertir d'unité avant entraînement (pour rester cohérent avec le live monitor)
 # débit : L/min -> m³/h  (× 0.06)
 DEBIT_LMIN_PATTERNS = ['l_min','lmin','l/min','litre_min','litres_min']
+
+# Proxy puissance → courant : si courant_moteur absent mais puissance_moteur_w disponible
+# I_proxy = P_w / P_median * 18.0 (médiane courant physique pompe)
+POWER_PROXY_PATTERNS = ['puissance_moteur_w','motor_power_w','puissance_w','power_w',
+                        'puissance_moteur','motor_power','eps1','electrical_power']
+POWER_PROXY_CURRENT_MEDIAN = 18.0  # A — valeur de référence médiane
 
 print('=' * 65)
 print('PILAR — Retraining pompe centrifuge')
@@ -159,6 +165,17 @@ for c in COLONNES:
     medians[c] = round(float(med), 3)
     feat_df[c] = feat_df[c].fillna(med)
 
+# Proxy courant_moteur depuis puissance_moteur si courant totalement absent
+if feat_df['courant_moteur'].isna().all() or (feat_df['courant_moteur'] == feat_df['courant_moteur'].median()).all():
+    pwr_col = find_col(POWER_PROXY_PATTERNS)
+    if pwr_col:
+        pwr = pd.to_numeric(df[pwr_col], errors='coerce')
+        pwr_med = pwr.median()
+        if pwr_med and pwr_med > 0 and not np.isnan(pwr_med):
+            scale = POWER_PROXY_CURRENT_MEDIAN / pwr_med
+            feat_df['courant_moteur'] = (pwr * scale).values
+            print(f'  courant_moteur: proxy depuis {pwr_col} (scale={scale:.6f}, range [{(pwr*scale).min():.2f}—{(pwr*scale).max():.2f}])')
+
 # Supprime les lignes complètement aberrantes
 feat_df = feat_df.clip(lower=0)
 feat_df['vibration']    = feat_df['vibration'].clip(upper=100)
@@ -181,7 +198,23 @@ for c in COLONNES:
 print('\n[4/7] Scaling + split...')
 scaler_new = StandardScaler()
 X_sc = scaler_new.fit_transform(X)
-X_tr, X_te, y_tr, y_te = train_test_split(X_sc, y, test_size=0.2, random_state=42, stratify=y)
+
+# Utilise cv_fold_5 (pli 4 comme test) si disponible, sinon split aléatoire stratifié
+cv_fold_col = None
+for c in df.columns:
+    if 'cv_fold' in c.lower():
+        cv_fold_col = c
+        break
+
+if cv_fold_col is not None:
+    folds = df[cv_fold_col].values[:len(X_sc)]
+    test_mask = folds == folds.max()  # dernier pli = test
+    X_tr, X_te = X_sc[~test_mask], X_sc[test_mask]
+    y_tr, y_te = y[~test_mask], y[test_mask]
+    print(f'  Split via {cv_fold_col} (pli {int(folds.max())} = test) — train: {len(X_tr)}, test: {len(X_te)}')
+else:
+    X_tr, X_te, y_tr, y_te = train_test_split(X_sc, y, test_size=0.2, random_state=42, stratify=y)
+    print(f'  Split aléatoire stratifié — train: {len(X_tr)}, test: {len(X_te)}')
 
 if HAS_SMOTE and y_tr.sum() >= 6:
     try:

@@ -272,7 +272,7 @@ except Exception as _e: print(f"[Pilar] Isolation Forest load error: {_e}")
 FAILURE_ZONES = {"CAV":"Cavitation","ROL":"Bearing Failure","ETN":"Seal Failure","IMP":"Impeller Wear","MOT":"Motor Fault"}
 COLONNES = ["vibration","temp_palier","debit","pression_entree","pression_sortie","courant_moteur","temp_moteur","heure_fonctionnement"]
 # Médianes pompe centrifuge — utilisées pour imputer les features manquantes (analyse partielle)
-FEATURE_MEDIANS = {"vibration": 0.614, "temp_palier": 44.566, "debit": 0.387, "pression_entree": 1.5, "pression_sortie": 107.994, "courant_moteur": 18.0, "temp_moteur": 75.0, "heure_fonctionnement": 1214.0}
+FEATURE_MEDIANS = {"vibration": 0.61, "temp_palier": 44.837, "debit": 0.395, "pression_entree": 1.5, "pression_sortie": 107.73, "courant_moteur": 18.0, "temp_moteur": 44.837, "heure_fonctionnement": 1103.0}
 CORE_FEATURES   = list(FEATURE_MEDIANS.keys())
 OPTIONAL_FIELDS = ['temperature_ambiante','niveau_huile','tension_reseau']
 
