@@ -314,6 +314,43 @@ FLUID_ZONE_SENSITIVITY = {
 }
 NON_CENTRIFUGE_TYPES = {'pompe_a_vis','pompe_a_engrenage','pompe_a_palettes','pompe_a_piston','peristaltique'}
 
+# ── AI chat domain knowledge base ─────────────────────────────────────────────
+# Distilled from: UCI hydraulic dataset, NLN-EMP 4TU, ESPset, Sulzer/Xylem/KSB
+# constructor cases, Cutsforth maintenance methodology, Chen et al. PMC review.
+_DOMAIN_KB = """\
+=== PUMP DOMAIN KNOWLEDGE BASE ===
+SIGNAL → FAULT MAPPING (centrifugal pumps):
+• Vibration ↑ + flow ↓                   → Cavitation (CAV) — check NPSH, inlet filter, speed
+• Vibration ↑ + bearing temp ↑           → Bearing wear (ROL) — check lubrication, alignment, BEP margin
+• Outlet pressure ↓ relative to flow     → Seal leakage (ETN) or impeller wear (IMP)
+• Motor current ↑ + motor temp ↑         → Motor fault (MOT): rotor bar, winding, electrical bearing
+• 3-phase current imbalance              → Stator asymmetry or phase loss
+
+REAL-WORLD THRESHOLDS (industry benchmarks):
+• Vibration > 3.8 mm/s (0.15 ips) → excessive, corrective action required (Xylem, metal processing)
+• Bearing temp trend at 30-min cadence is sufficient to catch impending failure (KSB Guard)
+• RMS motor current trends + temp combined → earlier MOT detection than temp alone (Cutsforth/San Jose Water)
+• Vibration kurtosis > 6 → early bearing defect signature
+
+DIAGNOSIS METHODOLOGY (Cutsforth, Chen et al.):
+• Combine process sensors (P, Q, T) with condition-monitoring signals (vibration, current) for best accuracy
+• Far-from-BEP operation accelerates bearing wear and cavitation — always compare to pump curve
+• Contextual metadata (speed, load, fluid type) essential for distinguishing fault signatures
+
+TRAINING DATA CONTEXT:
+• Main model: UCI hydraulic test rig (2205 cycles, centrifugal pump, pressure/flow/temperature)
+• RUL model: NASA C-MAPSS FD001 engine degradation mapped to pump domain (≈13.85 h/cycle)
+• MOT zone: currently proxy-trained (power→current formula); NLN-EMP real motor current data improves it
+• Evaluation note: naive k-fold overestimates pump model accuracy ~15% — always use stratified grouped split
+
+CORRECTIVE ACTIONS:
+• CAV → inspect suction, verify NPSH_a > NPSH_r, clear inlet filter, reduce speed or increase back-pressure
+• ROL → vibration spectrum analysis, re-lubricate, check shaft alignment, avoid excessive BEP deviation
+• ETN → inspect mechanical seal faces, O-rings, stuffing box; replace if worn
+• IMP → check impeller for cavitation pitting or erosion; measure hydraulic efficiency vs nameplate
+• MOT → insulation resistance test, winding temp check, coupling alignment, phase balance verification
+==================================="""
+
 # ── SHAP EXPLAINER ─────────────────────────────────────────────────────────────
 _shap_explainer = None
 
@@ -5800,7 +5837,7 @@ _TERM_ALLOWED = [
     'python -c "from etape7', 'python -c "import pickle',
     'python -c "import sys', 'python -c "import platform',
     'env | grep', 'set | findstr',
-    'python retrain_real.py', 'python retrain_kaggle.py',
+    'python retrain_real.py', 'python retrain_kaggle.py', 'python retrain_nln_emp.py',
 ]
 _TERM_BLOCKED = ['rm ', 'del ', 'rmdir', 'curl ', 'wget ', 'nc ', 'ncat ',
                  'bash ', 'sh ', 'exec(', 'eval(', '> /', 'sudo ', 'chmod ',
@@ -6969,6 +7006,8 @@ Zones risque    : {zones_str}
     # ── System prompt expert maintenance ─────────────────────────────────────
     system_prompt = f"""Tu es Pilar, un assistant IA expert en maintenance prédictive de pompes centrifuges industrielles, intégré dans une plateforme SaaS B2B pour PME industrielles.
 {ctx_block}
+{_DOMAIN_KB}
+
 Directives strictes :
 - Tu es UNIQUEMENT un assistant de maintenance industrielle, spécialisé pompes centrifuges. Tu ne réponds qu'aux sujets liés à : capteurs de pompe (vibration, débit, pression, température palier/moteur, courant), cavitation, usure roue, défaillances paliers, étanchéité, fautes moteur, maintenance préventive/prédictive.
 - Si des données d'analyse sont disponibles, analyse-les précisément et donne des recommandations concrètes et actionnables.
