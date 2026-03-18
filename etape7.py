@@ -2207,11 +2207,10 @@ HISTORY_HTML = _HEAD.replace("{FAV}","iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+
     <div class="kc"><div class="kv ok">{{ mails }}</div><div class="kl" data-i18n="hist_alerts">Alerts sent</div></div>
     <div class="kc"><div class="kv {{ 'ok' if reliability and reliability >= 70 else 'amber' if reliability else '' }}">{% if reliability is not none %}{{ reliability }}%{% else %}—{% endif %}</div><div class="kl" data-i18n="hist_reliability">Reliability</div></div>
   </div>
-  {% if reliability is none %}
-  <div style="font-size:11px;color:var(--text3);margin:6px 0 12px;padding:8px 12px;background:var(--bg2);border-radius:8px;border-left:3px solid var(--amber)">
-    <span data-i18n="hist_reliability_hint">Rate alerts with +/- to track model accuracy on your data.</span>
+  <div style="font-size:11px;color:var(--text3);margin:6px 0 16px;padding:10px 14px;background:var(--bg2);border-radius:8px;border-left:3px solid var(--teal);display:flex;align-items:center;gap:10px">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:14px;height:14px;flex-shrink:0;color:var(--teal)"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>Your feedback trains the AI — mark each result as <strong style="color:var(--green)">Confirmed</strong> or <strong style="color:var(--red)">False alarm</strong> to improve accuracy over time.</span>
   </div>
-  {% endif %}
   <div class="tw">
     <table>
       <thead><tr><th data-i18n="hist_time">Time</th><th data-i18n="hist_class">Class</th><th data-i18n="hist_risk">Risk</th><th data-i18n="hist_status">Status</th><th data-i18n="hist_zones">Zones</th><th data-i18n="hist_alert">Alert</th><th data-i18n="hist_feedback">Feedback</th></tr></thead>
@@ -2221,22 +2220,29 @@ HISTORY_HTML = _HEAD.replace("{FAV}","iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+
           <td><span class="badge {{ 'alert' if a.prediction else 'ok' }}">{{ 'Anomaly' if a.prediction else 'OK' }}</span></td>
           <td>{{ a.zones or '—' }}</td>
           <td>{% if a.mail_sent %}<span class="mb">Sent</span>{% else %}—{% endif %}</td>
-          <td>{% if a.prediction %}
-            <span class="fbtn" data-id="{{ a.id }}" data-fb="{{ a.feedback or '' }}">
-              <button onclick="rate({{ a.id }},'tp',this)" class="fb-btn {{ 'fb-active-tp' if a.feedback=='tp' else '' }}" title="Confirmed failure">+</button>
-              <button onclick="rate({{ a.id }},'fp',this)" class="fb-btn {{ 'fb-active-fp' if a.feedback=='fp' else '' }}" title="False positive">-</button>
+          <td>
+            <span class="fbtn" data-id="{{ a.id }}" data-fb="{{ a.feedback or '' }}" data-pred="{{ a.prediction }}">
+              {% if a.prediction %}
+              <button onclick="rate({{ a.id }},'tp',this)" class="fb-btn fb-confirm {{ 'fb-active-tp' if a.feedback=='tp' else '' }}">{% if a.feedback=='tp' %}✓ Confirmed{% else %}Confirm{% endif %}</button>
+              <button onclick="rate({{ a.id }},'fp',this)" class="fb-btn fb-false  {{ 'fb-active-fp' if a.feedback=='fp' else '' }}">{% if a.feedback=='fp' %}✗ False alarm{% else %}False alarm{% endif %}</button>
+              {% else %}
+              <button onclick="rate({{ a.id }},'fn',this)" class="fb-btn fb-false {{ 'fb-active-fn' if a.feedback=='fn' else '' }}">{% if a.feedback=='fn' %}⚠ Missed failure{% else %}Missed?{% endif %}</button>
+              {% endif %}
             </span>
-          {% else %}—{% endif %}</td></tr>
+          </td></tr>
       {% endfor %}
       </tbody>
     </table>
   </div>
 </div>""" + nav("h") + """
 <style>
-.fb-btn{background:none;border:1px solid var(--border);border-radius:6px;padding:2px 6px;cursor:pointer;font-size:13px;opacity:0.5;transition:opacity .2s,border-color .2s}
-.fb-btn:hover{opacity:1}
-.fb-active-tp{opacity:1;border-color:var(--green);background:rgba(16,185,129,0.12)}
-.fb-active-fp{opacity:1;border-color:var(--red);background:rgba(239,68,68,0.12)}
+.fb-btn{background:none;border:1px solid var(--border);border-radius:5px;padding:3px 9px;cursor:pointer;font-size:10px;font-weight:600;letter-spacing:.5px;color:var(--text3);transition:all .15s;white-space:nowrap}
+.fb-btn+.fb-btn{margin-left:4px}
+.fb-confirm:hover{border-color:var(--green);color:var(--green)}
+.fb-false:hover{border-color:var(--red);color:#f87171}
+.fb-active-tp{border-color:var(--green);background:rgba(16,185,129,0.12);color:var(--green)}
+.fb-active-fp{border-color:var(--red);background:rgba(239,68,68,0.12);color:#f87171}
+.fb-active-fn{border-color:#f97316;background:rgba(249,115,22,0.12);color:#f97316}
 </style>
 <script>
 document.querySelectorAll('td[data-utc]').forEach(function(td){
@@ -2249,9 +2255,26 @@ async function rate(id, fb, btn){
   try{
     await fetch('/analysis/'+id+'/feedback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({feedback:newFb||null})});
     span.dataset.fb=newFb;
-    span.querySelectorAll('.fb-btn').forEach(b=>b.classList.remove('fb-active-tp','fb-active-fp'));
-    if(newFb==='tp') span.querySelector('[title="Confirmed failure"]').classList.add('fb-active-tp');
-    if(newFb==='fp') span.querySelector('[title="False positive"]').classList.add('fb-active-fp');
+    span.querySelectorAll('.fb-btn').forEach(b=>{
+      b.classList.remove('fb-active-tp','fb-active-fp','fb-active-fn');
+    });
+    if(newFb==='tp'){
+      var b=span.querySelector('.fb-confirm');
+      if(b){b.classList.add('fb-active-tp');b.textContent='✓ Confirmed';}
+    } else if(newFb==='fp'){
+      var b=span.querySelector('.fb-false');
+      if(b){b.classList.add('fb-active-fp');b.textContent='✗ False alarm';}
+    } else if(newFb==='fn'){
+      var b=span.querySelector('.fb-false');
+      if(b){b.classList.add('fb-active-fn');b.textContent='⚠ Missed failure';}
+    } else {
+      // toggled off — reset labels
+      var pred=span.dataset.pred==='1';
+      var bc=span.querySelector('.fb-confirm');
+      var bf=span.querySelector('.fb-false');
+      if(bc) bc.textContent='Confirm';
+      if(bf) bf.textContent=pred?'False alarm':'Missed?';
+    }
   }catch(e){}
 }
 </script>
@@ -5290,7 +5313,7 @@ def _auto_retrain():
                     'temp_moteur':          a.temp_process       if a.temp_process       is not None else FEATURE_MEDIANS['temp_moteur'],
                     'heure_fonctionnement': a.usure              if a.usure              is not None else FEATURE_MEDIANS['heure_fonctionnement'],
                     # target: use feedback if available, else model prediction
-                    'etat_pompe_code': (1 if a.feedback == 'tp' else 0 if a.feedback == 'fp' else a.prediction),
+                    'etat_pompe_code': (1 if a.feedback in ('tp', 'fn') else 0 if a.feedback == 'fp' else a.prediction),
                 }
                 rows.append(row)
             # Write temp CSV
@@ -6172,8 +6195,8 @@ def history():
     anomalies = sum(1 for a in analyses if a.prediction)
     avg_risk = round(sum(a.risk for a in analyses) / total, 1) if total > 0 else 0
     mails = sum(1 for a in analyses if a.mail_sent)
-    labeled = [a for a in analyses if a.prediction and a.feedback in ('tp', 'fp')]
-    reliability = round(sum(1 for a in labeled if a.feedback == 'tp') / len(labeled) * 100) if labeled else None
+    labeled = [a for a in analyses if a.feedback in ('tp', 'fp', 'fn')]
+    reliability = round(sum(1 for a in labeled if a.feedback in ('tp', 'fn')) / len(labeled) * 100) if labeled else None
     return render_template_string(HISTORY_HTML, analyses=analyses, total=total,
                                    anomalies=anomalies, avg_risk=avg_risk, mails=mails,
                                    reliability=reliability)
@@ -6184,9 +6207,10 @@ def analysis_feedback(aid):
     uid = current_uid()
     a = Analysis.query.filter_by(id=aid, user_id=uid).first_or_404()
     fb = (request.json or {}).get('feedback')
-    if fb not in ('tp', 'fp', None):
+    if fb not in ('tp', 'fp', 'fn', None):
         return jsonify({'error': 'Invalid feedback value'}), 400
     a.feedback = fb
+    # fn = missed failure — treat as failure for retraining
     db.session.commit()
     return jsonify({'ok': True})
 
