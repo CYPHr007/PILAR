@@ -156,10 +156,13 @@ class Machine(db.Model):
     user_id          = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     name             = db.Column(db.String(200), nullable=False)
     description      = db.Column(db.String(500))
-    machine_type     = db.Column(db.String(10), default='M')  # L / M / H
-    threshold        = db.Column(db.Float, default=45.0)       # custom risk % trigger
-    alert_email      = db.Column(db.String(200))               # primary alert recipient
-    escalation_email = db.Column(db.String(200))               # escalation recipient
+    machine_type     = db.Column(db.String(10), default='M')       # L / M / H quality class
+    pump_type        = db.Column(db.String(50), default='centrifuge')
+    fluid_type       = db.Column(db.String(50), default='eau')
+    roue_material    = db.Column(db.String(50), default='inox_316')
+    threshold        = db.Column(db.Float, default=45.0)
+    alert_email      = db.Column(db.String(200))
+    escalation_email = db.Column(db.String(200))
     is_active        = db.Column(db.Boolean, default=True)
     created_at       = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -208,6 +211,9 @@ with app.app_context():
             "ALTER TABLE user ADD COLUMN is_banned INTEGER DEFAULT 0",
             "ALTER TABLE analysis ADD COLUMN feedback VARCHAR(10)",
             "ALTER TABLE user ADD COLUMN onboarded INTEGER DEFAULT 0",
+            "ALTER TABLE machine ADD COLUMN pump_type VARCHAR(50) DEFAULT 'centrifuge'",
+            "ALTER TABLE machine ADD COLUMN fluid_type VARCHAR(50) DEFAULT 'eau'",
+            "ALTER TABLE machine ADD COLUMN roue_material VARCHAR(50) DEFAULT 'inox_316'",
         ]
     else:
         _migrations = [
@@ -224,6 +230,9 @@ with app.app_context():
             'ALTER TABLE "user" ADD COLUMN IF NOT EXISTS is_banned BOOLEAN DEFAULT FALSE',
             "ALTER TABLE analysis ADD COLUMN IF NOT EXISTS feedback VARCHAR(10)",
             'ALTER TABLE "user" ADD COLUMN IF NOT EXISTS onboarded BOOLEAN DEFAULT FALSE',
+            "ALTER TABLE machine ADD COLUMN IF NOT EXISTS pump_type VARCHAR(50) DEFAULT 'centrifuge'",
+            "ALTER TABLE machine ADD COLUMN IF NOT EXISTS fluid_type VARCHAR(50) DEFAULT 'eau'",
+            "ALTER TABLE machine ADD COLUMN IF NOT EXISTS roue_material VARCHAR(50) DEFAULT 'inox_316'",
         ]
     for sql in _migrations:
         try:
@@ -290,6 +299,20 @@ COLONNES = ["vibration","temp_palier","debit","pression_entree","pression_sortie
 FEATURE_MEDIANS = {"vibration": 0.61, "temp_palier": 44.837, "debit": 0.395, "pression_entree": 1.987, "pression_sortie": 107.73, "courant_moteur": 4.579, "temp_moteur": 58.043, "heure_fonctionnement": 1103.0}
 CORE_FEATURES   = list(FEATURE_MEDIANS.keys())
 OPTIONAL_FIELDS = ['temperature_ambiante','niveau_huile','tension_reseau']
+
+# ── Domain knowledge: fluid / material / pump-type corrections ─────────────
+# RUL multipliers: aggressive fluids shorten life; titanium extends it
+FLUID_RUL_FACTORS    = {'eau':1.0,'eau_chargee':0.5,'huile':1.3,'acide':0.35,'base':0.4,'autre':0.8}
+MATERIAL_RUL_FACTORS = {'inox_316':1.0,'fonte':0.6,'titane':1.8,'bronze':0.9,'plastique':0.7,'autre':0.85}
+# Zone threshold adjustments (positive = lower threshold → easier to trigger)
+FLUID_ZONE_SENSITIVITY = {
+    'acide':       {'ETN': 15, 'ROL': 5},
+    'base':        {'ETN': 10},
+    'eau_chargee': {'IMP': 15, 'CAV': 10},
+    'huile':       {'MOT': -5},
+    'eau': {}, 'autre': {},
+}
+NON_CENTRIFUGE_TYPES = {'pompe_a_vis','pompe_a_engrenage','pompe_a_palettes','pompe_a_piston','peristaltique'}
 
 # ── SHAP EXPLAINER ─────────────────────────────────────────────────────────────
 _shap_explainer = None
@@ -1408,7 +1431,7 @@ function localTimeNow(){
 }
 
 // ── PAGE TRANSITIONS ─────────────────────────────────────────────────────────
-var _PAGE_ORDER={'/':0,'/tutorial':1,'/history':2,'/account':3,'/settings':4};
+var _PAGE_ORDER={'/monitor':0,'/tutorial':1,'/history':2,'/dashboard':3,'/account':4,'/settings':5};
 var _curPage=window.location.pathname;
 var _prevIdx=parseInt(sessionStorage.getItem('pilar_page_idx')||'0');
 var _curIdx=_PAGE_ORDER[_curPage]!==undefined?_PAGE_ORDER[_curPage]:_prevIdx;
@@ -1627,7 +1650,7 @@ HTML = _HEAD.replace("{FAV}","iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAHxU
   <div id="ai-panel" style="display:none;margin-bottom:12px">
     <div class="card" style="padding:14px 16px">
       <div style="font-size:9px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:12px">AI Insights</div>
-      <div id="ai-anomaly-row" style="display:none;display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border)">
+      <div id="ai-anomaly-row" style="display:none;align-items:center;justify-content:space-between;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border)">
         <div>
           <div style="font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase">Anomaly score</div>
           <div style="font-size:9px;color:var(--text3);margin-top:2px">Isolation Forest · unsupervised</div>
@@ -1653,13 +1676,13 @@ HTML = _HEAD.replace("{FAV}","iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAHxU
       <div class="sensor"><div class="srow"><span class="sname" data-i18n="p_temp_palier">Bearing temp.</span><div class="vwrap"><input class="vi" type="number" id="ntp" value="65" min="20" max="150" step="1" oninput="si('stp','ntp',null)"><span class="vu">°C</span></div></div><input type="range" id="stp" min="20" max="150" step="1" value="65" oninput="ss('stp','ntp',0,null)"><div class="rl"><span>20</span><span>150°C</span></div></div>
       <div class="sensor"><div class="srow"><span class="sname" data-i18n="p_debit">Flow rate</span><div class="vwrap"><input class="vi" type="number" id="ndbt" value="45" min="0" max="300" step="1" oninput="si('sdbt','ndbt',null)"><span class="vu">m³/h</span></div></div><input type="range" id="sdbt" min="0" max="300" step="1" value="45" oninput="ss('sdbt','ndbt',0,null)"><div class="rl"><span>0</span><span>300 m³/h</span></div></div>
       <div class="sensor"><div class="srow"><span class="sname" data-i18n="p_pression_e">Inlet pressure</span><div class="vwrap"><input class="vi" type="number" id="npe" value="1.5" min="0" max="15" step="0.1" oninput="si('spe','npe',null)"><span class="vu">bar</span></div></div><input type="range" id="spe" min="0" max="15" step="0.1" value="1.5" oninput="ss('spe','npe',1,null)"><div class="rl"><span>0</span><span>15 bar</span></div></div>
-      <div class="sensor"><div class="srow"><span class="sname" data-i18n="p_pression_s">Outlet pressure</span><div class="vwrap"><input class="vi" type="number" id="nps" value="4.5" min="0" max="40" step="0.1" oninput="si('sps','nps',null)"><span class="vu">bar</span></div></div><input type="range" id="sps" min="0" max="40" step="0.1" value="4.5" oninput="ss('sps','nps',1,null)"><div class="rl"><span>0</span><span>40 bar</span></div></div>
+      <div class="sensor"><div class="srow"><span class="sname" data-i18n="p_pression_s">Outlet pressure</span><div class="vwrap"><input class="vi" type="number" id="nps" value="107.7" min="0" max="300" step="0.1" oninput="si('sps','nps',null)"><span class="vu">bar</span></div></div><input type="range" id="sps" min="0" max="300" step="0.5" value="107.7" oninput="ss('sps','nps',1,null)"><div class="rl"><span>0</span><span>300 bar</span></div></div>
       <div class="adv-row" onclick="toggleAdv()">
         <span data-i18n="adv_params">Advanced parameters</span>
         <svg id="advChv" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:13px;height:13px;transition:transform .2s"><path d="M19 9l-7 7-7-7" stroke-width="2" stroke-linecap="round"/></svg>
       </div>
       <div id="advParams" style="display:none;padding-top:4px">
-        <div class="sensor"><div class="srow"><span class="sname" data-i18n="p_courant">Motor current</span><div class="vwrap"><input class="vi" type="number" id="nim" value="18" min="0" max="150" step="0.5" oninput="si('sim','nim',null)"><span class="vu">A</span></div></div><input type="range" id="sim" min="0" max="150" step="0.5" value="18" oninput="ss('sim','nim',1,null)"><div class="rl"><span>0</span><span>150 A</span></div></div>
+        <div class="sensor"><div class="srow"><span class="sname" data-i18n="p_courant">Motor current</span><div class="vwrap"><input class="vi" type="number" id="nim" value="4.6" min="0" max="50" step="0.1" oninput="si('sim','nim',null)"><span class="vu">A</span></div></div><input type="range" id="sim" min="0" max="50" step="0.1" value="4.6" oninput="ss('sim','nim',1,null)"><div class="rl"><span>0</span><span>50 A</span></div></div>
         <div class="sensor"><div class="srow"><span class="sname" data-i18n="p_temp_moteur">Motor temp.</span><div class="vwrap"><input class="vi" type="number" id="ntm" value="75" min="20" max="200" step="1" oninput="si('stm','ntm',null)"><span class="vu">°C</span></div></div><input type="range" id="stm" min="20" max="200" step="1" value="75" oninput="ss('stm','ntm',0,null)"><div class="rl"><span>20</span><span>200°C</span></div></div>
         <div class="sensor"><div class="srow"><span class="sname" data-i18n="p_heure">Run hours</span><div class="vwrap"><input class="vi" type="number" id="nhf" value="5000" min="0" max="100000" step="100" oninput="si('shf','nhf',null)"><span class="vu">h</span></div></div><input type="range" id="shf" min="0" max="100000" step="100" value="5000" oninput="ss('shf','nhf',0,null)"><div class="rl"><span>0</span><span>100k h</span></div></div>
       </div>
@@ -1737,7 +1760,16 @@ function render(r){
   }
   let zH='';
   if(al&&r.zones&&r.zones.length>0){zH='<div class="card"><div class="ctitle">'+t('zone_title')+'</div>'+r.zones.map(z=>'<div class="zrow"><span class="zname">'+z.nom+'</span><div class="zbw"><div class="zbf" style="width:'+z.proba+'%"></div></div><span class="zp">'+z.proba+'%</span></div>').join('')+'</div>';}
-  document.getElementById('res').innerHTML='<div class="rh '+cls+'"><div><div class="sb '+cls+'"><span class="dot '+cls+'"></span>'+st+'</div><div style="font-size:10px;color:var(--text3);margin-top:4px">'+localTimeNow()+'</div>'+confH+'</div><div><div class="rnum '+cls+'">'+r.probabilite+'<span class="runit">%</span></div><div class="rlbl">'+t('failure_prob')+'</div></div></div>'+zH;
+  let rulH='';
+  if(r.rul_hours!=null){
+    var rulCol=r.rul_hours<500?'var(--red)':r.rul_hours<1500?'var(--amber)':'var(--green)';
+    rulH='<div class="card" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px"><div><div style="font-size:9px;letter-spacing:1.5px;color:var(--text3);text-transform:uppercase">Est. Remaining Life</div><div style="font-size:9px;color:var(--text3);margin-top:2px">RUL · NASA C-MAPSS model</div></div><div style="text-align:right"><div style="font-size:26px;font-weight:800;color:'+rulCol+'">'+r.rul_hours+'<span style="font-size:12px;color:var(--text3)"> h</span></div></div></div>';
+  }
+  let warnH='';
+  if(r.domain_warnings&&r.domain_warnings.length){
+    warnH='<div style="padding:10px 14px;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.25);border-radius:8px;font-size:10px;color:#fbbf24;margin-bottom:12px">'+r.domain_warnings.map(w=>'&#9888; '+w).join('<br>')+'</div>';
+  }
+  document.getElementById('res').innerHTML=warnH+'<div class="rh '+cls+'"><div><div class="sb '+cls+'"><span class="dot '+cls+'"></span>'+st+'</div><div style="font-size:10px;color:var(--text3);margin-top:4px">'+localTimeNow()+'</div>'+confH+'</div><div><div class="rnum '+cls+'">'+r.probabilite+'<span class="runit">%</span></div><div class="rlbl">'+t('failure_prob')+'</div></div></div>'+zH+rulH;
 
   // ── AI PANEL ──
   var aiPanel=document.getElementById('ai-panel');
@@ -2202,7 +2234,7 @@ async function load(){
     <div class="card"><div class="ctitle">${t('twin_c_sim')}</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
         <div><label class="flbl">${t('twin_speed')}</label><input class="fi" type="number" id="wv" value="${d.last_params.debit||45}" step="1"></div>
-        <div><label class="flbl">${t('twin_torque')}</label><input class="fi" type="number" id="wc" value="${d.last_params.pression_sortie||4.5}" step="0.1"></div>
+        <div><label class="flbl">${t('twin_torque')}</label><input class="fi" type="number" id="wc" value="${d.last_params.pression_sortie||107.7}" step="0.1"></div>
         <div><label class="flbl">${t('twin_wear')}</label><input class="fi" type="number" id="wu" value="${wu_disp}" step="1"></div>
         <div><label class="flbl">${t('twin_airtemp')}</label><input class="fi" type="number" id="wta" value="${wta_disp}" step="0.1"></div>
       </div>
@@ -2338,8 +2370,8 @@ SETTINGS_HTML = _HEAD.replace("{FAV}","iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC
   <div class="card">
     <div class="ctitle" data-i18n="set_sys">System info</div>
     <div style="display:flex;flex-direction:column;gap:8px">
-      <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--text3)" data-i18n="set_version">Version</span><span>Pilar v3.0</span></div>
-      <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--text3)" data-i18n="set_aimodel">AI Model</span><span>Claude Haiku</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--text3)" data-i18n="set_version">Version</span><span>Pilar v4.0</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--text3)" data-i18n="set_aimodel">AI Model</span><span>RandomForest + GBT + SHAP + RUL</span></div>
       <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--text3)" data-i18n="set_domain">Domain</span><span>trypilar.com</span></div>
     </div>
   </div>
@@ -3294,7 +3326,7 @@ footer{border-top:1px solid var(--border);padding:40px 32px;display:grid;grid-te
             <span class="t-key">heure_fonct</span><span class="t-dim"> </span><span class="t-val">14 208 h</span>
           </div>
           <hr class="t-divider">
-          <div><span class="t-comment">// AI pipeline — SVM · IsoForest · SHAP</span></div>
+          <div><span class="t-comment">// AI pipeline — RF · IsoForest · SHAP · RUL</span></div>
           <div style="margin-top:8px">
             <span class="t-key">failure_prob</span><span class="t-dim"> </span><span class="t-error">78.2%</span>
           </div>
@@ -4060,7 +4092,7 @@ audio::-webkit-media-controls-panel{background:var(--surface2)}
       <div style="padding:20px 22px;border-right:1px solid var(--border);background:var(--surface)">
         <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--teal2);letter-spacing:2px;margin-bottom:10px">04 / 06</div>
         <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:6px">Three AI layers run in parallel</div>
-        <div style="font-size:12px;color:var(--text2);line-height:1.7">SVM failure probability + Isolation Forest anomaly score + SHAP explanation — all in one request.</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.7">RandomForest failure probability + Isolation Forest anomaly score + SHAP explanations + RUL forecast — all in one request.</div>
       </div>
       <div style="padding:20px 22px;border-right:1px solid var(--border);background:var(--surface)">
         <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--teal2);letter-spacing:2px;margin-bottom:10px">05 / 06</div>
@@ -4086,12 +4118,12 @@ audio::-webkit-media-controls-panel{background:var(--surface2)}
           <div class="sc-desc">All parameters within safe range</div>
         </button>
         <button class="scenario-btn" onclick="loadScenario(1)">
-          <div class="sc-name">Tool wear developing</div>
+          <div class="sc-name">Bearing wear developing</div>
           <div class="sc-desc">Progressive wear, risk building up</div>
         </button>
         <button class="scenario-btn" onclick="loadScenario(2)">
-          <div class="sc-name">Overheat + high torque</div>
-          <div class="sc-desc">Heat dissipation failure likely</div>
+          <div class="sc-name">Cavitation + seal failure</div>
+          <div class="sc-desc">Low flow, pressure drop, impeller at risk</div>
         </button>
         <button class="scenario-btn" onclick="loadScenario(3)">
           <div class="sc-name">Critical — imminent failure</div>
@@ -4182,18 +4214,18 @@ audio::-webkit-media-controls-panel{background:var(--surface2)}
 var SCENARIOS=[
   {
     name:'Normal operation',
-    vib:2.1,tbear:52.4,debit:42.0,pout:3.8,hrun:1240,status:'Normal',
+    vib:1.8,tbear:44.8,debit:42.0,pout:108,hrun:1240,status:'Normal',
     risk:3,bar_color:'var(--green)',block_class:'ok',
     verdict:'All systems nominal. No intervention required.',
     zones:['low','low','low','low','low'],
     zone_labels:['LOW','LOW','LOW','LOW','LOW'],
-    anomaly:12,anomaly_color:'#059669',
+    anomaly:10,anomaly_color:'#059669',
     shap:[{f:'Vibration',v:'18%',d:'down'},{f:'Run hours',v:'12%',d:'down'},{f:'Flow rate',v:'8%',d:'up'}],
     rul:null
   },
   {
     name:'Bearing wear developing',
-    vib:5.8,tbear:74.2,debit:38.5,pout:3.4,hrun:3820,status:'Warning',
+    vib:5.8,tbear:74.2,debit:38.5,pout:102,hrun:3820,status:'Warning',
     risk:38,bar_color:'var(--amber)',block_class:'warn',
     verdict:'Bearing temperature elevated. Schedule inspection within 48h.',
     zones:['low','med','low','low','low'],
@@ -4203,8 +4235,8 @@ var SCENARIOS=[
     rul:312,rul_conf:'medium'
   },
   {
-    name:'Cavitation + motor stress',
-    vib:9.3,tbear:81.6,debit:22.1,pout:2.1,hrun:5600,status:'Critical',
+    name:'Cavitation + seal failure',
+    vib:9.3,tbear:81.6,debit:22.1,pout:88,hrun:5600,status:'Critical',
     risk:67,bar_color:'var(--amber)',block_class:'warn',
     verdict:'Low flow and pressure drop detected. Inspect inlet and impeller for cavitation.',
     zones:['high','med','low','med','low'],
@@ -4215,7 +4247,7 @@ var SCENARIOS=[
   },
   {
     name:'Critical — imminent failure',
-    vib:15.7,tbear:96.4,debit:14.8,pout:1.3,hrun:7200,status:'STOP',
+    vib:15.7,tbear:96.4,debit:14.8,pout:71,hrun:7200,status:'STOP',
     risk:91,bar_color:'var(--red)',block_class:'danger',
     verdict:'CRITICAL — Multiple failure zones active. Stop pump and inspect immediately.',
     zones:['high','high','low','high','med'],
@@ -4234,7 +4266,7 @@ function loadScenario(i){
   setSensor('v-vib',s.vib,s.vib>10?' danger':s.vib>6?' warn':' ok');
   setSensor('v-tbear',s.tbear,s.tbear>85?' danger':s.tbear>70?' warn':' ok');
   setSensor('v-debit',s.debit,s.debit<20?' danger':s.debit<30?' warn':' ok');
-  setSensor('v-pout',s.pout,s.pout<1.5?' danger':s.pout<2.5?' warn':' ok');
+  setSensor('v-pout',s.pout,s.pout<80?' danger':s.pout<95?' warn':' ok');
   setSensor('v-hrun',s.hrun,s.hrun>6000?' warn':' ok');
   var stEl=document.getElementById('v-status');if(stEl){stEl.textContent=s.status;stEl.className='sensor-val'+(s.status==='STOP'?' danger':s.status==='Critical'?' warn':' ok');}
 
@@ -4444,6 +4476,41 @@ body{font-family:'IBM Plex Sans',system-ui,sans-serif;background:var(--bg);color
           <div class="form-hint">Alert fires above this %.</div>
         </div>
       </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Pump Type</label>
+          <select class="form-input" id="f-pump-type">
+            <option value="centrifuge" selected>Centrifugal</option>
+            <option value="pompe_a_vis">Screw pump</option>
+            <option value="pompe_a_engrenage">Gear pump</option>
+            <option value="pompe_a_palettes">Vane pump</option>
+            <option value="pompe_a_piston">Piston pump</option>
+            <option value="peristaltique">Peristaltic</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fluid Type</label>
+          <select class="form-input" id="f-fluid-type">
+            <option value="eau" selected>Water</option>
+            <option value="eau_chargee">Slurry / charged water</option>
+            <option value="huile">Oil</option>
+            <option value="acide">Acid</option>
+            <option value="base">Base / alkaline</option>
+            <option value="autre">Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Impeller Material</label>
+        <select class="form-input" id="f-roue-material">
+          <option value="inox_316" selected>Stainless 316</option>
+          <option value="fonte">Cast iron</option>
+          <option value="titane">Titanium</option>
+          <option value="bronze">Bronze</option>
+          <option value="plastique">Plastic / PVDF</option>
+          <option value="autre">Other</option>
+        </select>
+      </div>
       <div class="form-group">
         <label class="form-label">Primary Alert Email</label>
         <input class="form-input" id="f-email" type="email" placeholder="tech@yourcompany.com">
@@ -4518,7 +4585,13 @@ function renderFleet() {
     const rColor = riskColor(risk);
     const badge = m.is_active ? riskBadge(risk) : '<span class="badge badge-inactive">Inactive</span>';
     const lastSeen = m.last_seen ? new Date(m.last_seen).toLocaleString() : 'Never';
-    const typeLabel = m.machine_type || 'Centrifugal Pump';
+    const typeLabel = m.machine_type || 'M';
+    const pumpLabels = {centrifuge:'Centrifugal',pompe_a_vis:'Screw',pompe_a_engrenage:'Gear',pompe_a_palettes:'Vane',pompe_a_piston:'Piston',peristaltique:'Peristaltic'};
+    const fluidLabels = {eau:'Water',eau_chargee:'Slurry',huile:'Oil',acide:'Acid',base:'Base',autre:'Other'};
+    const matLabels   = {inox_316:'SS316',fonte:'Cast iron',titane:'Titanium',bronze:'Bronze',plastique:'Plastic',autre:'Other'};
+    const pumpL = pumpLabels[m.pump_type] || m.pump_type || 'Centrifugal';
+    const fluidL = fluidLabels[m.fluid_type] || m.fluid_type || 'Water';
+    const matL   = matLabels[m.roue_material] || m.roue_material || 'SS316';
     return `<div class="machine-card${m.is_active?'':' inactive'}">
       <div class="card-header">
         <div>
@@ -4537,6 +4610,11 @@ function renderFleet() {
       </div>` : ''}
       <div class="meta-row">
         <div class="meta-item"><div class="meta-label">Class</div><div class="meta-val">${typeLabel}</div></div>
+        <div class="meta-item"><div class="meta-label">Pump</div><div class="meta-val">${pumpL}</div></div>
+        <div class="meta-item"><div class="meta-label">Fluid</div><div class="meta-val">${fluidL}</div></div>
+      </div>
+      <div class="meta-row" style="margin-top:6px">
+        <div class="meta-item"><div class="meta-label">Material</div><div class="meta-val">${matL}</div></div>
         <div class="meta-item"><div class="meta-label">Threshold</div><div class="meta-val">${m.threshold}%</div></div>
         <div class="meta-item"><div class="meta-label">Last seen</div><div class="meta-val" style="font-size:11px">${lastSeen}</div></div>
       </div>
@@ -4572,6 +4650,9 @@ function openEdit(id) {
   document.getElementById('f-desc').value = m.description || '';
   document.getElementById('f-type').value = m.machine_type || 'M';
   document.getElementById('f-threshold').value = m.threshold || 45;
+  document.getElementById('f-pump-type').value = m.pump_type || 'centrifuge';
+  document.getElementById('f-fluid-type').value = m.fluid_type || 'eau';
+  document.getElementById('f-roue-material').value = m.roue_material || 'inox_316';
   document.getElementById('f-email').value = m.alert_email || '';
   document.getElementById('f-esc').value = m.escalation_email || '';
   document.getElementById('modal-submit').textContent = 'Save Changes';
@@ -4590,6 +4671,9 @@ async function submitMachine(e) {
     description: document.getElementById('f-desc').value.trim(),
     machine_type: document.getElementById('f-type').value,
     threshold: parseFloat(document.getElementById('f-threshold').value)||45,
+    pump_type: document.getElementById('f-pump-type').value,
+    fluid_type: document.getElementById('f-fluid-type').value,
+    roue_material: document.getElementById('f-roue-material').value,
     alert_email: document.getElementById('f-email').value.trim(),
     escalation_email: document.getElementById('f-esc').value.trim(),
   };
@@ -4618,12 +4702,15 @@ loadFleet();
 
 // ── QUICK ANALYSE ──────────────────────────────────────────────────────────
 let _analyseMid = null;
-const _MEDIANS = {vibration:0.61,temp_palier:44.8,debit:0.395,pression_entree:1.5,pression_sortie:107.73,courant_moteur:18.0,temp_moteur:44.8,heure_fonctionnement:1103.0};
+const _MEDIANS = {vibration:0.61,temp_palier:44.8,debit:0.395,pression_entree:1.987,pression_sortie:107.73,courant_moteur:4.58,temp_moteur:58.0,heure_fonctionnement:1103.0};
 
 function openAnalyse(id) {
   _analyseMid = id;
   const m = _machines.find(x => x.id === id);
-  document.getElementById('an-title').textContent = 'Analyse — ' + (m ? esc(m.name) : '');
+  const fluidLabels = {eau:'Water',eau_chargee:'Slurry',huile:'Oil',acide:'Acid',base:'Base',autre:'Other'};
+  const pumpLabels  = {centrifuge:'Centrifugal',pompe_a_vis:'Screw',pompe_a_engrenage:'Gear',pompe_a_palettes:'Vane',pompe_a_piston:'Piston',peristaltique:'Peristaltic'};
+  const subtitle = m ? ` — ${pumpLabels[m.pump_type]||'Centrifugal'} · ${fluidLabels[m.fluid_type]||'Water'}` : '';
+  document.getElementById('an-title').textContent = 'Analyse' + (m ? ' — ' + esc(m.name) : '') + subtitle;
   // reset form to medians
   document.getElementById('an-vib').value  = _MEDIANS.vibration;
   document.getElementById('an-tp').value   = _MEDIANS.temp_palier;
@@ -4658,7 +4745,10 @@ async function runAnalyse() {
     pression_sortie: _anGv('an-ps'), courant_moteur: _anGv('an-im'),
     temp_moteur: _anGv('an-tm'), heure_fonctionnement: _anGv('an-hf'),
     machine_id: m ? m.name : String(_analyseMid),
-    threshold: m ? m.threshold : 45
+    threshold: m ? m.threshold : 45,
+    pump_type: m ? (m.pump_type || 'centrifuge') : 'centrifuge',
+    fluid_type: m ? (m.fluid_type || 'eau') : 'eau',
+    roue_material: m ? (m.roue_material || 'inox_316') : 'inox_316',
   };
   try {
     var r = await fetch('/predire', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
@@ -4671,13 +4761,15 @@ async function runAnalyse() {
     var status = d.prediction === 1 ? '<span style="color:#f87171;font-weight:700">⚠ FAILURE</span>' : '<span style="color:#34d399;font-weight:700">✓ NORMAL</span>';
     var zonesHtml = (d.zones && d.zones.length) ? d.zones.map(z => '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--text2)">' + z.nom + '</span><span style="font-size:11px;font-weight:700;color:#f87171">' + z.proba + '%</span></div>').join('') : '<div style="font-size:11px;color:var(--text3)">No specific zone</div>';
     var anomHtml = d.anomaly_score != null ? '<div style="margin-top:10px;font-size:11px;color:var(--text3)">Anomaly score: <strong style="color:var(--text)">' + d.anomaly_score + '/100</strong></div>' : '';
+    var rulHtml  = d.rul_hours != null ? '<div style="margin-top:6px;font-size:11px;color:var(--text3)">Est. RUL: <strong style="color:var(--teal2)">' + d.rul_hours + ' h</strong></div>' : '';
+    var warnHtml = (d.domain_warnings && d.domain_warnings.length) ? '<div style="margin-top:8px;padding:8px;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.25);border-radius:6px;font-size:10px;color:#fbbf24">' + d.domain_warnings.map(w=>'&#9888; '+w).join('<br>') + '</div>' : '';
     res.innerHTML = '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px">'
       + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'
       + '<div style="font-size:42px;font-weight:800;color:' + rCol + ';line-height:1">' + risk + '<span style="font-size:16px;color:var(--text3)">%</span></div>'
       + '<div>' + status + '</div></div>'
       + '<div style="height:4px;background:var(--border);border-radius:2px;margin-bottom:14px;overflow:hidden"><div style="height:100%;width:' + Math.min(risk,100) + '%;background:' + rCol + ';border-radius:2px"></div></div>'
       + '<div style="font-size:9px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:8px">Failure Zones</div>'
-      + zonesHtml + anomHtml
+      + zonesHtml + anomHtml + rulHtml + warnHtml
       + '</div>';
     btn.textContent = 'Run Again'; btn.disabled = false;
     loadFleet();
@@ -4877,10 +4969,10 @@ API_DOCS_HTML = _AUTH_HEAD + """
   "vibration": 2.5,
   "temp_palier": 65.0,
   "debit": 45,
-  "pression_entree": 1.5,
-  "pression_sortie": 4.5,
-  "courant_moteur": 18,
-  "temp_moteur": 75,
+  "pression_entree": 2.0,
+  "pression_sortie": 115,
+  "courant_moteur": 4.8,
+  "temp_moteur": 70,
   "heure_fonctionnement": 5000
 }</pre>
         </div>
@@ -4905,7 +4997,7 @@ API_DOCS_HTML = _AUTH_HEAD + """
         <pre style="font-size:11px;color:#14b8a6;margin:0;overflow-x:auto;white-space:pre-wrap">curl -X POST https://trypilar.com/api/v1/analyze \
   -H "X-Api-Key: {{ ak }}" \
   -H "Content-Type: application/json" \
-  -d '{"machine_id":"PUMP-01","vibration":2.5,"temp_palier":65,"debit":45,"pression_entree":1.5,"pression_sortie":4.5}'</pre>
+  -d '{"machine_id":"PUMP-01","vibration":2.5,"temp_palier":65,"debit":45,"pression_entree":2.0,"pression_sortie":115,"courant_moteur":4.8}'</pre>
       </div>
     </div>
   </div>
@@ -4993,9 +5085,9 @@ API_DOCS_HTML = _AUTH_HEAD + """
           <tr style="border-bottom:1px solid #1e2433"><td style="padding:9px 14px;color:#14b8a6"><code>vibration</code></td><td style="padding:9px 14px;color:#94a3b8">mm/s</td><td style="padding:9px 14px;color:#64748b">2.5</td><td style="padding:9px 14px;color:#64748b">optional</td></tr>
           <tr style="border-bottom:1px solid #1e2433"><td style="padding:9px 14px;color:#14b8a6"><code>temp_palier</code></td><td style="padding:9px 14px;color:#94a3b8">°C</td><td style="padding:9px 14px;color:#64748b">65.0</td><td style="padding:9px 14px;color:#64748b">optional</td></tr>
           <tr style="border-bottom:1px solid #1e2433"><td style="padding:9px 14px;color:#14b8a6"><code>debit</code></td><td style="padding:9px 14px;color:#94a3b8">m³/h</td><td style="padding:9px 14px;color:#64748b">45.0</td><td style="padding:9px 14px;color:#64748b">optional</td></tr>
-          <tr style="border-bottom:1px solid #1e2433"><td style="padding:9px 14px;color:#14b8a6"><code>pression_entree</code></td><td style="padding:9px 14px;color:#94a3b8">bar</td><td style="padding:9px 14px;color:#64748b">1.5</td><td style="padding:9px 14px;color:#64748b">optional</td></tr>
-          <tr style="border-bottom:1px solid #1e2433"><td style="padding:9px 14px;color:#14b8a6"><code>pression_sortie</code></td><td style="padding:9px 14px;color:#94a3b8">bar</td><td style="padding:9px 14px;color:#64748b">4.5</td><td style="padding:9px 14px;color:#64748b">optional</td></tr>
-          <tr style="border-bottom:1px solid #1e2433"><td style="padding:9px 14px;color:#14b8a6"><code>courant_moteur</code></td><td style="padding:9px 14px;color:#94a3b8">A</td><td style="padding:9px 14px;color:#64748b">18.0</td><td style="padding:9px 14px;color:#64748b">optional</td></tr>
+          <tr style="border-bottom:1px solid #1e2433"><td style="padding:9px 14px;color:#14b8a6"><code>pression_entree</code></td><td style="padding:9px 14px;color:#94a3b8">bar</td><td style="padding:9px 14px;color:#64748b">2.0</td><td style="padding:9px 14px;color:#64748b">optional</td></tr>
+          <tr style="border-bottom:1px solid #1e2433"><td style="padding:9px 14px;color:#14b8a6"><code>pression_sortie</code></td><td style="padding:9px 14px;color:#94a3b8">bar</td><td style="padding:9px 14px;color:#64748b">115.0</td><td style="padding:9px 14px;color:#64748b">optional</td></tr>
+          <tr style="border-bottom:1px solid #1e2433"><td style="padding:9px 14px;color:#14b8a6"><code>courant_moteur</code></td><td style="padding:9px 14px;color:#94a3b8">A</td><td style="padding:9px 14px;color:#64748b">4.8</td><td style="padding:9px 14px;color:#64748b">optional</td></tr>
           <tr style="border-bottom:1px solid #1e2433"><td style="padding:9px 14px;color:#14b8a6"><code>temp_moteur</code></td><td style="padding:9px 14px;color:#94a3b8">°C</td><td style="padding:9px 14px;color:#64748b">75.0</td><td style="padding:9px 14px;color:#64748b">optional</td></tr>
           <tr style="border-bottom:1px solid #1e2433"><td style="padding:9px 14px;color:#14b8a6"><code>heure_fonctionnement</code></td><td style="padding:9px 14px;color:#94a3b8">h</td><td style="padding:9px 14px;color:#64748b">5000</td><td style="padding:9px 14px;color:#64748b">optional</td></tr>
           <tr style="border-bottom:1px solid #1e2433"><td style="padding:9px 14px;color:#14b8a6"><code>machine_id</code></td><td style="padding:9px 14px;color:#94a3b8">string</td><td style="padding:9px 14px;color:#64748b">"PUMP-01"</td><td style="padding:9px 14px;color:#64748b">optional</td></tr>
@@ -5022,8 +5114,8 @@ BASE    = "https://trypilar.com"
 resp = requests.post(f"{BASE}/api/v1/analyze",
     headers={"X-Api-Key": API_KEY},
     json={"machine_id": "PUMP-01", "vibration": 2.5, "temp_palier": 65,
-          "debit": 45, "pression_entree": 1.5, "pression_sortie": 4.5,
-          "courant_moteur": 18, "temp_moteur": 75, "heure_fonctionnement": 5000}
+          "debit": 45, "pression_entree": 2.0, "pression_sortie": 115,
+          "courant_moteur": 4.8, "temp_moteur": 70, "heure_fonctionnement": 5000}
 )
 print(resp.json())
 
@@ -5301,13 +5393,16 @@ _RETRAIN_TRIGGER = 150  # retrain when this many new analyses accumulated
 
 def _reload_models():
     """Reload pkl files into global model variables after a retrain."""
-    global model, scaler, modeles_zones, _shap_explainer, _iso_forest, _rul_model, _rul_scaler
+    global model, scaler, modeles_zones, _shap_explainer, _iso_forest, _rul_model, _rul_scaler, _normal_samples
     try:
         with open('modele_pannes.pkl', 'rb') as f: model = pickle.load(f)
         with open('scaler.pkl', 'rb') as f: scaler = pickle.load(f)
         with open('modeles_zones.pkl', 'rb') as f: modeles_zones = pickle.load(f)
         _shap_explainer = None
-        _iso_forest = None
+        _normal_samples = []
+        try:
+            with open('isolation_forest.pkl', 'rb') as f: _iso_forest = pickle.load(f)
+        except FileNotFoundError: _iso_forest = None
         try:
             with open('rul_model.pkl',  'rb') as f: _rul_model  = pickle.load(f)
             with open('rul_scaler.pkl', 'rb') as f: _rul_scaler = pickle.load(f)
@@ -5784,6 +5879,9 @@ def api_machines_list():
         result.append({
             'id': m.id, 'name': m.name, 'description': m.description,
             'machine_type': m.machine_type, 'threshold': m.threshold,
+            'pump_type': m.pump_type or 'centrifuge',
+            'fluid_type': m.fluid_type or 'eau',
+            'roue_material': m.roue_material or 'inox_316',
             'alert_email': m.alert_email, 'escalation_email': m.escalation_email,
             'is_active': m.is_active,
             'last_risk': last.risk if last else None,
@@ -5807,6 +5905,9 @@ def api_machines_create():
         description=(d.get('description') or '')[:500],
         machine_type=d.get('machine_type', 'M'),
         threshold=float(d.get('threshold') or 45),
+        pump_type=(d.get('pump_type') or 'centrifuge')[:50],
+        fluid_type=(d.get('fluid_type') or 'eau')[:50],
+        roue_material=(d.get('roue_material') or 'inox_316')[:50],
         alert_email=(d.get('alert_email') or '').strip(),
         escalation_email=(d.get('escalation_email') or '').strip(),
         is_active=True)
@@ -5826,6 +5927,9 @@ def api_machines_update(mid):
     if 'threshold' in d:
         try: m.threshold = float(d['threshold'])
         except (TypeError, ValueError): pass
+    if 'pump_type' in d: m.pump_type = (d['pump_type'] or 'centrifuge')[:50]
+    if 'fluid_type' in d: m.fluid_type = (d['fluid_type'] or 'eau')[:50]
+    if 'roue_material' in d: m.roue_material = (d['roue_material'] or 'inox_316')[:50]
     if 'alert_email' in d: m.alert_email = (d['alert_email'] or '').strip()
     if 'escalation_email' in d: m.escalation_email = (d['escalation_email'] or '').strip()
     if 'is_active' in d: m.is_active = bool(d['is_active'])
@@ -6283,7 +6387,7 @@ def predire():
         if all(data.get(f) is None for f in CORE_FEATURES):
             return jsonify({'error': 'Au moins un paramètre requis'}), 400
         # Bornes physiques des capteurs pompe
-        _bounds = {'vibration':(0,50),'temp_palier':(0,200),'debit':(0,500),'pression_entree':(0,20),'pression_sortie':(0,50),'courant_moteur':(0,200),'temp_moteur':(0,250),'heure_fonctionnement':(0,200000)}
+        _bounds = {'vibration':(0,50),'temp_palier':(0,200),'debit':(0,500),'pression_entree':(0,50),'pression_sortie':(0,500),'courant_moteur':(0,200),'temp_moteur':(0,250),'heure_fonctionnement':(0,200000)}
         for fld, (lo, hi) in _bounds.items():
             v = data.get(fld)
             if v is not None and not (lo <= v <= hi):
@@ -6303,6 +6407,35 @@ def predire():
         _machine = Machine.query.filter_by(user_id=uid, name=machine_id_str, is_active=True).first() if (uid and machine_id_str) else None
         _threshold = float(_machine.threshold) if (_machine and _machine.threshold) else 45.0
         probabilite, prediction, zones_risque, confidence, imputed, anomaly_score, shap_explanations, rul_hours = predict_risk(data, threshold=_threshold, return_extra=True)
+
+        # ── Domain knowledge corrections ──────────────────────────────────────
+        # Resolve pump/fluid/material from machine record OR from request payload
+        _pump_type    = ((_machine.pump_type    if _machine else None) or data.get('pump_type')    or 'centrifuge').strip()
+        _fluid_type   = ((_machine.fluid_type   if _machine else None) or data.get('fluid_type')   or 'eau').strip()
+        _roue_mat     = ((_machine.roue_material if _machine else None) or data.get('roue_material') or 'inox_316').strip()
+        _domain_warnings = []
+
+        # Non-centrifuge: model trained only on centrifuge data → warn
+        if _pump_type in NON_CENTRIFUGE_TYPES:
+            _domain_warnings.append(f'Model trained on centrifugal pumps — results for {_pump_type} are indicative only.')
+
+        # Apply zone threshold adjustments based on fluid aggressiveness
+        _zone_adj = FLUID_ZONE_SENSITIVITY.get(_fluid_type, {})
+        if _zone_adj and zones_risque:
+            _zone_code_map = {v: k for k, v in FAILURE_ZONES.items()}
+            for z in zones_risque:
+                _code = _zone_code_map.get(z['nom'])
+                if _code and _code in _zone_adj:
+                    z['proba'] = round(min(100.0, max(0.0, z['proba'] + _zone_adj[_code])), 1)
+            zones_risque = [z for z in zones_risque if z['proba'] >= 10]
+            zones_risque.sort(key=lambda x: x['proba'], reverse=True)
+
+        # Apply RUL fluid × material scaling factor
+        if rul_hours is not None:
+            _f_factor = FLUID_RUL_FACTORS.get(_fluid_type, 1.0)
+            _m_factor = MATERIAL_RUL_FACTORS.get(_roue_mat, 1.0)
+            rul_hours = round(rul_hours * _f_factor * _m_factor, 1)
+
         mail_envoye = False
         email = (_machine.alert_email if _machine and _machine.alert_email else None) or get_setting('responsible_email')
         alert_threshold = _threshold  # alert fires at same threshold as prediction
@@ -6336,7 +6469,8 @@ def predire():
                         'confidence': confidence, 'imputed': imputed,
                         'anomaly_score': anomaly_score,
                         'shap_explanations': shap_explanations,
-                        'rul_hours': rul_hours})
+                        'rul_hours': rul_hours,
+                        'domain_warnings': _domain_warnings})
     except Exception as e:
         db.session.rollback()
         import traceback
@@ -6580,7 +6714,7 @@ def _parse_sensor_input(data):
     if all(data.get(f) is None for f in CORE_FEATURES):
         return None, None, None, (jsonify({'error': 'At least one sensor field required',
                                            'code': 'NO_FIELDS'}), 400)
-    _bounds = {'vibration':(0,50),'temp_palier':(0,200),'debit':(0,500),'pression_entree':(0,20),'pression_sortie':(0,50),'courant_moteur':(0,200),'temp_moteur':(0,250),'heure_fonctionnement':(0,200000)}
+    _bounds = {'vibration':(0,50),'temp_palier':(0,200),'debit':(0,500),'pression_entree':(0,50),'pression_sortie':(0,500),'courant_moteur':(0,200),'temp_moteur':(0,250),'heure_fonctionnement':(0,200000)}
     for fld, (lo, hi) in _bounds.items():
         v = data.get(fld)
         if v is not None and not (lo <= v <= hi):
