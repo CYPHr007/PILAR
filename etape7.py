@@ -13,22 +13,28 @@ warnings.filterwarnings("ignore")
 _login_attempts = collections.defaultdict(list)
 # API rate limiting : {api_key: {'count': N, 'day': 'YYYY-MM-DD'}}
 _api_calls = {}
-_RATE_WINDOW = 900   # 15 minutes
-_RATE_MAX    = 10    # max 10 tentatives échouées par fenêtre
 
 def _check_rate_limit(ip):
     """Retourne True si l'IP est bloquée."""
     now = time.time()
     attempts = _login_attempts[ip]
     # Nettoyer les vieilles entrées
-    _login_attempts[ip] = [t for t in attempts if now - t < _RATE_WINDOW]
-    return len(_login_attempts[ip]) >= _RATE_MAX
+    _login_attempts[ip] = [t for t in attempts if now - t < RATE_WINDOW]
+    return len(_login_attempts[ip]) >= RATE_MAX
 
 def _record_failed_login(ip):
     _login_attempts[ip].append(time.time())
 
 app = Flask(__name__)
 import os
+from config import (
+    RATE_WINDOW, RATE_MAX, SESSION_DAYS,
+    FAILURE_ZONES, COLONNES, FEATURE_MEDIANS, CORE_FEATURES, OPTIONAL_FIELDS,
+    SENSOR_BOUNDS, FLUID_RUL_FACTORS, MATERIAL_RUL_FACTORS,
+    FLUID_ZONE_SENSITIVITY, NON_CENTRIFUGE_TYPES, DOMAIN_KB,
+    RETRAIN_TRIGGER, CLAUDE_MODEL, CLAUDE_MAX_TOKENS, CHAT_DAILY_LIMIT,
+    RUL_SCALE_FACTOR,
+)
 db_url = (os.environ.get("DATABASE_URL")
           or os.environ.get("DATABASE_PUBLIC_URL")
           or "sqlite:///pilar.db")
@@ -44,7 +50,7 @@ if not _secret_key:
     _secret_key = _s.token_hex(32)
     print("[Pilar] WARNING: SECRET_KEY not set — generating random key (sessions will reset on restart)")
 app.config["SECRET_KEY"] = _secret_key
-app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=30)
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=SESSION_DAYS)
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SECURE"] = os.environ.get("RAILWAY_ENVIRONMENT") is not None
@@ -103,14 +109,21 @@ class Settings(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
 
 class Analysis(db.Model):
+    # NOTE: column names are legacy CNC-era identifiers. Pump domain mapping:
+    #   temp_air     = bearing temperature  (temp_palier, °C)
+    #   temp_process = motor temperature    (temp_moteur, °C)
+    #   vitesse      = flow rate            (debit, m³/h)
+    #   couple       = outlet pressure      (pression_sortie, bar)
+    #   usure        = run hours            (heure_fonctionnement, h)
+    # TODO: rename via DB migration once traffic is stable.
     id           = db.Column(db.Integer, primary_key=True)
     timestamp    = db.Column(db.DateTime, default=datetime.utcnow)
     machine_type = db.Column(db.String(10))
-    temp_air     = db.Column(db.Float)
-    temp_process = db.Column(db.Float)
-    vitesse      = db.Column(db.Float)
-    couple       = db.Column(db.Float)
-    usure        = db.Column(db.Float)
+    temp_air     = db.Column(db.Float)   # bearing temp (temp_palier)
+    temp_process = db.Column(db.Float)   # motor temp   (temp_moteur)
+    vitesse      = db.Column(db.Float)   # flow rate    (debit)
+    couple       = db.Column(db.Float)   # outlet press (pression_sortie)
+    usure        = db.Column(db.Float)   # run hours    (heure_fonctionnement)
     risk         = db.Column(db.Float)
     prediction   = db.Column(db.Integer)
     zones        = db.Column(db.String(500))
@@ -272,11 +285,7 @@ except Exception as _e:
 # ── RUL MODEL (NASA C-MAPSS) ──────────────────────────────────────────────────
 _rul_model  = None
 _rul_scaler = None
-_RUL_SCALE  = 5000.0 / 361.0  # CMAPSS cycles → pump hours
-# Formula: rul_hours = (rul_cycles / CMAPSS_MAX) × PUMP_MTBF
-# CMAPSS_MAX = 361 cycles (longest engine in FD001)
-# PUMP_MTBF  = 5000h (industrial centrifugal pump, ISO 10816 / Hydraulic Institute)
-# Result: 0 cycles→0h, 103 cycles→1427h, 361 cycles→5000h
+_RUL_SCALE = RUL_SCALE_FACTOR  # CMAPSS cycles → pump hours (see config.py)
 try:
     with open("rul_model.pkl",  "rb") as f: _rul_model  = pickle.load(f)
     with open("rul_scaler.pkl", "rb") as f: _rul_scaler = pickle.load(f)
@@ -293,63 +302,10 @@ try:
 except FileNotFoundError: pass
 except Exception as _e: print(f"[Pilar] Isolation Forest load error: {_e}")
 
-FAILURE_ZONES = {"CAV":"Cavitation","ROL":"Bearing Failure","ETN":"Seal Failure","IMP":"Impeller Wear","MOT":"Motor Fault"}
-COLONNES = ["vibration","temp_palier","debit","pression_entree","pression_sortie","courant_moteur","temp_moteur","heure_fonctionnement"]
-# Médianes pompe centrifuge — utilisées pour imputer les features manquantes (analyse partielle)
-FEATURE_MEDIANS = {"vibration": 0.61, "temp_palier": 44.837, "debit": 0.395, "pression_entree": 1.987, "pression_sortie": 107.73, "courant_moteur": 4.579, "temp_moteur": 58.043, "heure_fonctionnement": 1103.0}
-CORE_FEATURES   = list(FEATURE_MEDIANS.keys())
-OPTIONAL_FIELDS = ['temperature_ambiante','niveau_huile','tension_reseau']
-
-# ── Domain knowledge: fluid / material / pump-type corrections ─────────────
-# RUL multipliers: aggressive fluids shorten life; titanium extends it
-FLUID_RUL_FACTORS    = {'eau':1.0,'eau_chargee':0.5,'huile':1.3,'acide':0.35,'base':0.4,'autre':0.8}
-MATERIAL_RUL_FACTORS = {'inox_316':1.0,'fonte':0.6,'titane':1.8,'bronze':0.9,'plastique':0.7,'autre':0.85}
-# Zone threshold adjustments (positive = lower threshold → easier to trigger)
-FLUID_ZONE_SENSITIVITY = {
-    'acide':       {'ETN': 15, 'ROL': 5},
-    'base':        {'ETN': 10},
-    'eau_chargee': {'IMP': 15, 'CAV': 10},
-    'huile':       {'MOT': -5},
-    'eau': {}, 'autre': {},
-}
-NON_CENTRIFUGE_TYPES = {'pompe_a_vis','pompe_a_engrenage','pompe_a_palettes','pompe_a_piston','peristaltique'}
-
-# ── AI chat domain knowledge base ─────────────────────────────────────────────
-# Distilled from: UCI hydraulic dataset, NLN-EMP 4TU, ESPset, Sulzer/Xylem/KSB
-# constructor cases, Cutsforth maintenance methodology, Chen et al. PMC review.
-_DOMAIN_KB = """\
-=== PUMP DOMAIN KNOWLEDGE BASE ===
-SIGNAL → FAULT MAPPING (centrifugal pumps):
-• Vibration ↑ + flow ↓                   → Cavitation (CAV) — check NPSH, inlet filter, speed
-• Vibration ↑ + bearing temp ↑           → Bearing wear (ROL) — check lubrication, alignment, BEP margin
-• Outlet pressure ↓ relative to flow     → Seal leakage (ETN) or impeller wear (IMP)
-• Motor current ↑ + motor temp ↑         → Motor fault (MOT): rotor bar, winding, electrical bearing
-• 3-phase current imbalance              → Stator asymmetry or phase loss
-
-REAL-WORLD THRESHOLDS (industry benchmarks):
-• Vibration > 3.8 mm/s (0.15 ips) → excessive, corrective action required (Xylem, metal processing)
-• Bearing temp trend at 30-min cadence is sufficient to catch impending failure (KSB Guard)
-• RMS motor current trends + temp combined → earlier MOT detection than temp alone (Cutsforth/San Jose Water)
-• Vibration kurtosis > 6 → early bearing defect signature
-
-DIAGNOSIS METHODOLOGY (Cutsforth, Chen et al.):
-• Combine process sensors (P, Q, T) with condition-monitoring signals (vibration, current) for best accuracy
-• Far-from-BEP operation accelerates bearing wear and cavitation — always compare to pump curve
-• Contextual metadata (speed, load, fluid type) essential for distinguishing fault signatures
-
-TRAINING DATA CONTEXT:
-• Main model: UCI hydraulic test rig (2205 cycles, centrifugal pump, pressure/flow/temperature)
-• RUL model: NASA C-MAPSS FD001 engine degradation mapped to pump domain (≈13.85 h/cycle)
-• MOT zone: currently proxy-trained (power→current formula); NLN-EMP real motor current data improves it
-• Evaluation note: naive k-fold overestimates pump model accuracy ~15% — always use stratified grouped split
-
-CORRECTIVE ACTIONS:
-• CAV → inspect suction, verify NPSH_a > NPSH_r, clear inlet filter, reduce speed or increase back-pressure
-• ROL → vibration spectrum analysis, re-lubricate, check shaft alignment, avoid excessive BEP deviation
-• ETN → inspect mechanical seal faces, O-rings, stuffing box; replace if worn
-• IMP → check impeller for cavitation pitting or erosion; measure hydraulic efficiency vs nameplate
-• MOT → insulation resistance test, winding temp check, coupling alignment, phase balance verification
-==================================="""
+# All ML constants (FAILURE_ZONES, COLONNES, FEATURE_MEDIANS, SENSOR_BOUNDS,
+# FLUID_RUL_FACTORS, MATERIAL_RUL_FACTORS, FLUID_ZONE_SENSITIVITY,
+# NON_CENTRIFUGE_TYPES, DOMAIN_KB, RETRAIN_TRIGGER, CLAUDE_MODEL, etc.)
+# are imported from config.py at the top of this file.
 
 # ── SHAP EXPLAINER ─────────────────────────────────────────────────────────────
 _shap_explainer = None
@@ -5426,7 +5382,7 @@ def _send_weekly_reports():
 # ── AUTO-RETRAIN ──────────────────────────────────────────────────────────────
 _retrain_lock = threading.Lock()
 _new_analyses_since_retrain = 0
-_RETRAIN_TRIGGER = 150  # retrain when this many new analyses accumulated
+# RETRAIN_TRIGGER imported from config.py
 
 def _reload_models():
     """Reload pkl files into global model variables after a retrain."""
@@ -5797,7 +5753,7 @@ def admin_retrain_status():
         'in_progress': locked,
         'last_retrain': s.value if s else None,
         'analyses_since_retrain': _new_analyses_since_retrain,
-        'trigger_at': _RETRAIN_TRIGGER,
+        'trigger_at': RETRAIN_TRIGGER,
     })
 
 @app.route('/admin/block_email', methods=['POST'])
@@ -6424,8 +6380,7 @@ def predire():
         if all(data.get(f) is None for f in CORE_FEATURES):
             return jsonify({'error': 'Au moins un paramètre requis'}), 400
         # Bornes physiques des capteurs pompe
-        _bounds = {'vibration':(0,50),'temp_palier':(0,200),'debit':(0,500),'pression_entree':(0,50),'pression_sortie':(0,500),'courant_moteur':(0,200),'temp_moteur':(0,250),'heure_fonctionnement':(0,200000)}
-        for fld, (lo, hi) in _bounds.items():
+        for fld, (lo, hi) in SENSOR_BOUNDS.items():
             v = data.get(fld)
             if v is not None and not (lo <= v <= hi):
                 return jsonify({'error': f'Valeur hors limites : {fld} ({v}) — attendu [{lo},{hi}]'}), 400
@@ -6499,7 +6454,7 @@ def predire():
         # Trigger auto-retrain when enough new data has accumulated
         global _new_analyses_since_retrain
         _new_analyses_since_retrain += 1
-        if _new_analyses_since_retrain >= _RETRAIN_TRIGGER:
+        if _new_analyses_since_retrain >= RETRAIN_TRIGGER:
             threading.Thread(target=_auto_retrain, daemon=True).start()
         return jsonify({'prediction': prediction, 'probabilite': probabilite,
                         'zones': zones_risque, 'mail_envoye': mail_envoye,
@@ -6751,8 +6706,7 @@ def _parse_sensor_input(data):
     if all(data.get(f) is None for f in CORE_FEATURES):
         return None, None, None, (jsonify({'error': 'At least one sensor field required',
                                            'code': 'NO_FIELDS'}), 400)
-    _bounds = {'vibration':(0,50),'temp_palier':(0,200),'debit':(0,500),'pression_entree':(0,50),'pression_sortie':(0,500),'courant_moteur':(0,200),'temp_moteur':(0,250),'heure_fonctionnement':(0,200000)}
-    for fld, (lo, hi) in _bounds.items():
+    for fld, (lo, hi) in SENSOR_BOUNDS.items():
         v = data.get(fld)
         if v is not None and not (lo <= v <= hi):
             return None, None, None, (jsonify({'error': f'Value out of range: {fld}={v} (expected [{lo},{hi}])', 'code': 'OUT_OF_RANGE'}), 400)
@@ -6970,7 +6924,7 @@ def chat():
     _day_key = f'chat_day_{_chat_uid}_{_today}'
     _api_calls.setdefault(_day_key, 0)
     _api_calls[_day_key] += 1
-    if _api_calls[_day_key] > 100:
+    if _api_calls[_day_key] > CHAT_DAILY_LIMIT:
         return jsonify({'reply': None, 'error': 'Limite journalière atteinte (100 messages/jour)'}), 429
 
     data = request.json
@@ -7006,7 +6960,7 @@ Zones risque    : {zones_str}
     # ── System prompt expert maintenance ─────────────────────────────────────
     system_prompt = f"""Tu es Pilar, un assistant IA expert en maintenance prédictive de pompes centrifuges industrielles, intégré dans une plateforme SaaS B2B pour PME industrielles.
 {ctx_block}
-{_DOMAIN_KB}
+{DOMAIN_KB}
 
 Directives strictes :
 - Tu es UNIQUEMENT un assistant de maintenance industrielle, spécialisé pompes centrifuges. Tu ne réponds qu'aux sujets liés à : capteurs de pompe (vibration, débit, pression, température palier/moteur, courant), cavitation, usure roue, défaillances paliers, étanchéité, fautes moteur, maintenance préventive/prédictive.
@@ -7024,8 +6978,8 @@ Directives strictes :
     try:
         client = _anthropic.Anthropic(api_key=api_key)
         response = client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=512,
+            model=CLAUDE_MODEL,
+            max_tokens=CLAUDE_MAX_TOKENS,
             system=system_prompt,
             messages=messages
         )
