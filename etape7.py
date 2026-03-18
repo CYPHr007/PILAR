@@ -260,6 +260,17 @@ except Exception as _e:
     model = scaler = None
     modeles_zones = {}
 
+# ── RUL MODEL (NASA C-MAPSS) ──────────────────────────────────────────────────
+_rul_model  = None
+_rul_scaler = None
+_RUL_SCALE  = 5.0   # CMAPSS cycles → pump hours (206-cycle median → ~1030h)
+try:
+    with open("rul_model.pkl",  "rb") as f: _rul_model  = pickle.load(f)
+    with open("rul_scaler.pkl", "rb") as f: _rul_scaler = pickle.load(f)
+    print("[Pilar] RUL model charge (NASA C-MAPSS GBT)")
+except FileNotFoundError: pass
+except Exception as _e: print(f"[Pilar] RUL model load error: {_e}")
+
 # ── ISOLATION FOREST ──────────────────────────────────────────────────────────
 _iso_forest = None
 _normal_samples = []   # accumulates normal scaled vectors for lazy IsoForest training
@@ -323,6 +334,18 @@ def _compute_shap(x_scaled):
     except Exception as _e:
         print(f"[Pilar] SHAP compute error: {_e}")
         return []
+
+def _compute_rul(x_scaled):
+    """Return estimated remaining useful life in hours, or None."""
+    if _rul_model is None or _rul_scaler is None:
+        return None
+    try:
+        x_rul = _rul_scaler.transform(x_scaled)
+        cycles = float(np.clip(_rul_model.predict(x_rul)[0], 0, None))
+        return round(cycles * _RUL_SCALE, 1)
+    except Exception as _e:
+        print(f"[Pilar] RUL compute error: {_e}")
+        return None
 
 def _compute_anomaly_score(x_scaled):
     """Return 0–100 anomaly score (0=normal, 100=very anomalous), or None if model not ready."""
@@ -5083,7 +5106,9 @@ def predict_risk(params, threshold=45, return_extra=False):
         print(f"[Pilar] IsoForest pipeline error: {_ie}")
     # ── Extra: SHAP explanations ───────────────────────────────────────────────
     shap_explanations = _compute_shap(donnees_scaled)
-    return probabilite, prediction, zones_risque, confidence, missing_keys, anomaly_score, shap_explanations
+    # ── Extra: RUL model (NASA C-MAPSS GBT) ───────────────────────────────────
+    rul_hours = _compute_rul(donnees_scaled)
+    return probabilite, prediction, zones_risque, confidence, missing_keys, anomaly_score, shap_explanations, rul_hours
 
 def envoyer_alerte(email_to, probabilite, zones_risque, data, ack_token=None):
     severity = "CRITICAL" if probabilite >= 75 else "HIGH"
@@ -5272,13 +5297,17 @@ _RETRAIN_TRIGGER = 150  # retrain when this many new analyses accumulated
 
 def _reload_models():
     """Reload pkl files into global model variables after a retrain."""
-    global model, scaler, modeles_zones, _shap_explainer, _iso_forest
+    global model, scaler, modeles_zones, _shap_explainer, _iso_forest, _rul_model, _rul_scaler
     try:
         with open('modele_pannes.pkl', 'rb') as f: model = pickle.load(f)
         with open('scaler.pkl', 'rb') as f: scaler = pickle.load(f)
         with open('modeles_zones.pkl', 'rb') as f: modeles_zones = pickle.load(f)
-        _shap_explainer = None  # reset so it's rebuilt on next prediction
+        _shap_explainer = None
         _iso_forest = None
+        try:
+            with open('rul_model.pkl',  'rb') as f: _rul_model  = pickle.load(f)
+            with open('rul_scaler.pkl', 'rb') as f: _rul_scaler = pickle.load(f)
+        except FileNotFoundError: pass
         print('[Pilar/retrain] Models reloaded into memory')
     except Exception as _e:
         print(f'[Pilar/retrain] Reload error: {_e}')
@@ -6269,7 +6298,7 @@ def predire():
         machine_id_str = (data.get('machine_id') or '').strip() or None
         _machine = Machine.query.filter_by(user_id=uid, name=machine_id_str, is_active=True).first() if (uid and machine_id_str) else None
         _threshold = float(_machine.threshold) if (_machine and _machine.threshold) else 45.0
-        probabilite, prediction, zones_risque, confidence, imputed, anomaly_score, shap_explanations = predict_risk(data, threshold=_threshold, return_extra=True)
+        probabilite, prediction, zones_risque, confidence, imputed, anomaly_score, shap_explanations, rul_hours = predict_risk(data, threshold=_threshold, return_extra=True)
         mail_envoye = False
         email = (_machine.alert_email if _machine and _machine.alert_email else None) or get_setting('responsible_email')
         alert_threshold = _threshold  # alert fires at same threshold as prediction
@@ -6302,7 +6331,8 @@ def predire():
                         'zones': zones_risque, 'mail_envoye': mail_envoye,
                         'confidence': confidence, 'imputed': imputed,
                         'anomaly_score': anomaly_score,
-                        'shap_explanations': shap_explanations})
+                        'shap_explanations': shap_explanations,
+                        'rul_hours': rul_hours})
     except Exception as e:
         db.session.rollback()
         import traceback

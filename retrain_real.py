@@ -342,5 +342,88 @@ print('\n' + '=' * 65)
 print('MÉDIANES À COPIER DANS etape7.py -> FEATURE_MEDIANS :')
 print(f"FEATURE_MEDIANS = {json.dumps(medians, ensure_ascii=False)}")
 print('=' * 65)
+
+# ── 8. RUL MODEL (NASA C-MAPSS FD001) ────────────────────────────────────────
+# Cherche le fichier CMAPSS : argv[2], même dossier, ou ~/Downloads
+_CMAPSS_NAME = 'nasa_cmapss_fd001_status_cv.csv'
+_cmapss_candidates = [
+    sys.argv[2] if len(sys.argv) > 2 else '',
+    os.path.join(os.path.dirname(os.path.abspath(CSV)), _CMAPSS_NAME),
+    os.path.join(os.path.expanduser('~'), 'Downloads', _CMAPSS_NAME),
+]
+cmapss_path = next((p for p in _cmapss_candidates if p and os.path.exists(p)), None)
+
+if cmapss_path:
+    print(f'\n[8/8] RUL model — NASA C-MAPSS FD001 : {cmapss_path}')
+    from sklearn.ensemble import GradientBoostingRegressor
+    from sklearn.metrics import mean_absolute_error, mean_squared_error
+
+    cm = pd.read_csv(cmapss_path)
+    print(f'  {len(cm)} lignes | {cm["unit_number"].nunique()} engines | RUL 0–{cm["rul_cycles"].max()}')
+
+    def _minmax_remap(series, tmin, tmax):
+        mn, mx = float(series.min()), float(series.max())
+        if mx == mn:
+            return pd.Series([(tmin + tmax) / 2.0] * len(series), index=series.index)
+        return (series - mn) / (mx - mn) * (tmax - tmin) + tmin
+
+    # Map CMAPSS engine sensors → pump feature space (same column names, pump-compatible ranges)
+    # Scaler trained on these ranges will match pump readings at inference time
+    rul_feat = pd.DataFrame({
+        'vibration':            _minmax_remap(cm['bleed_enthalpy_htbleed'], 0.30, 1.20),
+        'temp_palier':          _minmax_remap(cm['temp_t24_r'],              35.0, 60.0),
+        'debit':                _minmax_remap(cm['fan_speed_nf_rpm'],        0.10, 0.42),
+        'pression_entree':      1.5,
+        'pression_sortie':      _minmax_remap(cm['pressure_p30_psia'],       95.0, 130.0),
+        'courant_moteur':       _minmax_remap(cm['core_speed_nc_rpm'],       15.0, 22.0),
+        'temp_moteur':          _minmax_remap(cm['temp_t50_r'],              35.0, 80.0),
+        'heure_fonctionnement': cm['time_in_cycles'].astype(float),
+    })
+    rul_target = cm['rul_cycles'].values.astype(float)
+
+    # GroupKFold split by unit (fold max = test) — no data leakage across units
+    _rul_cv = 'cv_fold_5' if 'cv_fold_5' in cm.columns else None
+    if _rul_cv:
+        _folds = cm[_rul_cv].values
+        _test_m = _folds == _folds.max()
+        print(f'  Split via {_rul_cv} — train: {(~_test_m).sum()}, test: {_test_m.sum()}')
+    else:
+        _test_m = np.random.RandomState(42).rand(len(rul_feat)) < 0.2
+
+    Xr = rul_feat[COLONNES].values
+    rul_scaler_new = StandardScaler()
+    Xr_sc = rul_scaler_new.fit_transform(Xr)
+    Xr_tr, Xr_te = Xr_sc[~_test_m], Xr_sc[_test_m]
+    yr_tr, yr_te = rul_target[~_test_m], rul_target[_test_m]
+
+    rul_mdl = GradientBoostingRegressor(
+        n_estimators=300, max_depth=5, learning_rate=0.05,
+        subsample=0.8, random_state=42
+    )
+    rul_mdl.fit(Xr_tr, yr_tr)
+    yr_pred = np.clip(rul_mdl.predict(Xr_te), 0, None)
+    mae  = mean_absolute_error(yr_te, yr_pred)
+    rmse = mean_squared_error(yr_te, yr_pred) ** 0.5
+    print(f'  MAE = {mae:.1f} cycles  |  RMSE = {rmse:.1f} cycles')
+    print(f'  (RUL output x5 ~ pump hours -- CMAPSS median 206 cycles, pump median 1103h)')
+
+    with open('rul_model.pkl',  'wb') as f: pickle.dump(rul_mdl,        f)
+    with open('rul_scaler.pkl', 'wb') as f: pickle.dump(rul_scaler_new, f)
+    print('  rul_model.pkl   OK  (GradientBoostingRegressor)')
+    print('  rul_scaler.pkl  OK')
+
+    # Update meta
+    meta['rul_model'] = 'GradientBoostingRegressor'
+    meta['rul_mae_cycles'] = round(float(mae), 1)
+    meta['rul_rmse_cycles'] = round(float(rmse), 1)
+    meta['rul_source'] = os.path.basename(cmapss_path)
+    meta['rul_scale_factor'] = 5.0
+    with open('model_meta.json', 'w') as f:
+        json.dump(meta, f, indent=2, ensure_ascii=False)
+else:
+    print(f'\n[8/8] NASA C-MAPSS non trouvé — RUL model ignoré')
+    print(f'  Fichier attendu : {_CMAPSS_NAME}  (~/Downloads ou argv[2])')
+
+print('\n' + '=' * 65)
 print('RETRAINING TERMINÉ')
 print('=' * 65)
