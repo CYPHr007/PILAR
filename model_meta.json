@@ -27,17 +27,17 @@
     "vibration": 0.61,
     "temp_palier": 44.837,
     "debit": 0.395,
-    "pression_entree": 1.5,
+    "pression_entree": 1.987,
     "pression_sortie": 107.73,
-    "courant_moteur": 18.0,
-    "temp_moteur": 44.837,
+    "courant_moteur": 4.579,
+    "temp_moteur": 58.043,
     "heure_fonctionnement": 1103.0
   },
   "source": "pompes_reelles_v2_temp_power_cv.csv",
-  "trained_at": "2026-03-18T15:27:32",
+  "trained_at": "2026-03-18T15:41:39",
   "rul_model": "GradientBoostingRegressor",
   "rul_mae_cycles": 25.3,
   "rul_rmse_cycles": 33.9,
   "rul_source": "nasa_cmapss_fd001_status_cv.csv",
-  "rul_scale_factor": 5.0
+  "rul_scale_factor": 13.8504
 }

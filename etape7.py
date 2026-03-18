@@ -263,7 +263,11 @@ except Exception as _e:
 # ── RUL MODEL (NASA C-MAPSS) ──────────────────────────────────────────────────
 _rul_model  = None
 _rul_scaler = None
-_RUL_SCALE  = 5.0   # CMAPSS cycles → pump hours (206-cycle median → ~1030h)
+_RUL_SCALE  = 5000.0 / 361.0  # CMAPSS cycles → pump hours
+# Formula: rul_hours = (rul_cycles / CMAPSS_MAX) × PUMP_MTBF
+# CMAPSS_MAX = 361 cycles (longest engine in FD001)
+# PUMP_MTBF  = 5000h (industrial centrifugal pump, ISO 10816 / Hydraulic Institute)
+# Result: 0 cycles→0h, 103 cycles→1427h, 361 cycles→5000h
 try:
     with open("rul_model.pkl",  "rb") as f: _rul_model  = pickle.load(f)
     with open("rul_scaler.pkl", "rb") as f: _rul_scaler = pickle.load(f)
@@ -283,7 +287,7 @@ except Exception as _e: print(f"[Pilar] Isolation Forest load error: {_e}")
 FAILURE_ZONES = {"CAV":"Cavitation","ROL":"Bearing Failure","ETN":"Seal Failure","IMP":"Impeller Wear","MOT":"Motor Fault"}
 COLONNES = ["vibration","temp_palier","debit","pression_entree","pression_sortie","courant_moteur","temp_moteur","heure_fonctionnement"]
 # Médianes pompe centrifuge — utilisées pour imputer les features manquantes (analyse partielle)
-FEATURE_MEDIANS = {"vibration": 0.61, "temp_palier": 44.837, "debit": 0.395, "pression_entree": 1.5, "pression_sortie": 107.73, "courant_moteur": 18.0, "temp_moteur": 44.837, "heure_fonctionnement": 1103.0}
+FEATURE_MEDIANS = {"vibration": 0.61, "temp_palier": 44.837, "debit": 0.395, "pression_entree": 1.987, "pression_sortie": 107.73, "courant_moteur": 4.579, "temp_moteur": 58.043, "heure_fonctionnement": 1103.0}
 CORE_FEATURES   = list(FEATURE_MEDIANS.keys())
 OPTIONAL_FIELDS = ['temperature_ambiante','niveau_huile','tension_reseau']
 

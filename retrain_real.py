@@ -152,29 +152,59 @@ else:
         y = (numeric > 0).astype(int).values
 print(f'  Distribution cible    : normal={int((y==0).sum())}  panne={int((y==1).sum())}  ({y.mean()*100:.1f}% pannes)')
 
-# Imputation par médiane pour les colonnes manquantes / NaN
-medians = {}
+# Imputation initiale par médiane pour les colonnes non-NaN (avant dérivations)
+_defaults = {'vibration':0.6,'temp_palier':45.0,'debit':0.4,
+             'pression_entree':1.5,'pression_sortie':108.0,
+             'courant_moteur':4.7,'temp_moteur':50.0,'heure_fonctionnement':1100.0}
 for c in COLONNES:
     med = feat_df[c].median()
-    if np.isnan(med):
-        # Valeurs physiques par défaut si aucune donnée
-        defaults = {'vibration':2.5,'temp_palier':65.0,'debit':45.0,
-                    'pression_entree':1.5,'pression_sortie':4.5,
-                    'courant_moteur':18.0,'temp_moteur':75.0,'heure_fonctionnement':5000.0}
-        med = defaults[c]
-    medians[c] = round(float(med), 3)
-    feat_df[c] = feat_df[c].fillna(med)
+    feat_df[c] = feat_df[c].fillna(_defaults[c] if np.isnan(med) else med)
 
-# Proxy courant_moteur depuis puissance_moteur si courant totalement absent
-if feat_df['courant_moteur'].isna().all() or (feat_df['courant_moteur'] == feat_df['courant_moteur'].median()).all():
+# ── courant_moteur : formule 3-phase si courant absent ───────────────────────
+# I = P / (sqrt(3) * V * eta * cos_phi)  — moteur industriel standard 400V
+_MOTOR_V, _MOTOR_ETA, _MOTOR_COSPHI = 400.0, 0.92, 0.85
+_MOTOR_DENOM = 1.732 * _MOTOR_V * _MOTOR_ETA * _MOTOR_COSPHI  # 539.8
+
+if feat_df['courant_moteur'].isna().all() or feat_df['courant_moteur'].nunique() <= 1:
     pwr_col = find_col(POWER_PROXY_PATTERNS)
     if pwr_col:
         pwr = pd.to_numeric(df[pwr_col], errors='coerce')
-        pwr_med = pwr.median()
-        if pwr_med and pwr_med > 0 and not np.isnan(pwr_med):
-            scale = POWER_PROXY_CURRENT_MEDIAN / pwr_med
-            feat_df['courant_moteur'] = (pwr * scale).values
-            print(f'  courant_moteur: proxy depuis {pwr_col} (scale={scale:.6f}, range [{(pwr*scale).min():.2f}—{(pwr*scale).max():.2f}])')
+        if not pwr.isna().all():
+            feat_df['courant_moteur'] = (pwr / _MOTOR_DENOM).values
+            i_min = feat_df['courant_moteur'].min()
+            i_max = feat_df['courant_moteur'].max()
+            print(f'  courant_moteur: 3-phase formula I=P/(sqrt3*V*eta*cosphi) depuis {pwr_col} [{i_min:.3f}—{i_max:.3f} A]')
+
+# ── temp_moteur : modele thermique (palier + echauffement electrique + refroidissement) ──
+# T_motor = T_bearing + k_load*(P-P_nom)/P_nom + k_cool*(1 - cooler_pct/100)
+# k_load=4°C per sigma, k_cool=18°C for fully degraded cooler
+_COOL_COL  = next((c for c in df.columns if 'cooler_condition' in c.lower()), None)
+_PWR_COL2  = find_col(POWER_PROXY_PATTERNS)
+if _COOL_COL is not None and _PWR_COL2 is not None:
+    pwr2 = pd.to_numeric(df[_PWR_COL2], errors='coerce').fillna(df[_PWR_COL2].median() if _PWR_COL2 else 0)
+    cool = pd.to_numeric(df[_COOL_COL], errors='coerce').fillna(100.0)
+    pwr_std = pwr2.std() if pwr2.std() > 0 else 1.0
+    power_excess   = (pwr2 - pwr2.mean()) / pwr_std      # normalised motor load
+    cooler_penalty = (1.0 - cool / 100.0).clip(0, 1)     # 0=perfect, 1=broken
+    heat_rise = (power_excess * 4.0 + cooler_penalty * 18.0).clip(lower=0.0)
+    feat_df['temp_moteur'] = feat_df['temp_palier'] + heat_rise.values
+    tm_min = feat_df['temp_moteur'].min(); tm_max = feat_df['temp_moteur'].max()
+    print(f'  temp_moteur: thermal model T_bearing + load_rise + cool_penalty [{tm_min:.1f}—{tm_max:.1f} C]')
+
+# ── pression_entree : loi hydraulique depuis debit si toutes NaN ─────────────
+# p_in = p_min + (Q/Q_max)^0.5 * (p_max - p_min)  — profil de courbe centrifuge
+# p_min=0.8 bar (cavitation threshold), p_max=2.0 bar (nominal suction head)
+if feat_df['pression_entree'].isna().all() or feat_df['pression_entree'].nunique() <= 1:
+    q = feat_df['debit']
+    q_max = q.max() if q.max() > 0 else 1.0
+    feat_df['pression_entree'] = (0.8 + (q / q_max).clip(0, 1) ** 0.5 * 1.2).values
+    pe_min = feat_df['pression_entree'].min(); pe_max = feat_df['pression_entree'].max()
+    print(f'  pression_entree: hydraulic model p=0.8+1.2*(Q/Q_max)^0.5 [{pe_min:.3f}—{pe_max:.3f} bar]')
+
+# Calcul des médianes APRÈS toutes les dérivations (valeurs réelles)
+medians = {}
+for c in COLONNES:
+    medians[c] = round(float(feat_df[c].median()), 3)
 
 # Supprime les lignes complètement aberrantes
 feat_df = feat_df.clip(lower=0)
@@ -405,7 +435,8 @@ if cmapss_path:
     mae  = mean_absolute_error(yr_te, yr_pred)
     rmse = mean_squared_error(yr_te, yr_pred) ** 0.5
     print(f'  MAE = {mae:.1f} cycles  |  RMSE = {rmse:.1f} cycles')
-    print(f'  (RUL output x5 ~ pump hours -- CMAPSS median 206 cycles, pump median 1103h)')
+    _rul_scale = 5000.0 / 361.0
+    print(f'  Scale: rul_hours = cycles x {_rul_scale:.2f}  (PUMP_MTBF=5000h / CMAPSS_MAX=361 cycles)')
 
     with open('rul_model.pkl',  'wb') as f: pickle.dump(rul_mdl,        f)
     with open('rul_scaler.pkl', 'wb') as f: pickle.dump(rul_scaler_new, f)
@@ -417,7 +448,7 @@ if cmapss_path:
     meta['rul_mae_cycles'] = round(float(mae), 1)
     meta['rul_rmse_cycles'] = round(float(rmse), 1)
     meta['rul_source'] = os.path.basename(cmapss_path)
-    meta['rul_scale_factor'] = 5.0
+    meta['rul_scale_factor'] = round(5000.0 / 361.0, 4)
     with open('model_meta.json', 'w') as f:
         json.dump(meta, f, indent=2, ensure_ascii=False)
 else:
