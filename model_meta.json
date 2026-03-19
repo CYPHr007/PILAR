@@ -34,7 +34,7 @@
     "heure_fonctionnement": 1103.0
   },
   "source": "pompes_reelles_v2_temp_power_cv.csv",
-  "trained_at": "2026-03-18T15:41:39",
+  "trained_at": "2026-03-19T16:01:14",
   "rul_model": "GradientBoostingRegressor",
   "rul_mae_cycles": 25.3,
   "rul_rmse_cycles": 33.9,
