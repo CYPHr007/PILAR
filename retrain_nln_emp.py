@@ -70,22 +70,21 @@ if not SAMPLE_DIR.exists():
     sys.exit(1)
 
 # ── 1. SCAN ───────────────────────────────────────────────────────────────────
-print('\n[1/5] Scanning CSV files...')
-csv_files = sorted(SAMPLE_DIR.rglob('*.csv'))
-print(f'  Found {len(csv_files)} CSV files')
-if not csv_files:
-    print('  ERROR: No CSV files found. Check extraction.')
-    sys.exit(1)
+print('\n[1/5] Scanning fault-class folders...')
 
-# ── 2. LABEL + FEATURE EXTRACTION ────────────────────────────────────────────
-print('\n[2/5] Extracting features from time-series windows...')
+# NLN-EMP actual CSV format:
+#   columns = ["time", "0", "1", ..., "35"]
+#   36 numeric columns = 36 independent measurement runs (repetitions)
+#   Each row = one time step at 20 kHz
+#   Each sub-folder contains ch1.csv (phase A), ch2.csv (phase B), ch3.csv (phase C)
+#   for Electric (current) measurements.
 
-def _label(path: Path):
-    """Return (y_global, y_mot) from file path.
+def _label(folder: Path):
+    """Return (y_global, y_mot) from folder name.
     y_global=0 normal | y_global=1 any fault
     y_mot=1 only for electrical/motor fault types.
     """
-    s = str(path).lower().replace('-', '_').replace(' ', '_')
+    s = folder.name.lower().replace('-', '_').replace(' ', '_')
     if any(k in s for k in NORMAL_KEYWORDS):
         return 0, 0
     if any(k in s for k in MOT_KEYWORDS):
@@ -99,101 +98,129 @@ def _rms(arr: np.ndarray) -> float:
 
 def _kurtosis(arr: np.ndarray) -> float:
     """Fisher kurtosis (excess); values > 3 suggest impulsive bearing defects."""
-    n = len(arr)
-    if n < 4:
+    if len(arr) < 4:
         return 0.0
-    mu = arr.mean()
-    std = arr.std()
+    mu, std = arr.mean(), arr.std()
     if std == 0:
         return 0.0
     return float(np.mean(((arr - mu) / std) ** 4) - 3.0)
 
 
-def _extract(csv_path: Path) -> dict | None:
-    """Read one NLN-EMP window CSV and return a Pilar-compatible feature row."""
+def _load_runs(csv_path: Path, nrows: int = MAX_ROWS_PER_FILE) -> np.ndarray | None:
+    """Load NLN-EMP CSV and return a (nrows × n_runs) array of numeric run columns."""
     try:
-        df = pd.read_csv(csv_path, nrows=MAX_ROWS_PER_FILE, low_memory=False)
-    except Exception as e:
+        df = pd.read_csv(csv_path, nrows=nrows, low_memory=False)
+    except Exception:
         return None
-
     if len(df) < 100:
         return None
-
-    cols_lower = {c.lower().strip(): c for c in df.columns}
-
-    def _find(*keys):
-        for k in keys:
-            if k in cols_lower:
-                return cols_lower[k]
+    # Keep only purely numeric columns (the run indices "0".."35")
+    run_cols = [c for c in df.columns if str(c).strip().lstrip('-').isdigit()]
+    if not run_cols:
         return None
+    return df[run_cols].apply(pd.to_numeric, errors='coerce').dropna().values
 
-    # Detect 3-phase current columns
-    cu = _find('current_u_a', 'current_u', 'ia', 'phase_a', 'i_u')
-    cv = _find('current_v_a', 'current_v', 'ib', 'phase_b', 'i_v')
-    cw = _find('current_w_a', 'current_w', 'ic', 'phase_c', 'i_w')
-    current_cols = [c for c in [cu, cv, cw] if c is not None]
-    if not current_cols:
-        # fallback: any column with 'current' in name
-        current_cols = [cols_lower[k] for k in cols_lower if 'current' in k]
 
-    # Detect vibration columns
-    vib_cols = [cols_lower[k] for k in cols_lower
-                if 'vibration' in k or 'vib_ch' in k or 'accel' in k
-                or (k.startswith('vib') and k != 'vibration')]
+def _extract_folder(folder: Path) -> list[dict]:
+    """
+    Given a fault-class folder containing ch1/ch2/ch3.csv files,
+    return one feature dict per run column (up to 36 samples).
+    ch1 = phase A, ch2 = phase B, ch3 = phase C (3-phase motor current).
+    """
+    # Electric files: Electric_*-ch1/ch2/ch3.csv = 3-phase motor current (Amperes)
+    # Vibration files: Vibration_*-ch1/ch2.csv = accelerometers (g units)
+    def _find_elec(n):
+        matches = list(folder.glob(f'Electric_*-ch{n}.csv'))
+        return matches[0] if matches else None
 
-    row = dict(FEATURE_MEDIANS)  # start from pump medians
+    def _find_vib(n):
+        matches = list(folder.glob(f'Vibration_*-ch{n}.csv'))
+        return matches[0] if matches else None
 
-    # ── Motor current features ────────────────────────────────────────────────
-    if current_cols:
-        try:
-            I = df[current_cols].apply(pd.to_numeric, errors='coerce').dropna().values
-            if len(I) > 50:
-                phase_rms = np.array([_rms(I[:, i]) for i in range(I.shape[1])])
-                I_rms_avg = float(np.sqrt(np.mean(phase_rms ** 2)))
-                row['courant_moteur'] = I_rms_avg
+    elec1, elec2, elec3 = _find_elec(1), _find_elec(2), _find_elec(3)
+    vib1, vib2 = _find_vib(1), _find_vib(2)
 
-                # Current imbalance (std of per-phase RMS) → motor temp proxy
-                # Higher imbalance correlates with winding / rotor bar faults
-                if len(phase_rms) >= 3:
-                    imbalance = float(phase_rms.std())
-                    # +10°C per ampere of imbalance (empirical from NLN-EMP cases)
-                    row['temp_moteur'] = FEATURE_MEDIANS['temp_moteur'] + imbalance * 10.0
-        except Exception:
-            pass
+    if elec1 is None:
+        return []
 
-    # ── Vibration features ────────────────────────────────────────────────────
-    if vib_cols:
-        try:
-            V = df[vib_cols].apply(pd.to_numeric, errors='coerce').dropna().values
-            if len(V) > 50:
-                # RMS across all channels (in g) → convert to mm/s
-                vib_rms_g = float(np.sqrt(np.mean(V ** 2)))
-                row['vibration'] = vib_rms_g * _G_TO_MMS
+    A = _load_runs(elec1)
+    B = _load_runs(elec2) if elec2 else None
+    C = _load_runs(elec3) if elec3 else None
+    V1 = _load_runs(vib1) if vib1 else None
+    V2 = _load_runs(vib2) if vib2 else None
 
-                # Mean kurtosis across channels → bearing health indicator
-                kurt = float(np.mean([_kurtosis(V[:, i]) for i in range(V.shape[1])]))
-                # bearing temp offset: kurtosis > 3 → excess heat from impacts
-                bear_offset = max(0.0, (kurt - 3.0) * 1.5)
-                row['temp_palier'] = FEATURE_MEDIANS['temp_palier'] + bear_offset
-        except Exception:
-            pass
+    if A is None:
+        return []
 
-    return row
+    n_runs = A.shape[1]
+    samples = []
 
+    for run_idx in range(n_runs):
+        row = dict(FEATURE_MEDIANS)
+
+        # 3-phase current features
+        I_rms_A = _rms(A[:, run_idx])
+        phase_rms = [I_rms_A]
+        if B is not None and run_idx < B.shape[1]:
+            phase_rms.append(_rms(B[:, run_idx]))
+        if C is not None and run_idx < C.shape[1]:
+            phase_rms.append(_rms(C[:, run_idx]))
+
+        phase_rms = np.array(phase_rms)
+        I_rms_avg = float(np.sqrt(np.mean(phase_rms ** 2)))
+        row['courant_moteur'] = I_rms_avg
+
+        # Current imbalance → motor temperature proxy
+        if len(phase_rms) >= 2:
+            imbalance = float(phase_rms.std())
+            row['temp_moteur'] = FEATURE_MEDIANS['temp_moteur'] + imbalance * 10.0
+
+        # Kurtosis of phase A current → impulsive bearing signature
+        kurt_I = _kurtosis(A[:, run_idx])
+        bear_offset = max(0.0, (kurt_I - 3.0) * 1.5)
+        row['temp_palier'] = FEATURE_MEDIANS['temp_palier'] + bear_offset
+
+        # Vibration from Vibration\ folder (accelerometers in g → mm/s)
+        vib_runs = []
+        for V in [V1, V2]:
+            if V is not None and run_idx < V.shape[1]:
+                vib_runs.append(V[:, run_idx])
+        if vib_runs:
+            all_vib = np.concatenate(vib_runs)
+            vib_rms_g = _rms(all_vib)
+            row['vibration'] = vib_rms_g * _G_TO_MMS  # g → mm/s
+            kurt_vib = float(np.mean([_kurtosis(v) for v in vib_runs]))
+            bear_vib_offset = max(0.0, (kurt_vib - 3.0) * 1.5)
+            row['temp_palier'] = max(row['temp_palier'],
+                                     FEATURE_MEDIANS['temp_palier'] + bear_vib_offset)
+
+        samples.append(row)
+
+    return samples
+
+
+# Group files by parent folder (each folder = one fault class)
+fault_folders = sorted({f.parent for f in SAMPLE_DIR.rglob('*.csv')})
+print(f'  Found {len(fault_folders)} fault-class folders:')
+for ff in fault_folders:
+    print(f'    {ff.name}')
+
+# ── 2. LABEL + FEATURE EXTRACTION ────────────────────────────────────────────
+print('\n[2/5] Extracting features from run columns...')
 
 rows, y_mot_all, y_g_all = [], [], []
 n_skipped = 0
-for i, fp in enumerate(csv_files):
-    if (i + 1) % 50 == 0:
-        print(f'  ... {i+1}/{len(csv_files)} files processed')
-    y_g, y_mot = _label(fp)
-    feats = _extract(fp)
-    if feats is None:
+for folder in fault_folders:
+    y_g, y_mot = _label(folder)
+    samples = _extract_folder(folder)
+    if not samples:
+        print(f'  SKIP (no usable data): {folder.name}')
         n_skipped += 1
         continue
-    rows.append(feats)
-    y_mot_all.append(y_mot)
-    y_g_all.append(y_g)
+    rows.extend(samples)
+    y_mot_all.extend([y_mot] * len(samples))
+    y_g_all.extend([y_g] * len(samples))
+    print(f'  {folder.name}: {len(samples)} runs, label=(y_g={y_g}, y_mot={y_mot})')
 
 if not rows:
     print('  ERROR: Could not extract features from any file.')
@@ -276,7 +303,7 @@ except FileNotFoundError:
 modeles_zones['MOT'] = mot_clf
 with open(ZONES_PKL, 'wb') as f:
     pickle.dump(modeles_zones, f)
-print(f'  Saved zones: {list(modeles_zones.keys())} → {ZONES_PKL}')
+print(f'  Saved zones: {list(modeles_zones.keys())} -> {ZONES_PKL}')
 
 # Update model_meta.json
 nln_meta = {

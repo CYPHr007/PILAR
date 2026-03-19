@@ -39,5 +39,12 @@
   "rul_mae_cycles": 25.3,
   "rul_rmse_cycles": 33.9,
   "rul_source": "nasa_cmapss_fd001_status_cv.csv",
-  "rul_scale_factor": 13.8504
+  "rul_scale_factor": 13.8504,
+  "mot_model": "GradientBoostingClassifier (NLN-EMP)",
+  "mot_cv_recall": 100.0,
+  "mot_cv_recall_std": 0.0,
+  "mot_n_windows": 59,
+  "mot_n_faults": 10,
+  "mot_source": "NLN-EMP 4TU — Motor Current and Vibration Monitoring Dataset",
+  "mot_trained_at": "2026-03-19T16:36:22"
 }
