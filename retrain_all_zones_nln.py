@@ -54,8 +54,14 @@ print('=' * 65)
 
 # ── Load features ─────────────────────────────────────────────────────────────
 df = pd.read_csv(FEATURES_CSV)
+# Drop helper columns not in the 8-feature inference pipeline
+df = df.drop(columns=[c for c in df.columns if c.startswith('_')], errors='ignore')
 print(f'\nLoaded {len(df)} samples from {FEATURES_CSV}')
 print(f'Zone distribution:\n{df["zone"].value_counts().to_string()}')
+
+# Show temp_moteur separation per zone (key MOT indicator)
+print('\ntemp_moteur by zone (neg_seq proxy):')
+print(df.groupby('zone')['temp_moteur'].agg(['mean','std','min','max']).round(2).to_string())
 
 # ── Load scaler ───────────────────────────────────────────────────────────────
 import pickle as pkl

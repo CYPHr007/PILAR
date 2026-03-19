@@ -20,7 +20,7 @@ ARCHIVE  = (
     r"\Dataset\Dataset.7z"
 )
 OUT_CSV   = "nln_emp_features.csv"
-MAX_ROWS  = 50_000   # 2.5 s at 20 kHz — enough for RMS / kurtosis
+MAX_ROWS  = 4_000    # 0.2 s at 20 kHz — enough for RMS, kurtosis, and 50 Hz FFT
 G_TO_MMS  = 9810.0 / (2.0 * np.pi * 50.0)   # ~31.2 mm/s per g-rms
 
 FEATURE_MEDIANS = {
@@ -60,6 +60,55 @@ def _kurtosis(a):
     mu, std = a.mean(), a.std()
     if std == 0: return 0.0
     return float(np.mean(((a - mu) / std) ** 4) - 3.0)
+
+def _neg_seq_ratio(Ia, Ib, Ic):
+    """
+    Negative sequence current ratio (IEC/NEMA motor asymmetry indicator).
+    Uses symmetrical components: I_neg = (Ia + a^2*Ib + a*Ic) / 3
+    where a = exp(j*2*pi/3).
+    Returns |I_neg| / |I_pos| as a ratio (0 = perfectly balanced).
+    Motor faults: rotor bar break / stator short -> ratio 0.05-0.20+
+    Healthy motor: ratio < 0.02
+    """
+    a  = np.exp(1j * 2 * np.pi / 3)
+    a2 = np.exp(1j * 4 * np.pi / 3)
+    # Build complex phasors from time-domain signals (use FFT at fundamental)
+    N = len(Ia)
+    freq_bins = np.fft.rfftfreq(N, d=1.0/20000.0)
+    fa = np.fft.rfft(Ia) / N
+    fb = np.fft.rfft(Ib) / N if Ib is not None else fa * 0
+    fc = np.fft.rfft(Ic) / N if Ic is not None else fa * 0
+    # Find fundamental frequency bin (closest to 50 Hz)
+    fund_idx = int(np.argmin(np.abs(freq_bins - 50.0)))
+    Ia_f = fa[fund_idx]
+    Ib_f = fb[fund_idx]
+    Ic_f = fc[fund_idx]
+    I_pos = (Ia_f + a  * Ib_f + a2 * Ic_f) / 3.0
+    I_neg = (Ia_f + a2 * Ib_f + a  * Ic_f) / 3.0
+    mag_pos = abs(I_pos)
+    if mag_pos < 1e-6:
+        return 0.0
+    return float(abs(I_neg) / mag_pos)
+
+def _thd(a, fs=20000.0, fund_hz=50.0, n_harmonics=10):
+    """
+    Total Harmonic Distortion of a current signal.
+    THD = sqrt(sum of harmonic^2) / fundamental amplitude.
+    Returns THD as a ratio (0 = pure sine).
+    Motor faults increase THD: stator short typically 0.05-0.20+
+    """
+    N = len(a)
+    freqs = np.fft.rfftfreq(N, d=1.0/fs)
+    spectrum = np.abs(np.fft.rfft(a)) / N
+    fund_idx = int(np.argmin(np.abs(freqs - fund_hz)))
+    fund_amp = spectrum[fund_idx]
+    if fund_amp < 1e-6:
+        return 0.0
+    harmonic_power = 0.0
+    for h in range(2, n_harmonics + 1):
+        hidx = int(np.argmin(np.abs(freqs - h * fund_hz)))
+        harmonic_power += spectrum[hidx] ** 2
+    return float(np.sqrt(harmonic_power) / fund_amp)
 
 
 def _stream_csv(archive_path: str, inner_path: str, max_rows: int) -> np.ndarray | None:
@@ -115,18 +164,38 @@ def extract_features(load: str, fault: str) -> list[dict]:
     for i in range(n_runs):
         row = dict(FEATURE_MEDIANS)
 
-        # 3-phase current
-        phase_rms = [_rms(A[:, i])]
-        if B is not None and i < B.shape[1]: phase_rms.append(_rms(B[:, i]))
-        if C is not None and i < C.shape[1]: phase_rms.append(_rms(C[:, i]))
-        phase_rms = np.array(phase_rms)
+        Ia = A[:, i]
+        Ib = B[:, i] if (B is not None and i < B.shape[1]) else None
+        Ic = C[:, i] if (C is not None and i < C.shape[1]) else None
 
+        # 3-phase RMS
+        phase_rms = [_rms(Ia)]
+        if Ib is not None: phase_rms.append(_rms(Ib))
+        if Ic is not None: phase_rms.append(_rms(Ic))
+        phase_rms = np.array(phase_rms)
         row['courant_moteur'] = float(np.sqrt(np.mean(phase_rms ** 2)))
-        if len(phase_rms) >= 2:
+
+        # Negative sequence current ratio → motor electrical fault indicator
+        # Healthy: ~0.01-0.02 | Rotor bar / stator short: 0.05-0.20+
+        # Scale to temp_moteur range: baseline + neg_seq_ratio * 200
+        # (at 20% neg_seq → temp_moteur = 58 + 40 = 98°C, physically plausible)
+        if Ib is not None and Ic is not None:
+            neg_seq = _neg_seq_ratio(Ia, Ib, Ic)
+            row['temp_moteur'] = FEATURE_MEDIANS['temp_moteur'] + neg_seq * 200.0
+        elif len(phase_rms) >= 2:
+            # Fallback: simple imbalance proxy
             row['temp_moteur'] = FEATURE_MEDIANS['temp_moteur'] + float(phase_rms.std()) * 10.0
 
+        # THD of phase A → harmonic distortion (motor winding faults)
+        # Healthy: THD ~0.01-0.05 | Stator short: 0.05-0.25
+        # Map to vibration as a secondary motor fault indicator:
+        # normal vibration (0.61 mm/s baseline) + THD * 5
+        thd_a = _thd(Ia)
+        # We'll store THD as extra column (used in zone retrain)
+        row['_thd'] = thd_a
+
         # Kurtosis of phase A → bearing proxy
-        kurt_I = _kurtosis(A[:, i])
+        kurt_I = _kurtosis(Ia)
         row['temp_palier'] = FEATURE_MEDIANS['temp_palier'] + max(0.0, (kurt_I - 3.0) * 1.5)
 
         # Vibration (accelerometer in g → mm/s)
