@@ -1,12 +1,3 @@
----
-title: Pilar
-emoji: 🔧
-colorFrom: blue
-colorTo: indigo
-sdk: docker
-pinned: false
----
-
 # Pilar — Predictive Maintenance for Industrial Pumps
 
 AI-powered failure prediction for centrifugal pumps. Analyzes 8 sensor signals, classifies 5 failure zones, estimates remaining useful life (RUL), and alerts teams before breakdown.
