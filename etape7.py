@@ -2319,6 +2319,17 @@ HISTORY_HTML = _HEAD.replace("{FAV}","iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+
       </tbody>
     </table>
   </div>
+  {% if total_pages > 1 %}
+  <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-top:20px;font-size:13px;color:var(--text2)">
+    {% if page > 1 %}
+    <a href="/history?page={{ page - 1 }}" style="padding:6px 16px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--teal);text-decoration:none;font-weight:600">&lsaquo; Prev</a>
+    {% endif %}
+    <span>Page {{ page }} / {{ total_pages }}</span>
+    {% if page < total_pages %}
+    <a href="/history?page={{ page + 1 }}" style="padding:6px 16px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--teal);text-decoration:none;font-weight:600">Next &rsaquo;</a>
+    {% endif %}
+  </div>
+  {% endif %}
 </div>""" + nav("h") + """
 <style>
 .fb-btn{background:none;border:1px solid var(--border);border-radius:5px;padding:3px 9px;cursor:pointer;font-size:10px;font-weight:600;letter-spacing:.5px;color:var(--text3);transition:all .15s;white-space:nowrap}
@@ -6334,16 +6345,27 @@ def history():
     r = _paid_required()
     if r: return r
     uid = current_uid()
-    analyses = Analysis.query.filter_by(user_id=uid).order_by(Analysis.timestamp.desc()).all()
-    total = len(analyses)
-    anomalies = sum(1 for a in analyses if a.prediction)
-    avg_risk = round(sum(a.risk for a in analyses) / total, 1) if total > 0 else 0
-    mails = sum(1 for a in analyses if a.mail_sent)
-    labeled = [a for a in analyses if a.feedback in ('tp', 'fp', 'fn')]
-    reliability = round(sum(1 for a in labeled if a.feedback in ('tp', 'fn')) / len(labeled) * 100) if labeled else None
+    PAGE_SIZE = 50
+    page = max(1, request.args.get('page', 1, type=int))
+    # Aggregate stats via DB (no full load)
+    from sqlalchemy import func
+    base_q = Analysis.query.filter_by(user_id=uid)
+    total     = base_q.count()
+    anomalies = base_q.filter(Analysis.prediction == True).count()
+    mails     = base_q.filter(Analysis.mail_sent == True).count()
+    avg_risk_row = db.session.query(func.avg(Analysis.risk)).filter_by(user_id=uid).scalar()
+    avg_risk  = round(float(avg_risk_row), 1) if avg_risk_row else 0
+    labeled_total = base_q.filter(Analysis.feedback.in_(['tp','fp','fn'])).count()
+    correct       = base_q.filter(Analysis.feedback.in_(['tp','fn'])).count()
+    reliability   = round(correct / labeled_total * 100) if labeled_total else None
+    # Paginated rows only
+    total_pages = max(1, (total + PAGE_SIZE - 1) // PAGE_SIZE)
+    page = min(page, total_pages)
+    analyses = (base_q.order_by(Analysis.timestamp.desc())
+                .limit(PAGE_SIZE).offset((page - 1) * PAGE_SIZE).all())
     return render_template_string(HISTORY_HTML, analyses=analyses, total=total,
                                    anomalies=anomalies, avg_risk=avg_risk, mails=mails,
-                                   reliability=reliability)
+                                   reliability=reliability, page=page, total_pages=total_pages)
 
 @app.route('/analysis/<int:aid>/feedback', methods=['POST'])
 @login_required
