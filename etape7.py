@@ -6347,21 +6347,22 @@ def history():
     uid = current_uid()
     PAGE_SIZE = 50
     page = max(1, request.args.get('page', 1, type=int))
-    # Aggregate stats via DB (no full load)
-    from sqlalchemy import func
-    base_q = Analysis.query.filter_by(user_id=uid)
-    total     = base_q.count()
-    anomalies = base_q.filter(Analysis.prediction == True).count()
-    mails     = base_q.filter(Analysis.mail_sent == True).count()
-    avg_risk_row = db.session.query(func.avg(Analysis.risk)).filter_by(user_id=uid).scalar()
-    avg_risk  = round(float(avg_risk_row), 1) if avg_risk_row else 0
-    labeled_total = base_q.filter(Analysis.feedback.in_(['tp','fp','fn'])).count()
-    correct       = base_q.filter(Analysis.feedback.in_(['tp','fn'])).count()
-    reliability   = round(correct / labeled_total * 100) if labeled_total else None
-    # Paginated rows only
+    # Load only 4 lightweight columns for stats (no text blobs)
+    stat_rows = (Analysis.query.filter_by(user_id=uid)
+                 .with_entities(Analysis.prediction, Analysis.risk,
+                                Analysis.mail_sent, Analysis.feedback)
+                 .all())
+    total     = len(stat_rows)
+    anomalies = sum(1 for r in stat_rows if r.prediction)
+    mails     = sum(1 for r in stat_rows if r.mail_sent)
+    avg_risk  = round(sum(r.risk or 0 for r in stat_rows) / total, 1) if total else 0
+    labeled   = [r for r in stat_rows if r.feedback in ('tp', 'fp', 'fn')]
+    reliability = round(sum(1 for r in labeled if r.feedback in ('tp', 'fn')) / len(labeled) * 100) if labeled else None
+    # Paginated full rows for display
     total_pages = max(1, (total + PAGE_SIZE - 1) // PAGE_SIZE)
     page = min(page, total_pages)
-    analyses = (base_q.order_by(Analysis.timestamp.desc())
+    analyses = (Analysis.query.filter_by(user_id=uid)
+                .order_by(Analysis.timestamp.desc())
                 .limit(PAGE_SIZE).offset((page - 1) * PAGE_SIZE).all())
     return render_template_string(HISTORY_HTML, analyses=analyses, total=total,
                                    anomalies=anomalies, avg_risk=avg_risk, mails=mails,
