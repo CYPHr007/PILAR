@@ -517,7 +517,7 @@ def send_verify_email(email, token, base_url=None):
 # ── AUTH PAGES ────────────────────────────────────────────────────────────────
 _AUTH_HEAD = """<!DOCTYPE html><html lang="fr"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#000000"><title>Pilar</title>
+<meta name="theme-color" content="#07090f"><title>Pilar</title>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.getRegistrations().then(function(regs){
@@ -528,13 +528,13 @@ if('serviceWorker' in navigator){
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 :root{
---bg:#000000;--surface:#1c1c1e;--surface2:#2c2c2e;--surface3:#3a3a3c;
---border:rgba(84,84,88,0.36);--border2:rgba(84,84,88,0.5);
---teal:#0a84ff;--teal-light:#409cff;--teal-dim:rgba(10,132,255,0.12);
---red:#ff453a;--red-dim:rgba(255,69,58,0.12);
---green:#30d158;--green-dim:rgba(48,209,88,0.12);
---amber:#ff9f0a;--purple:#bf5af2;
---text:#ffffff;--text2:rgba(235,235,245,0.6);--text3:rgba(235,235,245,0.3);
+--bg:#07090f;--surface:#0e1118;--surface2:#141820;--surface3:#1e2433;
+--border:#1e2433;--border2:#252d3d;
+--teal:#0d9488;--teal-light:#14b8a6;--teal-dim:rgba(13,148,136,0.08);
+--red:#dc2626;--red-dim:rgba(220,38,38,0.08);
+--green:#059669;--green-dim:rgba(5,150,105,0.08);
+--amber:#d97706;--purple:#bf5af2;
+--text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;
 --r:12px;--r-sm:8px;--r-xs:6px;
 --shadow:0 4px 24px rgba(0,0,0,0.5);--shadow-sm:0 2px 8px rgba(0,0,0,0.4);
 }
@@ -616,7 +616,7 @@ REGISTER_HTML = _AUTH_HEAD + """
   <div class="logo">PILAR</div>
   {% if pending %}
   <div class="card" style="text-align:center;padding:32px 24px">
-    <div style="width:48px;height:48px;border-radius:12px;background:var(--teal-dim);border:1px solid rgba(10,132,255,0.2);display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
+    <div style="width:48px;height:48px;border-radius:12px;background:var(--teal-dim);border:1px solid rgba(13,148,136,0.2);display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--teal-light)" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 01-2.06 0L2 7"/></svg>
     </div>
     <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:8px" data-iauth="verify_title">Vérifiez votre email</div>
@@ -656,13 +656,13 @@ ADMIN_HTML = """<!DOCTYPE html><html lang="fr"><head>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#000000;--surface:#1c1c1e;--surface2:#2c2c2e;--surface3:#3a3a3c;
-  --border:rgba(84,84,88,0.36);--border2:rgba(84,84,88,0.5);
-  --teal:#0a84ff;--teal2:#409cff;--teal-dim:rgba(10,132,255,0.12);
-  --red:#ff453a;--red-dim:rgba(255,69,58,0.12);
-  --green:#30d158;--green-dim:rgba(48,209,88,0.12);
-  --amber:#ff9f0a;--purple:#bf5af2;
-  --text:#ffffff;--text2:rgba(235,235,245,0.6);--text3:rgba(235,235,245,0.3);
+  --bg:#07090f;--surface:#0e1118;--surface2:#141820;--surface3:#1e2433;
+  --border:#1e2433;--border2:#252d3d;
+  --teal:#0d9488;--teal2:#14b8a6;--teal-dim:rgba(13,148,136,0.08);
+  --red:#dc2626;--red-dim:rgba(220,38,38,0.08);
+  --green:#059669;--green-dim:rgba(5,150,105,0.08);
+  --amber:#d97706;--purple:#bf5af2;
+  --text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;
   --r:12px;--r-sm:8px;--r-xs:6px;
   --shadow:0 4px 24px rgba(0,0,0,0.5);--shadow-sm:0 2px 8px rgba(0,0,0,0.4);
 }
@@ -1173,7 +1173,7 @@ _HEAD = """<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#000000">
+<meta name="theme-color" content="#07090f">
 <link rel="icon" type="image/png" href="data:image/png;base64,{FAV}">
 <title>Pilar</title>
 <link rel="manifest" href="/manifest.json">
@@ -1193,33 +1193,58 @@ if('serviceWorker' in navigator){
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 :root{
---bg:#000000;--surface:#1c1c1e;--surface2:#2c2c2e;--surface3:#3a3a3c;
---border:rgba(84,84,88,0.36);--border2:rgba(84,84,88,0.5);
---teal:#0a84ff;--teal-light:#409cff;--teal-dim:rgba(10,132,255,0.12);
---red:#ff453a;--red-dim:rgba(255,69,58,0.12);
---green:#30d158;--green-dim:rgba(48,209,88,0.12);
---amber:#ff9f0a;--purple:#bf5af2;
---text:#ffffff;--text2:rgba(235,235,245,0.6);--text3:rgba(235,235,245,0.3);
+--bg:#07090f;--surface:#0e1118;--surface2:#141820;--surface3:#1e2433;
+--border:#1e2433;--border2:#252d3d;
+--teal:#0d9488;--teal-light:#14b8a6;--teal-dim:rgba(13,148,136,0.08);
+--red:#dc2626;--red-dim:rgba(220,38,38,0.08);
+--green:#059669;--green-dim:rgba(5,150,105,0.08);
+--amber:#d97706;--purple:#bf5af2;
+--text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;
 --nav-h:64px;
 --r:12px;--r-sm:8px;--r-xs:6px;
 --shadow:0 4px 24px rgba(0,0,0,0.5);--shadow-sm:0 2px 8px rgba(0,0,0,0.4);
 }
 html,body{height:100%;overflow:hidden;}
-body{font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column;}
-header{height:52px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;padding:0 20px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);background:rgba(28,28,30,0.92);flex-shrink:0;}
+body{font-family:'Inter','Segoe UI',system-ui,Arial,sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column;}
+
+/* ── Desktop Sidebar Layout ───────────────────────────────────────────────── */
+--sidebar-w:200px;
+.desktop-layout{display:flex;height:100vh;overflow:hidden;}
+.sidebar{width:var(--sidebar-w,200px);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden;}
+.sidebar-logo{padding:16px 16px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.sidebar-logo .logo-mark{width:28px;height:28px;border-radius:7px;background:var(--teal);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.sidebar-logo .logo-text{font-size:13px;font-weight:700;letter-spacing:3px;color:var(--teal-light);text-transform:uppercase;}
+.sidebar-logo .logo-sub{font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-top:1px;}
+.sidebar-nav{flex:1;padding:8px 0;overflow-y:auto;}
+.sidebar-nav::-webkit-scrollbar{width:0;}
+.sidebar-section{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);padding:12px 16px 4px;}
+.ni{display:flex;align-items:center;gap:10px;padding:8px 14px;color:var(--text3);font-size:12px;font-weight:500;text-decoration:none;border:none;background:none;cursor:pointer;width:100%;text-align:left;transition:all .15s;border-radius:0;position:relative;}
+.ni:hover{background:var(--surface2);color:var(--text2);}
+.ni.on{background:var(--teal-dim);color:var(--teal-light);font-weight:600;}
+.ni.on::before{content:'';position:absolute;left:0;top:4px;bottom:4px;width:3px;background:var(--teal);border-radius:0 3px 3px 0;}
+.ni svg{width:16px;height:16px;stroke-width:1.8;flex-shrink:0;}
+.ni .ni-label{flex:1;}
+.ni .ni-badge{background:var(--red);color:#fff;font-size:9px;font-weight:700;border-radius:10px;padding:1px 5px;min-width:16px;text-align:center;}
+.sidebar-footer{border-top:1px solid var(--border);padding:10px 12px;display:flex;flex-direction:column;gap:4px;}
+.sync-status-bar{display:flex;align-items:center;gap:6px;padding:6px 10px;background:var(--surface2);border-radius:7px;font-size:10px;color:var(--text3);}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:var(--text3);flex-shrink:0;}
+.sync-dot.online{background:var(--green);animation:blink 2s infinite;}
+.sync-dot.offline{background:var(--amber);}
+.main-content{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+header{height:48px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;padding:0 20px;background:var(--surface);flex-shrink:0;}
 .logo{font-size:13px;font-weight:700;letter-spacing:4px;color:var(--teal-light);text-transform:uppercase;}
 .hd{width:1px;height:18px;background:var(--border2);}
 .hsub{font-size:10px;letter-spacing:1.2px;color:var(--text3);text-transform:uppercase;}
 .hright{margin-left:auto;display:flex;gap:6px;align-items:center;}
-.bottom-nav{height:var(--nav-h);border-top:1px solid var(--border);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);background:rgba(28,28,30,0.92);display:flex;align-items:stretch;flex-shrink:0;}
-.ni{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-decoration:none;color:var(--text3);font-size:9px;letter-spacing:0.5px;text-transform:uppercase;border:none;background:none;cursor:pointer;padding:8px 0;}
-.ni.on{color:var(--teal-light);}
-.ni svg{width:20px;height:20px;stroke-width:1.8;}
+/* Bottom nav kept for mobile fallback, hidden on desktop */
+.bottom-nav{height:var(--nav-h);border-top:1px solid var(--border);background:var(--surface);display:flex;align-items:stretch;flex-shrink:0;}
+@media(min-width:768px){.bottom-nav{display:none;}.desktop-layout .page{padding-bottom:0;}}
 .lang-toggle{max-width:42px;color:var(--text3);}
 .lang-toggle:hover span{color:var(--teal-light);}
 .page{flex:1;overflow-y:auto;overflow-x:hidden;}
-.page::-webkit-scrollbar{width:0;}
-.pad{padding:16px;padding-bottom:80px;}
+.page::-webkit-scrollbar{width:4px;}
+.page::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+.pad{padding:20px;padding-bottom:24px;max-width:1400px;}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:12px;box-shadow:var(--shadow-sm);}
 .ctitle{font-size:11px;font-weight:600;letter-spacing:0.02em;color:var(--text2);text-transform:uppercase;margin-bottom:12px;}
 .rh{display:flex;align-items:center;justify-content:space-between;padding:18px;border-radius:var(--r);border:1px solid var(--border);background:var(--surface);margin-bottom:12px;box-shadow:var(--shadow-sm);}
@@ -1613,19 +1638,90 @@ function buildPilarRow(vals,map){
 }
 </script></head>"""
 
-_NAV = """<nav class="bottom-nav">
+_NAV = """
+<!-- Desktop Sidebar (shown on wide screens) -->
+<aside class="sidebar" id="desktopSidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+    </div>
+    <div>
+      <div class="logo-text">PILAR</div>
+      <div class="logo-sub">Predictive Maintenance</div>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="sidebar-section">Analysis</div>
+    <a href="/monitor" class="ni {m}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+      <span class="ni-label" data-i18n="nav_monitor">Monitor</span>
+    </a>
+    <a href="/tutorial" class="ni {tut}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+      <span class="ni-label" data-i18n="nav_import">Import</span>
+    </a>
+    <a href="/history" class="ni {h}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+      <span class="ni-label" data-i18n="nav_history">History</span>
+    </a>
+    <a href="/twin" class="ni {tw}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+      <span class="ni-label" data-i18n="nav_twin">Digital Twin</span>
+    </a>
+    <div class="sidebar-section">Fleet</div>
+    <a href="/dashboard" class="ni {fl}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      <span class="ni-label">Fleet Overview</span>
+    </a>
+    <div class="sidebar-section">User</div>
+    <a href="/account" class="ni {a}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z"/></svg>
+      <span class="ni-label" data-i18n="nav_account">Account</span>
+    </a>
+    <a href="/settings" class="ni {s}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      <span class="ni-label" data-i18n="nav_settings">Settings</span>
+    </a>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="sync-status-bar" id="sidebarSyncBar">
+      <span class="sync-dot offline" id="sidebarSyncDot"></span>
+      <span id="sidebarSyncLabel">Offline</span>
+    </div>
+    <button class="ni lang-toggle" id="_langBtn" onclick="_toggleLang()" title="Switch language" style="padding:6px 10px;font-size:10px;"><span id="_langLbl">EN</span></button>
+  </div>
+</aside>
+<!-- Bottom nav (mobile fallback) -->
+<nav class="bottom-nav">
 <a href="/monitor" class="ni {m}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg><span data-i18n="nav_monitor">Monitor</span></a>
 <a href="/tutorial" class="ni {tut}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg><span data-i18n="nav_import">Import</span></a>
 <a href="/history" class="ni {h}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg><span data-i18n="nav_history">History</span></a>
 <a href="/dashboard" class="ni {fl}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 6h16M4 10h16M4 14h10M4 18h6"/></svg><span>Fleet</span></a>
 <a href="/account" class="ni {a}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z"/></svg><span data-i18n="nav_account">Account</span></a>
 <a href="/settings" class="ni {s}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg><span data-i18n="nav_settings">Settings</span></a>
-<button class="ni lang-toggle" id="_langBtn" onclick="_toggleLang()" title="Switch language" style="background:none;border:none;cursor:pointer"><span id="_langLbl" style="font-size:10px;font-weight:700;letter-spacing:1px">EN</span></button>
 </nav>
 <script>
 (function(){{
   var lbl=document.getElementById('_langLbl');
   if(lbl)lbl.textContent=(localStorage.getItem('pilar_lang')||'en').toUpperCase();
+  // Poll sync status every 30s and update sidebar indicator
+  function updateSyncStatus(){{
+    fetch('/api/sync/status').then(function(r){{return r.json();}}).then(function(d){{
+      var dot=document.getElementById('sidebarSyncDot');
+      var lbl=document.getElementById('sidebarSyncLabel');
+      if(dot&&lbl){{
+        if(d.online){{
+          dot.className='sync-dot online';
+          lbl.textContent='Synced'+(d.last_sync?' · '+new Date(d.last_sync).toLocaleTimeString([],{{hour:'2-digit',minute:'2-digit'}}):'');
+        }}else{{
+          dot.className='sync-dot offline';
+          lbl.textContent=d.queued>0?'Offline · '+d.queued+' queued':'Offline';
+        }}
+      }}
+    }}).catch(function(){{}});
+  }}
+  updateSyncStatus();
+  setInterval(updateSyncStatus,30000);
 }})();
 function _toggleLang(){{
   var next=LANG==='en'?'fr':'en';
@@ -1636,7 +1732,7 @@ function _toggleLang(){{
 </script>"""
 
 def nav(active):
-    keys = {"m":"","tut":"","h":"","fl":"","a":"","s":""}
+    keys = {"m":"","tut":"","h":"","fl":"","a":"","s":"","tw":""}
     keys[active] = "on"
     return _NAV.format(**keys)
 
@@ -1644,6 +1740,9 @@ def nav(active):
 # ── MONITOR ───────────────────────────────────────────────────────────────────
 HTML = _HEAD.replace("{FAV}","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") + """
 <body>
+<div class="desktop-layout">
+""" + nav("m") + """
+<div class="main-content">
 <header><span class="logo">PILAR</span><div class="hd"></div><span class="hsub" data-i18n="page_monitor">Monitor</span>
 <div class="hright"><button class="nb" id="nb" onclick="toggleN()">Notifs</button></div></header>
 <div class="page pad">
@@ -2016,7 +2115,7 @@ ACCOUNT_HTML = _HEAD.replace("{FAV}", FAV_B64) + """
 
 {% if not user %}
 <div class="card" style="text-align:center;padding:28px">
-  <div style="width:48px;height:48px;border-radius:12px;background:var(--teal-dim);border:1px solid rgba(10,132,255,0.2);display:flex;align-items:center;justify-content:center;margin:0 auto 16px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="1.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+  <div style="width:48px;height:48px;border-radius:12px;background:var(--teal-dim);border:1px solid rgba(13,148,136,0.2);display:flex;align-items:center;justify-content:center;margin:0 auto 16px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="1.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
   <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px" data-i18n="acc_guest_title">Guest Mode</div>
   <div style="font-size:11px;color:var(--text3);line-height:1.7;margin-bottom:20px" data-i18n-html="acc_guest_desc">Sign in to save your data.</div>
   <a href="/login" style="display:block;padding:14px;background:var(--teal);color:#fff;border-radius:12px;text-decoration:none;font-size:15px;font-weight:600;letter-spacing:0;text-transform:none;margin-bottom:10px" data-i18n="acc_signin">Sign In</a>
@@ -2169,7 +2268,7 @@ async function rotateKey(btn){
 #chat-head{padding:12px 14px;border-bottom:1px solid var(--border);font-size:13px;font-weight:700;color:var(--teal-light);display:flex;justify-content:space-between;align-items:center}
 #chat-msgs{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:6px}
 .cmsg{max-width:80%;padding:8px 12px;border-radius:var(--r-sm);font-size:12px;line-height:1.5;word-break:break-word}
-.cmsg.mine{align-self:flex-end;background:var(--teal-dim);border:1px solid rgba(10,132,255,0.3);color:var(--text)}
+.cmsg.mine{align-self:flex-end;background:var(--teal-dim);border:1px solid rgba(13,148,136,0.3);color:var(--text)}
 .cmsg.theirs{align-self:flex-start;background:var(--surface2);border:1px solid var(--border);color:var(--text)}
 .cmsg .cmeta{font-size:9px;color:var(--text3);margin-bottom:2px}
 #chat-form{display:flex;padding:10px;gap:8px;border-top:1px solid var(--border)}
@@ -2302,7 +2401,7 @@ async function load(){
       <button class="btn" onclick="sim()">${t('twin_sim')}</button>
       <div id="wr" style="margin-top:12px"></div>
     </div>`;
-  Plotly.newPlot('cr',[{x:d.history_times,y:d.history_risks,name:'History',type:'scatter',mode:'lines+markers',line:{color:'#0a84ff',width:2},marker:{size:5}},{x:d.future_times,y:d.future_risks,name:'Simulated',type:'scatter',mode:'lines',line:{color:'#7c3aed',width:2,dash:'dot'},fill:'tozeroy',fillcolor:'rgba(124,58,237,0.04)'},{x:[...d.history_times,...d.future_times],y:Array(d.history_times.length+d.future_times.length).fill(50),name:'Threshold',type:'scatter',mode:'lines',line:{color:'#dc2626',width:1,dash:'dash'}}],{...PL,yaxis:{...PL.yaxis,range:[0,105]}},PC);
+  Plotly.newPlot('cr',[{x:d.history_times,y:d.history_risks,name:'History',type:'scatter',mode:'lines+markers',line:{color:'#0d9488',width:2},marker:{size:5}},{x:d.future_times,y:d.future_risks,name:'Simulated',type:'scatter',mode:'lines',line:{color:'#7c3aed',width:2,dash:'dot'},fill:'tozeroy',fillcolor:'rgba(124,58,237,0.04)'},{x:[...d.history_times,...d.future_times],y:Array(d.history_times.length+d.future_times.length).fill(50),name:'Threshold',type:'scatter',mode:'lines',line:{color:'#dc2626',width:1,dash:'dash'}}],{...PL,yaxis:{...PL.yaxis,range:[0,105]}},PC);
   Plotly.newPlot('cw',[{x:d.history_times,y:d.history_wear,name:'Actual',type:'scatter',mode:'lines+markers',line:{color:'#d97706',width:2},marker:{size:4}},{x:d.future_times,y:d.future_wear,name:'Projected',type:'scatter',mode:'lines',line:{color:'#d97706',width:2,dash:'dot'}}],PL,PC);
   Plotly.newPlot('ct',[{x:d.history_times,y:d.history_temp,name:'Actual',type:'scatter',mode:'lines',line:{color:'#dc2626',width:2}},{x:d.future_times,y:d.future_temp,name:'Projected',type:'scatter',mode:'lines',line:{color:'#dc2626',width:2,dash:'dot'}}],PL,PC);
 }
@@ -3141,13 +3240,13 @@ LANDING_HTML = """<!DOCTYPE html>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#000000;--surface:#1c1c1e;--surface2:#2c2c2e;--surface3:#3a3a3c;
-  --border:rgba(84,84,88,0.36);--border2:rgba(84,84,88,0.5);
-  --teal:#0a84ff;--teal2:#409cff;--teal-dim:rgba(10,132,255,0.12);
-  --red:#ff453a;--red-dim:rgba(255,69,58,0.12);
-  --green:#30d158;--green-dim:rgba(48,209,88,0.12);
-  --amber:#ff9f0a;--purple:#bf5af2;
-  --text:#ffffff;--text2:rgba(235,235,245,0.6);--text3:rgba(235,235,245,0.3);
+  --bg:#07090f;--surface:#0e1118;--surface2:#141820;--surface3:#1e2433;
+  --border:#1e2433;--border2:#252d3d;
+  --teal:#0d9488;--teal2:#14b8a6;--teal-dim:rgba(13,148,136,0.08);
+  --red:#dc2626;--red-dim:rgba(220,38,38,0.08);
+  --green:#059669;--green-dim:rgba(5,150,105,0.08);
+  --amber:#d97706;--purple:#bf5af2;
+  --text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;
   --r:12px;--r-sm:8px;--shadow:0 4px 24px rgba(0,0,0,0.5);--shadow-sm:0 2px 8px rgba(0,0,0,0.4);
 }
 html{scroll-behavior:smooth}
@@ -3219,7 +3318,7 @@ section{padding:96px 32px;max-width:1200px;margin:0 auto}
 .step:hover{background:var(--surface2)}
 .step:last-child{border-right:none}
 .step-num{font-size:11px;font-weight:600;color:var(--teal2);letter-spacing:0.04em;margin-bottom:24px;opacity:.7}
-.step-icon{width:44px;height:44px;border-radius:var(--r-sm);border:1px solid rgba(10,132,255,0.3);background:var(--teal-dim);display:flex;align-items:center;justify-content:center;margin-bottom:20px}
+.step-icon{width:44px;height:44px;border-radius:var(--r-sm);border:1px solid rgba(13,148,136,0.3);background:var(--teal-dim);display:flex;align-items:center;justify-content:center;margin-bottom:20px}
 .step-title{font-size:16px;font-weight:600;margin-bottom:12px;color:var(--text)}
 .step-desc{font-size:14px;color:var(--text2);line-height:1.8;font-weight:400}
 
@@ -3251,7 +3350,7 @@ section{padding:96px 32px;max-width:1200px;margin:0 auto}
 .roi-grid{display:grid;grid-template-columns:1fr 1fr;margin-top:56px;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow-sm)}
 .roi-card{padding:36px}
 .roi-before{border-right:1px solid var(--border);background:rgba(255,69,58,0.04)}
-.roi-after{background:rgba(10,132,255,0.04)}
+.roi-after{background:rgba(13,148,136,0.04)}
 .roi-label{font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;margin-bottom:24px}
 .roi-before .roi-label{color:var(--red)}
 .roi-after .roi-label{color:var(--teal2)}
@@ -3265,12 +3364,12 @@ section{padding:96px 32px;max-width:1200px;margin:0 auto}
 /* INDUSTRIES */
 .industries{display:flex;flex-wrap:wrap;gap:8px;margin-top:48px}
 .industry-chip{padding:10px 20px;font-size:13px;font-weight:500;color:var(--text2);background:var(--surface);border:1px solid var(--border);border-radius:20px;cursor:default;transition:color .15s,background .15s,border-color .15s}
-.industry-chip:hover{color:var(--teal2);background:var(--teal-dim);border-color:rgba(10,132,255,0.4)}
+.industry-chip:hover{color:var(--teal2);background:var(--teal-dim);border-color:rgba(13,148,136,0.4)}
 
 /* PRICING */
 .pricing-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:56px;max-width:800px}
 .plan-card{padding:40px;position:relative;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow-sm)}
-.plan-card.featured{background:rgba(10,132,255,0.06);border-color:rgba(10,132,255,0.4);box-shadow:0 0 0 1px rgba(10,132,255,0.2),var(--shadow)}
+.plan-card.featured{background:rgba(13,148,136,0.06);border-color:rgba(13,148,136,0.4);box-shadow:0 0 0 1px rgba(13,148,136,0.2),var(--shadow)}
 .plan-badge{display:inline-block;padding:4px 12px;background:var(--teal);color:#fff;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:0;margin-bottom:20px}
 .plan-name{font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--text3);margin-bottom:12px}
 .plan-price{font-size:48px;font-weight:700;letter-spacing:-0.03em;line-height:1;margin-bottom:6px;color:var(--text);font-variant-numeric:tabular-nums}
@@ -3289,7 +3388,7 @@ section{padding:96px 32px;max-width:1200px;margin:0 auto}
 .plan-btn-ghost:hover{border-color:var(--teal);color:var(--teal2)}
 
 /* FINAL CTA */
-.cta-section{border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:100px 32px;margin-bottom:0;background:linear-gradient(180deg,var(--surface) 0%,rgba(10,132,255,0.06) 100%)}
+.cta-section{border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:100px 32px;margin-bottom:0;background:linear-gradient(180deg,var(--surface) 0%,rgba(13,148,136,0.06) 100%)}
 .cta-section h2{font-size:clamp(40px,5vw,72px);font-weight:700;line-height:1.05;letter-spacing:-0.025em;margin-bottom:20px;color:var(--text)}
 .cta-section h2 span{color:var(--teal2)}
 .cta-section p{font-size:17px;color:var(--text2);margin-bottom:36px;max-width:500px;line-height:1.8;font-weight:400}
@@ -3341,7 +3440,7 @@ footer{border-top:1px solid var(--border);padding:40px 32px;display:grid;grid-te
 <body>
 
 <!-- BETA BANNER -->
-<div style="background:var(--teal-dim);border-bottom:1px solid rgba(10,132,255,0.25);padding:9px 32px;text-align:center;font-size:11px;font-weight:500;color:var(--teal2)">
+<div style="background:var(--teal-dim);border-bottom:1px solid rgba(13,148,136,0.25);padding:9px 32px;text-align:center;font-size:11px;font-weight:500;color:var(--teal2)">
   <span style="opacity:.7">We are in</span> <strong>Public Beta</strong> <span style="opacity:.7">— early access, free to use. Your feedback shapes the product.</span>
 </div>
 
@@ -3353,7 +3452,7 @@ footer{border-top:1px solid var(--border);padding:40px 32px;display:grid;grid-te
       <button id="_lEN" onclick="_lp('en')" style="padding:4px 10px;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;background:transparent;color:var(--text3);transition:all .15s">EN</button>
       <button id="_lFR" onclick="_lp('fr')" style="padding:4px 10px;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;background:transparent;color:var(--text3);transition:all .15s">FR</button>
     </div>
-    <a href="/demo" style="font-size:13px;font-weight:500;color:var(--teal2);text-decoration:none;padding:7px 14px;border:1px solid rgba(10,132,255,0.3);border-radius:var(--r);transition:border-color .18s" onmouseover="this.style.borderColor='var(--teal2)'" onmouseout="this.style.borderColor='rgba(10,132,255,0.3)'">Try Demo</a>
+    <a href="/demo" style="font-size:13px;font-weight:500;color:var(--teal2);text-decoration:none;padding:7px 14px;border:1px solid rgba(13,148,136,0.3);border-radius:var(--r);transition:border-color .18s" onmouseover="this.style.borderColor='var(--teal2)'" onmouseout="this.style.borderColor='rgba(13,148,136,0.3)'">Try Demo</a>
     <a href="/login" class="btn-ghost" data-ilp="nav_signin">Sign In</a>
     <a href="/register" class="btn-teal" data-ilp="nav_start">Get Started Free</a>
   </div>
@@ -3503,7 +3602,7 @@ footer{border-top:1px solid var(--border);padding:40px 32px;display:grid;grid-te
       <div class="perf-big">19</div>
       <div class="perf-unit">out of 1000</div>
       <div class="perf-desc">Only 1.9% of real failures go undetected. In industrial maintenance, that number matters.</div>
-      <div style="margin-top:24px;padding:14px;background:var(--teal-dim);border:1px solid rgba(10,132,255,0.2);border-radius:var(--r-sm)">
+      <div style="margin-top:24px;padding:14px;background:var(--teal-dim);border:1px solid rgba(13,148,136,0.2);border-radius:var(--r-sm)">
         <div style="font-size:10px;font-weight:600;color:var(--teal2);letter-spacing:0.04em;text-transform:uppercase">AUTO-IMPROVING MODEL</div>
         <div style="font-size:12px;color:var(--text3);margin-top:6px;font-weight:400">Pilar learns from your confirmed labels and retrains automatically on your own data.</div>
       </div>
@@ -3675,7 +3774,7 @@ fr:{nav_signin:'Connexion',nav_start:'Commencer gratuitement',hero_badge:'Mainte
 };
 function _lp(l){
   localStorage.setItem('pilar_lang',l);
-  var teal='#0a84ff';var dim='rgba(235,235,245,0.3)';
+  var teal='#0d9488';var dim='rgba(235,235,245,0.3)';
   document.getElementById('_lEN').style.background=l==='en'?teal:'transparent';
   document.getElementById('_lEN').style.color=l==='en'?'#fff':dim;
   document.getElementById('_lFR').style.background=l==='fr'?teal:'transparent';
@@ -3727,13 +3826,13 @@ ONBOARDING_HTML = """<!DOCTYPE html>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#000000;--surface:#1c1c1e;--surface2:#2c2c2e;--surface3:#3a3a3c;
-  --border:rgba(84,84,88,0.36);--border2:rgba(84,84,88,0.5);
-  --teal:#0a84ff;--teal2:#409cff;--teal-dim:rgba(10,132,255,0.12);
-  --red:#ff453a;--red-dim:rgba(255,69,58,0.12);
-  --green:#30d158;--green-dim:rgba(48,209,88,0.12);
-  --amber:#ff9f0a;--purple:#bf5af2;
-  --text:#ffffff;--text2:rgba(235,235,245,0.6);--text3:rgba(235,235,245,0.3);
+  --bg:#07090f;--surface:#0e1118;--surface2:#141820;--surface3:#1e2433;
+  --border:#1e2433;--border2:#252d3d;
+  --teal:#0d9488;--teal2:#14b8a6;--teal-dim:rgba(13,148,136,0.08);
+  --red:#dc2626;--red-dim:rgba(220,38,38,0.08);
+  --green:#059669;--green-dim:rgba(5,150,105,0.08);
+  --amber:#d97706;--purple:#bf5af2;
+  --text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;
   --r:12px;--r-sm:8px;--r-xs:6px;
   --shadow:0 4px 24px rgba(0,0,0,0.5);--shadow-sm:0 2px 8px rgba(0,0,0,0.4);
 }
@@ -3751,7 +3850,7 @@ body{font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',A
 .step-tab{flex:1;padding:16px 20px;display:flex;align-items:center;gap:12px;border-right:1px solid var(--border);cursor:default;transition:background .18s}
 .step-tab:last-child{border-right:none}
 .step-tab.active{background:var(--surface2)}
-.step-tab.done{background:rgba(10,132,255,0.06)}
+.step-tab.done{background:rgba(13,148,136,0.06)}
 .step-tab.inactive{opacity:.4}
 .step-num{font-size:11px;font-weight:600;width:26px;height:26px;border-radius:50%;border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text3)}
 .step-tab.active .step-num{border-color:var(--teal2);color:var(--teal2)}
@@ -3764,7 +3863,7 @@ body{font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',A
 .panel{width:100%;max-width:640px}
 
 /* STEP 1 — WELCOME */
-.welcome-icon{width:56px;height:56px;border-radius:var(--r);border:1px solid rgba(10,132,255,0.3);background:var(--teal-dim);display:flex;align-items:center;justify-content:center;margin-bottom:24px}
+.welcome-icon{width:56px;height:56px;border-radius:var(--r);border:1px solid rgba(13,148,136,0.3);background:var(--teal-dim);display:flex;align-items:center;justify-content:center;margin-bottom:24px}
 .welcome-h{font-size:clamp(36px,5vw,56px);font-weight:700;line-height:1.05;letter-spacing:-0.025em;color:var(--text);margin-bottom:12px}
 .welcome-h span{color:var(--teal2)}
 .welcome-sub{font-size:16px;color:var(--text2);line-height:1.8;margin-bottom:36px}
@@ -3781,9 +3880,9 @@ body{font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',A
 .field label{font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--text3)}
 .field input,.field select{background:rgba(120,120,128,0.18);border:1px solid var(--border);color:var(--text);padding:11px 14px;font-size:13px;border-radius:10px;outline:none;transition:border-color .18s;width:100%}
 .field input:focus,.field select:focus{border-color:var(--teal)}
-.field select option{background:#1c1c1e}
+.field select option{background:#0e1118}
 .field-hint{font-size:11px;color:var(--text3);line-height:1.5}
-.form-note{background:var(--teal-dim);border:1px solid rgba(10,132,255,0.2);padding:12px 16px;font-size:13px;color:var(--text2);line-height:1.65;margin-bottom:24px;border-radius:var(--r-sm)}
+.form-note{background:var(--teal-dim);border:1px solid rgba(13,148,136,0.2);padding:12px 16px;font-size:13px;color:var(--text2);line-height:1.65;margin-bottom:24px;border-radius:var(--r-sm)}
 
 /* STEP 3 — RESULT */
 .result-hero{border:1px solid var(--border);padding:28px;margin-bottom:20px;background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow-sm)}
@@ -4001,13 +4100,13 @@ DEMO_HTML = """<!DOCTYPE html>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#000000;--surface:#1c1c1e;--surface2:#2c2c2e;--surface3:#3a3a3c;
-  --border:rgba(84,84,88,0.36);--border2:rgba(84,84,88,0.5);
-  --teal:#0a84ff;--teal2:#409cff;--teal-dim:rgba(10,132,255,0.12);
-  --red:#ff453a;--red-dim:rgba(255,69,58,0.12);
-  --green:#30d158;--green-dim:rgba(48,209,88,0.12);
-  --amber:#ff9f0a;--purple:#bf5af2;
-  --text:#ffffff;--text2:rgba(235,235,245,0.6);--text3:rgba(235,235,245,0.3);
+  --bg:#07090f;--surface:#0e1118;--surface2:#141820;--surface3:#1e2433;
+  --border:#1e2433;--border2:#252d3d;
+  --teal:#0d9488;--teal2:#14b8a6;--teal-dim:rgba(13,148,136,0.08);
+  --red:#dc2626;--red-dim:rgba(220,38,38,0.08);
+  --green:#059669;--green-dim:rgba(5,150,105,0.08);
+  --amber:#d97706;--purple:#bf5af2;
+  --text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;
   --r:12px;--r-sm:8px;--r-xs:6px;
   --shadow:0 4px 24px rgba(0,0,0,0.5);--shadow-sm:0 2px 8px rgba(0,0,0,0.4);
 }
@@ -4018,7 +4117,7 @@ body{font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',A
 nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:0 32px;height:60px;display:flex;align-items:center;justify-content:space-between;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);background:rgba(28,28,30,0.92);border-bottom:1px solid var(--border)}
 .nav-logo{font-size:16px;font-weight:700;letter-spacing:0.04em;color:var(--text);text-decoration:none}
 .nav-right{display:flex;align-items:center;gap:8px}
-.nav-tag{font-size:10px;font-weight:600;letter-spacing:0.04em;color:var(--teal2);text-transform:uppercase;border:1px solid rgba(10,132,255,0.3);padding:4px 10px;border-radius:20px}
+.nav-tag{font-size:10px;font-weight:600;letter-spacing:0.04em;color:var(--teal2);text-transform:uppercase;border:1px solid rgba(13,148,136,0.3);padding:4px 10px;border-radius:20px}
 .nav-right a{font-size:13px;font-weight:500;text-decoration:none;padding:8px 16px;border-radius:var(--r)}
 .nav-login{color:var(--text2);border:1px solid var(--border2)}
 .nav-login:hover{border-color:var(--teal);color:var(--teal2)}
@@ -4386,17 +4485,17 @@ MACHINE_SPACE_HTML = """<!DOCTYPE html>
 <title>{{ machine.name }} — Pilar</title>
 <style>
 :root{
-  --bg:#000000;--surface:#1c1c1e;--surface2:#2c2c2e;--surface3:#3a3a3c;
-  --border:rgba(84,84,88,0.36);--border2:rgba(84,84,88,0.5);
-  --teal:#0a84ff;--teal2:#409cff;--teal-dim:rgba(10,132,255,0.12);
-  --red:#ff453a;--red-dim:rgba(255,69,58,0.12);
-  --green:#30d158;--green-dim:rgba(48,209,88,0.12);
-  --amber:#ff9f0a;--amber-dim:rgba(255,159,10,0.12);
-  --text:#ffffff;--text2:rgba(235,235,245,0.6);--text3:rgba(235,235,245,0.3);
+  --bg:#07090f;--surface:#0e1118;--surface2:#141820;--surface3:#1e2433;
+  --border:#1e2433;--border2:#252d3d;
+  --teal:#0d9488;--teal2:#14b8a6;--teal-dim:rgba(13,148,136,0.08);
+  --red:#dc2626;--red-dim:rgba(220,38,38,0.08);
+  --green:#059669;--green-dim:rgba(5,150,105,0.08);
+  --amber:#d97706;--amber-dim:rgba(255,159,10,0.12);
+  --text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;
   --r:12px;--r-sm:8px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,'SF Pro Display','Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+body{font-family:'Inter','Segoe UI',system-ui,Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:0 32px;height:56px;border-bottom:1px solid var(--border);background:rgba(28,28,30,0.95);}
 .topbar-left{display:flex;align-items:center;gap:16px;}
 .logo{font-size:15px;font-weight:700;color:var(--text);text-decoration:none;}
@@ -4427,7 +4526,7 @@ body{font-family:-apple-system,'SF Pro Display','Helvetica Neue',Arial,sans-seri
 .form-label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;}
 .form-input,.form-select{background:rgba(120,120,128,0.18);border:1px solid var(--border2);border-radius:var(--r-sm);padding:10px 12px;font-size:13px;color:var(--text);outline:none;transition:border-color .15s;width:100%;}
 .form-input:focus,.form-select:focus{border-color:var(--teal);}
-.form-select option{background:#1c1c1e;}
+.form-select option{background:#0e1118;}
 .form-hint{font-size:11px;color:var(--text3);}
 .section-title{font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin:24px 0 14px;}
 .section-title:first-child{margin-top:0;}
@@ -4892,13 +4991,13 @@ DASHBOARD_HTML = """<!DOCTYPE html>
 <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAB0klEQVR4nO2ZsU7DMBCGz45TAiMSC2LhBRBiYmRlZWRkZGRkZGRkZOT/oKpKoSoJSRzHl+/O3V3Sbz/bsS8XAgAAAAAAAAAAAABgCcy9AQAAAAAAgBVZewMAAAAAAABWZO0NAAAAAAAAAAAAAAAAAAAAAGBFAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAqMjaGwAAAAAAAABWZO0NAAAAAAAAQN8+b394AAAAAAAAAAAAAAAAAADgPwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW3gAAAAAAAACwImtvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgIqsvQEAAAAAAAArsnYGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEXW0gAAAAAAAAD/AR/+E3pFAAAAAElFTkSuQmCC">
 <style>
 :root{
-  --bg:#000000;--surface:#1c1c1e;--surface2:#2c2c2e;--surface3:#3a3a3c;
-  --border:rgba(84,84,88,0.36);--border2:rgba(84,84,88,0.5);
-  --teal:#0a84ff;--teal2:#409cff;--teal-dim:rgba(10,132,255,0.12);
-  --red:#ff453a;--red-dim:rgba(255,69,58,0.12);
-  --green:#30d158;--green-dim:rgba(48,209,88,0.12);
-  --amber:#ff9f0a;--amber-dim:rgba(255,159,10,0.12);--purple:#bf5af2;
-  --text:#ffffff;--text2:rgba(235,235,245,0.6);--text3:rgba(235,235,245,0.3);
+  --bg:#07090f;--surface:#0e1118;--surface2:#141820;--surface3:#1e2433;
+  --border:#1e2433;--border2:#252d3d;
+  --teal:#0d9488;--teal2:#14b8a6;--teal-dim:rgba(13,148,136,0.08);
+  --red:#dc2626;--red-dim:rgba(220,38,38,0.08);
+  --green:#059669;--green-dim:rgba(5,150,105,0.08);
+  --amber:#d97706;--amber-dim:rgba(255,159,10,0.12);--purple:#bf5af2;
+  --text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;
   --r:12px;--r-sm:8px;--r-xs:6px;
   --shadow:0 4px 24px rgba(0,0,0,0.5);--shadow-sm:0 2px 8px rgba(0,0,0,0.4);
 }
@@ -4932,7 +5031,7 @@ body{font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',A
 .badge-warn{background:var(--amber-dim);color:var(--amber);border:1px solid rgba(255,159,10,.3);}
 .badge-crit{background:var(--red-dim);color:var(--red);border:1px solid rgba(255,69,58,.3);}
 .badge-inactive{background:rgba(84,84,88,.12);color:var(--text3);border:1px solid var(--border);}
-.badge-new{background:var(--teal-dim);color:var(--teal2);border:1px solid rgba(10,132,255,.3);}
+.badge-new{background:var(--teal-dim);color:var(--teal2);border:1px solid rgba(13,148,136,.3);}
 .risk-bar-wrap{margin:16px 0;}
 .risk-label{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
 .risk-label span{font-size:11px;color:var(--text3);}
@@ -4990,13 +5089,13 @@ body{font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',A
     <div class="stat-box"><div class="stat-label">Active Alerts</div><div class="stat-val" id="s-alerts" style="color:var(--red)">—</div></div>
     <div class="stat-box"><div class="stat-label">Avg Fleet Risk</div><div class="stat-val" id="s-avg">—</div></div>
     <div class="stat-box"><div class="stat-label">Critical</div><div class="stat-val" id="s-crit" style="color:var(--red)">—</div></div>
-    <div class="stat-box" style="border-color:rgba(10,132,255,.3);background:rgba(10,132,255,.06)">
+    <div class="stat-box" style="border-color:rgba(13,148,136,.3);background:rgba(13,148,136,.06)">
       <div class="stat-label" style="color:var(--teal2)">AI Layers</div>
       <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap">
-        <span style="font-size:10px;font-weight:600;color:var(--teal2);background:var(--teal-dim);border:1px solid rgba(10,132,255,.3);padding:3px 8px;border-radius:20px">SVM</span>
-        <span style="font-size:10px;font-weight:600;color:var(--teal2);background:var(--teal-dim);border:1px solid rgba(10,132,255,.3);padding:3px 8px;border-radius:20px">ISOFOREST</span>
-        <span style="font-size:10px;font-weight:600;color:var(--teal2);background:var(--teal-dim);border:1px solid rgba(10,132,255,.3);padding:3px 8px;border-radius:20px">SHAP</span>
-        <span style="font-size:10px;font-weight:600;color:var(--teal2);background:var(--teal-dim);border:1px solid rgba(10,132,255,.3);padding:3px 8px;border-radius:20px">RUL</span>
+        <span style="font-size:10px;font-weight:600;color:var(--teal2);background:var(--teal-dim);border:1px solid rgba(13,148,136,.3);padding:3px 8px;border-radius:20px">SVM</span>
+        <span style="font-size:10px;font-weight:600;color:var(--teal2);background:var(--teal-dim);border:1px solid rgba(13,148,136,.3);padding:3px 8px;border-radius:20px">ISOFOREST</span>
+        <span style="font-size:10px;font-weight:600;color:var(--teal2);background:var(--teal-dim);border:1px solid rgba(13,148,136,.3);padding:3px 8px;border-radius:20px">SHAP</span>
+        <span style="font-size:10px;font-weight:600;color:var(--teal2);background:var(--teal-dim);border:1px solid rgba(13,148,136,.3);padding:3px 8px;border-radius:20px">RUL</span>
       </div>
     </div>
   </div>
@@ -5493,7 +5592,7 @@ API_DOCS_HTML = _AUTH_HEAD + """
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;box-shadow:var(--shadow-sm)">
       <p style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:14px">Every request must include your API key in the <code style="color:var(--teal-light);background:var(--surface2);padding:2px 6px;border-radius:6px">X-Api-Key</code> header.</p>
       {% if api_key %}
-      <div style="background:var(--surface2);border:1px solid rgba(10,132,255,0.3);border-radius:var(--r-sm);padding:12px 16px;display:flex;align-items:center;justify-content:space-between">
+      <div style="background:var(--surface2);border:1px solid rgba(13,148,136,0.3);border-radius:var(--r-sm);padding:12px 16px;display:flex;align-items:center;justify-content:space-between">
         <code style="font-size:12px;color:var(--teal-light)">{{ api_key }}</code>
         <button onclick="navigator.clipboard.writeText('{{ api_key }}')" style="background:var(--teal-dim);border:1px solid var(--border2);border-radius:8px;padding:5px 12px;color:var(--teal-light);font-size:11px;font-weight:600;cursor:pointer">COPY</button>
       </div>
@@ -5513,7 +5612,7 @@ API_DOCS_HTML = _AUTH_HEAD + """
   <!-- POST /api/v1/analyze -->
   <div style="margin-bottom:28px">
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
-      <span style="background:var(--teal-dim);border:1px solid rgba(10,132,255,0.4);border-radius:20px;padding:3px 12px;font-size:11px;font-weight:700;color:var(--teal-light)">POST</span>
+      <span style="background:var(--teal-dim);border:1px solid rgba(13,148,136,0.4);border-radius:20px;padding:3px 12px;font-size:11px;font-weight:700;color:var(--teal-light)">POST</span>
       <code style="font-size:14px;color:var(--text);font-weight:700">/api/v1/analyze</code>
       <span style="font-size:11px;color:var(--text3)">— Single sensor reading</span>
     </div>
@@ -5562,7 +5661,7 @@ API_DOCS_HTML = _AUTH_HEAD + """
   <!-- POST /api/v1/analyze/batch -->
   <div style="margin-bottom:28px">
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
-      <span style="background:var(--teal-dim);border:1px solid rgba(10,132,255,0.4);border-radius:20px;padding:3px 12px;font-size:11px;font-weight:700;color:var(--teal-light)">POST</span>
+      <span style="background:var(--teal-dim);border:1px solid rgba(13,148,136,0.4);border-radius:20px;padding:3px 12px;font-size:11px;font-weight:700;color:var(--teal-light)">POST</span>
       <code style="font-size:14px;color:var(--text);font-weight:700">/api/v1/analyze/batch</code>
       <span style="font-size:11px;color:var(--text3)">— Up to 100 readings</span>
     </div>
@@ -6447,11 +6546,11 @@ def demo():
 def alert_ack(token):
     al = AlertLog.query.filter_by(ack_token=token).first()
     if not al:
-        return '<html><body style="font-family:-apple-system,\'SF Pro Display\',\'Helvetica Neue\',Arial,sans-serif;background:#000000;color:#ffffff;display:flex;align-items:center;justify-content:center;min-height:100vh;"><div style="text-align:center"><div style="font-size:15px;letter-spacing:0.04em;color:#0a84ff;font-weight:700;margin-bottom:16px;">PILAR</div><p style="color:rgba(235,235,245,0.6)">Alert not found or already processed.</p></div></body></html>', 404
+        return '<html><body style="font-family:-apple-system,\'SF Pro Display\',\'Helvetica Neue\',Arial,sans-serif;background:#07090f;color:#ffffff;display:flex;align-items:center;justify-content:center;min-height:100vh;"><div style="text-align:center"><div style="font-size:15px;letter-spacing:0.04em;color:#0d9488;font-weight:700;margin-bottom:16px;">PILAR</div><p style="color:rgba(235,235,245,0.6)">Alert not found or already processed.</p></div></body></html>', 404
     if not al.acked_at:
         al.acked_at = datetime.utcnow()
         db.session.commit()
-    return '<html><body style="font-family:-apple-system,\'SF Pro Display\',\'Helvetica Neue\',Arial,sans-serif;background:#000000;color:#ffffff;display:flex;align-items:center;justify-content:center;min-height:100vh;"><div style="text-align:center"><div style="font-size:15px;letter-spacing:0.04em;color:#0a84ff;font-weight:700;margin-bottom:16px;">PILAR</div><h2 style="margin:0 0 12px;font-size:20px;font-weight:700;">Alert Acknowledged</h2><p style="color:rgba(235,235,245,0.6);font-size:14px;">This alert has been recorded. No escalation will be sent.</p><a href="/monitor" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#0a84ff;color:#fff;text-decoration:none;border-radius:12px;font-size:15px;font-weight:600;">Go to Dashboard</a></div></body></html>'
+    return '<html><body style="font-family:-apple-system,\'SF Pro Display\',\'Helvetica Neue\',Arial,sans-serif;background:#07090f;color:#ffffff;display:flex;align-items:center;justify-content:center;min-height:100vh;"><div style="text-align:center"><div style="font-size:15px;letter-spacing:0.04em;color:#0d9488;font-weight:700;margin-bottom:16px;">PILAR</div><h2 style="margin:0 0 12px;font-size:20px;font-weight:700;">Alert Acknowledged</h2><p style="color:rgba(235,235,245,0.6);font-size:14px;">This alert has been recorded. No escalation will be sent.</p><a href="/monitor" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#0d9488;color:#fff;text-decoration:none;border-radius:12px;font-size:15px;font-weight:600;">Go to Dashboard</a></div></body></html>'
 
 # ── MACHINES CRUD API ─────────────────────────────────────────────────────────
 @app.route('/api/machines', methods=['GET'])
@@ -6855,7 +6954,7 @@ def _paid_required():
 def upgrade():
     html = """<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Get Access — Pilar</title>
-<style>:root{--bg:#000000;--surface:#1c1c1e;--border:rgba(84,84,88,0.36);--border2:rgba(84,84,88,0.5);--teal:#0a84ff;--teal2:#409cff;--teal-dim:rgba(10,132,255,0.12);--text:#ffffff;--text2:rgba(235,235,245,0.6);--text3:rgba(235,235,245,0.3);--green:#30d158;--r:12px}
+<style>:root{--bg:#07090f;--surface:#0e1118;--border:#1e2433;--border2:#252d3d;--teal:#0d9488;--teal2:#14b8a6;--teal-dim:rgba(13,148,136,0.08);--text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;--green:#059669;--r:12px}
 *{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:40px 32px;max-width:440px;width:100%}
 h2{font-size:22px;font-weight:700;letter-spacing:-0.03em;margin-bottom:10px}
@@ -6864,15 +6963,15 @@ h2{font-size:22px;font-weight:700;letter-spacing:-0.03em;margin-bottom:10px}
 .features li{font-size:13px;color:var(--text2);padding:7px 0;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
 .features li:last-child{border:none}
 .features li::before{content:'\2713';color:var(--green);font-weight:700;flex-shrink:0}
-.badge{display:inline-block;padding:4px 12px;background:var(--teal-dim);border:1px solid rgba(10,132,255,.25);border-radius:20px;font-size:11px;font-weight:600;letter-spacing:0;color:var(--teal2);margin-bottom:20px}
+.badge{display:inline-block;padding:4px 12px;background:var(--teal-dim);border:1px solid rgba(13,148,136,.25);border-radius:20px;font-size:11px;font-weight:600;letter-spacing:0;color:var(--teal2);margin-bottom:20px}
 .btn{display:block;width:100%;padding:15px;background:var(--teal);color:#fff;border:none;border-radius:var(--r);font-size:15px;font-weight:600;letter-spacing:0;text-transform:none;cursor:pointer;text-decoration:none;margin-bottom:10px;transition:opacity .15s}
 .btn:hover{opacity:.9}
 .btn-ghost{display:block;width:100%;padding:12px;background:transparent;border:1px solid var(--border2);color:var(--text3);border-radius:var(--r);font-size:13px;cursor:pointer;text-decoration:none}
 .divider{border:none;border-top:1px solid var(--border);margin:24px 0}
 </style></head><body>
 <div class="card">
-<div style="width:52px;height:52px;border-radius:14px;background:var(--teal-dim);border:1px solid rgba(10,132,255,.2);display:flex;align-items:center;justify-content:center;margin:0 auto 18px">
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0a84ff" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+<div style="width:52px;height:52px;border-radius:14px;background:var(--teal-dim);border:1px solid rgba(13,148,136,.2);display:flex;align-items:center;justify-content:center;margin:0 auto 18px">
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0d9488" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
 </div>
 <div class="badge">Custom Plan</div>
 <h2>Get Full Access to Pilar</h2>
@@ -7760,8 +7859,8 @@ def manifest():
         "description": "Predictive Maintenance System",
         "start_url": "/",
         "display": "standalone",
-        "background_color": "#000000",
-        "theme_color": "#000000",
+        "background_color": "#07090f",
+        "theme_color": "#07090f",
         "orientation": "portrait-primary",
         "icons": [
             {"src": f"data:image/png;base64,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", "sizes": "192x192", "type": "image/png"},
@@ -7805,9 +7904,9 @@ def internal_error(e):
     if wants_json:
         return jsonify({'error': 'Internal server error'}), 500
     return f"""<!DOCTYPE html><html><head><meta charset="UTF-8">
-<style>body{{font-family:-apple-system,'SF Pro Display','Helvetica Neue',Arial,sans-serif;background:#000000;color:#ffffff;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;}}
-.c{{max-width:420px;text-align:center;padding:40px;}}.logo{{font-size:15px;letter-spacing:0.04em;color:#0a84ff;font-weight:700;}}.msg{{color:rgba(235,235,245,0.6);font-size:13px;margin:16px 0 24px;line-height:1.7;}}
-a{{padding:12px 24px;background:#0a84ff;color:#fff;border-radius:12px;text-decoration:none;font-size:15px;font-weight:600;}}</style></head>
+<style>body{{font-family:'Inter','Segoe UI',system-ui,Arial,sans-serif;background:#07090f;color:#ffffff;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;}}
+.c{{max-width:420px;text-align:center;padding:40px;}}.logo{{font-size:15px;letter-spacing:0.04em;color:#0d9488;font-weight:700;}}.msg{{color:rgba(235,235,245,0.6);font-size:13px;margin:16px 0 24px;line-height:1.7;}}
+a{{padding:12px 24px;background:#0d9488;color:#fff;border-radius:12px;text-decoration:none;font-size:15px;font-weight:600;}}</style></head>
 <body><div class="c"><div class="logo">PILAR</div><h2 style="margin:20px 0 8px;font-size:18px;font-weight:700;">Erreur serveur</h2>
 <p class="msg">Une erreur inattendue s'est produite.<br>Elle a été enregistrée dans les logs.</p>
 <a href="/">Retour</a></div></body></html>""", 500
@@ -7821,6 +7920,433 @@ def unhandled(e):
     try: db.session.rollback()
     except: pass
     return internal_error(e)
+
+# ══════════════════════════════════════════════════════════════════════════════
+# STEP 3 — SYNC CLIENT & LOCAL CHAT
+# ══════════════════════════════════════════════════════════════════════════════
+
+# ── Sync Config (set via environment or config.py) ────────────────────────────
+PILAR_SYNC_URL    = os.environ.get("PILAR_SYNC_URL", "")          # e.g. https://pilar-sync.railway.app
+PILAR_CLIENT_ID   = os.environ.get("PILAR_CLIENT_ID", "")
+PILAR_CLIENT_SECRET = os.environ.get("PILAR_CLIENT_SECRET", "")
+
+# ── New DB Models ─────────────────────────────────────────────────────────────
+
+class SyncQueue(db.Model):
+    """Queues local analyses/notes for uploading to the sync server."""
+    __tablename__ = "sync_queue"
+    id         = db.Column(db.Integer, primary_key=True)
+    data_type  = db.Column(db.String(20), default="analysis")  # "analysis" | "note"
+    data_json  = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    synced_at  = db.Column(db.DateTime, nullable=True)
+
+    @property
+    def is_synced(self):
+        return self.synced_at is not None
+
+
+class LocalChatMessage(db.Model):
+    """Local storage for chat messages (online: pulled from sync server; offline: created locally)."""
+    __tablename__ = "local_chat_message"
+    id          = db.Column(db.Integer, primary_key=True)
+    remote_id   = db.Column(db.Integer, nullable=True)   # id on sync server (null if not yet pushed)
+    client_id   = db.Column(db.String(64))
+    sender_name = db.Column(db.String(200))
+    room        = db.Column(db.String(100), default="general")
+    content     = db.Column(db.Text)
+    image_data  = db.Column(db.Text)   # base64
+    image_mime  = db.Column(db.String(50))
+    created_at  = db.Column(db.DateTime, default=datetime.utcnow)
+    is_local    = db.Column(db.Boolean, default=False)   # True = created offline, not yet synced
+    synced_at   = db.Column(db.DateTime, nullable=True)
+
+with app.app_context():
+    try:
+        db.create_all()
+        # SQLite migrations for new tables
+        _sync_migrations = [
+            "ALTER TABLE sync_queue ADD COLUMN data_type VARCHAR(20) DEFAULT 'analysis'",
+            "ALTER TABLE local_chat_message ADD COLUMN is_local INTEGER DEFAULT 0",
+            "ALTER TABLE local_chat_message ADD COLUMN synced_at DATETIME",
+        ]
+        for sql in _sync_migrations:
+            try:
+                db.session.execute(db.text(sql))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+        print("[Pilar] Sync tables ready")
+    except Exception as _se:
+        print(f"[Pilar] Sync table init: {_se}")
+
+
+# ── SyncClient Class ──────────────────────────────────────────────────────────
+
+class SyncClient:
+    """
+    Background sync client.
+    - Every 60 seconds: checks connectivity, pushes queued analyses/notes, pulls chat.
+    - Works transparently — no user interaction needed.
+    """
+
+    INTERVAL = 60   # seconds between sync cycles
+
+    def __init__(self):
+        self._online  = False
+        self._last_sync: datetime | None = None
+        self._thread: threading.Thread | None = None
+        self._stop_event = threading.Event()
+        self._last_pull_ts: datetime | None = None
+
+    @property
+    def is_online(self) -> bool:
+        return self._online
+
+    @property
+    def last_sync(self) -> datetime | None:
+        return self._last_sync
+
+    def start(self):
+        if not PILAR_SYNC_URL or not PILAR_CLIENT_ID or not PILAR_CLIENT_SECRET:
+            print("[SyncClient] No sync credentials — sync disabled")
+            return
+        self._thread = threading.Thread(target=self._loop, daemon=True)
+        self._thread.start()
+        print(f"[SyncClient] Started (target={PILAR_SYNC_URL})")
+
+    def stop(self):
+        self._stop_event.set()
+
+    def _headers(self) -> dict:
+        return {
+            "X-Client-ID":     PILAR_CLIENT_ID,
+            "X-Client-Secret": PILAR_CLIENT_SECRET,
+            "Content-Type":    "application/json",
+        }
+
+    def _check_connectivity(self) -> bool:
+        """Ping the sync server status endpoint."""
+        import urllib.request, urllib.error
+        try:
+            req = urllib.request.Request(
+                f"{PILAR_SYNC_URL}/api/sync/status",
+                headers={
+                    "X-Client-ID":     PILAR_CLIENT_ID,
+                    "X-Client-Secret": PILAR_CLIENT_SECRET,
+                },
+            )
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                return resp.status == 200
+        except Exception:
+            return False
+
+    def _push_queue(self):
+        """Push all unsynced items in SyncQueue to the server."""
+        import json as _j, urllib.request
+        with app.app_context():
+            pending = SyncQueue.query.filter_by(synced_at=None).limit(200).all()
+            if not pending:
+                return
+
+            analyses, notes, ids = [], [], []
+            for item in pending:
+                try:
+                    d = _j.loads(item.data_json)
+                    if item.data_type == "note":
+                        notes.append(d)
+                    else:
+                        analyses.append(d)
+                    ids.append(item.id)
+                except Exception:
+                    pass
+
+            payload = _j.dumps({"analyses": analyses, "notes": notes}).encode()
+            req = urllib.request.Request(
+                f"{PILAR_SYNC_URL}/api/sync",
+                data=payload,
+                headers=self._headers(),
+                method="POST",
+            )
+            try:
+                with urllib.request.urlopen(req, timeout=15) as resp:
+                    result = _j.loads(resp.read())
+                if result.get("ok"):
+                    now = datetime.utcnow()
+                    SyncQueue.query.filter(SyncQueue.id.in_(ids)).update(
+                        {SyncQueue.synced_at: now}, synchronize_session=False
+                    )
+                    db.session.commit()
+                    print(f"[SyncClient] Pushed {len(analyses)} analyses, {len(notes)} notes")
+            except Exception as e:
+                print(f"[SyncClient] Push failed: {e}")
+
+    def _pull_chat(self):
+        """Pull new chat messages from the server."""
+        import json as _j, urllib.request
+        with app.app_context():
+            since = self._last_pull_ts
+            url   = f"{PILAR_SYNC_URL}/api/sync/pull"
+            if since:
+                url += f"?since={since.isoformat()}"
+            req = urllib.request.Request(url, headers=self._headers())
+            try:
+                with urllib.request.urlopen(req, timeout=10) as resp:
+                    data = _j.loads(resp.read())
+                messages = data.get("messages", [])
+                for m in messages:
+                    # Skip if already stored
+                    existing = LocalChatMessage.query.filter_by(
+                        remote_id=m["id"]
+                    ).first()
+                    if existing:
+                        continue
+                    ts = None
+                    try:
+                        ts = datetime.fromisoformat(m["created_at"])
+                    except Exception:
+                        ts = datetime.utcnow()
+                    msg = LocalChatMessage(
+                        remote_id   = m["id"],
+                        client_id   = m.get("client_id", ""),
+                        sender_name = m.get("sender_name", ""),
+                        room        = m.get("room", "general"),
+                        content     = m.get("content", ""),
+                        image_data  = m.get("image_data", "") or None,
+                        image_mime  = m.get("image_mime", "") or None,
+                        created_at  = ts,
+                        is_local    = False,
+                        synced_at   = datetime.utcnow(),
+                    )
+                    db.session.add(msg)
+                if messages:
+                    db.session.commit()
+                    print(f"[SyncClient] Pulled {len(messages)} chat messages")
+                self._last_pull_ts = datetime.utcnow()
+            except Exception as e:
+                print(f"[SyncClient] Pull failed: {e}")
+
+    def _push_local_chat(self):
+        """Push offline-composed chat messages to the server."""
+        import json as _j, urllib.request
+        with app.app_context():
+            pending = LocalChatMessage.query.filter_by(is_local=True, synced_at=None).limit(50).all()
+            for msg in pending:
+                payload = _j.dumps({
+                    "room":        msg.room,
+                    "content":     msg.content or "",
+                    "sender_name": msg.sender_name or "",
+                    "image_data":  msg.image_data or "",
+                    "image_mime":  msg.image_mime or "",
+                }).encode()
+                req = urllib.request.Request(
+                    f"{PILAR_SYNC_URL}/api/chat/messages",
+                    data=payload,
+                    headers=self._headers(),
+                    method="POST",
+                )
+                try:
+                    with urllib.request.urlopen(req, timeout=10) as resp:
+                        result = _j.loads(resp.read())
+                    msg.remote_id = result.get("id")
+                    msg.synced_at = datetime.utcnow()
+                    msg.is_local  = False
+                    db.session.commit()
+                except Exception as e:
+                    print(f"[SyncClient] Chat push failed: {e}")
+
+    def _loop(self):
+        while not self._stop_event.wait(self.INTERVAL):
+            try:
+                was_online = self._online
+                self._online = self._check_connectivity()
+                if not was_online and self._online:
+                    print("[SyncClient] Back online")
+                elif was_online and not self._online:
+                    print("[SyncClient] Gone offline")
+
+                if self._online:
+                    self._push_queue()
+                    self._pull_chat()
+                    self._push_local_chat()
+                    self._last_sync = datetime.utcnow()
+            except Exception as e:
+                print(f"[SyncClient] Loop error: {e}")
+
+    def enqueue_analysis(self, analysis_obj):
+        """Call this after saving an Analysis to DB to queue it for sync."""
+        import json as _j
+        try:
+            with app.app_context():
+                extra = {}
+                try:
+                    extra = _j.loads(analysis_obj.extra_params or "{}")
+                except Exception:
+                    pass
+                data = {
+                    "remote_id":   analysis_obj.id,
+                    "machine_id":  analysis_obj.machine_id or "",
+                    "machine_type":analysis_obj.machine_type or "",
+                    "risk":        analysis_obj.risk,
+                    "prediction":  analysis_obj.prediction,
+                    "zones":       analysis_obj.zones or "",
+                    "extra_params":extra,
+                    "feedback":    analysis_obj.feedback or "",
+                    "confidence":  analysis_obj.confidence or 100,
+                    "timestamp":   analysis_obj.timestamp.isoformat(),
+                }
+                item = SyncQueue(data_type="analysis", data_json=_j.dumps(data))
+                db.session.add(item)
+                db.session.commit()
+        except Exception as e:
+            print(f"[SyncClient] Enqueue analysis error: {e}")
+
+
+# Instantiate and start sync client
+_sync_client = SyncClient()
+
+with app.app_context():
+    _sync_client.start()
+
+
+def _queue_analysis_for_sync(analysis):
+    """Helper called after each new analysis is saved."""
+    if PILAR_SYNC_URL:
+        try:
+            _sync_client.enqueue_analysis(analysis)
+        except Exception as _qe:
+            print(f"[SyncClient] Queue error: {_qe}")
+
+
+# ── API: Chat Routes ──────────────────────────────────────────────────────────
+
+@app.route('/api/chat/messages', methods=['GET'])
+@auth_optional
+def chat_get_messages():
+    """Return chat messages (local DB + synced from server)."""
+    room  = request.args.get('room', 'general')
+    limit = min(int(request.args.get('limit', 100)), 200)
+    since_str = request.args.get('since', '')
+    since = None
+    if since_str:
+        try:
+            since = datetime.fromisoformat(since_str)
+        except Exception:
+            pass
+    q = LocalChatMessage.query.filter_by(room=room)
+    if since:
+        q = q.filter(LocalChatMessage.created_at > since)
+    msgs = q.order_by(LocalChatMessage.created_at.asc()).limit(limit).all()
+    return jsonify([{
+        'id':          m.id,
+        'remote_id':   m.remote_id,
+        'client_id':   m.client_id,
+        'sender_name': m.sender_name,
+        'room':        m.room,
+        'content':     m.content or '',
+        'image_data':  m.image_data or '',
+        'image_mime':  m.image_mime or '',
+        'created_at':  m.created_at.isoformat(),
+        'is_local':    m.is_local,
+    } for m in msgs])
+
+
+@app.route('/api/chat/messages', methods=['POST'])
+@auth_optional
+def chat_post_message():
+    """
+    Send a chat message.
+    - If online: also pushes to sync server immediately.
+    - If offline: stores locally with is_local=True; sync client will push later.
+    Body: { room, content, sender_name, image_data (base64), image_mime }
+    """
+    import json as _j
+    data        = request.get_json(force=True) or {}
+    content     = str(data.get('content',     '')).strip()
+    image_data  = data.get('image_data',  '')
+    image_mime  = str(data.get('image_mime', 'image/jpeg'))[:50]
+    room        = str(data.get('room',     'general'))[:100]
+
+    # Determine sender name from logged-in user or payload
+    uid         = current_uid()
+    user        = db.session.get(User, uid) if uid else None
+    sender_name = str(data.get('sender_name', (user.email if user else 'Anonymous')))[:200]
+
+    if not content and not image_data:
+        return jsonify({'error': 'Empty message'}), 400
+    if image_data and len(image_data) > 5 * 1024 * 1024:
+        return jsonify({'error': 'Image too large (max 5 MB)'}), 413
+
+    # Store locally
+    msg = LocalChatMessage(
+        client_id   = PILAR_CLIENT_ID or 'local',
+        sender_name = sender_name,
+        room        = room,
+        content     = content,
+        image_data  = image_data or None,
+        image_mime  = image_mime if image_data else None,
+        is_local    = True,
+    )
+    db.session.add(msg)
+    db.session.commit()
+
+    # If online, push immediately to server
+    if _sync_client.is_online and PILAR_SYNC_URL:
+        import urllib.request
+        payload = _j.dumps({
+            'room':        room,
+            'content':     content,
+            'sender_name': sender_name,
+            'image_data':  image_data or '',
+            'image_mime':  image_mime,
+        }).encode()
+        req = urllib.request.Request(
+            f"{PILAR_SYNC_URL}/api/chat/messages",
+            data=payload,
+            headers={
+                'X-Client-ID':     PILAR_CLIENT_ID,
+                'X-Client-Secret': PILAR_CLIENT_SECRET,
+                'Content-Type':    'application/json',
+            },
+            method='POST',
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                result = _j.loads(resp.read())
+            msg.remote_id = result.get('id')
+            msg.synced_at = datetime.utcnow()
+            msg.is_local  = False
+            db.session.commit()
+        except Exception as _pe:
+            print(f"[Chat] Immediate push failed: {_pe}")
+
+    return jsonify({
+        'id':          msg.id,
+        'remote_id':   msg.remote_id,
+        'sender_name': sender_name,
+        'room':        room,
+        'content':     content,
+        'created_at':  msg.created_at.isoformat(),
+        'is_local':    msg.is_local,
+    }), 201
+
+
+@app.route('/api/sync/status')
+def sync_status_route():
+    """Returns sync status for the desktop UI status bar."""
+    queued = SyncQueue.query.filter_by(synced_at=None).count()
+    pending_chat = LocalChatMessage.query.filter_by(is_local=True, synced_at=None).count()
+    return jsonify({
+        'online':       _sync_client.is_online,
+        'queued':       queued,
+        'pending_chat': pending_chat,
+        'last_sync':    _sync_client.last_sync.isoformat() if _sync_client.last_sync else None,
+        'sync_url':     PILAR_SYNC_URL or None,
+        'client_id':    PILAR_CLIENT_ID[:8] + '…' if PILAR_CLIENT_ID else None,
+    })
+
+
+# ── END STEP 3 ────────────────────────────────────────────────────────────────
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
