@@ -1670,14 +1670,14 @@ _SIDEBAR = """
       <span class="ni-label" data-i18n="nav_twin">Digital Twin</span>
     </a>
     <div class="sidebar-section">Fleet</div>
-    <a href="/dashboard" class="ni {fl}">
+    <a href="#" onclick="openFleet();return false;" class="ni {fl}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
       <span class="ni-label">Fleet Overview</span>
     </a>
     <div class="sidebar-section">User</div>
     <a href="/account" class="ni {a}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z"/></svg>
-      <span class="ni-label" data-i18n="nav_account">Account</span>
+      <span class="ni-label">Lobby</span>
     </a>
     <a href="/settings" class="ni {s}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
@@ -1692,6 +1692,19 @@ _SIDEBAR = """
     <button class="ni lang-toggle" id="_langBtn" onclick="_toggleLang()" title="Switch language" style="padding:6px 10px;font-size:10px;"><span id="_langLbl">EN</span></button>
   </div>
 </aside>
+<!-- Fleet drawer -->
+<div id="fleetDrawer" style="display:none;position:fixed;top:0;right:0;bottom:0;width:420px;max-width:100vw;background:var(--surface);border-left:1px solid var(--border);z-index:200;overflow-y:auto;padding:20px;box-shadow:-4px 0 24px rgba(0,0,0,0.4)">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+    <div>
+      <div style="font-size:11px;letter-spacing:3px;color:var(--teal);text-transform:uppercase;font-weight:700">Fleet</div>
+      <div style="font-size:18px;font-weight:700;color:var(--text);margin-top:2px">Your Machines</div>
+    </div>
+    <button onclick="closeFleet()" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:8px;font-size:18px;line-height:1">✕</button>
+  </div>
+  <div id="fleetContent"><div style="text-align:center;padding:40px;color:var(--text3)">Loading...</div></div>
+  <a href="/dashboard" style="display:block;margin-top:16px;padding:12px;border:1px solid var(--border);border-radius:8px;color:var(--text3);text-decoration:none;text-align:center;font-size:11px;letter-spacing:1px">Full fleet page →</a>
+</div>
+<div id="fleetOverlay" onclick="closeFleet()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:199"></div>
 <script>
 (function(){{
   var lbl=document.getElementById('_langLbl');
@@ -1721,15 +1734,43 @@ function _toggleLang(){{
   var lbl=document.getElementById('_langLbl');
   if(lbl)lbl.textContent=next.toUpperCase();
 }}
+function openFleet(){{
+  document.getElementById('fleetDrawer').style.display='block';
+  document.getElementById('fleetOverlay').style.display='block';
+  fetch('/api/fleet_summary').then(r=>r.json()).then(d=>{{
+    var html='';
+    if(!d.machines||d.machines.length===0){{
+      html='<div style="text-align:center;padding:40px;color:var(--text3)"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:12px;display:block;margin-left:auto;margin-right:auto"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg><div>No machines yet</div><a href="/dashboard" style="display:inline-block;margin-top:12px;padding:8px 16px;background:var(--teal);color:#fff;border-radius:6px;text-decoration:none;font-size:11px;font-weight:700">Add Machine</a></div>';
+    }}else{{
+      d.machines.forEach(function(m){{
+        var risk=m.last_risk!=null?m.last_risk:'—';
+        var cls=m.last_risk==null?'':'risk>=50'?'alert':m.last_risk>=22?'amber':'ok';
+        var rc=m.last_risk==null?'var(--text3)':m.last_risk>=50?'var(--red)':m.last_risk>=22?'var(--amber)':'var(--green)';
+        html+='<a href="/machine/'+m.id+'" style="display:block;padding:14px;background:var(--bg);border:1px solid var(--border);border-radius:10px;text-decoration:none;margin-bottom:10px;transition:border-color .15s" onmouseover="this.style.borderColor=\'var(--border2)\'" onmouseout="this.style.borderColor=\'var(--border)\'">';
+        html+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">';
+        html+='<div style="font-size:13px;font-weight:600;color:var(--text)">'+m.name+'</div>';
+        html+='<div style="font-size:20px;font-weight:800;color:'+rc+'">'+risk+(risk!=='—'?'%':'')+'</div></div>';
+        html+='<div style="font-size:11px;color:var(--text3)">'+( m.location||'' )+(m.location&&m.last_analysis?' · ':'')+( m.last_analysis?'Last: '+m.last_analysis:'' )+'</div>';
+        html+='</a>';
+      }});
+    }}
+    document.getElementById('fleetContent').innerHTML=html;
+  }}).catch(function(){{
+    document.getElementById('fleetContent').innerHTML='<div style="color:var(--red);text-align:center;padding:20px">Could not load fleet data</div>';
+  }});
+}}
+function closeFleet(){{
+  document.getElementById('fleetDrawer').style.display='none';
+  document.getElementById('fleetOverlay').style.display='none';
+}}
 </script>"""
 
-_BOTTOM_NAV = """<!-- Bottom nav (mobile fallback, inside main-content) -->
+_BOTTOM_NAV = """<!-- Bottom nav (mobile fallback) -->
 <nav class="bottom-nav">
 <a href="/monitor" class="ni {m}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg><span data-i18n="nav_monitor">Monitor</span></a>
 <a href="/tutorial" class="ni {tut}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg><span data-i18n="nav_import">Import</span></a>
 <a href="/history" class="ni {h}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg><span data-i18n="nav_history">History</span></a>
-<a href="/dashboard" class="ni {fl}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 6h16M4 10h16M4 14h10M4 18h6"/></svg><span>Fleet</span></a>
-<a href="/account" class="ni {a}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z"/></svg><span data-i18n="nav_account">Account</span></a>
+<a href="/twin" class="ni {tw}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg><span data-i18n="nav_twin">Twin</span></a>
 <a href="/settings" class="ni {s}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg><span data-i18n="nav_settings">Settings</span></a>
 </nav>"""
 
@@ -2117,7 +2158,7 @@ ACCOUNT_HTML = _HEAD.replace("{FAV}", FAV_B64) + """
 <div class="desktop-layout">
 """ + nav("a") + """
 <div class="main-content">
-<header><span class="logo">PILAR</span><div class="hd"></div><span class="hsub" data-i18n="page_account">Account</span></header>
+<header><span class="logo">PILAR</span><div class="hd"></div><span class="hsub">Lobby</span></header>
 <div class="page pad">
 
 {% if not user %}
@@ -2375,7 +2416,7 @@ TWIN_HTML = _HEAD.replace("{FAV}","iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJA
 <div class="desktop-layout">
 """ + nav("tw") + """
 <div class="main-content">
-<header><span class="logo">PILAR</span><div class="hd"></div><span class="hsub" data-i18n="page_twin">Digital Twin</span></header>
+<header><span class="logo">PILAR</span><div class="hd"></div><span class="hsub">Digital Twin — Pump Simulation</span></header>
 <div class="page pad" id="tc"><div class="idle"><span class="l1" data-i18n="twin_loading">Loading simulation...</span></div></div>
 </div>
 </div>
@@ -2407,10 +2448,10 @@ async function load(){
     <div class="card"><div class="ctitle">${t('twin_c_temp')}</div><div id="ct" style="height:180px"></div></div>
     <div class="card"><div class="ctitle">${t('twin_c_sim')}</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
-        <div><label class="flbl">${t('twin_speed')}</label><input class="fi" type="number" id="wv" value="${d.last_params.debit||45}" step="1"></div>
-        <div><label class="flbl">${t('twin_torque')}</label><input class="fi" type="number" id="wc" value="${d.last_params.pression_sortie||107.7}" step="0.1"></div>
-        <div><label class="flbl">${t('twin_wear')}</label><input class="fi" type="number" id="wu" value="${wu_disp}" step="1"></div>
-        <div><label class="flbl">${t('twin_airtemp')}</label><input class="fi" type="number" id="wta" value="${wta_disp}" step="0.1"></div>
+        <div><label style="font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:4px">Flow rate (m³/h)</label><input class="fi" type="number" id="wv" value="${d.last_params.debit||45}" step="1"></div>
+        <div><label style="font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:4px">Outlet pressure (bar)</label><input class="fi" type="number" id="wc" value="${d.last_params.pression_sortie||107.7}" step="0.1"></div>
+        <div><label style="font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:4px">Run hours (h)</label><input class="fi" type="number" id="wu" value="${wu_disp}" step="1"></div>
+        <div><label style="font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:4px">Vibration (mm/s)</label><input class="fi" type="number" id="wta" value="${wta_disp}" step="0.1"></div>
       </div>
       <button class="btn" onclick="sim()">${t('twin_sim')}</button>
       <div id="wr" style="margin-top:12px"></div>
@@ -2569,10 +2610,19 @@ SETTINGS_HTML = _HEAD.replace("{FAV}","iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC
     </div>
   </div>
   <div class="card">
-    <div class="ctitle" data-i18n="set_nav_title">Navigation</div>
-    <div style="display:flex;flex-direction:column;gap:8px">
-      <a href="/twin" style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2);text-decoration:none;padding:8px 0"><span data-i18n="set_twin_nav">Digital Twin</span><span style="color:var(--teal-light)">›</span></a>
-    </div>
+    <div class="ctitle">Change Password</div>
+    <label class="flbl">Current password</label>
+    <input class="fi" type="password" id="pwOld" placeholder="••••••••" style="margin-bottom:10px">
+    <label class="flbl">New password</label>
+    <input class="fi" type="password" id="pwNew" placeholder="••••••••" style="margin-bottom:10px">
+    <label class="flbl">Confirm new password</label>
+    <input class="fi" type="password" id="pwConf" placeholder="••••••••" style="margin-bottom:12px">
+    <div id="pwMsg" style="font-size:11px;margin-bottom:10px;display:none"></div>
+    <button class="btn" onclick="changePassword()">Update Password</button>
+  </div>
+  <div class="card">
+    <div class="ctitle">Session</div>
+    <button class="btn" onclick="window.location='/logout'" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text2)">Sign Out</button>
   </div>
 </div>
 </div>
@@ -2581,6 +2631,20 @@ SETTINGS_HTML = _HEAD.replace("{FAV}","iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC
 async function saveEmail(){const e=document.getElementById('em').value;if(!e)return;await fetch('/set_email',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e})});const s=document.getElementById('sv');s.style.display='block';setTimeout(()=>s.style.display='none',3000);}
 function updN(){const b=document.getElementById('nb');if(!b)return;const p=Notification.permission;if(p==='granted'){b.textContent=t('set_notif_on');b.style.background='var(--green)';}else if(p==='denied'){b.textContent=t('set_notif_blocked');b.style.background='var(--red)';}else{b.textContent=t('set_notif_btn');b.style.background='var(--purple)';}}
 async function toggleN(){if(Notification.permission==='granted')return;await Notification.requestPermission();updN();}
+async function changePassword(){
+  const old=document.getElementById('pwOld').value;
+  const nw=document.getElementById('pwNew').value;
+  const cf=document.getElementById('pwConf').value;
+  const msg=document.getElementById('pwMsg');
+  msg.style.display='block';
+  if(!old||!nw||!cf){msg.style.color='var(--red)';msg.textContent='All fields required.';return;}
+  if(nw!==cf){msg.style.color='var(--red)';msg.textContent='Passwords do not match.';return;}
+  if(nw.length<8){msg.style.color='var(--red)';msg.textContent='Minimum 8 characters.';return;}
+  const r=await fetch('/change_password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({old_password:old,new_password:nw})});
+  const d=await r.json();
+  if(d.ok){msg.style.color='var(--green)';msg.textContent='Password updated.';document.getElementById('pwOld').value='';document.getElementById('pwNew').value='';document.getElementById('pwConf').value='';}
+  else{msg.style.color='var(--red)';msg.textContent=d.error||'Error.';}
+}
 updN();
 </script></body></html>"""
 
@@ -6315,6 +6379,24 @@ def logout():
     session.clear()
     return redirect('/login')
 
+@app.route('/change_password', methods=['POST'])
+@login_required
+def change_password():
+    uid = current_uid()
+    user = User.query.get(uid)
+    if not user:
+        return jsonify({'error': 'Not found'}), 404
+    data = request.get_json() or {}
+    old_pw = data.get('old_password', '')
+    new_pw = data.get('new_password', '')
+    if not check_password_hash(user.password_hash, old_pw):
+        return jsonify({'error': 'Current password is incorrect'}), 400
+    if len(new_pw) < 8:
+        return jsonify({'error': 'Password must be at least 8 characters'}), 400
+    user.password_hash = generate_password_hash(new_pw)
+    db.session.commit()
+    return jsonify({'ok': True})
+
 @app.route('/verify-email/<token>')
 def verify_email(token):
     user = User.query.filter_by(verify_token=token).first()
@@ -6778,6 +6860,23 @@ def fleet_dashboard():
     r = _paid_required()
     if r: return r
     return DASHBOARD_HTML
+
+@app.route('/api/fleet_summary')
+@login_required
+def api_fleet_summary():
+    uid = current_uid()
+    machines = Machine.query.filter_by(user_id=uid, is_active=True).order_by(Machine.name).all()
+    result = []
+    for m in machines:
+        last_a = Analysis.query.filter_by(machine_id=m.id).order_by(Analysis.timestamp.desc()).first()
+        result.append({
+            'id': m.id,
+            'name': m.name,
+            'location': m.location,
+            'last_risk': last_a.risk_pct if last_a else None,
+            'last_analysis': last_a.timestamp.strftime('%d %b %H:%M') if last_a else None,
+        })
+    return jsonify({'machines': result})
 
 @app.route('/api/machines/<int:mid>/analyze-csv', methods=['POST'])
 @login_required
