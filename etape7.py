@@ -6873,7 +6873,7 @@ def api_fleet_summary():
             'id': m.id,
             'name': m.name,
             'location': m.location,
-            'last_risk': last_a.risk_pct if last_a else None,
+            'last_risk': int(last_a.risk) if last_a and last_a.risk is not None else None,
             'last_analysis': last_a.timestamp.strftime('%d %b %H:%M') if last_a else None,
         })
     return jsonify({'machines': result})
