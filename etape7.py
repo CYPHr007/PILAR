@@ -4596,15 +4596,36 @@ MACHINE_SPACE_HTML = """<!DOCTYPE html>
   --r:12px;--r-sm:8px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Inter','Segoe UI',system-ui,Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
-.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 32px;height:56px;border-bottom:1px solid var(--border);background:rgba(28,28,30,0.95);}
-.topbar-left{display:flex;align-items:center;gap:16px;}
-.logo{font-size:15px;font-weight:700;color:var(--text);text-decoration:none;}
-.breadcrumb{font-size:13px;color:var(--text3);}
-.breadcrumb a{color:var(--text3);text-decoration:none;}
-.breadcrumb a:hover{color:var(--teal2);}
-.breadcrumb span{margin:0 6px;}
-.page{max-width:1100px;margin:0 auto;padding:36px 32px;}
+html,body{height:100%;overflow:hidden;}
+body{font-family:'Inter','Segoe UI',system-ui,Arial,sans-serif;background:var(--bg);color:var(--text);}
+.desktop-layout{display:flex;height:100vh;overflow:hidden;}
+.sidebar{width:200px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden;}
+.main-content{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+header{height:48px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;padding:0 20px;background:var(--surface);flex-shrink:0;}
+.logo{font-size:13px;font-weight:700;letter-spacing:4px;color:#14b8a6;text-transform:uppercase;}
+.hd{width:1px;height:18px;background:var(--border2);}
+.hsub{font-size:10px;letter-spacing:1.2px;color:var(--text3);text-transform:uppercase;}
+.sidebar-logo{padding:16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.logo-mark{width:28px;height:28px;border-radius:7px;background:#0d9488;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.logo-text{font-size:13px;font-weight:700;letter-spacing:3px;color:#14b8a6;text-transform:uppercase;}
+.logo-sub{font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-top:1px;}
+.sidebar-nav{flex:1;padding:8px 0;overflow-y:auto;}
+.sidebar-section{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);padding:12px 16px 4px;}
+.ni{display:flex;align-items:center;gap:10px;padding:9px 16px;color:var(--text3);text-decoration:none;font-size:13px;transition:color .15s,background .15s;cursor:pointer;border:none;background:none;width:100%;text-align:left;}
+.ni:hover{color:var(--text2);background:var(--surface2);}
+.ni.on{color:#14b8a6;background:rgba(13,148,136,0.08);}
+.ni svg{width:16px;height:16px;flex-shrink:0;}
+.ni-label{font-size:13px;}
+.sidebar-footer{border-top:1px solid var(--border);padding:10px 12px;}
+.sync-status-bar{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text3);padding:4px 0;}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:var(--text3);}
+.sync-dot.online{background:#059669;}
+.sync-dot.offline{background:var(--amber);}
+.bottom-nav{display:none;}
+.page{flex:1;overflow-y:auto;overflow-x:hidden;}
+.page::-webkit-scrollbar{width:4px;}
+.page::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+.pad{padding:20px;max-width:1100px;}
 .machine-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:28px;}
 .machine-title{font-size:26px;font-weight:700;letter-spacing:-0.03em;}
 .machine-sub{font-size:13px;color:var(--text3);margin-top:5px;}
@@ -4678,29 +4699,30 @@ body{font-family:'Inter','Segoe UI',system-ui,Arial,sans-serif;background:var(--
 .toast{position:fixed;bottom:24px;right:24px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r-sm);padding:12px 18px;font-size:13px;color:var(--text2);box-shadow:0 4px 24px rgba(0,0,0,.5);z-index:999;opacity:0;transform:translateY(8px);transition:all .25s;}
 .toast.show{opacity:1;transform:translateY(0);}
 .result-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-top:16px;display:none;}
-@media(max-width:700px){.form-grid{grid-template-columns:1fr;}.monitor-grid{grid-template-columns:1fr 1fr;}.page{padding:20px 16px;}.topbar{padding:0 16px;}}
+@media(max-width:700px){.form-grid{grid-template-columns:1fr;}.monitor-grid{grid-template-columns:1fr 1fr;}.pad{padding:16px;}}
 </style>
 </head>
 <body>
-<div class="topbar">
-  <div class="topbar-left">
-    <a href="/" class="logo">PILAR</a>
-    <div class="breadcrumb">
-      <span>/</span><a href="/dashboard">Fleet</a>
-      <span>/</span><span>{{ machine.name }}</span>
-    </div>
+<div class="desktop-layout">
+{{ sidebar_html | safe }}
+<div class="main-content">
+<header>
+  <span class="logo">PILAR</span>
+  <div class="hd"></div>
+  <span class="hsub" style="display:flex;align-items:center;gap:6px;text-transform:none;font-size:12px;letter-spacing:0;">
+    <a href="/dashboard" style="color:var(--text3);text-decoration:none">Fleet</a>
+    <span style="color:var(--border2)">›</span>
+    <span style="color:var(--text)">{{ machine.name }}</span>
+  </span>
+</header>
+<div class="page pad">
+<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;">
+  <div>
+    <div class="machine-title">{{ machine.name }}</div>
+    <div class="machine-sub" id="machine-sub">{{ machine.description or (machine.pump_type or 'Pump') + ' · ' + (machine.location or 'No location set') }}</div>
   </div>
-  <a href="/dashboard" class="btn btn-ghost btn-sm">← Fleet</a>
+  <div id="status-pill" class="status-pill status-none">No data yet</div>
 </div>
-
-<div class="page">
-  <div class="machine-header">
-    <div>
-      <div class="machine-title">{{ machine.name }}</div>
-      <div class="machine-sub" id="machine-sub">{{ machine.description or (machine.pump_type or 'Pump') + ' · ' + (machine.location or 'No location set') }}</div>
-    </div>
-    <div id="status-pill" class="status-pill status-none">No data yet</div>
-  </div>
 
   <div class="tabs">
     <div class="tab active" onclick="switchTab('info')">Info</div>
@@ -4895,6 +4917,8 @@ body{font-family:'Inter','Segoe UI',system-ui,Arial,sans-serif;background:var(--
     </div>
   </div>
 </div>
+</div>
+</div>
 
 <div class="toast" id="toast"></div>
 
@@ -4989,28 +5013,23 @@ function uploadCSV(file) {
 }
 
 function loadMonitor() {
-  fetch('/api/machines?_=' + Date.now())
-    .then(r => r.json()).then(list => {
-      const m = list.find(x => x.id === MID);
-      if (!m || m.last_risk === null) return;
-      const risk = m.last_risk;
+  fetch('/api/machine_monitor/' + MID)
+    .then(r => r.json()).then(d => {
+      if (!d.has_data) return;
+      const risk = d.risk;
       const el = document.getElementById('mon-risk');
       el.textContent = risk.toFixed(1) + '%';
       el.style.color = risk >= 75 ? 'var(--red)' : risk >= 45 ? 'var(--amber)' : 'var(--green)';
-      document.getElementById('mon-status').textContent = m.last_prediction ? 'Anomaly detected' : 'Normal';
+      document.getElementById('mon-status').textContent = d.prediction ? 'Anomaly detected' : 'Normal';
       const pill = document.getElementById('status-pill');
-      pill.className = 'status-pill ' + (m.last_prediction ? (risk >= 75 ? 'status-crit' : 'status-warn') : 'status-ok');
-      pill.textContent = m.last_prediction ? (risk >= 75 ? 'Critical' : 'Warning') : 'Healthy';
-      if (m.last_seen) document.getElementById('mon-last').textContent = new Date(m.last_seen).toLocaleString();
-    });
-  // Load last analysis details from history
-  fetch('/api/v1/history?machine_id=' + encodeURIComponent(MACHINE.name) + '&limit=1', {headers:{'Content-Type':'application/json'}})
-    .then(r => r.json()).then(d => {
-      if (!d.analyses || !d.analyses.length) return;
-      const a = d.analyses[0];
-      if (a.rul_hours !== undefined && a.rul_hours !== null) {
-        document.getElementById('mon-rul').textContent = a.rul_hours;
-        document.getElementById('mon-rul').style.color = 'var(--text)';
+      pill.className = 'status-pill ' + (d.prediction ? (risk >= 75 ? 'status-crit' : 'status-warn') : 'status-ok');
+      pill.textContent = d.prediction ? (risk >= 75 ? 'Critical' : 'Warning') : 'Healthy';
+      if (d.timestamp) document.getElementById('mon-last').textContent = new Date(d.timestamp).toLocaleString();
+      if (d.zones && d.zones.length) {
+        document.getElementById('mon-zones-section').style.display = 'block';
+        document.getElementById('mon-zones').innerHTML = d.zones.map(z =>
+          '<div class="zone-row"><span class="zone-name">' + z.nom + '</span><div class="zone-bar-wrap"><div class="zone-bar-fill" style="width:' + z.proba + '%"></div></div><span class="zone-pct">' + z.proba + '%</span></div>'
+        ).join('');
       }
     }).catch(() => {});
 }
@@ -5054,7 +5073,7 @@ function deleteNote(nid) {
 }
 
 function loadHistory() {
-  fetch('/api/v1/history?machine_id=' + encodeURIComponent(MACHINE.name) + '&limit=50', {headers:{'Content-Type':'application/json'}})
+  fetch('/api/machine_history/' + MID + '?limit=50')
     .then(r => r.json()).then(d => {
       const tbody = document.getElementById('history-body');
       const analyses = d.analyses || [];
@@ -5079,8 +5098,7 @@ function loadHistory() {
 loadMonitor();
 setInterval(loadMonitor, 30000);
 </script>
-</body>
-</html>"""
+</body></html>"""
 
 # ── DASHBOARD MULTI-MACHINES ──────────────────────────────────────────────────
 DASHBOARD_HTML = _HEAD.replace("{FAV}", FAV_B64) + """
@@ -6791,6 +6809,57 @@ def api_machine_notes_delete(mid, nid):
     db.session.commit()
     return jsonify({'ok': True})
 
+# ── MACHINE MONITOR API ───────────────────────────────────────────────────────
+@app.route('/api/machine_monitor/<int:mid>')
+@login_required
+def api_machine_monitor(mid):
+    uid = current_uid()
+    m = Machine.query.filter_by(id=mid, user_id=uid).first_or_404()
+    last_a = Analysis.query.filter_by(machine_id=mid).order_by(Analysis.timestamp.desc()).first()
+    if not last_a:
+        return jsonify({'has_data': False})
+    import json as _json
+    zones = []
+    try:
+        zdata = _json.loads(last_a.zones) if last_a.zones else []
+        if isinstance(zdata, list):
+            zones = [{'nom': z.get('nom', '?'), 'proba': z.get('proba', 0)} for z in zdata]
+    except Exception:
+        pass
+    return jsonify({
+        'has_data': True,
+        'risk': round(last_a.risk or 0, 1),
+        'prediction': last_a.prediction or 0,
+        'timestamp': last_a.timestamp.isoformat() if last_a.timestamp else None,
+        'zones': zones,
+    })
+
+@app.route('/api/machine_history/<int:mid>')
+@login_required
+def api_machine_history(mid):
+    uid = current_uid()
+    Machine.query.filter_by(id=mid, user_id=uid).first_or_404()
+    limit = min(int(request.args.get('limit', 50)), 200)
+    analyses = Analysis.query.filter_by(machine_id=mid).order_by(Analysis.timestamp.desc()).limit(limit).all()
+    import json as _json
+    result = []
+    for a in analyses:
+        zones_str = '—'
+        try:
+            zdata = _json.loads(a.zones) if a.zones else []
+            if isinstance(zdata, list) and zdata:
+                zones_str = ' · '.join(z.get('nom', '?') for z in zdata[:3])
+        except Exception:
+            pass
+        result.append({
+            'timestamp': a.timestamp.isoformat() if a.timestamp else None,
+            'risk': round(a.risk or 0, 1),
+            'prediction': a.prediction or 0,
+            'zones': zones_str,
+            'confidence': None,
+        })
+    return jsonify({'analyses': result})
+
 # ── MACHINE SPACE PAGE ────────────────────────────────────────────────────────
 @app.route('/machine/<int:mid>')
 @login_required
@@ -6810,7 +6879,7 @@ def machine_space(mid):
         'nominal_vibration': m.nominal_vibration,
         'alert_email': m.alert_email or '', 'escalation_email': m.escalation_email or '',
     })
-    return render_template_string(MACHINE_SPACE_HTML, machine=m, machine_json=machine_json)
+    return render_template_string(MACHINE_SPACE_HTML, machine=m, machine_json=machine_json, sidebar_html=nav("fl"))
 
 @app.route('/dashboard')
 @login_required
