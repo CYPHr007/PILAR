@@ -80,6 +80,18 @@ hidden_imports = [
     "smtplib",
     "email.mime.text",
     "email.mime.multipart",
+    # SocketIO
+    "flask_socketio",
+    "simple_websocket",
+    "engineio",
+    "socketio",
+    # SHAP
+    "shap",
+    # Imbalanced-learn
+    "imblearn",
+    "imblearn.over_sampling",
+    # FPdf
+    "fpdf",
     # Sync client (stdlib, no extras needed)
     "urllib.request",
     "urllib.error",

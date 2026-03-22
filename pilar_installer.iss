@@ -65,10 +65,7 @@ Name: "{autodesktop}\{#AppName}";      Filename: "{app}\{#AppExeName}"; Tasks: d
 
 [Registry]
 ; Startup entry (optional task)
-Root: HKCU; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
-  ValueType: string; ValueName: "{#AppName}";
-  ValueData: """{app}\{#AppExeName}""";
-  Flags: uninsdeletevalue; Tasks: startupentry
+Root: HKCU; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "{#AppName}"; ValueData: """{app}\{#AppExeName}"""; Flags: uninsdeletevalue; Tasks: startupentry
 
 [Run]
 ; Offer to launch PILAR after install
