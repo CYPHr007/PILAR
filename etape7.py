@@ -1201,6 +1201,7 @@ if('serviceWorker' in navigator){
 --amber:#d97706;--purple:#bf5af2;
 --text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;
 --nav-h:64px;
+--sidebar-w:200px;
 --r:12px;--r-sm:8px;--r-xs:6px;
 --shadow:0 4px 24px rgba(0,0,0,0.5);--shadow-sm:0 2px 8px rgba(0,0,0,0.4);
 }
@@ -1208,7 +1209,6 @@ html,body{height:100%;overflow:hidden;}
 body{font-family:'Inter','Segoe UI',system-ui,Arial,sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column;}
 
 /* ── Desktop Sidebar Layout ───────────────────────────────────────────────── */
---sidebar-w:200px;
 .desktop-layout{display:flex;height:100vh;overflow:hidden;}
 .sidebar{width:var(--sidebar-w,200px);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden;}
 .sidebar-logo{padding:16px 16px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
@@ -1236,9 +1236,10 @@ header{height:48px;border-bottom:1px solid var(--border);display:flex;align-item
 .hd{width:1px;height:18px;background:var(--border2);}
 .hsub{font-size:10px;letter-spacing:1.2px;color:var(--text3);text-transform:uppercase;}
 .hright{margin-left:auto;display:flex;gap:6px;align-items:center;}
-/* Bottom nav kept for mobile fallback, hidden on desktop */
-.bottom-nav{height:var(--nav-h);border-top:1px solid var(--border);background:var(--surface);display:flex;align-items:stretch;flex-shrink:0;}
-@media(min-width:768px){.bottom-nav{display:none;}.desktop-layout .page{padding-bottom:0;}}
+/* Bottom nav — fixed at bottom on mobile, hidden on desktop */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;height:var(--nav-h);border-top:1px solid var(--border);background:var(--surface);display:flex;align-items:stretch;z-index:50;}
+.page{padding-bottom:calc(var(--nav-h) + 8px);}
+@media(min-width:768px){.bottom-nav{display:none;}.page{padding-bottom:0;}}
 .lang-toggle{max-width:42px;color:var(--text3);}
 .lang-toggle:hover span{color:var(--teal-light);}
 .page{flex:1;overflow-y:auto;overflow-x:hidden;}
@@ -1638,7 +1639,7 @@ function buildPilarRow(vals,map){
 }
 </script></head>"""
 
-_NAV = """
+_SIDEBAR = """
 <!-- Desktop Sidebar (shown on wide screens) -->
 <aside class="sidebar" id="desktopSidebar">
   <div class="sidebar-logo">
@@ -1691,15 +1692,6 @@ _NAV = """
     <button class="ni lang-toggle" id="_langBtn" onclick="_toggleLang()" title="Switch language" style="padding:6px 10px;font-size:10px;"><span id="_langLbl">EN</span></button>
   </div>
 </aside>
-<!-- Bottom nav (mobile fallback) -->
-<nav class="bottom-nav">
-<a href="/monitor" class="ni {m}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg><span data-i18n="nav_monitor">Monitor</span></a>
-<a href="/tutorial" class="ni {tut}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg><span data-i18n="nav_import">Import</span></a>
-<a href="/history" class="ni {h}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg><span data-i18n="nav_history">History</span></a>
-<a href="/dashboard" class="ni {fl}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 6h16M4 10h16M4 14h10M4 18h6"/></svg><span>Fleet</span></a>
-<a href="/account" class="ni {a}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z"/></svg><span data-i18n="nav_account">Account</span></a>
-<a href="/settings" class="ni {s}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg><span data-i18n="nav_settings">Settings</span></a>
-</nav>
 <script>
 (function(){{
   var lbl=document.getElementById('_langLbl');
@@ -1731,10 +1723,20 @@ function _toggleLang(){{
 }}
 </script>"""
 
+_BOTTOM_NAV = """<!-- Bottom nav (mobile fallback, inside main-content) -->
+<nav class="bottom-nav">
+<a href="/monitor" class="ni {m}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg><span data-i18n="nav_monitor">Monitor</span></a>
+<a href="/tutorial" class="ni {tut}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg><span data-i18n="nav_import">Import</span></a>
+<a href="/history" class="ni {h}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg><span data-i18n="nav_history">History</span></a>
+<a href="/dashboard" class="ni {fl}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 6h16M4 10h16M4 14h10M4 18h6"/></svg><span>Fleet</span></a>
+<a href="/account" class="ni {a}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z"/></svg><span data-i18n="nav_account">Account</span></a>
+<a href="/settings" class="ni {s}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg><span data-i18n="nav_settings">Settings</span></a>
+</nav>"""
+
 def nav(active):
     keys = {"m":"","tut":"","h":"","fl":"","a":"","s":"","tw":""}
     keys[active] = "on"
-    return _NAV.format(**keys)
+    return _SIDEBAR.format(**keys) + _BOTTOM_NAV.format(**keys)
 
 
 # ── MONITOR ───────────────────────────────────────────────────────────────────
