@@ -1360,7 +1360,8 @@ adp_no_map:'Aucun champ mappé',adp_source:'Colonne source',adp_samples:'Exemple
 adp_ignore:'(Ignorer)',adp_desc:'Convertissez n\u2019importe quel CSV au format Pilar',adp_save:'Sauvegarder dans Pilar',adp_my_files:'Mes fichiers',adp_refresh:'Actualiser',adp_saved_ok:'Fichier sauvegardé',adp_no_files:'Aucun fichier sauvegardé',adp_load:'Charger',adp_delete:'Supprimer',
 page_tutorial:'Import & Analyse',tut_csv_desc:"Votre CSV doit contenir ces colonnes (l'ordre n'a pas d'importance) :",tut_click_csv:'Cliquez pour sélectionner un fichier CSV',tut_no_file_sel:'Aucun fichier sélectionné',tut_progress:'Progression',tut_check_every:'Vérifier toutes les',tut_row:'Ligne',
 set_domain:'Domaine',set_nav_title:'Navigation',set_twin_nav:'Jumeau Numérique',
-ast_you:'Vous',ast_pilar:'Pilar IA',ast_error:'Erreur\u00a0: ',ast_net_error:'Erreur réseau. Réessayez.'},
+ast_you:'Vous',ast_pilar:'Pilar IA',ast_error:'Erreur\u00a0: ',ast_net_error:'Erreur réseau. Réessayez.',
+ai_warming:'se réchauffe',ai_ready:'prêt',ai_in_twin:'Jumeau Numérique'},
 en:{nav_monitor:'Live Monitor',nav_twin:'Twin',nav_history:'History',nav_account:'Account',nav_settings:'Settings',
 page_monitor:'Monitor',page_twin:'Digital Twin',page_history:'History',page_account:'Account',page_settings:'Settings',
 idle_l1:'No analysis yet',idle_l2:'Configure below and run',
@@ -1416,7 +1417,8 @@ adp_no_map:'No fields mapped',adp_source:'Source column',adp_samples:'Samples',a
 adp_ignore:'(Ignore)',adp_desc:'Convert any CSV to Pilar format',adp_save:'Save to Pilar',adp_my_files:'My files',adp_refresh:'Refresh',adp_saved_ok:'File saved',adp_no_files:'No saved files',adp_load:'Load',adp_delete:'Delete',
 page_tutorial:'Import & Run',tut_csv_desc:'Your CSV must contain these columns (order does not matter):',tut_click_csv:'Click to select a CSV file',tut_no_file_sel:'No file selected',tut_progress:'Progress',tut_check_every:'Check every',tut_row:'Row',
 set_domain:'Domain',set_nav_title:'Navigation',set_twin_nav:'Digital Twin',
-ast_you:'You',ast_pilar:'Pilar AI',ast_error:'Error: ',ast_net_error:'Network error. Please retry.'}
+ast_you:'You',ast_pilar:'Pilar AI',ast_error:'Error: ',ast_net_error:'Network error. Please retry.',
+ai_warming:'warming up',ai_ready:'ready',ai_in_twin:'Digital Twin'}
 };
 let LANG=localStorage.getItem('pilar_lang')||'en';
 function t(k){return(T[LANG]&&T[LANG][k])||(T.en[k])||k;}
@@ -3509,7 +3511,7 @@ footer{border-top:1px solid var(--border);padding:44px 40px;background:var(--sur
       <button id="_lEN" onclick="_lp('en')">EN</button>
       <button id="_lFR" onclick="_lp('fr')">FR</button>
     </div>
-    <a href="/demo" class="nav-demo">Try Demo</a>
+    <a href="/demo" class="nav-demo" data-ilp="nav_demo">Try Demo</a>
     <a href="/login" class="btn-ghost" data-ilp="nav_signin">Sign In</a>
     <a href="/register" class="btn-teal" data-ilp="nav_start">Get Started</a>
   </div>
@@ -3743,17 +3745,17 @@ footer{border-top:1px solid var(--border);padding:44px 40px;background:var(--sur
   <div class="section-h" data-ilp="pricing_title">Simple pricing, built around you</div>
   <div class="pricing-cols">
     <div class="plan">
-      <div class="plan-name">Free</div>
+      <div class="plan-name" data-ilp="plan_free_name">Free</div>
       <div class="plan-price-val">$0</div>
-      <div class="plan-price-sub">forever</div>
+      <div class="plan-price-sub" data-ilp="plan_free_forever">forever</div>
       <div class="plan-desc" data-ilp="plan_free_desc">Get started immediately. No credit card required.</div>
       <ul class="plan-ul">
-        <li class="inc">Manual CSV analysis</li>
-        <li class="inc">One-off failure prediction</li>
-        <li class="off">Live sensor monitor</li>
-        <li class="off">Analysis history</li>
-        <li class="off">Digital Twin simulation</li>
-        <li class="off">API access</li>
+        <li class="inc" data-ilp="pfree_1">Manual CSV analysis</li>
+        <li class="inc" data-ilp="pfree_2">One-off failure prediction</li>
+        <li class="off" data-ilp="pfree_3">Live sensor monitor</li>
+        <li class="off" data-ilp="pfree_4">Analysis history</li>
+        <li class="off" data-ilp="pfree_5">Digital Twin simulation</li>
+        <li class="off" data-ilp="pfree_6">API access</li>
       </ul>
       <a href="/register" class="plan-btn-g" data-ilp="plan_free_btn">Get started free</a>
     </div>
@@ -3764,13 +3766,13 @@ footer{border-top:1px solid var(--border);padding:44px 40px;background:var(--sur
       <div class="plan-price-sub">&nbsp;</div>
       <div class="plan-desc" data-ilp="plan_custom_desc">No fixed tiers. You choose the features, we adapt the contract to your operations and budget.</div>
       <ul class="plan-ul">
-        <li class="inc">Full analysis history &amp; Digital Twin</li>
-        <li class="inc">Anomaly detection (Isolation Forest)</li>
-        <li class="inc">SHAP explainability</li>
-        <li class="inc">Remaining Useful Life forecasting</li>
-        <li class="inc">REST API access</li>
-        <li class="inc">Email alerts &amp; team collaboration</li>
-        <li class="inc">Dedicated onboarding &amp; support</li>
+        <li class="inc" data-ilp="ppro_1">Full analysis history &amp; Digital Twin</li>
+        <li class="inc" data-ilp="ppro_2">Anomaly detection (Isolation Forest)</li>
+        <li class="inc" data-ilp="ppro_3">SHAP explainability</li>
+        <li class="inc" data-ilp="ppro_4">Remaining Useful Life forecasting</li>
+        <li class="inc" data-ilp="ppro_5">REST API access</li>
+        <li class="inc" data-ilp="ppro_6">Email alerts &amp; team collaboration</li>
+        <li class="inc" data-ilp="ppro_7">Dedicated onboarding &amp; support</li>
       </ul>
       <a href="mailto:aliguenbou07r@gmail.com?subject=Pilar%20%E2%80%94%20Custom%20Plan%20Request&body=Hi%2C%20I%27d%20like%20to%20discuss%20a%20custom%20plan%20for%20my%20team." class="plan-btn-p" data-ilp="plan_custom_btn">Contact us</a>
     </div>
@@ -3789,8 +3791,28 @@ footer{border-top:1px solid var(--border);padding:44px 40px;background:var(--sur
 
 <script>
 var _TLP={
-en:{nav_signin:'Sign In',nav_start:'Get Started',hero_badge:'Predictive Maintenance \u2014 Public Beta',hero_h:'Know before<br>it breaks.',hero_sub:'Pilar reads your machine sensors, detects early failure signatures, and alerts your team \u2014 hours before breakdown.',hero_cta1:'Start for free',hero_cta2:'Try the demo',stat1:'Recall \u2014 failures caught',stat2:'Failure zones detected',stat3:'Analysis per reading',stat4:'Pump records trained',how_lbl:'Process',how_title:'Three steps to zero unplanned downtime',how_sub:'Connect your machines, let Pilar learn, and receive precise alerts before failures happen.',s1t:'Connect your sensors',s1d:'Send readings via REST API from your PLCs, SCADA systems, or CSV files. Pilar accepts vibration, flow rate, pressure, bearing temp, motor current, and more.',s2t:'Three AI layers analyze every reading',s2d:'SVM classifies failure probability across 5 zones. Isolation Forest flags unseen anomalies without labels. SHAP tells you exactly which sensors drove the result \u2014 no black box.',s3t:'Your team gets alerted',s3d:'When risk exceeds threshold, Pilar sends an instant email alert with the failure zone, risk level, and recommended action \u2014 before breakdown occurs.',perf_lbl:'Model Performance',perf_title:'Built on real industrial data',perf_sub:'Trained on 23,400 centrifugal pump readings across 5 failure modes \u2014 physically realistic sensor profiles calibrated for industrial pumps.',roi_lbl:'Business Impact',roi_title:'Reactive vs. predictive maintenance',roi_sub:'Every unplanned breakdown costs production time, emergency repairs, and team morale. Pilar changes the equation.',roi_before:'Without Pilar',roi_after:'With Pilar',feat_lbl:'Features',feat_title:'What Pilar gives your team',ind_lbl:'Industries',ind_title:'Built for industrial environments',ind_sub:'Any process that relies on centrifugal pumps benefits from predictive monitoring.',pricing_lbl:'Pricing',pricing_title:'Simple pricing, built around you',plan_free_desc:'Get started immediately. No credit card required.',plan_free_btn:'Get started free',plan_custom_badge:'Custom Contract',plan_custom_name:'Your Plan',plan_custom_price:'On demand',plan_custom_desc:'No fixed tiers. You choose the features, we adapt the contract to your operations and budget.',plan_custom_btn:'Contact us',cta_h:'Your machines are already telling you something is wrong.',cta_btn:'Start for free',footer_sign:'Sign In',footer_reg:'Create Account',footer_rights:'All rights reserved.'},
-fr:{nav_signin:'Connexion',nav_start:'Commencer',hero_badge:'Maintenance Pr\u00e9dictive \u2014 B\u00eata Public',hero_h:'Sachez avant<br>que \u00e7a casse.',hero_sub:'Pilar lit vos capteurs, d\u00e9tecte les signatures de d\u00e9faillance, et alerte votre \u00e9quipe \u2014 des heures avant la panne.',hero_cta1:'Commencer gratuitement',hero_cta2:'Essayer la d\u00e9mo',stat1:'Rappel \u2014 pannes d\u00e9tect\u00e9es',stat2:'Zones de panne identifi\u00e9es',stat3:'Analyse par mesure',stat4:'Mesures pompes entra\u00een\u00e9es',how_lbl:'Processus',how_title:'Trois \u00e9tapes vers z\u00e9ro arr\u00eat impr\u00e9vu',how_sub:'Connectez vos machines, laissez Pilar apprendre, recevez des alertes pr\u00e9cises avant les pannes.',s1t:'Connectez vos capteurs',s1d:'Envoyez des mesures via API REST depuis vos automates, SCADA ou fichiers CSV. Pilar accepte vibration, d\u00e9bit, pression, temp. palier, courant moteur et bien plus.',s2t:'Trois couches IA analysent chaque mesure',s2d:'Le SVM classe la probabilit\u00e9 de panne sur 5 zones. L\u2019Isolation Forest d\u00e9tecte les anomalies sans labels. SHAP explique quels capteurs ont d\u00e9clench\u00e9 l\u2019alerte \u2014 sans bo\u00eete noire.',s3t:'Votre \u00e9quipe est alert\u00e9e',s3d:'Quand le risque d\u00e9passe le seuil, Pilar envoie un email instantan\u00e9 avec la zone de panne, le niveau de risque et l\u2019action recommand\u00e9e \u2014 avant la panne.',perf_lbl:'Performance du mod\u00e8le',perf_title:'Bas\u00e9 sur des donn\u00e9es industrielles r\u00e9elles',perf_sub:'Entra\u00een\u00e9 sur 23 400+ mesures de pompes centrifuges sur 5 modes de panne \u2014 profils capteurs physiquement r\u00e9alistes.',roi_lbl:'Impact business',roi_title:'Maintenance r\u00e9active vs. pr\u00e9dictive',roi_sub:'Chaque arr\u00eat impr\u00e9vu co\u00fbte du temps de production, des r\u00e9parations en urgence et du moral. Pilar change la donne.',roi_before:'Sans Pilar',roi_after:'Avec Pilar',feat_lbl:'Fonctionnalit\u00e9s',feat_title:'Ce que Pilar apporte \u00e0 votre \u00e9quipe',ind_lbl:'Secteurs',ind_title:'Con\u00e7u pour les environnements industriels',ind_sub:'Tout proc\u00e9d\u00e9 s\u2019appuyant sur des pompes centrifuges b\u00e9n\u00e9ficie de la surveillance pr\u00e9dictive.',pricing_lbl:'Tarifs',pricing_title:'Tarif simple, adapt\u00e9 \u00e0 vous',plan_free_desc:'D\u00e9marrez imm\u00e9diatement. Aucune carte bancaire requise.',plan_free_btn:'Commencer gratuitement',plan_custom_badge:'Contrat sur mesure',plan_custom_name:'Votre Plan',plan_custom_price:'Sur devis',plan_custom_desc:'Pas de niveaux fixes. Vous choisissez les fonctionnalit\u00e9s, on adapte le contrat \u00e0 vos op\u00e9rations.',plan_custom_btn:'Nous contacter',cta_h:'Vos machines vous envoient d\u00e9j\u00e0 un signal.',cta_btn:'Commencer gratuitement',footer_sign:'Connexion',footer_reg:'Cr\u00e9er un compte',footer_rights:'Tous droits r\u00e9serv\u00e9s.'}
+en:{nav_signin:'Sign In',nav_start:'Get Started',hero_badge:'Predictive Maintenance \u2014 Public Beta',hero_h:'Know before<br>it breaks.',hero_sub:'Pilar reads your machine sensors, detects early failure signatures, and alerts your team \u2014 hours before breakdown.',hero_cta1:'Start for free',hero_cta2:'Try the demo',stat1:'Recall \u2014 failures caught',stat2:'Failure zones detected',stat3:'Analysis per reading',stat4:'Pump records trained',how_lbl:'Process',how_title:'Three steps to zero unplanned downtime',how_sub:'Connect your machines, let Pilar learn, and receive precise alerts before failures happen.',s1t:'Connect your sensors',s1d:'Send readings via REST API from your PLCs, SCADA systems, or CSV files. Pilar accepts vibration, flow rate, pressure, bearing temp, motor current, and more.',s2t:'Three AI layers analyze every reading',s2d:'SVM classifies failure probability across 5 zones. Isolation Forest flags unseen anomalies without labels. SHAP tells you exactly which sensors drove the result \u2014 no black box.',s3t:'Your team gets alerted',s3d:'When risk exceeds threshold, Pilar sends an instant email alert with the failure zone, risk level, and recommended action \u2014 before breakdown occurs.',perf_lbl:'Model Performance',perf_title:'Built on real industrial data',perf_sub:'Trained on 23,400 centrifugal pump readings across 5 failure modes \u2014 physically realistic sensor profiles calibrated for industrial pumps.',roi_lbl:'Business Impact',roi_title:'Reactive vs. predictive maintenance',roi_sub:'Every unplanned breakdown costs production time, emergency repairs, and team morale. Pilar changes the equation.',roi_before:'Without Pilar',roi_after:'With Pilar',feat_lbl:'Features',feat_title:'What Pilar gives your team',ind_lbl:'Industries',ind_title:'Built for industrial environments',ind_sub:'Any process that relies on centrifugal pumps benefits from predictive monitoring.',pricing_lbl:'Pricing',pricing_title:'Simple pricing, built around you',plan_free_desc:'Get started immediately. No credit card required.',plan_free_btn:'Get started free',plan_custom_badge:'Custom Contract',plan_custom_name:'Your Plan',plan_custom_price:'On demand',plan_custom_desc:'No fixed tiers. You choose the features, we adapt the contract to your operations and budget.',plan_custom_btn:'Contact us',
+nav_demo:'Try Demo',
+plan_free_name:'Free',plan_free_forever:'forever',
+pfree_1:'Manual CSV analysis',pfree_2:'One-off failure prediction',pfree_3:'Live sensor monitor',pfree_4:'Analysis history',pfree_5:'Digital Twin simulation',pfree_6:'API access',
+ppro_1:'Full analysis history &amp; Digital Twin',ppro_2:'Anomaly detection (Isolation Forest)',ppro_3:'SHAP explainability',ppro_4:'Remaining Useful Life forecasting',ppro_5:'REST API access',ppro_6:'Email alerts &amp; team collaboration',ppro_7:'Dedicated onboarding &amp; support',
+cta_h:'Your machines are already telling you something is wrong.',cta_btn:'Start for free',
+footer_tagline:'Predictive Maintenance Intelligence \u2014 Built for industrial teams worldwide',
+footer_sign:'Sign In',footer_reg:'Create Account',footer_rights:'All rights reserved.',
+footer_trademark:'Pilar is a registered trademark. Unauthorized reproduction or distribution is prohibited.',
+footer_api:'API Docs',footer_contact:'Contact',
+footer_hiring_tag:"We're hiring",footer_hiring_text:'Looking for engineers passionate about<br>industrial AI and predictive systems.',footer_hiring_apply:'Send your application'},
+fr:{nav_signin:'Connexion',nav_start:'Commencer',hero_badge:'Maintenance Pr\u00e9dictive \u2014 B\u00eata Public',hero_h:'Sachez avant<br>que \u00e7a casse.',hero_sub:'Pilar lit vos capteurs, d\u00e9tecte les signatures de d\u00e9faillance, et alerte votre \u00e9quipe \u2014 des heures avant la panne.',hero_cta1:'Commencer gratuitement',hero_cta2:'Essayer la d\u00e9mo',stat1:'Rappel \u2014 pannes d\u00e9tect\u00e9es',stat2:'Zones de panne identifi\u00e9es',stat3:'Analyse par mesure',stat4:'Mesures pompes entra\u00een\u00e9es',how_lbl:'Processus',how_title:'Trois \u00e9tapes vers z\u00e9ro arr\u00eat impr\u00e9vu',how_sub:'Connectez vos machines, laissez Pilar apprendre, recevez des alertes pr\u00e9cises avant les pannes.',s1t:'Connectez vos capteurs',s1d:'Envoyez des mesures via API REST depuis vos automates, SCADA ou fichiers CSV. Pilar accepte vibration, d\u00e9bit, pression, temp. palier, courant moteur et bien plus.',s2t:'Trois couches IA analysent chaque mesure',s2d:'Le SVM classe la probabilit\u00e9 de panne sur 5 zones. L\u2019Isolation Forest d\u00e9tecte les anomalies sans labels. SHAP explique quels capteurs ont d\u00e9clench\u00e9 l\u2019alerte \u2014 sans bo\u00eete noire.',s3t:'Votre \u00e9quipe est alert\u00e9e',s3d:'Quand le risque d\u00e9passe le seuil, Pilar envoie un email instantan\u00e9 avec la zone de panne, le niveau de risque et l\u2019action recommand\u00e9e \u2014 avant la panne.',perf_lbl:'Performance du mod\u00e8le',perf_title:'Bas\u00e9 sur des donn\u00e9es industrielles r\u00e9elles',perf_sub:'Entra\u00een\u00e9 sur 23 400+ mesures de pompes centrifuges sur 5 modes de panne \u2014 profils capteurs physiquement r\u00e9alistes.',roi_lbl:'Impact business',roi_title:'Maintenance r\u00e9active vs. pr\u00e9dictive',roi_sub:'Chaque arr\u00eat impr\u00e9vu co\u00fbte du temps de production, des r\u00e9parations en urgence et du moral. Pilar change la donne.',roi_before:'Sans Pilar',roi_after:'Avec Pilar',feat_lbl:'Fonctionnalit\u00e9s',feat_title:'Ce que Pilar apporte \u00e0 votre \u00e9quipe',ind_lbl:'Secteurs',ind_title:'Con\u00e7u pour les environnements industriels',ind_sub:'Tout proc\u00e9d\u00e9 s\u2019appuyant sur des pompes centrifuges b\u00e9n\u00e9ficie de la surveillance pr\u00e9dictive.',pricing_lbl:'Tarifs',pricing_title:'Tarif simple, adapt\u00e9 \u00e0 vous',plan_free_desc:'D\u00e9marrez imm\u00e9diatement. Aucune carte bancaire requise.',plan_free_btn:'Commencer gratuitement',plan_custom_badge:'Contrat sur mesure',plan_custom_name:'Votre Plan',plan_custom_price:'Sur devis',plan_custom_desc:'Pas de niveaux fixes. Vous choisissez les fonctionnalit\u00e9s, on adapte le contrat \u00e0 vos op\u00e9rations.',plan_custom_btn:'Nous contacter',
+nav_demo:'Essayer la d\u00e9mo',
+plan_free_name:'Gratuit',plan_free_forever:'pour toujours',
+pfree_1:'Analyse CSV manuelle',pfree_2:'Pr\u00e9diction de panne ponctuelle',pfree_3:'Moniteur capteurs live',pfree_4:'Historique des analyses',pfree_5:'Simulation Digital Twin',pfree_6:'Acc\u00e8s API',
+ppro_1:'Historique complet &amp; Digital Twin',ppro_2:'D\u00e9tection d\u2019anomalies (Isolation Forest)',ppro_3:'Explicabilit\u00e9 SHAP',ppro_4:'Pr\u00e9vision Dur\u00e9e de Vie Utile (RUL)',ppro_5:'Acc\u00e8s API REST',ppro_6:'Alertes email &amp; collaboration \u00e9quipe',ppro_7:'Onboarding d\u00e9di\u00e9 &amp; support',
+cta_h:'Vos machines vous envoient d\u00e9j\u00e0 un signal.',cta_btn:'Commencer gratuitement',
+footer_tagline:'Intelligence de maintenance pr\u00e9dictive \u2014 Con\u00e7u pour les \u00e9quipes industrielles mondiales',
+footer_sign:'Connexion',footer_reg:'Cr\u00e9er un compte',footer_rights:'Tous droits r\u00e9serv\u00e9s.',
+footer_trademark:'Pilar est une marque d\u00e9pos\u00e9e. Toute reproduction ou distribution non autoris\u00e9e est interdite.',
+footer_api:'Documentation API',footer_contact:'Contact',
+footer_hiring_tag:'Nous recrutons',footer_hiring_text:'Nous recherchons des ing\u00e9nieurs passionn\u00e9s par<br>l\u2019IA industrielle et les syst\u00e8mes pr\u00e9dictifs.',footer_hiring_apply:'Envoyer votre candidature'}
 };
 function _lp(l){
   localStorage.setItem('pilar_lang',l);
@@ -3827,10 +3849,10 @@ function _lp(l){
   <div class="footer-inner">
     <div class="footer-left">
       <div class="footer-logo">PILAR</div>
-      <div class="footer-tagline">Predictive Maintenance Intelligence &mdash; Built for industrial teams worldwide</div>
+      <div class="footer-tagline" data-ilp="footer_tagline">Predictive Maintenance Intelligence &mdash; Built for industrial teams worldwide</div>
       <div class="footer-legal">
         &copy; <span id="_copy_yr"></span> Pilar. <span data-ilp="footer_rights">All rights reserved.</span><br>
-        Pilar is a registered trademark. Unauthorized reproduction or distribution is prohibited.<br>
+        <span data-ilp="footer_trademark">Pilar is a registered trademark. Unauthorized reproduction or distribution is prohibited.</span><br>
         <a href="mailto:contact@trypilar.com">contact@trypilar.com</a>
       </div>
     </div>
@@ -3838,13 +3860,13 @@ function _lp(l){
       <div class="footer-links">
         <a href="/login" data-ilp="footer_sign">Sign In</a>
         <a href="/register" data-ilp="footer_reg">Create Account</a>
-        <a href="/api/docs">API Docs</a>
-        <a href="mailto:contact@trypilar.com">Contact</a>
+        <a href="/api/docs" data-ilp="footer_api">API Docs</a>
+        <a href="mailto:contact@trypilar.com" data-ilp="footer_contact">Contact</a>
       </div>
       <div class="footer-hiring">
-        <div class="footer-hiring-tag">We're hiring</div>
-        <div class="footer-hiring-text">Looking for engineers passionate about<br>industrial AI and predictive systems.</div>
-        <a href="mailto:aliguenbou07r@gmail.com?subject=Pilar%20%E2%80%94%20Job%20Application&body=Hi%2C%20I%27d%20like%20to%20apply%20to%20join%20the%20Pilar%20team.">Send your application</a>
+        <div class="footer-hiring-tag" data-ilp="footer_hiring_tag">We're hiring</div>
+        <div class="footer-hiring-text" data-ilp="footer_hiring_text">Looking for engineers passionate about<br>industrial AI and predictive systems.</div>
+        <a href="mailto:aliguenbou07r@gmail.com?subject=Pilar%20%E2%80%94%20Job%20Application&body=Hi%2C%20I%27d%20like%20to%20apply%20to%20join%20the%20Pilar%20team." data-ilp="footer_hiring_apply">Send your application</a>
       </div>
     </div>
   </div>
