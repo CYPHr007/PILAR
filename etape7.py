@@ -5202,6 +5202,7 @@ DASHBOARD_HTML = _HEAD.replace("{FAV}", FAV_B64) + """
 </div>
 
 <script>
+document.addEventListener('DOMContentLoaded', function() {
 let _machines = [];
 
 async function loadFleet() {
@@ -5567,6 +5568,7 @@ async function runUpload() {
     btn.disabled = false; btn.textContent = 'Run Analysis';
   }
 }
+}); // DOMContentLoaded
 </script>
 
 <!-- Quick Analyse Modal -->
