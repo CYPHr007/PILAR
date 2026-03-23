@@ -5521,12 +5521,15 @@ function closeUpload() {
   loadFleet();
 }
 
-document.getElementById('upload-input').addEventListener('change', function() {
-  var f = this.files[0];
-  var span = document.getElementById('upload-fname');
-  if (f) { span.textContent = f.name; span.style.display = 'block'; }
-  else { span.style.display = 'none'; }
-});
+var _uploadInput = document.getElementById('upload-input');
+if (_uploadInput) {
+  _uploadInput.addEventListener('change', function() {
+    var f = this.files[0];
+    var span = document.getElementById('upload-fname');
+    if (f) { span.textContent = f.name; span.style.display = 'block'; }
+    else { span.style.display = 'none'; }
+  });
+}
 
 async function runUpload() {
   if (!_uploadMid) return;
