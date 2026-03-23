@@ -5218,16 +5218,17 @@ DASHBOARD_HTML = _HEAD.replace("{FAV}", FAV_B64) + """
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
 let _machines = [];
 
 async function loadFleet() {
   try {
     const r = await fetch('/api/machines');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
     _machines = await r.json();
+    if (!Array.isArray(_machines)) throw new Error('Bad response');
     renderFleet();
   } catch(e) {
-    document.getElementById('fleet-grid').innerHTML = '<div class="empty-state"><p>Failed to load fleet. <a href="#" onclick="loadFleet()">Retry</a></p></div>';
+    document.getElementById('fleet-grid').innerHTML = '<div class="empty-state"><p>Failed to load fleet (' + e.message + '). <a href="#" onclick="loadFleet()">Retry</a></p></div>';
   }
 }
 
@@ -5584,7 +5585,6 @@ async function runUpload() {
     btn.disabled = false; btn.textContent = 'Run Analysis';
   }
 }
-}); // DOMContentLoaded
 </script>
 
 <!-- Quick Analyse Modal -->
