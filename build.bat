@@ -7,7 +7,7 @@
 :: Requirements:
 ::   - Python 3.10+ in PATH
 ::   - pip install pyinstaller pystray pillow
-::   - Inno Setup 6.x installed at default path
+::   - Inno Setup 6.x or 7.x installed
 ::     (https://jrsoftware.org/isinfo.php)
 ::
 setlocal EnableDelayedExpansion
@@ -16,8 +16,10 @@ set APP_NAME=PILAR
 set APP_VERSION=1.0.0
 set SCRIPT_DIR=%~dp0
 set DIST_DIR=%SCRIPT_DIR%dist
-set INNO_DEFAULT=C:\Program Files (x86)\Inno Setup 6\ISCC.exe
-set INNO_ALT=C:\Program Files\Inno Setup 6\ISCC.exe
+set INNO_V7_X86=C:\Program Files (x86)\Inno Setup 7\ISCC.exe
+set INNO_V7_X64=C:\Program Files\Inno Setup 7\ISCC.exe
+set INNO_V6_X86=C:\Program Files (x86)\Inno Setup 6\ISCC.exe
+set INNO_V6_X64=C:\Program Files\Inno Setup 6\ISCC.exe
 
 echo ======================================
 echo   PILAR Desktop ^— Windows Build
@@ -64,15 +66,21 @@ echo   Build complete: %DIST_DIR%\pilar\
 echo.
 echo [4/4] Creating Windows installer with Inno Setup...
 
-:: Find Inno Setup
-if exist "%INNO_DEFAULT%" (
-    set ISCC="%INNO_DEFAULT%"
-) else if exist "%INNO_ALT%" (
-    set ISCC="%INNO_ALT%"
+:: Find Inno Setup (tries v7 first, then v6)
+if exist "%INNO_V7_X86%" (
+    set ISCC="%INNO_V7_X86%"
+) else if exist "%INNO_V7_X64%" (
+    set ISCC="%INNO_V7_X64%"
+) else if exist "%INNO_V6_X86%" (
+    set ISCC="%INNO_V6_X86%"
+) else if exist "%INNO_V6_X64%" (
+    set ISCC="%INNO_V6_X64%"
 ) else (
     echo WARNING: Inno Setup not found at:
-    echo   %INNO_DEFAULT%
-    echo   %INNO_ALT%
+    echo   %INNO_V7_X86%
+    echo   %INNO_V7_X64%
+    echo   %INNO_V6_X86%
+    echo   %INNO_V6_X64%
     echo.
     echo Download from: https://jrsoftware.org/isinfo.php
     echo After install, run: iscc pilar_installer.iss

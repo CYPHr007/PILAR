@@ -27,6 +27,10 @@ def _record_failed_login(ip):
 
 app = Flask(__name__)
 import os
+import sys as _sys
+_FROZEN  = getattr(_sys, 'frozen', False)
+_APP_DIR = os.path.dirname(_sys.executable) if _FROZEN else os.path.dirname(os.path.abspath(__file__))
+def _pkl(name): return os.path.join(_APP_DIR, name)
 from config import (
     RATE_WINDOW, RATE_MAX, SESSION_DAYS,
     FAILURE_ZONES, COLONNES, FEATURE_MEDIANS, CORE_FEATURES, OPTIONAL_FIELDS,
@@ -46,9 +50,20 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {"pool_pre_ping": True, "pool_recycle": 280}
 _secret_key = os.environ.get("SECRET_KEY")
 if not _secret_key:
-    import secrets as _s
-    _secret_key = _s.token_hex(32)
-    print("[Pilar] WARNING: SECRET_KEY not set — generating random key (sessions will reset on restart)")
+    _key_path = os.path.join(os.getcwd(), "pilar_secret.key")
+    try:
+        with open(_key_path) as _f:
+            _secret_key = _f.read().strip() or None
+    except (FileNotFoundError, IOError):
+        pass
+    if not _secret_key:
+        _secret_key = _secrets.token_hex(32)
+        try:
+            with open(_key_path, "w") as _f:
+                _f.write(_secret_key)
+            print(f"[Pilar] SECRET_KEY generated and saved to pilar_secret.key")
+        except Exception:
+            print("[Pilar] WARNING: SECRET_KEY random — sessions will reset on restart")
 app.config["SECRET_KEY"] = _secret_key
 app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=SESSION_DAYS)
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
@@ -139,6 +154,7 @@ class SavedFile(db.Model):
     id         = db.Column(db.Integer, primary_key=True)
     user_id    = db.Column(db.Integer, nullable=True)
     team_id    = db.Column(db.Integer, nullable=True)
+    machine_id = db.Column(db.Integer, nullable=True)   # FK vers Machine.id
     filename   = db.Column(db.String(200), nullable=False)
     content    = db.Column(db.Text, nullable=False)
     row_count  = db.Column(db.Integer, default=0)
@@ -253,6 +269,7 @@ with app.app_context():
             "ALTER TABLE machine ADD COLUMN power_kw REAL",
             "ALTER TABLE machine ADD COLUMN nominal_current REAL",
             "ALTER TABLE machine ADD COLUMN nominal_vibration REAL",
+            "ALTER TABLE saved_file ADD COLUMN machine_id INTEGER",
         ]
     else:
         _migrations = [
@@ -281,6 +298,7 @@ with app.app_context():
             "ALTER TABLE machine ADD COLUMN IF NOT EXISTS power_kw REAL",
             "ALTER TABLE machine ADD COLUMN IF NOT EXISTS nominal_current REAL",
             "ALTER TABLE machine ADD COLUMN IF NOT EXISTS nominal_vibration REAL",
+            "ALTER TABLE saved_file ADD COLUMN IF NOT EXISTS machine_id INTEGER",
         ]
     for sql in _migrations:
         try:
@@ -304,16 +322,16 @@ with app.app_context():
         print(f"[Pilar] SuperUser setup: {_sue}")
 
 try:
-    with open("modele_pannes.pkl","rb") as f: model = pickle.load(f)
-    with open("scaler.pkl","rb") as f: scaler = pickle.load(f)
-    with open("modeles_zones.pkl","rb") as f: modeles_zones = pickle.load(f)
-    print("[Pilar] Modeles ML charges")
+    with open(_pkl("modele_pannes.pkl"),"rb") as f: model = pickle.load(f)
+    with open(_pkl("scaler.pkl"),"rb") as f: scaler = pickle.load(f)
+    with open(_pkl("modeles_zones.pkl"),"rb") as f: modeles_zones = pickle.load(f)
+    print(f"[Pilar] Modeles ML charges depuis {_APP_DIR}")
 except FileNotFoundError as _e:
-    print(f"[Pilar] FATAL: fichier modele manquant — {_e}")
+    print(f"[Pilar] FATAL: fichier modele manquant — {_e} (recherche dans: {_APP_DIR})")
     model = scaler = None
     modeles_zones = {}
 except Exception as _e:
-    print(f"[Pilar] FATAL: erreur chargement modele — {_e}")
+    print(f"[Pilar] FATAL: erreur chargement modele — {type(_e).__name__}: {_e}")
     model = scaler = None
     modeles_zones = {}
 
@@ -322,8 +340,8 @@ _rul_model  = None
 _rul_scaler = None
 _RUL_SCALE = RUL_SCALE_FACTOR  # CMAPSS cycles → pump hours (see config.py)
 try:
-    with open("rul_model.pkl",  "rb") as f: _rul_model  = pickle.load(f)
-    with open("rul_scaler.pkl", "rb") as f: _rul_scaler = pickle.load(f)
+    with open(_pkl("rul_model.pkl"),  "rb") as f: _rul_model  = pickle.load(f)
+    with open(_pkl("rul_scaler.pkl"), "rb") as f: _rul_scaler = pickle.load(f)
     print("[Pilar] RUL model charge (NASA C-MAPSS GBT)")
 except FileNotFoundError: pass
 except Exception as _e: print(f"[Pilar] RUL model load error: {_e}")
@@ -332,7 +350,7 @@ except Exception as _e: print(f"[Pilar] RUL model load error: {_e}")
 _iso_forest = None
 _normal_samples = []   # accumulates normal scaled vectors for lazy IsoForest training
 try:
-    with open("isolation_forest.pkl","rb") as f: _iso_forest = pickle.load(f)
+    with open(_pkl("isolation_forest.pkl"),"rb") as f: _iso_forest = pickle.load(f)
     print("[Pilar] Isolation Forest chargé")
 except FileNotFoundError: pass
 except Exception as _e: print(f"[Pilar] Isolation Forest load error: {_e}")
@@ -664,110 +682,102 @@ ADMIN_HTML = """<!DOCTYPE html><html lang="fr"><head>
   --amber:#d97706;--purple:#bf5af2;
   --text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;
   --r:12px;--r-sm:8px;--r-xs:6px;
-  --shadow:0 4px 24px rgba(0,0,0,0.5);--shadow-sm:0 2px 8px rgba(0,0,0,0.4);
 }
-body{font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:0 0 60px}
-nav{backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);background:rgba(28,28,30,0.92);border-bottom:1px solid var(--border);padding:0 24px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
-.logo{font-size:15px;font-weight:700;letter-spacing:0.04em;color:var(--teal2)}
-.nav-right{display:flex;gap:10px;align-items:center}
-.wrap{max-width:1100px;margin:0 auto;padding:24px 16px}
-.kgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:24px}
-.kc{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px 20px;box-shadow:var(--shadow-sm)}
-.kv{font-size:28px;font-weight:800;letter-spacing:-0.02em;font-variant-numeric:tabular-nums}
-.kl{font-size:11px;font-weight:600;color:var(--text3);letter-spacing:0.04em;text-transform:uppercase;margin-top:4px}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:20px;box-shadow:var(--shadow-sm)}
-.ctitle{font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--text2);margin-bottom:16px}
-.search-bar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
-.search-bar input{flex:1;min-width:200px;background:rgba(120,120,128,0.18);border:1px solid var(--border);color:var(--text);padding:9px 14px;border-radius:10px;font-size:12px;outline:none}
-.search-bar select{background:rgba(120,120,128,0.18);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:10px;font-size:12px;outline:none}
+body{font-family:-apple-system,'SF Pro Text','Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:0 0 60px}
+nav{background:rgba(14,17,24,0.96);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.logo{font-size:13px;font-weight:700;letter-spacing:0.1em;color:var(--teal2);text-transform:uppercase}
+.nav-right{display:flex;gap:8px;align-items:center}
+.wrap{max-width:1200px;margin:0 auto;padding:24px 16px}
+.kgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:20px}
+.kc{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px}
+.kv{font-size:26px;font-weight:800;letter-spacing:-0.02em;font-variant-numeric:tabular-nums}
+.kl{font-size:10px;font-weight:600;color:var(--text3);letter-spacing:0.06em;text-transform:uppercase;margin-top:4px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:14px}
+.ctitle{font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--text3);margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
+.toolbar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+.toolbar input,.toolbar select{background:rgba(120,120,128,0.15);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:var(--r-sm);font-size:12px;outline:none;transition:border-color .15s}
+.toolbar input{flex:1;min-width:180px}
+.toolbar input:focus,.toolbar select:focus{border-color:var(--teal)}
+.tbl-wrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:12px}
-th{text-align:left;padding:8px 10px;color:var(--text2);font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;border-bottom:1px solid var(--border)}
-td{padding:10px 10px;border-bottom:1px solid var(--border);vertical-align:middle;color:var(--text2)}
+th{text-align:left;padding:8px 12px;color:var(--text3);font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle;color:var(--text2)}
 tr:last-child td{border:none}
-tr:hover td{background:rgba(255,255,255,.02)}
-.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:0;text-transform:none}
-.b-free{background:rgba(235,235,245,0.1);color:var(--text3)}
-.b-starter{background:var(--teal-dim);color:var(--teal2)}
-.b-pro{background:rgba(191,90,242,0.15);color:var(--purple)}
-.b-admin{background:rgba(255,159,10,0.15);color:var(--amber)}
-.b-ok{background:var(--green-dim);color:var(--green)}
-.b-warn{background:var(--red-dim);color:var(--red)}
-.b-exp{background:var(--red-dim);color:var(--red)}
-.btn{padding:7px 14px;border:none;border-radius:var(--r-sm);font-size:12px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-block;letter-spacing:0}
-.btn-teal{background:var(--teal);color:#fff}
-.btn-teal:hover{opacity:0.85}
-.btn-ghost{background:var(--surface2);border:1px solid var(--border2);color:var(--text2)}
-.btn-ghost:hover{border-color:var(--teal);color:var(--teal2)}
-.btn-red{background:var(--red-dim);border:1px solid rgba(255,69,58,0.35);color:var(--red)}
-.btn-red:hover{background:rgba(255,69,58,0.2)}
-
-/* Modal */
-.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(8px)}
+tr:hover td{background:rgba(255,255,255,.015)}
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;white-space:nowrap}
+.b-free{background:rgba(235,235,245,0.07);color:var(--text3);border:1px solid var(--border)}
+.b-starter{background:var(--teal-dim);color:var(--teal2);border:1px solid rgba(13,148,136,0.25)}
+.b-pro{background:rgba(191,90,242,0.1);color:var(--purple);border:1px solid rgba(191,90,242,0.25)}
+.b-admin{background:rgba(217,119,6,0.1);color:var(--amber);border:1px solid rgba(217,119,6,0.25)}
+.b-ok{background:var(--green-dim);color:var(--green);border:1px solid rgba(5,150,105,0.25)}
+.b-warn{background:rgba(217,119,6,0.1);color:var(--amber);border:1px solid rgba(217,119,6,0.25)}
+.b-exp{background:var(--red-dim);color:var(--red);border:1px solid rgba(220,38,38,0.25)}
+.b-ban{background:var(--red-dim);color:var(--red);border:1px solid rgba(220,38,38,0.25)}
+.btn{padding:6px 11px;border:none;border-radius:var(--r-sm);font-size:11px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:4px;transition:opacity .15s,border-color .15s;white-space:nowrap}
+.btn-teal{background:var(--teal);color:#fff}.btn-teal:hover{opacity:.85}
+.btn-ghost{background:var(--surface2);border:1px solid var(--border2);color:var(--text2)}.btn-ghost:hover{border-color:var(--teal);color:var(--teal2)}
+.btn-red{background:var(--red-dim);border:1px solid rgba(220,38,38,0.3);color:var(--red)}.btn-red:hover{background:rgba(220,38,38,0.16)}
+.btn-amber{background:rgba(217,119,6,0.08);border:1px solid rgba(217,119,6,0.25);color:var(--amber)}.btn-amber:hover{opacity:.8}
+.actions{display:flex;gap:4px;flex-wrap:wrap}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:100;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(14px)}
 .overlay.open{display:flex}
-.modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:28px;width:100%;max-width:460px;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow)}
-.modal h3{font-size:16px;font-weight:700;margin-bottom:20px;color:var(--text)}
-.fi{width:100%;background:rgba(120,120,128,0.18);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:10px;font-size:13px;margin-bottom:12px;outline:none}
+.modal{background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);padding:28px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.65)}
+.modal-h{font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px}
+.modal-sub{font-size:12px;color:var(--text3);margin-bottom:20px;word-break:break-all}
+label{font-size:10px;font-weight:700;color:var(--text3);display:block;margin-bottom:5px;letter-spacing:0.04em;text-transform:uppercase}
+.fi{width:100%;background:rgba(120,120,128,0.15);border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:var(--r-sm);font-size:13px;margin-bottom:14px;outline:none;transition:border-color .15s}
 .fi:focus{border-color:var(--teal)}
-label{font-size:11px;font-weight:600;color:var(--text3);display:block;margin-bottom:4px;letter-spacing:0.02em;text-transform:uppercase}
-.plan-btns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
-.plan-opt{padding:10px;border:2px solid var(--border);border-radius:var(--r-sm);text-align:center;cursor:pointer;font-size:12px;font-weight:700;transition:all .15s;background:var(--surface2);color:var(--text3)}
-.plan-opt.selected-free{border-color:var(--text3);color:var(--text2)}
-.plan-opt.selected-starter{border-color:var(--teal);background:var(--teal-dim);color:var(--teal2)}
-.plan-opt.selected-pro{border-color:var(--purple);background:rgba(191,90,242,0.1);color:var(--purple)}
-.plan-opt:hover{border-color:var(--teal)}
-.expires-wrap{display:flex;gap:8px;margin-bottom:12px}
-.expires-wrap button{padding:7px 12px;background:var(--surface2);border:1px solid var(--border);color:var(--text3);border-radius:var(--r-sm);font-size:11px;cursor:pointer;white-space:nowrap}
-.expires-wrap button:hover{border-color:var(--teal);color:var(--teal2)}
+.plan-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px}
+.plan-opt{padding:12px 6px;border:2px solid var(--border);border-radius:var(--r-sm);text-align:center;cursor:pointer;font-size:12px;font-weight:700;transition:all .15s;background:var(--surface2);color:var(--text3)}.plan-opt:hover{border-color:var(--teal2)}
+.sel-free{border-color:var(--text3)!important;background:rgba(100,116,139,0.08)!important;color:var(--text2)!important}
+.sel-starter{border-color:var(--teal)!important;background:var(--teal-dim)!important;color:var(--teal2)!important}
+.sel-pro{border-color:var(--purple)!important;background:rgba(191,90,242,0.1)!important;color:var(--purple)!important}
+.date-row{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+.date-row input{flex:1;min-width:120px;margin:0}
 .msg{font-size:11px;padding:8px 12px;border-radius:var(--r-sm);margin-bottom:12px;display:none}
-.msg.ok{background:var(--green-dim);border:1px solid rgba(48,209,88,0.2);color:var(--green);display:block}
-.msg.err{background:var(--red-dim);border:1px solid rgba(255,69,58,0.2);color:var(--red);display:block}
-@media(max-width:600px){
-  .kv{font-size:22px}
-  .search-bar{flex-direction:column}
-  table{display:block;overflow-x:auto}
-}
-/* Terminal */
-.term-wrap{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:0;overflow:hidden;margin-bottom:20px;box-shadow:var(--shadow-sm)}
-.term-header{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--surface2);border-bottom:1px solid var(--border)}
-.term-dots{display:flex;gap:6px}
-.term-dots span{width:10px;height:10px;border-radius:50%}
-.term-output{font-family:-apple-system,'SF Mono','Menlo','Consolas',monospace;font-size:12px;line-height:1.7;padding:14px 16px;min-height:200px;max-height:420px;overflow-y:auto;color:var(--text2);white-space:pre-wrap;word-break:break-all}
-.term-output::-webkit-scrollbar{width:4px}
-.term-output::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:2px}
-.term-line-ok{color:var(--green)}
-.term-line-err{color:var(--red)}
-.term-line-cmd{color:var(--teal2);font-weight:600}
-.term-input-row{display:flex;align-items:center;gap:8px;padding:10px 16px;border-top:1px solid var(--border);background:var(--bg)}
-.term-prompt{color:var(--teal2);font-family:-apple-system,'SF Mono','Menlo','Consolas',monospace;font-size:12px;white-space:nowrap}
-.term-input{flex:1;background:transparent;border:none;color:var(--text);font-family:-apple-system,'SF Mono','Menlo','Consolas',monospace;font-size:12px;outline:none}
-.term-run-btn{padding:6px 14px;background:var(--teal);border:none;border-radius:var(--r-sm);color:#fff;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap}
-.term-run-btn:hover{opacity:0.85}
-.term-run-btn:disabled{opacity:.4;cursor:not-allowed}
+.msg.ok{background:var(--green-dim);border:1px solid rgba(48,209,88,0.25);color:var(--green);display:block}
+.msg.err{background:var(--red-dim);border:1px solid rgba(255,69,58,0.25);color:var(--red);display:block}
+.mfooter{display:flex;gap:10px;margin-top:4px}
+.mfooter .btn{flex:1;justify-content:center;padding:12px}
+.block-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.block-row input{background:rgba(120,120,128,0.15);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:var(--r-sm);font-size:12px;outline:none;flex:1;min-width:160px;transition:border-color .15s}
+.block-row input:focus{border-color:var(--teal)}
+.empty{color:var(--text3);font-size:12px;text-align:center;padding:14px;background:rgba(255,255,255,.02);border-radius:var(--r-sm)}
+.term-wrap{background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden}
+.term-hdr{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;background:var(--surface2);border-bottom:1px solid var(--border)}
+.term-dots{display:flex;gap:5px}.term-dots span{width:9px;height:9px;border-radius:50%}
+.term-out{font-family:'SF Mono','Menlo','Consolas',monospace;font-size:11px;line-height:1.7;padding:12px 14px;min-height:160px;max-height:340px;overflow-y:auto;color:var(--text2);white-space:pre-wrap;word-break:break-all}
+.term-out::-webkit-scrollbar{width:4px}.term-out::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:2px}
+.l-ok{color:var(--green)}.l-err{color:var(--red)}.l-cmd{color:var(--teal2);font-weight:600}
+.term-row{display:flex;align-items:center;gap:8px;padding:8px 14px;border-top:1px solid var(--border)}
+.term-prompt{color:var(--teal2);font-family:'SF Mono','Menlo','Consolas',monospace;font-size:11px;white-space:nowrap}
+.term-inp{flex:1;background:transparent;border:none;color:var(--text);font-family:'SF Mono','Menlo','Consolas',monospace;font-size:11px;outline:none}
+.term-btn{padding:5px 12px;background:var(--teal);border:none;border-radius:var(--r-xs);color:#fff;font-size:11px;font-weight:700;cursor:pointer}.term-btn:hover{opacity:.85}.term-btn:disabled{opacity:.4;cursor:not-allowed}
+.shortcuts{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}
+@media(max-width:640px){.kv{font-size:22px}.toolbar{flex-direction:column}table{display:block;overflow-x:auto}.modal{padding:18px}.plan-grid{grid-template-columns:1fr 1fr 1fr}}
 </style>
 </head>
 <body>
 <nav>
-  <div class="logo">PILAR ADMIN</div>
+  <span class="logo">Pilar Admin</span>
   <div class="nav-right">
-    <a href="/monitor" class="btn btn-ghost">App</a>
-    <a href="/logout" class="btn btn-ghost">Déconnexion</a>
+    <a href="/" class="btn btn-ghost">Application</a>
+    <a href="/logout" class="btn btn-ghost">Deconnexion</a>
   </div>
 </nav>
 <div class="wrap">
 
-<!-- KPIs -->
 <div class="kgrid">
   <div class="kc"><div class="kv" style="color:var(--teal2)">{{ total_users }}</div><div class="kl">Utilisateurs</div></div>
   <div class="kc"><div class="kv" style="color:var(--purple)">{{ paid_users }}</div><div class="kl">Payants</div></div>
-  <div class="kc"><div class="kv" style="color:var(--green)">${{ mrr }}</div><div class="kl">MRR estimé</div></div>
+  <div class="kc"><div class="kv" style="color:var(--green)">${{ mrr }}</div><div class="kl">MRR</div></div>
   <div class="kc"><div class="kv">{{ total_analyses }}</div><div class="kl">Analyses</div></div>
   <div class="kc"><div class="kv" style="color:var(--amber)">{{ expiring_soon }}</div><div class="kl">Expirent &lt;7j</div></div>
 </div>
 
-<!-- FILTRES + TABLEAU -->
 <div class="card">
-  <div class="ctitle">Gestion abonnements</div>
-  <div class="search-bar">
+  <div class="ctitle"><span>Gestion utilisateurs</span><span style="font-weight:400;font-size:11px;text-transform:none;letter-spacing:0;color:var(--text3)">{{ total_users }} compte{% if total_users != 1 %}s{% endif %}</span></div>
+  <div class="toolbar">
     <input type="text" id="searchInput" placeholder="Rechercher par email..." oninput="filterTable()">
     <select id="planFilter" onchange="filterTable()">
       <option value="">Tous les plans</option>
@@ -776,392 +786,324 @@ label{font-size:11px;font-weight:600;color:var(--text3);display:block;margin-bot
       <option value="pro">Pro</option>
     </select>
   </div>
+  <div class="tbl-wrap">
   <table id="usersTable">
-    <thead>
-      <tr>
-        <th>Email</th>
-        <th>Plan</th>
-        <th>Expiration</th>
-        <th>Note paiement</th>
-        <th>Analyses</th>
-        <th>Inscrit</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
+    <thead><tr><th>Email</th><th>Plan</th><th>Expiration</th><th>Note</th><th>Quota</th><th>Analyses</th><th>Inscrit</th><th>Actions</th></tr></thead>
     <tbody>
     {% for u in users %}
     <tr data-email="{{ u.email|lower }}" data-plan="{{ u.plan }}">
       <td>
-        <div style="font-weight:600;color:{% if u.is_banned %}var(--red){% else %}var(--text){% endif %}">{{ u.email }}</div>
-        {% if u.is_admin %}<span class="badge b-admin">admin</span>{% endif %}
-        {% if u.is_banned %}<span class="badge b-warn">banni</span>{% endif %}
+        <div style="font-weight:600;color:{% if u.is_banned %}var(--red){% else %}var(--text){% endif %};font-size:13px">{{ u.email }}</div>
+        <div style="display:flex;gap:4px;margin-top:3px;flex-wrap:wrap">
+          {% if u.is_admin %}<span class="badge b-admin">admin</span>{% endif %}
+          {% if u.is_banned %}<span class="badge b-ban">banni</span>{% endif %}
+        </div>
       </td>
+      <td><span class="badge b-{{ u.plan }}">{{ u.plan }}</span></td>
+      <td>{% if u.plan_expires_at %}{% if u.plan_expires_at < now %}<span class="badge b-exp">Expire {{ u.plan_expires_at.strftime('%d/%m/%y') }}</span>{% elif (u.plan_expires_at - now).days < 7 %}<span class="badge b-warn">{{ u.plan_expires_at.strftime('%d/%m/%y') }}</span>{% else %}<span style="font-size:11px">{{ u.plan_expires_at.strftime('%d/%m/%Y') }}</span>{% endif %}{% else %}<span style="color:var(--text3);font-size:11px">—</span>{% endif %}</td>
+      <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;color:var(--text3)">{{ u.plan_note or '—' }}</td>
+      <td style="text-align:center;font-size:12px">{{ u.machine_quota }}</td>
+      <td style="text-align:center;font-size:12px">{{ u.analysis_count }}</td>
+      <td style="font-size:11px;color:var(--text3);white-space:nowrap">{{ u.created_at.strftime('%d/%m/%Y') }}</td>
       <td>
-        <span class="badge b-{{ u.plan }}">{{ u.plan }}</span>
-      </td>
-      <td>
-        {% if u.plan_expires_at %}
-          {% if u.plan_expires_at < now %}
-            <span class="badge b-exp">Expiré {{ u.plan_expires_at.strftime('%d/%m/%y') }}</span>
-          {% elif (u.plan_expires_at - now).days < 7 %}
-            <span class="badge b-warn">{{ u.plan_expires_at.strftime('%d/%m/%y') }}</span>
-          {% else %}
-            <span style="font-size:11px;color:var(--text2)">{{ u.plan_expires_at.strftime('%d/%m/%Y') }}</span>
-          {% endif %}
-        {% else %}
-          <span style="color:var(--text3);font-size:11px">—</span>
-        {% endif %}
-      </td>
-      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text3);font-size:11px">
-        {{ u.plan_note or '—' }}
-      </td>
-      <td style="color:var(--text2)">{{ u.analysis_count }}</td>
-      <td style="color:var(--text3);font-size:11px;white-space:nowrap">{{ u.created_at.strftime('%d/%m/%Y') }}</td>
-      <td>
-        <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <div class="actions">
           <button class="btn btn-teal manage-btn"
             data-uid="{{ u.id }}"
             data-email="{{ u.email|e }}"
             data-plan="{{ u.plan }}"
             data-expires="{{ u.plan_expires_at.strftime('%Y-%m-%d') if u.plan_expires_at else '' }}"
-            data-note="{{ u.plan_note|e if u.plan_note else '' }}">Gérer</button>
+            data-note="{{ u.plan_note|e if u.plan_note else '' }}"
+            data-quota="{{ u.machine_quota }}">Gerer</button>
           <a href="/admin/impersonate/{{ u.id }}" class="btn btn-ghost">Voir</a>
-          <button onclick="toggleAdmin({{ u.id }}, '{{ u.email|e }}')" class="btn {% if u.is_admin %}btn-red{% else %}btn-ghost{% endif %}" style="font-size:10px">{% if u.is_admin %}Admin ↓{% else %}Admin ↑{% endif %}</button>
-          <button onclick="toggleBan({{ u.id }}, '{{ u.email|e }}', {{ 'true' if u.is_banned else 'false' }})" class="btn {% if u.is_banned %}btn-teal{% else %}btn-red{% endif %}" style="font-size:10px">{% if u.is_banned %}Débannir{% else %}Bannir{% endif %}</button>
-          <button onclick="deleteUser({{ u.id }}, '{{ u.email|e }}')" class="btn btn-red" style="font-size:10px">Supprimer</button>
+          <button onclick="toggleAdmin({{ u.id }}, '{{ u.email|e }}')" class="btn {% if u.is_admin %}btn-red{% else %}btn-amber{% endif %}">{% if u.is_admin %}Admin -{% else %}Admin +{% endif %}</button>
+          <button onclick="toggleBan({{ u.id }}, '{{ u.email|e }}', {{ 'true' if u.is_banned else 'false' }})" class="btn {% if u.is_banned %}btn-teal{% else %}btn-red{% endif %}">{% if u.is_banned %}Debannir{% else %}Bannir{% endif %}</button>
+          <button onclick="deleteUser({{ u.id }}, '{{ u.email|e }}')" class="btn btn-red">Suppr.</button>
         </div>
       </td>
     </tr>
     {% endfor %}
     </tbody>
   </table>
+  </div>
 </div>
 
-<!-- BLOCKED EMAILS -->
 <div class="card">
-  <div class="ctitle">Emails bloqués</div>
-  <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
-    <input id="blockEmailInput" class="search-bar" style="flex:1;min-width:200px;background:rgba(120,120,128,0.18);border:1px solid var(--border);color:var(--text);padding:9px 14px;border-radius:10px;font-size:12px;outline:none" placeholder="email@domaine.com" type="email">
-    <input id="blockReasonInput" style="flex:1;min-width:160px;background:rgba(120,120,128,0.18);border:1px solid var(--border);color:var(--text);padding:9px 14px;border-radius:10px;font-size:12px;outline:none" placeholder="Raison (optionnel)">
-    <button onclick="blockEmail()" class="btn btn-red">Bloquer l'email</button>
+  <div class="ctitle">Emails bloques</div>
+  <div class="block-row">
+    <input id="blockEmailInput" placeholder="email@domaine.com" type="email">
+    <input id="blockReasonInput" placeholder="Raison (optionnel)">
+    <button onclick="blockEmail()" class="btn btn-red">Bloquer</button>
   </div>
   {% if banned_emails %}
-  <table>
+  <div class="tbl-wrap"><table>
     <thead><tr><th>Email</th><th>Raison</th><th>Date</th><th></th></tr></thead>
-    <tbody>
-    {% for b in banned_emails %}
+    <tbody>{% for b in banned_emails %}
     <tr>
       <td style="color:var(--red);font-weight:600">{{ b.email }}</td>
       <td style="color:var(--text3);font-size:11px">{{ b.reason or '—' }}</td>
-      <td style="color:var(--text3);font-size:11px">{{ b.banned_at.strftime('%d/%m/%Y') }}</td>
-      <td><button onclick="unblockEmail({{ b.id }}, '{{ b.email|e }}')" class="btn btn-ghost" style="font-size:10px">Débloquer</button></td>
-    </tr>
-    {% endfor %}
-    </tbody>
-  </table>
-  {% else %}
-  <div style="color:var(--text3);font-size:12px;text-align:center;padding:12px">Aucun email bloqué.</div>
-  {% endif %}
+      <td style="color:var(--text3);font-size:11px;white-space:nowrap">{{ b.banned_at.strftime('%d/%m/%Y') }}</td>
+      <td><button onclick="unblockEmail({{ b.id }}, '{{ b.email|e }}')" class="btn btn-ghost">Debloquer</button></td>
+    </tr>{% endfor %}</tbody>
+  </table></div>
+  {% else %}<div class="empty">Aucun email bloque.</div>{% endif %}
 </div>
 
-<!-- USER FILES -->
 <div class="card">
   <div class="ctitle">Fichiers utilisateurs</div>
-  <div id="filesMsg" style="font-size:12px;color:var(--text3);margin-bottom:12px">Chargement...</div>
-  <table id="filesTable" style="display:none;width:100%;border-collapse:collapse;font-size:12px">
+  <div id="filesMsg" style="font-size:12px;color:var(--text3)">Chargement...</div>
+  <div class="tbl-wrap"><table id="filesTable" style="display:none">
     <thead><tr><th>Fichier</th><th>Utilisateur</th><th>Lignes</th><th>Date</th><th></th></tr></thead>
     <tbody id="filesTbody"></tbody>
-  </table>
+  </table></div>
 </div>
 
-<!-- TERMINAL ADMIN -->
 <div class="card">
-  <div class="ctitle">Terminal</div>
-  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
+  <div class="ctitle">Terminal serveur</div>
+  <div class="shortcuts">
     <button class="btn btn-ghost" onclick="termQuick('python --version')">python --version</button>
     <button class="btn btn-ghost" onclick="termQuick('pip list')">pip list</button>
-    <button class="btn btn-ghost" onclick="termQuick('ls -lh *.pkl *.json 2>/dev/null || dir /B *.pkl *.json')">ls modèles</button>
-    <button class="btn btn-ghost" onclick="termQuick('python -c &quot;from etape7 import app,db,User,Analysis; app.app_context().push(); print(User.query.count(),&#39;users&#39;, Analysis.query.count(),&#39;analyses&#39;)&quot;')">stats DB</button>
-    <button class="btn btn-ghost" onclick="termQuick('python -c &quot;import pickle,os; m=pickle.load(open(&#39;modele_pannes.pkl&#39;,&#39;rb&#39;)) if os.path.exists(&#39;modele_pannes.pkl&#39;) else None; print(type(m).__name__ if m else &#39;non trouve&#39;)&quot;')">check modèle</button>
-    <button class="btn btn-ghost" onclick="termQuick('env | grep -E &quot;RAILWAY|DATABASE|PORT|APP_URL&quot; 2>/dev/null || set | findstr /R &quot;RAILWAY DATABASE PORT APP_URL&quot;')">env vars</button>
-    <button class="btn btn-ghost" onclick="termQuick('python -c &quot;import sys,platform; print(sys.version); print(platform.platform())&quot;')">système</button>
+    <button class="btn btn-ghost" onclick="termQuick('python -c &quot;from etape7 import app,db,User,Analysis;app.app_context().push();print(User.query.count(),&#39;users&#39;,Analysis.query.count(),&#39;analyses&#39;)&quot;')">stats DB</button>
+    <button class="btn btn-ghost" onclick="termQuick('python -c &quot;import sys,platform;print(sys.version);print(platform.platform())&quot;')">systeme</button>
     <button class="btn btn-ghost" onclick="termQuick('python retrain_real.py')">retrain ML</button>
   </div>
   <div class="term-wrap">
-    <div class="term-header">
-      <div class="term-dots">
-        <span style="background:var(--red)"></span>
-        <span style="background:var(--amber)"></span>
-        <span style="background:var(--green)"></span>
-      </div>
-      <span style="font-size:10px;font-weight:600;color:var(--text3);letter-spacing:0.04em;text-transform:uppercase">PILAR SHELL — ADMIN ONLY</span>
-      <button onclick="termClear()" style="background:transparent;border:1px solid var(--border);color:var(--text3);padding:4px 10px;border-radius:var(--r-xs);font-size:11px;cursor:pointer">Effacer</button>
+    <div class="term-hdr">
+      <div class="term-dots"><span style="background:var(--red)"></span><span style="background:var(--amber)"></span><span style="background:var(--green)"></span></div>
+      <span style="font-size:10px;font-weight:600;color:var(--text3);letter-spacing:0.04em;text-transform:uppercase">PILAR SHELL</span>
+      <button onclick="termClear()" style="background:transparent;border:1px solid var(--border);color:var(--text3);padding:3px 9px;border-radius:var(--r-xs);font-size:10px;cursor:pointer">Effacer</button>
     </div>
-    <div class="term-output" id="termOut"><span style="color:var(--text3)">Prêt. Cliquez un raccourci ou tapez une commande.</span>
+    <div class="term-out" id="termOut"><span style="color:var(--text3)">Pret.</span>
 </div>
-    <div class="term-input-row">
+    <div class="term-row">
       <span class="term-prompt">pilar$&nbsp;</span>
-      <input class="term-input" id="termIn" type="text" placeholder="ex: pip list, python --version, ls..." autocomplete="off" spellcheck="false" onkeydown="termKey(event)">
-      <button class="term-run-btn" id="termBtn" onclick="termRun()">Exécuter</button>
+      <input class="term-inp" id="termIn" type="text" placeholder="commande..." autocomplete="off" spellcheck="false" onkeydown="termKey(event)">
+      <button class="term-btn" id="termBtn" onclick="termRun()">Run</button>
     </div>
   </div>
 </div>
 
-</div><!-- /wrap -->
+</div>
 
-<!-- MODAL GESTION ABONNEMENT -->
 <div class="overlay" id="overlay" onclick="closeIfOut(event)">
-  <div class="modal">
-    <h3 id="modalTitle">Gérer l'abonnement</h3>
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-h" id="modalTitle">Gerer l\u2019abonnement</div>
+    <div class="modal-sub" id="modalSub"></div>
     <div class="msg" id="modalMsg"></div>
-
     <label>Plan</label>
-    <div class="plan-btns">
-      <div class="plan-opt" id="opt-free" onclick="selectPlan('free')">Free</div>
+    <div class="plan-grid">
+      <div class="plan-opt" id="opt-free"    onclick="selectPlan('free')">Free<br><span style="font-size:9px;font-weight:400;opacity:.6">Limite</span></div>
       <div class="plan-opt" id="opt-starter" onclick="selectPlan('starter')">Starter<br><span style="font-size:9px;font-weight:400">$99/mo</span></div>
-      <div class="plan-opt" id="opt-pro" onclick="selectPlan('pro')">Pro<br><span style="font-size:9px;font-weight:400">$299/mo</span></div>
+      <div class="plan-opt" id="opt-pro"     onclick="selectPlan('pro')">Pro<br><span style="font-size:9px;font-weight:400">$299/mo</span></div>
     </div>
-
-    <label>Date d'expiration</label>
-    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
-      <input type="date" class="fi" id="expiresInput" style="flex:1;margin:0">
-      <button onclick="addMonths(1)" style="padding:7px 10px;background:var(--surface2);border:1px solid var(--border2);color:var(--text3);border-radius:var(--r-sm);font-size:13px;font-weight:500;cursor:pointer">+1 mois</button>
-      <button onclick="addMonths(3)" style="padding:7px 10px;background:var(--surface2);border:1px solid var(--border2);color:var(--text3);border-radius:var(--r-sm);font-size:13px;font-weight:500;cursor:pointer">+3 mois</button>
-      <button onclick="addMonths(12)" style="padding:7px 10px;background:var(--surface2);border:1px solid var(--border2);color:var(--text3);border-radius:var(--r-sm);font-size:13px;font-weight:500;cursor:pointer">+1 an</button>
-      <button onclick="document.getElementById('expiresInput').value=''" style="padding:7px 10px;background:var(--surface2);border:1px solid var(--border2);color:var(--text3);border-radius:var(--r-sm);font-size:13px;font-weight:500;cursor:pointer">Effacer</button>
+    <label>Expiration</label>
+    <div class="date-row">
+      <input type="date" class="fi" id="expiresInput" style="margin:0">
+      <button onclick="addMonths(1)" class="btn btn-ghost">+1 mois</button>
+      <button onclick="addMonths(3)" class="btn btn-ghost">+3 mois</button>
+      <button onclick="addMonths(12)" class="btn btn-ghost">+1 an</button>
+      <button onclick="document.getElementById('expiresInput').value=''" class="btn btn-ghost">Vider</button>
     </div>
-
-    <label>Note paiement (référence virement, etc.)</label>
-    <input type="text" class="fi" id="noteInput" placeholder="ex: Virement BNP ref 2026-031 — Société ABC">
-
-    <div style="display:flex;gap:10px;margin-top:8px">
-      <button onclick="savePlan()" class="btn btn-teal" id="saveBtn" style="flex:1;padding:12px">Enregistrer</button>
-      <button onclick="closeModal()" class="btn btn-ghost" style="padding:12px 20px">Annuler</button>
+    <label>Quota machines</label>
+    <input type="number" class="fi" id="quotaInput" min="0" max="999" style="width:100px">
+    <label>Note paiement</label>
+    <input type="text" class="fi" id="noteInput" placeholder="ex: Virement BNP ref 2026-031">
+    <div class="mfooter">
+      <button onclick="savePlan()" class="btn btn-teal" id="saveBtn">Enregistrer</button>
+      <button onclick="closeModal()" class="btn btn-ghost">Annuler</button>
     </div>
   </div>
 </div>
 
 <script>
-let _currentUid = null;
-let _currentPlan = 'free';
+var _uid = null, _plan = 'free';
 
 document.addEventListener('click', function(e) {
-  const btn = e.target.closest('.manage-btn');
-  if (btn) openModal(btn.dataset.uid, btn.dataset.email, btn.dataset.plan, btn.dataset.expires, btn.dataset.note);
+  var btn = e.target.closest('.manage-btn');
+  if (btn) openModal(btn.dataset.uid, btn.dataset.email, btn.dataset.plan, btn.dataset.expires, btn.dataset.note, btn.dataset.quota);
 });
 
-function openModal(uid, email, plan, expires, note) {
-  _currentUid = uid;
-  _currentPlan = plan;
-  document.getElementById('modalTitle').textContent = 'Abonnement — ' + email;
-  document.getElementById('expiresInput').value = expires;
-  document.getElementById('noteInput').value = note || '';
-  document.getElementById('modalMsg').className = 'msg';
-  document.getElementById('modalMsg').textContent = '';
+function openModal(uid, email, plan, expires, note, quota) {
+  _uid  = uid;
+  _plan = plan;
+  document.getElementById('modalTitle').textContent = 'Gerer l\u2019abonnement';
+  document.getElementById('modalSub').textContent   = email;
+  document.getElementById('expiresInput').value     = expires || '';
+  document.getElementById('noteInput').value        = note    || '';
+  document.getElementById('quotaInput').value       = quota   || '3';
+  var msg = document.getElementById('modalMsg');
+  msg.className   = 'msg';
+  msg.textContent = '';
   selectPlan(plan);
   document.getElementById('overlay').classList.add('open');
 }
 
-function closeModal() {
-  document.getElementById('overlay').classList.remove('open');
-}
+function closeModal() { document.getElementById('overlay').classList.remove('open'); }
+function closeIfOut(e) { if (e.target === document.getElementById('overlay')) closeModal(); }
 
-function closeIfOut(e) {
-  if (e.target === document.getElementById('overlay')) closeModal();
-}
-
-function selectPlan(plan) {
-  _currentPlan = plan;
-  ['free','starter','pro'].forEach(p => {
-    const el = document.getElementById('opt-' + p);
-    el.className = 'plan-opt';
-    if (p === plan) el.classList.add('selected-' + plan);
+function selectPlan(p) {
+  _plan = p;
+  ['free','starter','pro'].forEach(function(x) {
+    var el = document.getElementById('opt-' + x);
+    el.className = 'plan-opt' + (x === p ? ' sel-' + p : '');
   });
 }
 
 function addMonths(n) {
-  const inp = document.getElementById('expiresInput');
-  const base = inp.value ? new Date(inp.value) : new Date();
+  var inp  = document.getElementById('expiresInput');
+  var base = inp.value ? new Date(inp.value + 'T12:00:00') : new Date();
   base.setMonth(base.getMonth() + n);
   inp.value = base.toISOString().slice(0, 10);
 }
 
 async function savePlan() {
-  const btn = document.getElementById('saveBtn');
-  btn.disabled = true;
-  const msg = document.getElementById('modalMsg');
-  const expires = document.getElementById('expiresInput').value;
-  const note = document.getElementById('noteInput').value;
+  var btn     = document.getElementById('saveBtn');
+  var msg     = document.getElementById('modalMsg');
+  var expires = document.getElementById('expiresInput').value;
+  var note    = document.getElementById('noteInput').value;
+  var quota   = parseInt(document.getElementById('quotaInput').value, 10);
+  if (isNaN(quota) || quota < 0) quota = 3;
+  btn.disabled    = true;
+  msg.className   = 'msg';
+  msg.textContent = '';
   try {
-    const r = await fetch('/admin/set_plan/' + _currentUid, {
-      method: 'POST',
+    var r = await fetch('/admin/set_plan/' + _uid, {
+      method:  'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({plan: _currentPlan, expires_at: expires, note: note})
+      body:    JSON.stringify({plan: _plan, expires_at: expires, note: note})
     });
-    const d = await r.json();
-    if (d.ok) {
-      msg.className = 'msg ok';
-      msg.textContent = 'Abonnement mis à jour.';
-      setTimeout(() => location.reload(), 1000);
-    } else {
-      msg.className = 'msg err';
-      msg.textContent = d.error || 'Erreur';
-      btn.disabled = false;
+    var d = await r.json();
+    if (!d.ok) {
+      msg.className   = 'msg err';
+      msg.textContent = d.error || 'Erreur serveur';
+      btn.disabled    = false;
+      return;
     }
-  } catch(e) {
-    msg.className = 'msg err';
-    msg.textContent = 'Erreur réseau';
-    btn.disabled = false;
+    await fetch('/admin/set_quota/' + _uid, {
+      method:  'POST',
+      headers: {'Content-Type': 'application/json'},
+      body:    JSON.stringify({quota: quota})
+    });
+    msg.className   = 'msg ok';
+    msg.textContent = 'Enregistre avec succes.';
+    setTimeout(function() { location.reload(); }, 900);
+  } catch(err) {
+    msg.className   = 'msg err';
+    msg.textContent = 'Erreur reseau. Verifiez votre connexion et rechargez la page.';
+    btn.disabled    = false;
   }
 }
 
 function filterTable() {
-  const q = document.getElementById('searchInput').value.toLowerCase();
-  const pf = document.getElementById('planFilter').value;
-  document.querySelectorAll('#usersTable tbody tr').forEach(row => {
-    const email = row.dataset.email || '';
-    const plan = row.dataset.plan || '';
-    const matchEmail = !q || email.includes(q);
-    const matchPlan = !pf || plan === pf;
-    row.style.display = matchEmail && matchPlan ? '' : 'none';
+  var q  = document.getElementById('searchInput').value.toLowerCase();
+  var pf = document.getElementById('planFilter').value;
+  document.querySelectorAll('#usersTable tbody tr').forEach(function(row) {
+    var email = (row.dataset.email || '').toLowerCase();
+    var plan  = row.dataset.plan  || '';
+    row.style.display = (!q || email.includes(q)) && (!pf || plan === pf) ? '' : 'none';
   });
 }
 
-/* ── Toggle Admin ── */
 async function toggleAdmin(uid, email) {
   if (!confirm('Modifier les droits admin de ' + email + ' ?')) return;
   try {
-    const r = await fetch('/admin/toggle_admin/' + uid, {method:'POST', headers:{'Content-Type':'application/json'}});
-    const d = await r.json();
-    if (d.ok) location.reload();
-    else alert(d.error || 'Erreur');
-  } catch(e) { alert('Erreur réseau'); }
+    var r = await fetch('/admin/toggle_admin/' + uid, {method:'POST',headers:{'Content-Type':'application/json'}});
+    var d = await r.json();
+    if (d.ok) location.reload(); else alert(d.error || 'Erreur');
+  } catch(e) { alert('Erreur reseau'); }
 }
 
-/* ── Ban / Unban ── */
 async function toggleBan(uid, email, isBanned) {
-  const action = isBanned ? 'Débannir' : 'Bannir';
-  if (!confirm(action + ' le compte de ' + email + ' ?')) return;
+  if (!confirm((isBanned ? 'Debannir' : 'Bannir') + ' le compte de ' + email + ' ?')) return;
   try {
-    const r = await fetch('/admin/toggle_ban/' + uid, {method:'POST', headers:{'Content-Type':'application/json'}});
-    const d = await r.json();
-    if (d.ok) location.reload();
-    else alert(d.error || 'Erreur');
-  } catch(e) { alert('Erreur réseau'); }
+    var r = await fetch('/admin/toggle_ban/' + uid, {method:'POST',headers:{'Content-Type':'application/json'}});
+    var d = await r.json();
+    if (d.ok) location.reload(); else alert(d.error || 'Erreur');
+  } catch(e) { alert('Erreur reseau'); }
 }
 
-/* ── Delete User ── */
 async function deleteUser(uid, email) {
-  if (!confirm('Supprimer définitivement le compte de ' + email + ' et toutes ses données ?\n\nCette action est irréversible.')) return;
+  if (!confirm('Supprimer le compte de ' + email + ' ? Cette action est irreversible.')) return;
   try {
-    const r = await fetch('/admin/delete_user/' + uid, {method:'POST', headers:{'Content-Type':'application/json'}});
-    const d = await r.json();
-    if (d.ok) location.reload();
-    else alert(d.error || 'Erreur');
-  } catch(e) { alert('Erreur réseau'); }
+    var r = await fetch('/admin/delete_user/' + uid, {method:'POST',headers:{'Content-Type':'application/json'}});
+    var d = await r.json();
+    if (d.ok) location.reload(); else alert(d.error || 'Erreur');
+  } catch(e) { alert('Erreur reseau'); }
 }
 
-/* ── Block / Unblock Email ── */
 async function blockEmail() {
-  const email = document.getElementById('blockEmailInput').value.trim();
-  const reason = document.getElementById('blockReasonInput').value.trim();
+  var email  = document.getElementById('blockEmailInput').value.trim();
+  var reason = document.getElementById('blockReasonInput').value.trim();
   if (!email) { alert('Email requis'); return; }
-  if (!confirm('Bloquer l\'adresse ' + email + ' ?')) return;
+  if (!confirm('Bloquer ' + email + ' ?')) return;
   try {
-    const r = await fetch('/admin/block_email', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({email, reason})});
-    const d = await r.json();
-    if (d.ok) location.reload();
-    else alert(d.error || 'Erreur');
-  } catch(e) { alert('Erreur réseau'); }
+    var r = await fetch('/admin/block_email', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({email: email, reason: reason})
+    });
+    var d = await r.json();
+    if (d.ok) location.reload(); else alert(d.error || 'Erreur');
+  } catch(e) { alert('Erreur reseau'); }
 }
 
 async function unblockEmail(bid, email) {
-  if (!confirm('Débloquer ' + email + ' ?')) return;
+  if (!confirm('Debloquer ' + email + ' ?')) return;
   try {
-    const r = await fetch('/admin/unblock_email/' + bid, {method:'POST', headers:{'Content-Type':'application/json'}});
-    const d = await r.json();
-    if (d.ok) location.reload();
-    else alert(d.error || 'Erreur');
-  } catch(e) { alert('Erreur réseau'); }
+    var r = await fetch('/admin/unblock_email/' + bid, {method:'POST',headers:{'Content-Type':'application/json'}});
+    var d = await r.json();
+    if (d.ok) location.reload(); else alert(d.error || 'Erreur');
+  } catch(e) { alert('Erreur reseau'); }
 }
 
-/* ── Terminal ── */
-let _termHistory = [];
-let _termHistIdx = -1;
-
+var _hist = [], _hi = -1;
 function termKey(e) {
   if (e.key === 'Enter') { termRun(); return; }
-  if (e.key === 'ArrowUp') {
-    e.preventDefault();
-    if (_termHistory.length === 0) return;
-    _termHistIdx = Math.min(_termHistIdx + 1, _termHistory.length - 1);
-    document.getElementById('termIn').value = _termHistory[_termHistIdx];
-  }
-  if (e.key === 'ArrowDown') {
-    e.preventDefault();
-    if (_termHistIdx <= 0) { _termHistIdx = -1; document.getElementById('termIn').value = ''; return; }
-    _termHistIdx--;
-    document.getElementById('termIn').value = _termHistory[_termHistIdx];
-  }
+  if (e.key === 'ArrowUp') { e.preventDefault(); if (!_hist.length) return; _hi = Math.min(_hi+1,_hist.length-1); document.getElementById('termIn').value = _hist[_hi]; }
+  if (e.key === 'ArrowDown') { e.preventDefault(); if (_hi<=0){_hi=-1;document.getElementById('termIn').value='';return;} _hi--; document.getElementById('termIn').value=_hist[_hi]; }
 }
-
 async function termRun() {
-  const inp = document.getElementById('termIn');
-  const cmd = inp.value.trim();
+  var inp = document.getElementById('termIn');
+  var cmd = inp.value.trim();
   if (!cmd) return;
-  _termHistory.unshift(cmd);
-  _termHistIdx = -1;
-  inp.value = '';
-  const out = document.getElementById('termOut');
-  const btn = document.getElementById('termBtn');
+  _hist.unshift(cmd); _hi = -1; inp.value = '';
+  var out = document.getElementById('termOut');
+  var btn = document.getElementById('termBtn');
   btn.disabled = true;
-  out.innerHTML += '<span class="term-line-cmd">$ ' + cmd.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</span>\\n';
-  out.scrollTop = out.scrollHeight;
+  out.innerHTML += '<span class="l-cmd">$ ' + cmd.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</span>\\n';
+  out.scrollTop  = out.scrollHeight;
   try {
-    const r = await fetch('/admin/terminal', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({cmd: cmd})
+    var r = await fetch('/admin/terminal', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({cmd:cmd})
     });
-    const d = await r.json();
-    const txt = (d.output || '').replace(/</g,'&lt;').replace(/>/g,'&gt;') || '(aucune sortie)';
-    const cls = d.code === 0 ? 'term-line-ok' : 'term-line-err';
-    out.innerHTML += '<span class="' + cls + '">' + txt + '</span>\\n';
-  } catch(e) {
-    out.innerHTML += '<span class="term-line-err">Erreur réseau</span>\\n';
-  }
-  btn.disabled = false;
+    var d   = await r.json();
+    var txt = (d.output || '(aucune sortie)').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    out.innerHTML += '<span class="' + (d.code===0?'l-ok':'l-err') + '">' + txt + '</span>\\n';
+  } catch(e) { out.innerHTML += '<span class="l-err">Erreur reseau</span>\\n'; }
+  btn.disabled  = false;
   out.scrollTop = out.scrollHeight;
   inp.focus();
 }
+function termClear() { document.getElementById('termOut').innerHTML = '<span style="color:var(--text3)">Terminal efface.</span>\\n'; }
+function termQuick(cmd) { document.getElementById('termIn').value = cmd; termRun(); }
 
-function termClear() {
-  document.getElementById('termOut').innerHTML = '<span style="color:var(--text3)">Terminal effacé.</span>\\n';
-}
-
-function termQuick(cmd) {
-  document.getElementById('termIn').value = cmd;
-  termRun();
-}
-
-/* ── User Files ── */
 async function loadFiles() {
   try {
-    const r = await fetch('/admin/files');
-    const files = await r.json();
-    const msg = document.getElementById('filesMsg');
-    const table = document.getElementById('filesTable');
-    const tbody = document.getElementById('filesTbody');
+    var r = await fetch('/admin/files');
+    var files = await r.json();
+    var msg   = document.getElementById('filesMsg');
+    var table = document.getElementById('filesTable');
+    var tbody = document.getElementById('filesTbody');
     if (!files.length) { msg.textContent = 'Aucun fichier.'; return; }
-    msg.style.display = 'none';
+    msg.style.display   = 'none';
     table.style.display = '';
-    tbody.innerHTML = files.map(f => `<tr>
-      <td style="font-weight:600;color:var(--text)">${f.filename}</td>
-      <td style="color:var(--text3);font-size:11px">${f.user_email}</td>
-      <td style="color:var(--text2)">${f.rows}</td>
-      <td style="color:var(--text3);font-size:11px">${new Date(f.created_at).toLocaleDateString('fr')}</td>
-      <td><a href="/admin/files/${f.id}/download" class="btn btn-ghost" style="font-size:10px">Telecharger</a></td>
-    </tr>`).join('');
+    tbody.innerHTML = files.map(function(f) {
+      return '<tr>'
+        + '<td style="font-weight:600;color:var(--text)">'     + f.filename   + '</td>'
+        + '<td style="color:var(--text3);font-size:11px">'     + f.user_email + '</td>'
+        + '<td style="color:var(--text2)">'                    + f.rows       + '</td>'
+        + '<td style="color:var(--text3);font-size:11px">'     + new Date(f.created_at).toLocaleDateString('fr') + '</td>'
+        + '<td><a href="/admin/files/' + f.id + '/download" class="btn btn-ghost">Telecharger</a></td>'
+        + '</tr>';
+    }).join('');
   } catch(e) { document.getElementById('filesMsg').textContent = 'Erreur de chargement.'; }
 }
 loadFiles();
@@ -5107,7 +5049,7 @@ DASHBOARD_HTML = _HEAD.replace("{FAV}", FAV_B64) + """
 """ + nav("fl") + """
 <div class="main-content">
 <header><span class="logo">PILAR</span><div class="hd"></div><span class="hsub">Fleet Overview</span>
-<div class="hright"><button onclick="openAdd()" class="btn" style="font-size:11px;padding:6px 14px">+ Add Machine</button></div>
+<div class="hright" style="display:flex;gap:8px;align-items:center"><button id="analyze-all-btn" onclick="analyzeAll()" class="btn" style="font-size:11px;padding:6px 14px;background:var(--teal);color:#fff">Analyser tout</button><button onclick="openAdd()" class="btn" style="font-size:11px;padding:6px 14px">+ Add Machine</button></div>
 </header>
 <div class="page pad">
 <style>
@@ -5349,6 +5291,7 @@ function renderFleet() {
         <div class="meta-item"><div class="meta-label">Threshold</div><div class="meta-val">${m.threshold}%</div></div>
         <div class="meta-item"><div class="meta-label">Last seen</div><div class="meta-val" style="font-size:11px">${lastSeen}</div></div>
       </div>
+      ${m.saved_file ? `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding:8px 10px;background:rgba(13,148,136,0.06);border:1px solid rgba(13,148,136,0.2);border-radius:8px;font-size:11px;color:var(--teal2)"><svg viewBox="0 0 20 20" fill="currentColor" style="width:14px;height:14px;flex-shrink:0"><path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/></svg><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(m.saved_file.filename)}</span><span style="color:var(--text3);flex-shrink:0">${m.saved_file.row_count} rows</span><button onclick="event.stopPropagation();rerunFile(${m.id})" style="background:var(--teal);border:none;border-radius:5px;color:#fff;font-size:10px;font-weight:700;padding:3px 8px;cursor:pointer;flex-shrink:0">Re-run</button><button onclick="event.stopPropagation();deleteFile(${m.id},${m.saved_file.id})" style="background:transparent;border:none;color:var(--text3);cursor:pointer;padding:2px 4px;font-size:13px;line-height:1;flex-shrink:0">&#x2715;</button></div>` : ''}
       <div class="card-actions">
         <button class="btn btn-primary" style="flex:1;justify-content:center" onclick="openAnalyse(${m.id})">&#9889; Analyse</button>
         <button class="btn btn-ghost" style="flex:1;justify-content:center" onclick="openUpload(${m.id})">CSV</button>
@@ -5427,6 +5370,53 @@ async function deleteMachine(id) {
   if (!confirm(`Delete machine "${m?.name}"? This cannot be undone.`)) return;
   await fetch(`/api/machines/${id}`, {method:'DELETE'});
   loadFleet();
+}
+
+async function rerunFile(mid) {
+  const m = _machines.find(x => x.id === mid);
+  if (!m || !m.saved_file) return;
+  const btn = event.target;
+  btn.textContent = '...'; btn.disabled = true;
+  try {
+    // Récupérer le contenu et le renvoyer comme FormData
+    const r = await fetch('/api/machines/' + mid + '/files');
+    const files = await r.json();
+    if (!files.length) { btn.textContent = 'Re-run'; btn.disabled = false; return; }
+    // Le contenu est déjà stocké, on appelle analyze-all pour cette machine seulement
+    const r2 = await fetch('/api/machines/analyze-all', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({machine_ids: [mid]})});
+    const d = await r2.json();
+    loadFleet();
+  } catch(e) { btn.textContent = 'Re-run'; btn.disabled = false; }
+}
+
+async function deleteFile(mid, fid) {
+  if (!confirm('Supprimer ce fichier de la machine ?')) return;
+  try {
+    await fetch('/api/machines/' + mid + '/files/' + fid, {method: 'DELETE'});
+    loadFleet();
+  } catch(e) { alert('Erreur reseau'); }
+}
+
+async function analyzeAll() {
+  const btn = document.getElementById('analyze-all-btn');
+  if (!btn) return;
+  const withFiles = _machines.filter(m => m.saved_file);
+  if (!withFiles.length) { alert('Aucune machine n\'a de fichier CSV attaché. Uploadez un fichier via le bouton CSV de chaque machine.'); return; }
+  if (!confirm('Lancer l\'analyse sur ' + withFiles.length + ' machine(s) avec fichier CSV ?')) return;
+  btn.textContent = 'En cours...'; btn.disabled = true;
+  try {
+    const r = await fetch('/api/machines/analyze-all', {method: 'POST', headers: {'Content-Type': 'application/json'}});
+    const d = await r.json();
+    if (!d.ok) { alert(d.error || 'Erreur'); btn.textContent = 'Analyser tout'; btn.disabled = false; return; }
+    const ok = d.results.filter(x => !x.skipped);
+    const skip = d.results.filter(x => x.skipped);
+    let msg = 'Analyse terminée :\\n';
+    ok.forEach(x => { msg += '\\n' + x.machine + ' : ' + x.total + ' lignes, ' + x.failures + ' anomalies, risque moy. ' + x.avg_risk + '%'; });
+    if (skip.length) { msg += '\\n\\nIgnorées : ' + skip.map(x => x.machine + ' (' + x.reason + ')').join(', '); }
+    alert(msg);
+    loadFleet();
+  } catch(e) { alert('Erreur reseau'); }
+  btn.textContent = 'Analyser tout'; btn.disabled = false;
 }
 
 loadFleet();
@@ -5939,7 +5929,7 @@ def predict_risk(params, threshold=45, return_extra=False, machine_context=None)
                 clf.fit(np.array(_normal_samples))
                 _iso_forest = clf
                 try:
-                    with open("isolation_forest.pkl","wb") as _f: pickle.dump(clf, _f)
+                    with open(_pkl("isolation_forest.pkl"),"wb") as _f: pickle.dump(clf, _f)
                 except Exception: pass
                 print(f"[Pilar] Isolation Forest entraîné ({len(_normal_samples)} normaux)")
         anomaly_score = _compute_anomaly_score(donnees_scaled)
@@ -6140,17 +6130,17 @@ def _reload_models():
     """Reload pkl files into global model variables after a retrain."""
     global model, scaler, modeles_zones, _shap_explainer, _iso_forest, _rul_model, _rul_scaler, _normal_samples
     try:
-        with open('modele_pannes.pkl', 'rb') as f: model = pickle.load(f)
-        with open('scaler.pkl', 'rb') as f: scaler = pickle.load(f)
-        with open('modeles_zones.pkl', 'rb') as f: modeles_zones = pickle.load(f)
+        with open(_pkl('modele_pannes.pkl'), 'rb') as f: model = pickle.load(f)
+        with open(_pkl('scaler.pkl'), 'rb') as f: scaler = pickle.load(f)
+        with open(_pkl('modeles_zones.pkl'), 'rb') as f: modeles_zones = pickle.load(f)
         _shap_explainer = None
         _normal_samples = []
         try:
-            with open('isolation_forest.pkl', 'rb') as f: _iso_forest = pickle.load(f)
+            with open(_pkl('isolation_forest.pkl'), 'rb') as f: _iso_forest = pickle.load(f)
         except FileNotFoundError: _iso_forest = None
         try:
-            with open('rul_model.pkl',  'rb') as f: _rul_model  = pickle.load(f)
-            with open('rul_scaler.pkl', 'rb') as f: _rul_scaler = pickle.load(f)
+            with open(_pkl('rul_model.pkl'),  'rb') as f: _rul_model  = pickle.load(f)
+            with open(_pkl('rul_scaler.pkl'), 'rb') as f: _rul_scaler = pickle.load(f)
         except FileNotFoundError: pass
         print('[Pilar/retrain] Models reloaded into memory')
     except Exception as _e:
@@ -6209,7 +6199,7 @@ def _auto_retrain():
                 _new_analyses_since_retrain = 0
                 # Record retrain timestamp in settings
                 try:
-                    s = Setting.query.filter_by(key='last_auto_retrain', user_id=None).first()
+                    s = Settings.query.filter_by(key='last_auto_retrain', user_id=None).first()
                     ts = datetime.utcnow().isoformat()
                     if s: s.value = ts
                     else: db.session.add(Setting(key='last_auto_retrain', value=ts, user_id=None))
@@ -6535,7 +6525,7 @@ def admin_retrain_status():
     locked = not _retrain_lock.acquire(blocking=False)
     if not locked:
         _retrain_lock.release()
-    s = Setting.query.filter_by(key='last_auto_retrain', user_id=None).first()
+    s = Settings.query.filter_by(key='last_auto_retrain', user_id=None).first()
     return jsonify({
         'in_progress': locked,
         'last_retrain': s.value if s else None,
@@ -6675,6 +6665,9 @@ def api_machines_list():
             'last_risk': last.risk if last else None,
             'last_prediction': last.prediction if last else None,
             'last_seen': last.timestamp.isoformat() + 'Z' if last else None,
+            'saved_file': (lambda sf: {'id': sf.id, 'filename': sf.filename, 'row_count': sf.row_count, 'created_at': sf.created_at.isoformat()+'Z'} if sf else None)(
+                SavedFile.query.filter_by(machine_id=m.id, user_id=uid).order_by(SavedFile.created_at.desc()).first()
+            ),
         })
     return jsonify(result)
 
@@ -6974,11 +6967,131 @@ def api_machine_analyze_csv(mid):
     failures = sum(1 for r in results if r['prediction'] == 1)
     avg_risk = round(sum(r['risk'] for r in results) / len(results), 1)
     max_risk = round(max(r['risk'] for r in results), 1)
+    # Sauvegarder le fichier attaché à la machine (remplace l'ancien)
+    old = SavedFile.query.filter_by(machine_id=mid, user_id=uid).first()
+    if old:
+        db.session.delete(old)
+    sf = SavedFile(
+        user_id=uid, machine_id=mid,
+        filename=f.filename or f'upload_{m.name}.csv',
+        content=content, row_count=len(results),
+    )
+    db.session.add(sf)
+    db.session.commit()
     return jsonify({
         'ok': True, 'total': len(results), 'failures': failures,
         'avg_risk': avg_risk, 'max_risk': max_risk,
         'machine_name': m.name,
+        'file_id': sf.id, 'filename': sf.filename,
     })
+
+@app.route('/api/machines/<int:mid>/files', methods=['GET'])
+@login_required
+def api_machine_files(mid):
+    uid = current_uid()
+    Machine.query.filter_by(id=mid, user_id=uid).first_or_404()
+    files = SavedFile.query.filter_by(machine_id=mid, user_id=uid).order_by(SavedFile.created_at.desc()).all()
+    return jsonify([{
+        'id': f.id, 'filename': f.filename,
+        'row_count': f.row_count,
+        'created_at': f.created_at.isoformat() + 'Z',
+    } for f in files])
+
+@app.route('/api/machines/<int:mid>/files/<int:fid>', methods=['DELETE'])
+@login_required
+def api_machine_file_delete(mid, fid):
+    uid = current_uid()
+    Machine.query.filter_by(id=mid, user_id=uid).first_or_404()
+    sf = SavedFile.query.filter_by(id=fid, machine_id=mid, user_id=uid).first_or_404()
+    db.session.delete(sf)
+    db.session.commit()
+    return jsonify({'ok': True})
+
+@app.route('/api/machines/analyze-all', methods=['POST'])
+@login_required
+def api_machines_analyze_all():
+    """Lance l'analyse CSV sur toutes les machines qui ont un fichier sauvegardé."""
+    uid = current_uid()
+    if model is None:
+        return jsonify({'error': 'Modele ML non chargé — contactez l\'administrateur'}), 503
+    data = request.json or {}
+    machine_ids_filter = data.get('machine_ids')
+    query = Machine.query.filter_by(user_id=uid, is_active=True)
+    if machine_ids_filter:
+        query = query.filter(Machine.id.in_(machine_ids_filter))
+    machines = query.all()
+    results = []
+    for m in machines:
+        sf = SavedFile.query.filter_by(machine_id=m.id, user_id=uid).order_by(SavedFile.created_at.desc()).first()
+        if not sf:
+            results.append({'machine': m.name, 'skipped': True, 'reason': 'No file'})
+            continue
+        try:
+            import io as _io
+            content = sf.content
+            for delim in [',', ';', '\t', '|']:
+                if delim in content.split('\n')[0]:
+                    break
+            df = pd.read_csv(_io.StringIO(content), sep=delim)
+            col_map = {}
+            kw = {
+                'vibration': ['vibration','vib','vibration_mm','vib_mms'],
+                'temp_palier': ['temp_palier','bearing_temp','palier_temp','t_palier','bearing_temperature'],
+                'debit': ['debit','flow','flow_rate','flowrate'],
+                'pression_entree': ['pression_entree','inlet_pressure','pressure_in','suction_pressure'],
+                'pression_sortie': ['pression_sortie','outlet_pressure','discharge_pressure','pressure_out'],
+                'courant_moteur': ['courant_moteur','motor_current','current_motor','courant_a'],
+                'temp_moteur': ['temp_moteur','motor_temp','motor_temperature'],
+                'heure_fonctionnement': ['heure_fonctionnement','run_hours','operating_hours','runtime','hours'],
+            }
+            lower_cols = {c.lower().strip(): c for c in df.columns}
+            for field, keywords in kw.items():
+                for kword in keywords:
+                    if kword in lower_cols:
+                        col_map[field] = lower_cols[kword]
+                        break
+            if not col_map:
+                results.append({'machine': m.name, 'skipped': True, 'reason': 'Unrecognized columns'})
+                continue
+            threshold = float(m.threshold) if m.threshold else 45.0
+            rows_ok = 0
+            failures_m = 0
+            risks = []
+            for _, row in df.iterrows():
+                try:
+                    params = {}
+                    for field, col in col_map.items():
+                        v = row[col]
+                        params[field] = float(v) if pd.notna(v) else None
+                    probabilite, prediction, zones_risque, confidence, _ = predict_risk(dict(params), threshold=threshold)
+                    zones_str = ', '.join([z['nom'] for z in zones_risque]) if zones_risque else ''
+                    a = Analysis(
+                        machine_type='pump',
+                        temp_air=params.get('temp_palier'), temp_process=params.get('temp_moteur'),
+                        vitesse=params.get('debit'), couple=params.get('pression_sortie'),
+                        usure=params.get('heure_fonctionnement'),
+                        risk=probabilite, prediction=prediction, zones=zones_str,
+                        confidence=confidence, user_id=uid, machine_id=m.name)
+                    db.session.add(a)
+                    rows_ok += 1
+                    failures_m += prediction
+                    risks.append(probabilite)
+                except Exception:
+                    continue
+            if rows_ok:
+                db.session.commit()
+            results.append({
+                'machine': m.name,
+                'skipped': False,
+                'total': rows_ok,
+                'failures': failures_m,
+                'avg_risk': round(sum(risks)/len(risks), 1) if risks else 0,
+                'max_risk': round(max(risks), 1) if risks else 0,
+                'file': sf.filename,
+            })
+        except Exception as e:
+            results.append({'machine': m.name, 'skipped': True, 'reason': str(e)})
+    return jsonify({'ok': True, 'results': results})
 
 @app.route('/api/machine-request', methods=['POST'])
 @login_required
