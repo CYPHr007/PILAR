@@ -3277,240 +3277,254 @@ LANDING_HTML = """<!DOCTYPE html>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Pilar — Predictive Maintenance for Industry</title>
-<meta name="description" content="Predict machine failures before they happen. Pilar uses AI to analyze industrial sensors and alert you hours before breakdowns occur.">
+<meta name="description" content="Know before it breaks. Pilar reads your machine sensors, detects early failure signatures, and alerts your team hours before breakdown.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#07090f;--surface:#0e1118;--surface2:#141820;--surface3:#1e2433;
-  --border:#1e2433;--border2:#252d3d;
-  --teal:#0d9488;--teal2:#14b8a6;--teal-dim:rgba(13,148,136,0.08);
-  --red:#dc2626;--red-dim:rgba(220,38,38,0.08);
-  --green:#059669;--green-dim:rgba(5,150,105,0.08);
-  --amber:#d97706;--purple:#bf5af2;
-  --text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;
-  --r:12px;--r-sm:8px;--shadow:0 4px 24px rgba(0,0,0,0.5);--shadow-sm:0 2px 8px rgba(0,0,0,0.4);
+  --bg:#080b10;--surface:#0d1218;--surface2:#111820;--surface3:#162030;
+  --border:#1a2535;--border2:#243044;
+  --teal:#0d9488;
+  --red:#e05252;--red-dim:rgba(220,82,82,0.08);
+  --green:#3dbd88;--green-dim:rgba(61,189,136,0.08);
+  --amber:#d4a244;
+  --text:#dce6f0;--text2:#7a92ab;--text3:#3d5268;
+  --mono:'JetBrains Mono',monospace;
+  --sans:'DM Sans',sans-serif;
+  --serif:'DM Serif Display',serif;
+  --r:8px;--r-sm:6px;
+  --container:1100px;
+  --section-pad:100px;
 }
 html{scroll-behavior:smooth}
-body{font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);overflow-x:hidden;-webkit-font-smoothing:antialiased}
 
-/* NAV */
-nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:0 32px;height:60px;display:flex;align-items:center;justify-content:space-between;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);background:rgba(28,28,30,0.92);border-bottom:1px solid var(--border)}
-.nav-logo{font-size:16px;font-weight:700;letter-spacing:0.04em;color:var(--text);text-decoration:none}
-.nav-links{display:flex;align-items:center;gap:8px}
-.nav-links a{text-decoration:none}
-.btn-ghost{padding:8px 16px;background:transparent;border:1px solid var(--border2);color:var(--text2);border-radius:var(--r);font-size:13px;font-weight:500;cursor:pointer;transition:all .18s}
-.btn-ghost:hover{border-color:var(--teal);color:var(--teal2)}
-.btn-teal{padding:9px 18px;background:var(--teal);color:#fff;border:none;border-radius:var(--r);font-size:13px;font-weight:600;cursor:pointer;transition:opacity .18s;text-decoration:none;display:inline-block}
-.btn-teal:hover{opacity:0.85}
+/* ── NAV ── */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 40px;background:rgba(8,11,16,0.92);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}
+.nav-logo{font-family:var(--sans);font-size:15px;font-weight:600;letter-spacing:0.06em;color:var(--text);text-decoration:none;display:flex;align-items:center;gap:10px}
+.nav-logo-beta{font-size:9px;font-weight:600;letter-spacing:0.08em;color:var(--teal);background:rgba(13,148,136,0.12);border:1px solid rgba(13,148,136,0.25);border-radius:4px;padding:2px 6px;vertical-align:middle}
+.nav-links{display:flex;align-items:center;gap:6px}
+.nav-lang{display:flex;gap:2px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:3px;margin-right:8px}
+.nav-lang button{padding:4px 10px;border:none;border-radius:4px;font-family:var(--sans);font-size:11px;font-weight:600;cursor:pointer;background:transparent;color:var(--text3);transition:all .15s;letter-spacing:0.04em}
+.btn-ghost{padding:8px 16px;background:transparent;border:1px solid var(--border2);color:var(--text2);border-radius:var(--r);font-family:var(--sans);font-size:13px;font-weight:500;cursor:pointer;transition:all .18s;text-decoration:none;display:inline-block}
+.btn-ghost:hover{border-color:var(--teal);color:var(--teal)}
+.btn-teal{padding:8px 18px;background:var(--teal);color:#fff;border:none;border-radius:var(--r);font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;transition:opacity .18s;text-decoration:none;display:inline-block}
+.btn-teal:hover{opacity:0.84}
+.nav-demo{font-size:13px;font-weight:500;color:var(--text2);text-decoration:none;padding:8px 14px;transition:color .15s}
+.nav-demo:hover{color:var(--text)}
 
-/* HERO */
-.hero{min-height:100vh;display:grid;grid-template-columns:1fr 1fr;gap:0;align-items:center;padding:80px 0 60px;max-width:1200px;margin:0 auto}
-.hero-left{padding:0 40px 0 32px}
-.hero-eyebrow{font-size:11px;font-weight:600;letter-spacing:0.04em;color:var(--teal2);text-transform:uppercase;margin-bottom:24px;display:flex;align-items:center;gap:10px}
-.hero-eyebrow::before{content:'';display:inline-block;width:24px;height:1px;background:var(--teal2)}
-h1{font-size:clamp(56px,7vw,96px);font-weight:700;line-height:1.05;letter-spacing:-0.03em;margin-bottom:28px;color:var(--text)}
-h1 span{color:var(--teal2)}
-.hero-sub{font-size:17px;color:var(--text2);max-width:480px;line-height:1.8;margin-bottom:40px;font-weight:400}
-.hero-cta{display:flex;flex-wrap:wrap;gap:12px}
-.btn-hero{padding:14px 28px;background:var(--teal);color:#fff;border:none;border-radius:var(--r);font-size:15px;font-weight:600;cursor:pointer;transition:opacity .18s;text-decoration:none;display:inline-block}
-.btn-hero:hover{opacity:0.85}
-.btn-hero-ghost{padding:13px 24px;background:transparent;border:1px solid var(--border2);color:var(--text2);border-radius:var(--r);font-size:15px;font-weight:500;cursor:pointer;transition:all .18s;text-decoration:none;display:inline-block}
-.btn-hero-ghost:hover{border-color:var(--teal);color:var(--teal2)}
+/* ── LAYOUT ── */
+.wrap{max-width:var(--container);margin:0 auto;padding:0 40px}
 
-/* TERMINAL PANEL */
-.hero-right{padding:0 32px 0 0}
-.terminal{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;font-family:-apple-system,'SF Mono','Menlo',monospace;box-shadow:var(--shadow)}
-.terminal-bar{background:var(--surface2);border-bottom:1px solid var(--border);padding:10px 16px;display:flex;align-items:center;gap:8px}
+/* ── HERO ── */
+.hero-outer{min-height:100vh;display:flex;align-items:center;padding-top:58px;border-bottom:1px solid var(--border)}
+.hero-inner{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center;padding:80px 40px 80px;max-width:var(--container);margin:0 auto;width:100%}
+.hero-eyebrow{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:0.06em;color:var(--teal);text-transform:uppercase;margin-bottom:28px;display:flex;align-items:center;gap:12px}
+.hero-eyebrow::before{content:'';display:block;width:20px;height:1px;background:var(--teal);flex-shrink:0}
+h1{font-family:var(--serif);font-size:clamp(60px,7.5vw,92px);font-weight:400;line-height:1.02;letter-spacing:-0.01em;margin-bottom:24px;color:var(--text)}
+.hero-sub{font-size:16px;color:var(--text2);max-width:440px;line-height:1.85;margin-bottom:40px;font-weight:400}
+.hero-ctas{display:flex;flex-wrap:wrap;gap:12px}
+.btn-primary{padding:13px 26px;background:var(--teal);color:#fff;border:none;border-radius:var(--r);font-family:var(--sans);font-size:14px;font-weight:600;cursor:pointer;transition:opacity .18s;text-decoration:none;display:inline-block}
+.btn-primary:hover{opacity:0.84}
+.btn-secondary{padding:12px 22px;background:transparent;border:1px solid var(--border2);color:var(--text2);border-radius:var(--r);font-family:var(--sans);font-size:14px;font-weight:500;cursor:pointer;transition:all .18s;text-decoration:none;display:inline-block}
+.btn-secondary:hover{border-color:var(--teal);color:var(--teal)}
+
+/* ── TERMINAL ── */
+.terminal{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;font-family:var(--mono)}
+.terminal-bar{background:var(--surface2);border-bottom:1px solid var(--border);padding:11px 16px;display:flex;align-items:center;gap:8px}
 .terminal-dots{display:flex;gap:5px}
 .terminal-dot{width:10px;height:10px;border-radius:50%}
-.terminal-title{font-size:10px;color:var(--text3);letter-spacing:0.5px;margin-left:8px}
-.terminal-body{padding:24px;font-size:13px;line-height:1.9}
+.terminal-title{font-size:10px;color:var(--text3);letter-spacing:0.05em;margin-left:8px;font-family:var(--mono)}
+.terminal-body{padding:22px 24px;font-size:12.5px;line-height:2}
 .t-comment{color:var(--text3)}
-.t-key{color:var(--teal2)}
+.t-key{color:#7ab8d4}
 .t-val{color:var(--green)}
 .t-warn{color:var(--amber)}
 .t-error{color:var(--red)}
 .t-ok{color:var(--green)}
 .t-dim{color:var(--text3)}
-.t-divider{border:none;border-top:1px solid var(--border);margin:12px 0}
-.t-risk-bar{height:6px;background:var(--surface3);border-radius:6px;margin:10px 0 4px;overflow:hidden}
-.t-risk-fill{height:100%;background:linear-gradient(90deg,var(--amber),var(--red));animation:growfill 1.4s ease-out forwards}
+.t-divider{border:none;border-top:1px solid var(--border);margin:10px 0}
+.t-risk-bar{height:5px;background:var(--surface3);border-radius:4px;margin:10px 0 4px;overflow:hidden}
+.t-risk-fill{height:100%;width:0;background:linear-gradient(90deg,var(--amber),var(--red));animation:growfill 1.6s 0.4s ease-out forwards}
 @keyframes growfill{from{width:0}to{width:72%}}
-.t-alert{background:var(--red-dim);border:1px solid rgba(255,69,58,0.3);border-radius:var(--r-sm);padding:10px 14px;margin-top:12px}
+.t-alert{background:var(--red-dim);border:1px solid rgba(224,82,82,0.28);border-radius:var(--r-sm);padding:10px 14px;margin-top:12px}
 
-/* STATS BAR */
-.stats-bar{border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:0;display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface)}
-.stat-item{padding:32px 24px;text-align:center;border-right:1px solid var(--border)}
-.stat-item:last-child{border-right:none}
-.stat-num{font-size:36px;font-weight:700;color:var(--teal2);letter-spacing:-0.02em;font-variant-numeric:tabular-nums}
-.stat-lbl{font-size:11px;font-weight:600;color:var(--text3);letter-spacing:0.04em;text-transform:uppercase;margin-top:8px}
+/* ── STATS STRIP ── */
+.stats-strip{border-top:1px solid var(--border);border-bottom:1px solid var(--border);display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface)}
+.stat-cell{padding:36px 32px;text-align:center;border-right:1px solid var(--border)}
+.stat-cell:last-child{border-right:none}
+.stat-n{font-family:var(--mono);font-size:34px;font-weight:500;color:var(--teal);letter-spacing:-0.02em;line-height:1}
+.stat-l{font-family:var(--sans);font-size:11px;font-weight:500;color:var(--text3);letter-spacing:0.04em;text-transform:uppercase;margin-top:10px}
 
-/* SECTIONS */
-section{padding:96px 32px;max-width:1200px;margin:0 auto}
-.section-eyebrow{font-size:11px;font-weight:600;letter-spacing:0.04em;color:var(--teal2);text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:10px}
-.section-eyebrow::before{content:'';display:inline-block;width:20px;height:1px;background:var(--teal2)}
-.section-title{font-size:clamp(40px,5vw,64px);font-weight:700;line-height:1.05;letter-spacing:-0.025em;margin-bottom:20px;color:var(--text)}
-.section-title span{color:var(--teal2)}
-.section-sub{font-size:16px;color:var(--text2);max-width:560px;line-height:1.8;font-weight:400}
+/* ── SECTIONS ── */
+.section{padding:var(--section-pad) 40px;max-width:var(--container);margin:0 auto}
+.section-divider{width:100%;height:1px;background:var(--border)}
+.eyebrow{font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:0.08em;color:var(--teal);text-transform:uppercase;margin-bottom:18px;display:flex;align-items:center;gap:10px}
+.eyebrow::before{content:'';display:block;width:16px;height:1px;background:var(--teal);flex-shrink:0}
+.section-h{font-family:var(--serif);font-size:clamp(36px,4.5vw,54px);font-weight:400;line-height:1.08;margin-bottom:16px;color:var(--text)}
+.section-sub{font-size:15px;color:var(--text2);max-width:540px;line-height:1.85;font-weight:400;margin-bottom:0}
 
-/* HOW IT WORKS */
-.steps{display:grid;grid-template-columns:repeat(3,1fr);margin-top:56px;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow-sm)}
-.step{padding:36px 28px;border-right:1px solid var(--border);background:var(--surface);transition:background .2s}
-.step:hover{background:var(--surface2)}
-.step:last-child{border-right:none}
-.step-num{font-size:11px;font-weight:600;color:var(--teal2);letter-spacing:0.04em;margin-bottom:24px;opacity:.7}
-.step-icon{width:44px;height:44px;border-radius:var(--r-sm);border:1px solid rgba(13,148,136,0.3);background:var(--teal-dim);display:flex;align-items:center;justify-content:center;margin-bottom:20px}
-.step-title{font-size:16px;font-weight:600;margin-bottom:12px;color:var(--text)}
-.step-desc{font-size:14px;color:var(--text2);line-height:1.8;font-weight:400}
+/* ── FADE-UP ANIMATION ── */
+.fade-up{opacity:0;transform:translateY(24px);transition:opacity 0.55s ease,transform 0.55s ease}
+.fade-up.visible{opacity:1;transform:translateY(0)}
 
-/* PERFORMANCE */
-.perf-grid{display:grid;grid-template-columns:3fr 2fr;gap:20px;align-items:start;margin-top:56px}
-.perf-metrics{border:1px solid var(--border);background:var(--surface);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow-sm)}
-.metric-row{padding:18px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
-.metric-row:last-child{border-bottom:none}
-.metric-name{font-size:14px;color:var(--text2);font-weight:400}
-.metric-bar-wrap{flex:1;height:4px;background:var(--surface3);margin:0 20px;overflow:hidden;border-radius:4px}
-.metric-bar{height:100%;background:var(--teal);border-radius:4px}
-.metric-val{font-size:14px;font-weight:700;color:var(--teal2);min-width:52px;text-align:right;font-variant-numeric:tabular-nums}
-.perf-card{border:1px solid var(--border);padding:32px;background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow-sm)}
-.perf-big{font-size:72px;font-weight:800;color:var(--teal2);letter-spacing:-0.04em;line-height:1;font-variant-numeric:tabular-nums}
-.perf-unit{font-size:12px;font-weight:600;color:var(--text3);letter-spacing:0.04em;text-transform:uppercase;margin-top:6px}
-.perf-desc{font-size:14px;color:var(--text2);margin-top:20px;line-height:1.8;font-weight:400}
+/* ── HOW IT WORKS — numbered list ── */
+.steps-list{margin-top:56px;display:flex;flex-direction:column;gap:0;border:1px solid var(--border);border-radius:var(--r)}
+.step-row{display:grid;grid-template-columns:64px 1fr;align-items:start;padding:32px 32px 32px 0;border-bottom:1px solid var(--border);transition:background .2s}
+.step-row:last-child{border-bottom:none}
+.step-row:hover{background:var(--surface)}
+.step-idx{font-family:var(--mono);font-size:11px;font-weight:500;color:var(--teal);padding:0 0 0 32px;padding-top:3px;letter-spacing:0.04em}
+.step-body-title{font-size:15px;font-weight:600;color:var(--text);margin-bottom:8px;font-family:var(--sans)}
+.step-body-desc{font-size:14px;color:var(--text2);line-height:1.8;font-weight:400;max-width:640px}
 
-/* FEATURES */
-.features-grid{display:grid;grid-template-columns:repeat(3,1fr);margin-top:56px;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow-sm)}
-.feature-card{padding:28px 24px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);background:var(--surface);transition:background .2s}
-.feature-card:hover{background:var(--surface2)}
-.feature-card:nth-child(3n){border-right:none}
-.feature-card:nth-last-child(-n+3){border-bottom:none}
-.feature-icon{margin-bottom:16px}
-.feature-title{font-size:15px;font-weight:600;margin-bottom:10px;color:var(--text)}
-.feature-desc{font-size:13px;color:var(--text2);line-height:1.8;font-weight:400}
+/* ── PERFORMANCE ── */
+.perf-layout{display:grid;grid-template-columns:3fr 2fr;gap:20px;align-items:start;margin-top:56px}
+.perf-table{border:1px solid var(--border);border-radius:var(--r);overflow:hidden;background:var(--surface)}
+.mrow{padding:20px 24px;display:flex;align-items:center;gap:20px;border-bottom:1px solid var(--border)}
+.mrow:last-child{border-bottom:none}
+.mrow-name{font-size:13px;color:var(--text2);font-weight:400;min-width:160px}
+.mrow-bar-wrap{flex:1;height:3px;background:var(--surface3);border-radius:3px;overflow:hidden}
+.mrow-bar{height:100%;background:var(--teal);border-radius:3px;width:0;transition:width 1s ease}
+.mrow-val{font-family:var(--mono);font-size:13px;font-weight:500;color:var(--teal);min-width:50px;text-align:right}
+.perf-callout{border:1px solid var(--border);border-radius:var(--r);padding:36px 32px;background:var(--surface);display:flex;flex-direction:column;justify-content:space-between}
+.perf-big-lbl{font-family:var(--mono);font-size:10px;font-weight:500;color:var(--text3);letter-spacing:0.07em;text-transform:uppercase;margin-bottom:12px}
+.perf-big-num{font-family:var(--serif);font-size:80px;color:var(--teal);line-height:1;margin-bottom:4px}
+.perf-big-unit{font-family:var(--mono);font-size:11px;color:var(--text3);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:20px}
+.perf-big-note{font-size:13px;color:var(--text2);line-height:1.75}
 
-/* ROI */
-.roi-grid{display:grid;grid-template-columns:1fr 1fr;margin-top:56px;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow-sm)}
-.roi-card{padding:36px}
-.roi-before{border-right:1px solid var(--border);background:rgba(255,69,58,0.04)}
-.roi-after{background:rgba(13,148,136,0.04)}
-.roi-label{font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;margin-bottom:24px}
-.roi-before .roi-label{color:var(--red)}
-.roi-after .roi-label{color:var(--teal2)}
-.roi-item{display:flex;justify-content:space-between;align-items:baseline;padding:12px 0;border-bottom:1px solid var(--border)}
-.roi-item:last-child{border:none}
-.roi-item-label{font-size:14px;color:var(--text2);font-weight:400}
-.roi-item-val{font-size:12px;font-weight:700}
-.roi-before .roi-item-val{color:var(--red)}
-.roi-after .roi-item-val{color:var(--teal2)}
+/* ── FEATURES LIST ── */
+.features-list{display:grid;grid-template-columns:1fr 1fr;gap:0;margin-top:48px;border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.feat-item{display:flex;align-items:flex-start;gap:16px;padding:24px 28px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);transition:background .2s}
+.feat-item:hover{background:var(--surface2)}
+.feat-item:nth-child(2n){border-right:none}
+.feat-item:nth-last-child(-n+2){border-bottom:none}
+.feat-icon{flex-shrink:0;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border2);border-radius:var(--r-sm);background:var(--surface2);margin-top:1px}
+.feat-text-title{font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px}
+.feat-text-desc{font-size:13px;color:var(--text2);line-height:1.7;font-weight:400}
 
-/* INDUSTRIES */
-.industries{display:flex;flex-wrap:wrap;gap:8px;margin-top:48px}
-.industry-chip{padding:10px 20px;font-size:13px;font-weight:500;color:var(--text2);background:var(--surface);border:1px solid var(--border);border-radius:20px;cursor:default;transition:color .15s,background .15s,border-color .15s}
-.industry-chip:hover{color:var(--teal2);background:var(--teal-dim);border-color:rgba(13,148,136,0.4)}
+/* ── BEFORE / AFTER ── */
+.ba-grid{display:grid;grid-template-columns:1fr 1fr;margin-top:56px;border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.ba-col{padding:36px}
+.ba-col-before{border-right:1px solid var(--border)}
+.ba-tag{font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:24px;display:flex;align-items:center;gap:8px}
+.ba-tag-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.ba-item{display:flex;justify-content:space-between;align-items:baseline;padding:13px 0;border-bottom:1px solid var(--border)}
+.ba-item:last-child{border-bottom:none}
+.ba-item-lbl{font-size:13px;color:var(--text2);font-weight:400}
+.ba-item-val{font-size:12px;font-weight:600;font-family:var(--mono)}
+.ba-val-bad{color:var(--red)}
+.ba-val-good{color:var(--teal)}
 
-/* PRICING */
-.pricing-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:56px;max-width:800px}
-.plan-card{padding:40px;position:relative;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow-sm)}
-.plan-card.featured{background:rgba(13,148,136,0.06);border-color:rgba(13,148,136,0.4);box-shadow:0 0 0 1px rgba(13,148,136,0.2),var(--shadow)}
-.plan-badge{display:inline-block;padding:4px 12px;background:var(--teal);color:#fff;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:0;margin-bottom:20px}
-.plan-name{font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--text3);margin-bottom:12px}
-.plan-price{font-size:48px;font-weight:700;letter-spacing:-0.03em;line-height:1;margin-bottom:6px;color:var(--text);font-variant-numeric:tabular-nums}
-.plan-price span{font-size:14px;font-weight:400;color:var(--text3)}
-.plan-desc{font-size:14px;color:var(--text2);margin-bottom:28px;line-height:1.75;font-weight:400}
-.plan-features{list-style:none;margin-bottom:32px}
-.plan-features li{font-size:14px;color:var(--text2);padding:10px 0;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;font-weight:400}
-.plan-features li:last-child{border:none}
-.plan-features li::before{content:'✓';color:var(--green);font-size:12px;flex-shrink:0;font-weight:700}
-.plan-features li.off{color:var(--text3)}
-.plan-features li.off::before{content:'—';color:var(--text3)}
-.plan-btn{display:block;width:100%;padding:14px;border-radius:12px;font-size:15px;font-weight:600;letter-spacing:0;text-transform:none;text-align:center;text-decoration:none;transition:opacity .18s;cursor:pointer;border:none}
-.plan-btn-primary{background:var(--teal);color:#fff}
-.plan-btn-primary:hover{opacity:0.85}
-.plan-btn-ghost{background:transparent;border:1px solid var(--border2);color:var(--text2)}
-.plan-btn-ghost:hover{border-color:var(--teal);color:var(--teal2)}
+/* ── INDUSTRIES ── */
+.industries-line{font-size:14px;color:var(--text2);line-height:2;margin-top:32px}
+.industries-line span{color:var(--text3)}
 
-/* FINAL CTA */
-.cta-section{border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:100px 32px;margin-bottom:0;background:linear-gradient(180deg,var(--surface) 0%,rgba(13,148,136,0.06) 100%)}
-.cta-section h2{font-size:clamp(40px,5vw,72px);font-weight:700;line-height:1.05;letter-spacing:-0.025em;margin-bottom:20px;color:var(--text)}
-.cta-section h2 span{color:var(--teal2)}
-.cta-section p{font-size:17px;color:var(--text2);margin-bottom:36px;max-width:500px;line-height:1.8;font-weight:400}
+/* ── PRICING ── */
+.pricing-cols{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:56px;max-width:760px}
+.plan{padding:36px;border:1px solid var(--border);border-radius:var(--r);background:var(--surface)}
+.plan-featured{border-color:rgba(13,148,136,0.35);background:rgba(13,148,136,0.04)}
+.plan-tag{display:inline-block;padding:3px 10px;background:rgba(13,148,136,0.15);border:1px solid rgba(13,148,136,0.3);color:var(--teal);border-radius:4px;font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:0.06em;margin-bottom:20px}
+.plan-name{font-family:var(--mono);font-size:10px;font-weight:500;color:var(--text3);letter-spacing:0.07em;text-transform:uppercase;margin-bottom:10px}
+.plan-price-val{font-family:var(--serif);font-size:48px;color:var(--text);line-height:1;margin-bottom:4px}
+.plan-price-sub{font-size:12px;color:var(--text3);margin-bottom:20px;font-family:var(--sans)}
+.plan-desc{font-size:13px;color:var(--text2);line-height:1.8;margin-bottom:28px}
+.plan-ul{list-style:none;margin-bottom:32px}
+.plan-ul li{font-size:13px;color:var(--text2);padding:9px 0;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;font-weight:400}
+.plan-ul li:last-child{border-bottom:none}
+.plan-ul li::before{content:'—';color:var(--text3);font-family:var(--mono);font-size:11px;flex-shrink:0}
+.plan-ul li.inc::before{content:'\2713';color:var(--green);font-weight:700}
+.plan-ul li.off{color:var(--text3)}
+.plan-btn-p{display:block;width:100%;padding:13px;border-radius:var(--r);font-family:var(--sans);font-size:14px;font-weight:600;text-align:center;text-decoration:none;transition:opacity .18s;cursor:pointer;border:none;background:var(--teal);color:#fff}
+.plan-btn-p:hover{opacity:0.84}
+.plan-btn-g{display:block;width:100%;padding:12px;border-radius:var(--r);font-family:var(--sans);font-size:14px;font-weight:500;text-align:center;text-decoration:none;transition:all .18s;cursor:pointer;background:transparent;border:1px solid var(--border2);color:var(--text2)}
+.plan-btn-g:hover{border-color:var(--teal);color:var(--teal)}
 
-/* FOOTER */
-footer{border-top:1px solid var(--border);padding:40px 32px;display:grid;grid-template-columns:1fr auto;gap:32px;align-items:end;background:var(--surface)}
-.footer-left{}
-.footer-logo{font-size:15px;font-weight:700;letter-spacing:0.04em;color:var(--text);margin-bottom:8px}
-.footer-text{font-size:12px;color:var(--text3);line-height:1.7;margin-bottom:20px}
-.footer-legal{font-size:11px;color:var(--text3);line-height:1.8}
-.footer-legal a{color:var(--text3);text-decoration:underline;text-underline-offset:3px}
-.footer-legal a:hover{color:var(--teal2)}
-.footer-right{display:flex;flex-direction:column;align-items:flex-end;gap:20px}
-.footer-links{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:20px}
+/* ── FINAL CTA ── */
+.cta-band{border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:var(--section-pad) 40px}
+.cta-inner{max-width:var(--container);margin:0 auto}
+.cta-h{font-family:var(--serif);font-size:clamp(36px,4.5vw,60px);font-weight:400;line-height:1.08;color:var(--text);margin-bottom:28px}
+.cta-btn-wrap{display:flex;gap:12px;flex-wrap:wrap}
+
+/* ── FOOTER ── */
+footer{border-top:1px solid var(--border);padding:44px 40px;background:var(--surface)}
+.footer-inner{max-width:var(--container);margin:0 auto;display:grid;grid-template-columns:1fr auto;gap:40px;align-items:start}
+.footer-logo{font-family:var(--sans);font-size:14px;font-weight:600;letter-spacing:0.06em;color:var(--text);margin-bottom:8px}
+.footer-tagline{font-size:12px;color:var(--text3);line-height:1.7;margin-bottom:18px}
+.footer-legal{font-size:11px;color:var(--text3);line-height:1.9}
+.footer-legal a{color:var(--text3);text-decoration:underline;text-underline-offset:3px;transition:color .15s}
+.footer-legal a:hover{color:var(--teal)}
+.footer-right{display:flex;flex-direction:column;align-items:flex-end;gap:24px}
+.footer-links{display:flex;gap:24px;flex-wrap:wrap;justify-content:flex-end}
 .footer-links a{font-size:13px;color:var(--text3);text-decoration:none;transition:color .15s;font-weight:500}
-.footer-links a:hover{color:var(--teal2)}
-.footer-hiring{border:1px solid var(--border);border-radius:var(--r-sm);padding:16px 20px;text-align:right;background:var(--surface2)}
-.footer-hiring-tag{font-size:10px;font-weight:600;letter-spacing:0.04em;color:var(--teal2);text-transform:uppercase;margin-bottom:4px}
+.footer-links a:hover{color:var(--text)}
+.footer-hiring{border:1px solid var(--border);border-radius:var(--r-sm);padding:18px 20px;text-align:right}
+.footer-hiring-tag{font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:0.07em;color:var(--teal);text-transform:uppercase;margin-bottom:6px}
 .footer-hiring-text{font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.6}
-.footer-hiring a{font-size:12px;font-weight:600;color:var(--teal2);text-decoration:none}
+.footer-hiring a{font-size:12px;font-weight:600;color:var(--teal);text-decoration:none}
 .footer-hiring a:hover{text-decoration:underline}
-@media(max-width:700px){footer{grid-template-columns:1fr}.footer-right{align-items:flex-start}.footer-links{justify-content:flex-start}.footer-hiring{text-align:left}}
 
-/* DIVIDER */
-.full-divider{width:100%;height:1px;background:var(--border)}
-
-/* RESPONSIVE */
-@media(max-width:900px){
-  .hero{grid-template-columns:1fr;padding:100px 0 40px}
-  .hero-left{padding:0 24px}
-  .hero-right{padding:0 24px;margin-top:32px}
-  .steps,.features-grid{grid-template-columns:1fr}
-  .step,.feature-card{border-right:none;border-bottom:1px solid var(--border)}
-  .feature-card:last-child{border-bottom:none}
-  .perf-grid,.roi-grid,.pricing-grid{grid-template-columns:1fr}
-  .roi-before,.plan-card:first-child{border-right:none;border-bottom:1px solid var(--border)}
-  .stats-bar{grid-template-columns:1fr 1fr}
-  .stat-item:nth-child(2){border-right:none}
-  .stat-item:nth-child(3){border-right:1px solid var(--border)}
+/* ── RESPONSIVE ── */
+@media(max-width:960px){
+  .hero-inner{grid-template-columns:1fr;gap:48px;padding:60px 24px 64px}
+  .perf-layout{grid-template-columns:1fr}
+  .ba-grid{grid-template-columns:1fr}
+  .ba-col-before{border-right:none;border-bottom:1px solid var(--border)}
+  .pricing-cols{grid-template-columns:1fr}
+  .features-list{grid-template-columns:1fr}
+  .feat-item:nth-child(2n){border-right:none}
+  .feat-item{border-right:none}
+  .feat-item:nth-last-child(-n+2){border-bottom:1px solid var(--border)}
+  .feat-item:last-child{border-bottom:none}
+  nav{padding:0 24px}
+  .section{padding:72px 24px}
+  .cta-band{padding:72px 24px}
+  footer{padding:36px 24px}
+}
+@media(max-width:700px){
+  .stats-strip{grid-template-columns:1fr 1fr}
+  .stat-cell:nth-child(2){border-right:none}
+  .stat-cell:nth-child(3){border-right:1px solid var(--border)}
+  .footer-inner{grid-template-columns:1fr}
+  .footer-right{align-items:flex-start}
+  .footer-links{justify-content:flex-start}
+  .footer-hiring{text-align:left}
 }
 @media(max-width:480px){
-  .stats-bar{grid-template-columns:1fr}
-  .stat-item{border-right:none}
-  .nav-links .btn-hero-ghost{display:none}
-  footer{flex-direction:column;align-items:flex-start}
+  .stats-strip{grid-template-columns:1fr}
+  .stat-cell{border-right:none}
+  .steps-list .step-row{grid-template-columns:48px 1fr}
+  .step-idx{padding-left:20px}
 }
 </style>
 </head>
 <body>
 
-<!-- BETA BANNER -->
-<div style="background:var(--teal-dim);border-bottom:1px solid rgba(13,148,136,0.25);padding:9px 32px;text-align:center;font-size:11px;font-weight:500;color:var(--teal2)">
-  <span style="opacity:.7">We are in</span> <strong>Public Beta</strong> <span style="opacity:.7">— early access, free to use. Your feedback shapes the product.</span>
-</div>
-
 <!-- NAV -->
-<nav style="top:38px">
-  <a href="/" class="nav-logo">PILAR <span style="font-size:9px;letter-spacing:0.1em;color:var(--teal2);vertical-align:middle;opacity:.8;font-weight:600">BETA</span></a>
+<nav>
+  <a href="/" class="nav-logo">PILAR <span class="nav-logo-beta">BETA</span></a>
   <div class="nav-links">
-    <div style="display:flex;gap:2px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:3px;margin-right:6px">
-      <button id="_lEN" onclick="_lp('en')" style="padding:4px 10px;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;background:transparent;color:var(--text3);transition:all .15s">EN</button>
-      <button id="_lFR" onclick="_lp('fr')" style="padding:4px 10px;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;background:transparent;color:var(--text3);transition:all .15s">FR</button>
+    <div class="nav-lang">
+      <button id="_lEN" onclick="_lp('en')">EN</button>
+      <button id="_lFR" onclick="_lp('fr')">FR</button>
     </div>
-    <a href="/demo" style="font-size:13px;font-weight:500;color:var(--teal2);text-decoration:none;padding:7px 14px;border:1px solid rgba(13,148,136,0.3);border-radius:var(--r);transition:border-color .18s" onmouseover="this.style.borderColor='var(--teal2)'" onmouseout="this.style.borderColor='rgba(13,148,136,0.3)'">Try Demo</a>
+    <a href="/demo" class="nav-demo">Try Demo</a>
     <a href="/login" class="btn-ghost" data-ilp="nav_signin">Sign In</a>
-    <a href="/register" class="btn-teal" data-ilp="nav_start">Get Started Free</a>
+    <a href="/register" class="btn-teal" data-ilp="nav_start">Get Started</a>
   </div>
 </nav>
 
 <!-- HERO -->
-<div style="min-height:100vh;display:flex;align-items:stretch;padding-top:96px">
-  <div class="hero" style="width:100%;min-height:calc(100vh - 96px)">
+<div class="hero-outer">
+  <div class="hero-inner">
     <div class="hero-left">
-      <div class="hero-eyebrow" data-ilp="hero_badge">AI-Powered Predictive Maintenance &mdash; Public Beta</div>
-      <h1 data-ilp="hero_h">Stop fixing machines.<br><span>Predict failures first.</span></h1>
-      <p class="hero-sub" data-ilp="hero_sub">Pilar analyzes your industrial sensors in real time and alerts you hours before a breakdown — before it costs you anything.</p>
-      <div class="hero-cta">
-        <a href="/register" class="btn-hero" data-ilp="hero_cta1">Start for free</a>
-        <a href="/demo" class="btn-hero-ghost">Try the demo</a>
+      <div class="hero-eyebrow" data-ilp="hero_badge">Predictive Maintenance &mdash; Public Beta</div>
+      <h1 data-ilp="hero_h">Know before<br>it breaks.</h1>
+      <p class="hero-sub" data-ilp="hero_sub">Pilar reads your machine sensors, detects early failure signatures, and alerts your team &mdash; hours before breakdown.</p>
+      <div class="hero-ctas">
+        <a href="/register" class="btn-primary" data-ilp="hero_cta1">Start for free</a>
+        <a href="/demo" class="btn-secondary" data-ilp="hero_cta2">Try the demo</a>
       </div>
     </div>
     <div class="hero-right">
@@ -3524,44 +3538,44 @@ footer{border-top:1px solid var(--border);padding:40px 32px;display:grid;grid-te
           <div class="terminal-title">pilar / live-monitor / machine-07</div>
         </div>
         <div class="terminal-body">
-          <div><span class="t-comment">// sensor reading — 14:32:07 UTC</span></div>
-          <div style="margin-top:8px">
-            <span class="t-key">vibration</span><span class="t-dim">  &nbsp;&nbsp;</span><span class="t-warn">9.4 mm/s</span>
+          <div><span class="t-comment">// sensor reading &mdash; 14:32:07 UTC</span></div>
+          <div style="margin-top:6px">
+            <span class="t-key">vibration  &nbsp;&nbsp;</span><span class="t-warn">9.4 mm/s</span>
           </div>
           <div>
-            <span class="t-key">temp_palier</span><span class="t-dim"> &nbsp;</span><span class="t-error">107 °C</span>
+            <span class="t-key">temp_palier &nbsp;</span><span class="t-error">107 &deg;C</span>
           </div>
           <div>
-            <span class="t-key">debit</span><span class="t-dim">     &nbsp;&nbsp;&nbsp;&nbsp;</span><span class="t-warn">22 m³/h</span>
+            <span class="t-key">debit      &nbsp;&nbsp;&nbsp;&nbsp;</span><span class="t-warn">22 m&sup3;/h</span>
           </div>
           <div>
-            <span class="t-key">pression_e</span><span class="t-dim"> &nbsp;&nbsp;</span><span class="t-error">0.38 bar</span>
+            <span class="t-key">pression_e  &nbsp;&nbsp;</span><span class="t-error">0.38 bar</span>
           </div>
           <div>
-            <span class="t-key">heure_fonct</span><span class="t-dim"> </span><span class="t-val">14 208 h</span>
+            <span class="t-key">heure_fonct &nbsp;</span><span class="t-val">14 208 h</span>
           </div>
           <hr class="t-divider">
-          <div><span class="t-comment">// AI pipeline — RF · IsoForest · SHAP · RUL</span></div>
-          <div style="margin-top:8px">
-            <span class="t-key">failure_prob</span><span class="t-dim"> </span><span class="t-error">78.2%</span>
+          <div><span class="t-comment">// AI pipeline &mdash; RF &middot; IsoForest &middot; SHAP &middot; RUL</span></div>
+          <div style="margin-top:6px">
+            <span class="t-key">failure_prob &nbsp;</span><span class="t-error">78.2%</span>
           </div>
           <div>
-            <span class="t-key">anomaly_score</span><span class="t-dim"> </span><span class="t-error">84/100</span>
+            <span class="t-key">anomaly_score </span><span class="t-error">84/100</span>
           </div>
           <div>
-            <span class="t-key">rul_hours</span><span class="t-dim">     </span><span class="t-warn">~23h</span>
+            <span class="t-key">rul_hours     </span><span class="t-warn">~23h</span>
           </div>
           <div class="t-risk-bar"><div class="t-risk-fill"></div></div>
-          <div style="margin-top:4px;font-size:10px">
+          <div style="margin-top:4px;font-size:11px">
             <span class="t-dim">ROL </span><span class="t-error">HIGH</span>
-            <span class="t-dim" style="margin-left:12px">CAV </span><span class="t-warn">MED</span>
-            <span class="t-dim" style="margin-left:12px">ETN </span><span class="t-ok">LOW</span>
-            <span class="t-dim" style="margin-left:12px">MOT </span><span class="t-ok">LOW</span>
+            <span class="t-dim" style="margin-left:14px">CAV </span><span class="t-warn">MED</span>
+            <span class="t-dim" style="margin-left:14px">ETN </span><span class="t-ok">LOW</span>
+            <span class="t-dim" style="margin-left:14px">MOT </span><span class="t-ok">LOW</span>
           </div>
-          <div style="margin-top:5px;font-size:10px"><span class="t-dim">top factors: </span><span class="t-warn">vibration &#x2191;42%</span><span class="t-dim"> &middot; bearing_temp &#x2191;28%</span></div>
+          <div style="margin-top:5px;font-size:11px"><span class="t-dim">top factors: </span><span class="t-warn">vibration &#x2191;42%</span><span class="t-dim"> &middot; bearing_temp &#x2191;28%</span></div>
           <div class="t-alert">
-            <div style="font-size:11px;color:#f87171;font-weight:500">ALERT — ROL zone — bearing failure imminent</div>
-            <div style="font-size:10px;color:var(--text3);margin-top:3px">email dispatched to maintenance@plant.local</div>
+            <div style="font-size:11px;color:#f87171;font-weight:500;font-family:var(--mono)">ALERT &mdash; ROL zone &mdash; bearing failure imminent</div>
+            <div style="font-size:10px;color:var(--text3);margin-top:3px;font-family:var(--mono)">email dispatched to maintenance@plant.local</div>
           </div>
         </div>
       </div>
@@ -3569,255 +3583,218 @@ footer{border-top:1px solid var(--border);padding:40px 32px;display:grid;grid-te
   </div>
 </div>
 
-<!-- STATS BAR -->
-<div class="stats-bar">
-  <div class="stat-item"><div class="stat-num">98.1%</div><div class="stat-lbl" data-ilp="stat1">Recall — failures caught</div></div>
-  <div class="stat-item"><div class="stat-num">5</div><div class="stat-lbl" data-ilp="stat2">Failure zones detected</div></div>
-  <div class="stat-item"><div class="stat-num">&lt;5s</div><div class="stat-lbl" data-ilp="stat3">Analysis per reading</div></div>
-  <div class="stat-item"><div class="stat-num">23K+</div><div class="stat-lbl" data-ilp="stat4">Pump records trained</div></div>
+<!-- STATS STRIP -->
+<div class="stats-strip">
+  <div class="stat-cell"><div class="stat-n">98.1%</div><div class="stat-l" data-ilp="stat1">Recall &mdash; failures caught</div></div>
+  <div class="stat-cell"><div class="stat-n">5</div><div class="stat-l" data-ilp="stat2">Failure zones detected</div></div>
+  <div class="stat-cell"><div class="stat-n">&lt;5s</div><div class="stat-l" data-ilp="stat3">Analysis per reading</div></div>
+  <div class="stat-cell"><div class="stat-n">23K+</div><div class="stat-l" data-ilp="stat4">Pump records trained</div></div>
 </div>
 
 <!-- HOW IT WORKS -->
-<section id="how-it-works">
-  <div class="section-eyebrow" data-ilp="how_lbl">Process</div>
-  <div class="section-title" data-ilp="how_title">Three steps to <span>zero unplanned downtime</span></div>
+<section id="how-it-works" class="section fade-up">
+  <div class="eyebrow" data-ilp="how_lbl">Process</div>
+  <div class="section-h" data-ilp="how_title">Three steps to zero unplanned downtime</div>
   <div class="section-sub" data-ilp="how_sub">Connect your machines, let Pilar learn, and receive precise alerts before failures happen.</div>
-  <div class="steps">
-    <div class="step">
-      <div class="step-num">01 / 03</div>
-      <div class="step-icon">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--teal2)" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+  <div class="steps-list">
+    <div class="step-row">
+      <div class="step-idx">01</div>
+      <div>
+        <div class="step-body-title" data-ilp="s1t">Connect your sensors</div>
+        <div class="step-body-desc" data-ilp="s1d">Send readings via REST API from your PLCs, SCADA systems, or CSV files. Pilar accepts vibration, flow rate, pressure, bearing temp, motor current, and more.</div>
       </div>
-      <div class="step-title" data-ilp="s1t">Connect your sensors</div>
-      <div class="step-desc" data-ilp="s1d">Send readings via REST API from your PLCs, SCADA systems, or CSV files. Pilar accepts vibration, flow rate, pressure, bearing temp, motor current, and more.</div>
     </div>
-    <div class="step">
-      <div class="step-num">02 / 03</div>
-      <div class="step-icon">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--teal2)" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+    <div class="step-row">
+      <div class="step-idx">02</div>
+      <div>
+        <div class="step-body-title" data-ilp="s2t">Three AI layers analyze every reading</div>
+        <div class="step-body-desc" data-ilp="s2d">SVM classifies failure probability across 5 zones. Isolation Forest flags unseen anomalies without labels. SHAP tells you exactly which sensors drove the result &mdash; no black box.</div>
       </div>
-      <div class="step-title" data-ilp="s2t">Three AI layers analyze every reading</div>
-      <div class="step-desc" data-ilp="s2d">SVM classifies failure probability across 5 zones. Isolation Forest flags unseen anomalies without labels. SHAP tells you exactly which sensors drove the result — no black box.</div>
     </div>
-    <div class="step">
-      <div class="step-num">03 / 03</div>
-      <div class="step-icon">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--teal2)" stroke-width="1.5"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.64 2 2 0 012-2.18h3a2 2 0 012 1.72 12.05 12.05 0 00.66 2.65 2 2 0 01-.45 2.11L8.09 6.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.05 12.05 0 002.65.66A2 2 0 0122 16.92z"/></svg>
+    <div class="step-row">
+      <div class="step-idx">03</div>
+      <div>
+        <div class="step-body-title" data-ilp="s3t">Your team gets alerted</div>
+        <div class="step-body-desc" data-ilp="s3d">When risk exceeds threshold, Pilar sends an instant email alert with the failure zone, risk level, and recommended action &mdash; before breakdown occurs.</div>
       </div>
-      <div class="step-title" data-ilp="s3t">Your team gets alerted</div>
-      <div class="step-desc" data-ilp="s3d">When risk exceeds threshold, Pilar sends an instant email alert with the failure zone, risk level, and recommended action — before breakdown occurs.</div>
     </div>
   </div>
 </section>
 
-<div class="full-divider"></div>
+<div class="section-divider"></div>
 
 <!-- PERFORMANCE -->
-<section>
-  <div class="section-eyebrow" data-ilp="perf_lbl">Model Performance</div>
-  <div class="section-title" data-ilp="perf_title">Built on <span>real industrial data</span></div>
-  <div class="section-sub" data-ilp="perf_sub">Trained on 23,400 centrifugal pump readings across 5 failure modes — physically realistic sensor profiles calibrated for industrial pumps.</div>
-  <div class="perf-grid">
-    <div class="perf-metrics">
-      <div class="metric-row">
-        <div class="metric-name">Recall (failures caught)</div>
-        <div class="metric-bar-wrap"><div class="metric-bar" style="width:98.1%"></div></div>
-        <div class="metric-val">98.1%</div>
+<section class="section fade-up">
+  <div class="eyebrow" data-ilp="perf_lbl">Model Performance</div>
+  <div class="section-h" data-ilp="perf_title">Built on real industrial data</div>
+  <div class="section-sub" data-ilp="perf_sub">Trained on 23,400 centrifugal pump readings across 5 failure modes &mdash; physically realistic sensor profiles calibrated for industrial pumps.</div>
+  <div class="perf-layout">
+    <div class="perf-table">
+      <div class="mrow">
+        <div class="mrow-name">Recall (failures caught)</div>
+        <div class="mrow-bar-wrap"><div class="mrow-bar" data-width="98.1"></div></div>
+        <div class="mrow-val">98.1%</div>
       </div>
-      <div class="metric-row">
-        <div class="metric-name">Precision</div>
-        <div class="metric-bar-wrap"><div class="metric-bar" style="width:89.8%"></div></div>
-        <div class="metric-val">89.8%</div>
+      <div class="mrow">
+        <div class="mrow-name">Precision</div>
+        <div class="mrow-bar-wrap"><div class="mrow-bar" data-width="89.8"></div></div>
+        <div class="mrow-val">89.8%</div>
       </div>
-      <div class="metric-row">
-        <div class="metric-name">F1 Score</div>
-        <div class="metric-bar-wrap"><div class="metric-bar" style="width:93.8%"></div></div>
-        <div class="metric-val">93.8%</div>
+      <div class="mrow">
+        <div class="mrow-name">F1 Score</div>
+        <div class="mrow-bar-wrap"><div class="mrow-bar" data-width="93.8"></div></div>
+        <div class="mrow-val">93.8%</div>
       </div>
-      <div class="metric-row">
-        <div class="metric-name">Zones detected</div>
-        <div class="metric-bar-wrap"><div class="metric-bar" style="width:100%"></div></div>
-        <div class="metric-val" style="font-size:10px;min-width:fit-content">CAV ROL ETN IMP MOT</div>
+      <div class="mrow">
+        <div class="mrow-name">Zones detected</div>
+        <div class="mrow-bar-wrap"><div class="mrow-bar" data-width="100"></div></div>
+        <div class="mrow-val" style="font-size:9px;min-width:fit-content;letter-spacing:0.04em">CAV ROL ETN IMP MOT</div>
       </div>
     </div>
-    <div class="perf-card">
-      <div style="font-size:10px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--text3);margin-bottom:20px">Failures missed per 1000 alerts</div>
-      <div class="perf-big">19</div>
-      <div class="perf-unit">out of 1000</div>
-      <div class="perf-desc">Only 1.9% of real failures go undetected. In industrial maintenance, that number matters.</div>
-      <div style="margin-top:24px;padding:14px;background:var(--teal-dim);border:1px solid rgba(13,148,136,0.2);border-radius:var(--r-sm)">
-        <div style="font-size:10px;font-weight:600;color:var(--teal2);letter-spacing:0.04em;text-transform:uppercase">AUTO-IMPROVING MODEL</div>
-        <div style="font-size:12px;color:var(--text3);margin-top:6px;font-weight:400">Pilar learns from your confirmed labels and retrains automatically on your own data.</div>
+    <div class="perf-callout">
+      <div>
+        <div class="perf-big-lbl">Failures missed per 1,000</div>
+        <div class="perf-big-num">19</div>
+        <div class="perf-big-unit">out of 1,000</div>
       </div>
+      <div class="perf-big-note">Only 1.9% of real failures go undetected. In industrial maintenance, that number matters.<br><br>Pilar learns from your confirmed labels and retrains automatically on your own data.</div>
     </div>
   </div>
 </section>
 
-<div class="full-divider"></div>
+<div class="section-divider"></div>
 
-<!-- ROI -->
-<section>
-  <div class="section-eyebrow" data-ilp="roi_lbl">Business Impact</div>
-  <div class="section-title" data-ilp="roi_title">The real cost of <span>reactive maintenance</span></div>
+<!-- BEFORE / AFTER -->
+<section class="section fade-up">
+  <div class="eyebrow" data-ilp="roi_lbl">Business Impact</div>
+  <div class="section-h" data-ilp="roi_title">Reactive vs. predictive maintenance</div>
   <div class="section-sub" data-ilp="roi_sub">Every unplanned breakdown costs production time, emergency repairs, and team morale. Pilar changes the equation.</div>
-  <div class="roi-grid">
-    <div class="roi-card roi-before">
-      <div class="roi-label" data-ilp="roi_before">Without Pilar</div>
-      <div class="roi-item"><span class="roi-item-label">Downtime per incident</span><span class="roi-item-val">4 – 48 hours</span></div>
-      <div class="roi-item"><span class="roi-item-label">Repair cost (average)</span><span class="roi-item-val">$3,000 – $50,000</span></div>
-      <div class="roi-item"><span class="roi-item-label">Detection method</span><span class="roi-item-val">Machine breaks down</span></div>
-      <div class="roi-item"><span class="roi-item-label">Maintenance planning</span><span class="roi-item-val">Reactive / calendar-based</span></div>
-      <div class="roi-item"><span class="roi-item-label">Alert time</span><span class="roi-item-val">0 minutes</span></div>
+  <div class="ba-grid">
+    <div class="ba-col ba-col-before">
+      <div class="ba-tag"><span class="ba-tag-dot" style="background:var(--red)"></span><span style="color:var(--red)" data-ilp="roi_before">Without Pilar</span></div>
+      <div class="ba-item"><span class="ba-item-lbl">Downtime per incident</span><span class="ba-item-val ba-val-bad">4 &ndash; 48 hours</span></div>
+      <div class="ba-item"><span class="ba-item-lbl">Repair cost (avg)</span><span class="ba-item-val ba-val-bad">$3k &ndash; $50k</span></div>
+      <div class="ba-item"><span class="ba-item-lbl">Detection method</span><span class="ba-item-val ba-val-bad">Machine breaks</span></div>
+      <div class="ba-item"><span class="ba-item-lbl">Maintenance planning</span><span class="ba-item-val ba-val-bad">Reactive</span></div>
+      <div class="ba-item"><span class="ba-item-lbl">Alert time</span><span class="ba-item-val ba-val-bad">0 min</span></div>
     </div>
-    <div class="roi-card roi-after">
-      <div class="roi-label" data-ilp="roi_after">With Pilar</div>
-      <div class="roi-item"><span class="roi-item-label">Downtime per incident</span><span class="roi-item-val">Planned — near zero</span></div>
-      <div class="roi-item"><span class="roi-item-label">Repair cost (average)</span><span class="roi-item-val">Parts only — no emergency</span></div>
-      <div class="roi-item"><span class="roi-item-label">Detection method</span><span class="roi-item-val">AI alert before failure</span></div>
-      <div class="roi-item"><span class="roi-item-label">Maintenance planning</span><span class="roi-item-val">Predictive — data-driven</span></div>
-      <div class="roi-item"><span class="roi-item-label">Alert time</span><span class="roi-item-val">Hours in advance</span></div>
+    <div class="ba-col">
+      <div class="ba-tag"><span class="ba-tag-dot" style="background:var(--teal)"></span><span style="color:var(--teal)" data-ilp="roi_after">With Pilar</span></div>
+      <div class="ba-item"><span class="ba-item-lbl">Downtime per incident</span><span class="ba-item-val ba-val-good">Planned &mdash; near zero</span></div>
+      <div class="ba-item"><span class="ba-item-lbl">Repair cost (avg)</span><span class="ba-item-val ba-val-good">Parts only</span></div>
+      <div class="ba-item"><span class="ba-item-lbl">Detection method</span><span class="ba-item-val ba-val-good">AI alert before failure</span></div>
+      <div class="ba-item"><span class="ba-item-lbl">Maintenance planning</span><span class="ba-item-val ba-val-good">Predictive</span></div>
+      <div class="ba-item"><span class="ba-item-lbl">Alert time</span><span class="ba-item-val ba-val-good">Hours in advance</span></div>
     </div>
   </div>
 </section>
 
-<div class="full-divider"></div>
+<div class="section-divider"></div>
 
 <!-- FEATURES -->
-<section>
-  <div class="section-eyebrow" data-ilp="feat_lbl">Features</div>
-  <div class="section-title" data-ilp="feat_title">Everything your maintenance<br><span>team needs</span></div>
-  <div class="features-grid">
-    <div class="feature-card">
-      <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--teal2)" stroke-width="1.5"><path d="M4.93 4.93a10 10 0 000 14.14M19.07 4.93a10 10 0 010 14.14M9 12a3 3 0 106 0 3 3 0 00-6 0"/></svg></div>
-      <div class="feature-title">Live Sensor Monitoring</div>
-      <div class="feature-desc">Real-time analysis of vibration, bearing temp, flow rate, pressure, motor current, and run hours. Upload CSV files or connect via API.</div>
+<section class="section fade-up">
+  <div class="eyebrow" data-ilp="feat_lbl">Features</div>
+  <div class="section-h" data-ilp="feat_title">What Pilar gives your team</div>
+  <div class="features-list">
+    <div class="feat-item">
+      <div class="feat-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="1.5"><path d="M4.93 4.93a10 10 0 000 14.14M19.07 4.93a10 10 0 010 14.14M9 12a3 3 0 106 0 3 3 0 00-6 0"/></svg></div>
+      <div><div class="feat-text-title">Live Sensor Monitoring</div><div class="feat-text-desc">Real-time analysis of vibration, bearing temp, flow rate, pressure, motor current and run hours via API or CSV.</div></div>
     </div>
-    <div class="feature-card">
-      <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--teal2)" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg></div>
-      <div class="feature-title">5-Zone Failure Detection</div>
-      <div class="feature-desc">Identifies Cavitation (CAV), Bearing Failure (ROL), Seal Failure (ETN), Impeller Wear (IMP), and Motor Fault (MOT) — specific to centrifugal pumps.</div>
+    <div class="feat-item">
+      <div class="feat-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+      <div><div class="feat-text-title">5-Zone Failure Detection</div><div class="feat-text-desc">Identifies Cavitation, Bearing Failure, Seal Failure, Impeller Wear, and Motor Fault with zone-level precision.</div></div>
     </div>
-    <div class="feature-card">
-      <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--teal2)" stroke-width="1.5"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 01-2.06 0L2 7"/></svg></div>
-      <div class="feature-title">Instant Email Alerts</div>
-      <div class="feature-desc">Automated alert emails to your maintenance team when failure probability exceeds threshold — with failure zone and risk level.</div>
+    <div class="feat-item">
+      <div class="feat-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="1.5"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 01-2.06 0L2 7"/></svg></div>
+      <div><div class="feat-text-title">Instant Email Alerts</div><div class="feat-text-desc">Automated alerts dispatched to your maintenance team when failure probability crosses your threshold.</div></div>
     </div>
-    <div class="feature-card">
-      <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--teal2)" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
-      <div class="feature-title">Digital Twin Simulation</div>
-      <div class="feature-desc">Simulate your machine behavior over 24 hours. Adjust parameters and see failure risk projections before changing settings.</div>
+    <div class="feat-item">
+      <div class="feat-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="1.5"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg></div>
+      <div><div class="feat-text-title">SHAP Explainability</div><div class="feat-text-desc">Every prediction shows the exact sensors that drove the result and their percentage contribution. No black box.</div></div>
     </div>
-    <div class="feature-card">
-      <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--teal2)" stroke-width="1.5"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4M8 14h.01M12 14h.01M16 14h.01"/></svg></div>
-      <div class="feature-title">AI Maintenance Assistant</div>
-      <div class="feature-desc">Ask questions about your machines in plain language. Get root cause hypotheses, maintenance recommendations, and technical guidance.</div>
+    <div class="feat-item">
+      <div class="feat-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
+      <div><div class="feat-text-title">Remaining Useful Life (RUL)</div><div class="feat-text-desc">Trend-based regression forecasts the precise time window before the 80% failure threshold is reached.</div></div>
     </div>
-    <div class="feature-card">
-      <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--teal2)" stroke-width="1.5"><path d="M18 8h1a4 4 0 010 8h-1M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8zM6 1v3M10 1v3M14 1v3"/></svg></div>
-      <div class="feature-title">REST API Integration</div>
-      <div class="feature-desc">Connect any PLC, SCADA, or IoT device via our documented REST API. Python examples and Curl snippets included.</div>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--teal2)" stroke-width="1.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
-      <div class="feature-title">Unsupervised Anomaly Detection</div>
-      <div class="feature-desc">Isolation Forest detects abnormal sensor behavior without any labeled failure data — active from day one, before you have a single recorded breakdown.</div>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--teal2)" stroke-width="1.5"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg></div>
-      <div class="feature-title">SHAP Explainability</div>
-      <div class="feature-desc">Every prediction shows the top 3 sensors that drove the risk and their exact contribution. Your team understands why — not just what.</div>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--teal2)" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
-      <div class="feature-title">Remaining Useful Life (RUL)</div>
-      <div class="feature-desc">Linear regression on your risk trend extrapolates when the 80% failure threshold will be reached — giving your team a precise, data-driven maintenance window.</div>
+    <div class="feat-item">
+      <div class="feat-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="1.5"><path d="M18 8h1a4 4 0 010 8h-1M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8zM6 1v3M10 1v3M14 1v3"/></svg></div>
+      <div><div class="feat-text-title">REST API Integration</div><div class="feat-text-desc">Connect any PLC, SCADA, or IoT device via our documented REST API with Python and cURL examples.</div></div>
     </div>
   </div>
 </section>
 
-<div class="full-divider"></div>
+<div class="section-divider"></div>
 
 <!-- INDUSTRIES -->
-<section>
-  <div class="section-eyebrow" data-ilp="ind_lbl">Industries</div>
-  <div class="section-title" data-ilp="ind_title">Built for <span>industrial environments</span></div>
-  <div class="section-sub" data-ilp="ind_sub">Any process that relies on centrifugal pumps — from water treatment to chemical processing — can benefit from predictive monitoring.</div>
-  <div class="industries">
-    <div class="industry-chip">Chemical Processing</div>
-    <div class="industry-chip">Automotive Manufacturing</div>
-    <div class="industry-chip">Food &amp; Beverage</div>
-    <div class="industry-chip">Pharmaceutical</div>
-    <div class="industry-chip">Plastics &amp; Rubber</div>
-    <div class="industry-chip">Metal Fabrication</div>
-    <div class="industry-chip">Packaging Lines</div>
-    <div class="industry-chip">Water Treatment</div>
-    <div class="industry-chip">Cement &amp; Mining</div>
-    <div class="industry-chip">Paper &amp; Printing</div>
+<section class="section fade-up">
+  <div class="eyebrow" data-ilp="ind_lbl">Industries</div>
+  <div class="section-h" data-ilp="ind_title">Built for industrial environments</div>
+  <div class="section-sub" data-ilp="ind_sub">Any process that relies on centrifugal pumps benefits from predictive monitoring.</div>
+  <div class="industries-line">
+    Chemical Processing<span> &middot; </span>Automotive Manufacturing<span> &middot; </span>Food &amp; Beverage<span> &middot; </span>Pharmaceutical<span> &middot; </span>Water Treatment<span> &middot; </span>Cement &amp; Mining<span> &middot; </span>Plastics &amp; Rubber<span> &middot; </span>Packaging Lines
   </div>
 </section>
 
-<div class="full-divider"></div>
+<div class="section-divider"></div>
 
 <!-- PRICING -->
-<section id="pricing">
-  <div class="section-eyebrow" data-ilp="pricing_lbl">Pricing</div>
-  <div class="section-title" data-ilp="pricing_title">Simple pricing, <span>built around you</span></div>
-  <div class="pricing-grid">
-    <div class="plan-card">
+<section id="pricing" class="section fade-up">
+  <div class="eyebrow" data-ilp="pricing_lbl">Pricing</div>
+  <div class="section-h" data-ilp="pricing_title">Simple pricing, built around you</div>
+  <div class="pricing-cols">
+    <div class="plan">
       <div class="plan-name">Free</div>
-      <div class="plan-price">$0 <span>/ forever</span></div>
+      <div class="plan-price-val">$0</div>
+      <div class="plan-price-sub">forever</div>
       <div class="plan-desc" data-ilp="plan_free_desc">Get started immediately. No credit card required.</div>
-      <ul class="plan-features">
-        <li>Manual CSV analysis</li>
-        <li>One-off failure prediction</li>
+      <ul class="plan-ul">
+        <li class="inc">Manual CSV analysis</li>
+        <li class="inc">One-off failure prediction</li>
         <li class="off">Live sensor monitor</li>
         <li class="off">Analysis history</li>
         <li class="off">Digital Twin simulation</li>
-        <li class="off">AI maintenance assistant</li>
         <li class="off">API access</li>
-        <li class="off">Team collaboration</li>
       </ul>
-      <a href="/register" class="plan-btn plan-btn-ghost" data-ilp="plan_free_btn">Get started free</a>
+      <a href="/register" class="plan-btn-g" data-ilp="plan_free_btn">Get started free</a>
     </div>
-    <div class="plan-card featured">
-      <div class="plan-badge" data-ilp="plan_custom_badge">Custom Contract</div>
+    <div class="plan plan-featured">
+      <div class="plan-tag" data-ilp="plan_custom_badge">Custom Contract</div>
       <div class="plan-name" data-ilp="plan_custom_name">Your Plan</div>
-      <div class="plan-price" data-ilp="plan_custom_price">On demand</div>
+      <div class="plan-price-val" data-ilp="plan_custom_price">On demand</div>
+      <div class="plan-price-sub">&nbsp;</div>
       <div class="plan-desc" data-ilp="plan_custom_desc">No fixed tiers. You choose the features, we adapt the contract to your operations and budget.</div>
-      <ul class="plan-features">
-        <li>Full analysis history &amp; Digital Twin</li>
-        <li>Anomaly detection (Isolation Forest)</li>
-        <li>AI explainability (SHAP — top contributing sensors)</li>
-        <li>Remaining Useful Life (RUL) forecasting</li>
-        <li>AI maintenance assistant</li>
-        <li>REST API access</li>
-        <li>Email alerts &amp; escalation</li>
-        <li>Team collaboration &amp; shared alerts</li>
-        <li>Custom sensor variables</li>
-        <li>Dedicated onboarding &amp; support</li>
+      <ul class="plan-ul">
+        <li class="inc">Full analysis history &amp; Digital Twin</li>
+        <li class="inc">Anomaly detection (Isolation Forest)</li>
+        <li class="inc">SHAP explainability</li>
+        <li class="inc">Remaining Useful Life forecasting</li>
+        <li class="inc">REST API access</li>
+        <li class="inc">Email alerts &amp; team collaboration</li>
+        <li class="inc">Dedicated onboarding &amp; support</li>
       </ul>
-      <a href="mailto:aliguenbou07r@gmail.com?subject=Pilar%20%E2%80%94%20Custom%20Plan%20Request&body=Hi%2C%20I%27d%20like%20to%20discuss%20a%20custom%20plan%20for%20my%20team." class="plan-btn plan-btn-primary" data-ilp="plan_custom_btn">Contact us</a>
+      <a href="mailto:aliguenbou07r@gmail.com?subject=Pilar%20%E2%80%94%20Custom%20Plan%20Request&body=Hi%2C%20I%27d%20like%20to%20discuss%20a%20custom%20plan%20for%20my%20team." class="plan-btn-p" data-ilp="plan_custom_btn">Contact us</a>
     </div>
   </div>
 </section>
 
 <!-- FINAL CTA -->
-<div class="cta-section">
-  <div style="max-width:1200px;margin:0 auto;padding:0 32px">
-    <h2 data-ilp="cta_h">Your machines are sending signals.<br><span>Are you listening?</span></h2>
-    <p data-ilp="cta_p">Join the teams that stopped reacting to breakdowns and started preventing them. Free to start, no setup fees — and as a beta user, your feedback directly shapes the product.</p>
-    <a href="/register" class="btn-hero" data-ilp="cta_btn">Start monitoring for free</a>
+<div class="cta-band fade-up">
+  <div class="cta-inner">
+    <div class="cta-h" data-ilp="cta_h">Your machines are already telling you something is wrong.</div>
+    <div class="cta-btn-wrap">
+      <a href="/register" class="btn-primary" data-ilp="cta_btn">Start for free</a>
+    </div>
   </div>
 </div>
 
 <script>
 var _TLP={
-en:{nav_signin:'Sign In',nav_start:'Get Started Free',hero_badge:'AI-Powered Predictive Maintenance \u2014 Public Beta',hero_h:'Stop fixing machines.<br><span>Predict failures first.</span>',hero_sub:'Pilar analyzes your industrial sensors in real time and alerts you hours before a breakdown \u2014 before it costs you anything.',hero_cta1:'Start for free',hero_cta2:'See how it works',stat1:'Recall \u2014 failures caught',stat2:'Failure zones detected',stat3:'Analysis per reading',stat4:'Pump records trained',how_lbl:'Process',how_title:'Three steps to <span>zero unplanned downtime</span>',how_sub:'Connect your machines, let Pilar learn, and receive precise alerts before failures happen.',s1t:'Connect your sensors',s1d:'Send readings via REST API from your PLCs, SCADA systems, or CSV files. Pilar accepts vibration, flow rate, pressure, bearing temp, motor current, and more.',s2t:'Three AI layers analyze every reading',s2d:'SVM classifies failure probability across 5 zones. Isolation Forest flags unseen anomalies without labels. SHAP tells you exactly which sensors drove the result \u2014 no black box.',s3t:'Your team gets alerted',s3d:'When risk exceeds threshold, Pilar sends an instant email alert with the failure zone, risk level, and recommended action \u2014 before breakdown occurs.',perf_lbl:'Model Performance',perf_title:'Built on <span>real industrial data</span>',perf_sub:'Trained on 23,400+ centrifugal pump readings across 5 failure modes \u2014 physically realistic sensor profiles calibrated for industrial pumps.',roi_lbl:'Business Impact',roi_title:'The real cost of <span>reactive maintenance</span>',roi_sub:'Every unplanned breakdown costs production time, emergency repairs, and team morale. Pilar changes the equation.',roi_before:'Without Pilar',roi_after:'With Pilar',feat_lbl:'Features',feat_title:'Everything your maintenance<br><span>team needs</span>',ind_lbl:'Industries',ind_title:'Built for <span>industrial environments</span>',ind_sub:'Any process that relies on centrifugal pumps \u2014 from water treatment to chemical processing \u2014 can benefit from predictive monitoring.',pricing_lbl:'Pricing',pricing_title:'Simple pricing, <span>built around you</span>',plan_free_desc:'Get started immediately. No credit card required.',plan_free_btn:'Get started free',plan_custom_badge:'Custom Contract',plan_custom_name:'Your Plan',plan_custom_price:'On demand',plan_custom_desc:'No fixed tiers. You choose the features, we adapt the contract to your operations and budget.',plan_custom_btn:'Contact us',cta_h:'Your machines are sending signals.<br><span>Are you listening?</span>',cta_p:'Join the teams that stopped reacting to breakdowns and started preventing them. Free to start, no setup fees \u2014 and as a beta user, your feedback directly shapes the product.',cta_btn:'Start monitoring for free',footer_sign:'Sign In',footer_reg:'Create Account',footer_rights:'All rights reserved.'},
-fr:{nav_signin:'Connexion',nav_start:'Commencer gratuitement',hero_badge:'Maintenance Pr\u00e9dictive par IA \u2014 B\u00eata Public',hero_h:'Arr\u00eatez de r\u00e9parer.<br><span>Pr\u00e9disez les pannes.</span>',hero_sub:'Pilar analyse vos capteurs industriels en temps r\u00e9el et vous alerte des heures avant une panne \u2014 avant que \u00e7a ne co\u00fbte quoi que ce soit.',hero_cta1:'Commencer gratuitement',hero_cta2:'Voir comment \u00e7a marche',stat1:'Rappel \u2014 pannes d\u00e9tect\u00e9es',stat2:'Zones de panne identifi\u00e9es',stat3:'Analyse par mesure',stat4:'Mesures pompes entra\u00een\u00e9es',how_lbl:'Processus',how_title:'Trois \u00e9tapes vers <span>z\u00e9ro arr\u00eat impr\u00e9vu</span>',how_sub:'Connectez vos machines, laissez Pilar apprendre, recevez des alertes pr\u00e9cises avant les pannes.',s1t:'Connectez vos capteurs',s1d:'Envoyez des mesures via API REST depuis vos automates, SCADA ou fichiers CSV. Pilar accepte vibration, d\u00e9bit, pression, temp. palier, courant moteur et bien plus.',s2t:"Trois couches IA analysent chaque mesure",s2d:"Le SVM classe la probabilit\u00e9 de panne sur 5 zones. L\u2019Isolation Forest d\u00e9tecte les anomalies sans historique de labels. SHAP explique quels capteurs ont d\u00e9clench\u00e9 l\u2019alerte \u2014 sans bo\u00eete noire.",s3t:"Votre \u00e9quipe est alert\u00e9e",s3d:"Quand le risque d\u00e9passe le seuil, Pilar envoie un email d'alerte instantan\u00e9 avec la zone de panne, le niveau de risque et l'action recommand\u00e9e \u2014 avant la panne.",perf_lbl:'Performance du mod\u00e8le',perf_title:'Bas\u00e9 sur des <span>donn\u00e9es industrielles r\u00e9elles</span>',perf_sub:'Entra\u00een\u00e9 sur 23 400+ mesures de pompes centrifuges sur 5 modes de panne \u2014 profils capteurs physiquement r\u00e9alistes calibr\u00e9s pour pompes industrielles.',roi_lbl:'Impact business',roi_title:'Le vrai co\u00fbt de la <span>maintenance r\u00e9active</span>',roi_sub:'Chaque arr\u00eat impr\u00e9vu co\u00fbte du temps de production, des r\u00e9parations en urgence et du moral. Pilar change la donne.',roi_before:'Sans Pilar',roi_after:'Avec Pilar',feat_lbl:'Fonctionnalit\u00e9s',feat_title:'Tout ce dont votre \u00e9quipe de<br><span>maintenance a besoin</span>',ind_lbl:'Secteurs',ind_title:'Con\u00e7u pour les <span>environnements industriels</span>',ind_sub:"Tout proc\u00e9d\u00e9 qui s\u2019appuie sur des pompes centrifuges \u2014 du traitement de l\u2019eau \u00e0 la chimie industrielle \u2014 peut b\u00e9n\u00e9ficier de la surveillance pr\u00e9dictive.",pricing_lbl:'Tarifs',pricing_title:'Tarif simple, <span>adapt\u00e9 \u00e0 vous</span>',plan_free_desc:'D\u00e9marrez imm\u00e9diatement. Aucune carte bancaire requise.',plan_free_btn:'Commencer gratuitement',plan_custom_badge:'Contrat sur mesure',plan_custom_name:'Votre Plan',plan_custom_price:'Sur devis',plan_custom_desc:"Pas de niveaux fixes. Vous choisissez les fonctionnalit\u00e9s, on adapte le contrat \u00e0 vos op\u00e9rations et votre budget.",plan_custom_btn:'Nous contacter',cta_h:'Vos machines envoient des signaux.<br><span>Les \u00e9coutez-vous\u00a0?</span>',cta_p:'Rejoignez les \u00e9quipes qui ont arr\u00eat\u00e9 de r\u00e9agir aux pannes et ont commenc\u00e9 \u00e0 les pr\u00e9venir. Gratuit pour commencer, sans frais \u2014 et en tant qu\u2019utilisateur b\u00eata, votre retour fa\u00e7onne directement le produit.',cta_btn:'Commencer la surveillance gratuitement',footer_sign:'Connexion',footer_reg:'Cr\u00e9er un compte',footer_rights:'Tous droits r\u00e9serv\u00e9s.'}
+en:{nav_signin:'Sign In',nav_start:'Get Started',hero_badge:'Predictive Maintenance \u2014 Public Beta',hero_h:'Know before<br>it breaks.',hero_sub:'Pilar reads your machine sensors, detects early failure signatures, and alerts your team \u2014 hours before breakdown.',hero_cta1:'Start for free',hero_cta2:'Try the demo',stat1:'Recall \u2014 failures caught',stat2:'Failure zones detected',stat3:'Analysis per reading',stat4:'Pump records trained',how_lbl:'Process',how_title:'Three steps to zero unplanned downtime',how_sub:'Connect your machines, let Pilar learn, and receive precise alerts before failures happen.',s1t:'Connect your sensors',s1d:'Send readings via REST API from your PLCs, SCADA systems, or CSV files. Pilar accepts vibration, flow rate, pressure, bearing temp, motor current, and more.',s2t:'Three AI layers analyze every reading',s2d:'SVM classifies failure probability across 5 zones. Isolation Forest flags unseen anomalies without labels. SHAP tells you exactly which sensors drove the result \u2014 no black box.',s3t:'Your team gets alerted',s3d:'When risk exceeds threshold, Pilar sends an instant email alert with the failure zone, risk level, and recommended action \u2014 before breakdown occurs.',perf_lbl:'Model Performance',perf_title:'Built on real industrial data',perf_sub:'Trained on 23,400 centrifugal pump readings across 5 failure modes \u2014 physically realistic sensor profiles calibrated for industrial pumps.',roi_lbl:'Business Impact',roi_title:'Reactive vs. predictive maintenance',roi_sub:'Every unplanned breakdown costs production time, emergency repairs, and team morale. Pilar changes the equation.',roi_before:'Without Pilar',roi_after:'With Pilar',feat_lbl:'Features',feat_title:'What Pilar gives your team',ind_lbl:'Industries',ind_title:'Built for industrial environments',ind_sub:'Any process that relies on centrifugal pumps benefits from predictive monitoring.',pricing_lbl:'Pricing',pricing_title:'Simple pricing, built around you',plan_free_desc:'Get started immediately. No credit card required.',plan_free_btn:'Get started free',plan_custom_badge:'Custom Contract',plan_custom_name:'Your Plan',plan_custom_price:'On demand',plan_custom_desc:'No fixed tiers. You choose the features, we adapt the contract to your operations and budget.',plan_custom_btn:'Contact us',cta_h:'Your machines are already telling you something is wrong.',cta_btn:'Start for free',footer_sign:'Sign In',footer_reg:'Create Account',footer_rights:'All rights reserved.'},
+fr:{nav_signin:'Connexion',nav_start:'Commencer',hero_badge:'Maintenance Pr\u00e9dictive \u2014 B\u00eata Public',hero_h:'Sachez avant<br>que \u00e7a casse.',hero_sub:'Pilar lit vos capteurs, d\u00e9tecte les signatures de d\u00e9faillance, et alerte votre \u00e9quipe \u2014 des heures avant la panne.',hero_cta1:'Commencer gratuitement',hero_cta2:'Essayer la d\u00e9mo',stat1:'Rappel \u2014 pannes d\u00e9tect\u00e9es',stat2:'Zones de panne identifi\u00e9es',stat3:'Analyse par mesure',stat4:'Mesures pompes entra\u00een\u00e9es',how_lbl:'Processus',how_title:'Trois \u00e9tapes vers z\u00e9ro arr\u00eat impr\u00e9vu',how_sub:'Connectez vos machines, laissez Pilar apprendre, recevez des alertes pr\u00e9cises avant les pannes.',s1t:'Connectez vos capteurs',s1d:'Envoyez des mesures via API REST depuis vos automates, SCADA ou fichiers CSV. Pilar accepte vibration, d\u00e9bit, pression, temp. palier, courant moteur et bien plus.',s2t:'Trois couches IA analysent chaque mesure',s2d:'Le SVM classe la probabilit\u00e9 de panne sur 5 zones. L\u2019Isolation Forest d\u00e9tecte les anomalies sans labels. SHAP explique quels capteurs ont d\u00e9clench\u00e9 l\u2019alerte \u2014 sans bo\u00eete noire.',s3t:'Votre \u00e9quipe est alert\u00e9e',s3d:'Quand le risque d\u00e9passe le seuil, Pilar envoie un email instantan\u00e9 avec la zone de panne, le niveau de risque et l\u2019action recommand\u00e9e \u2014 avant la panne.',perf_lbl:'Performance du mod\u00e8le',perf_title:'Bas\u00e9 sur des donn\u00e9es industrielles r\u00e9elles',perf_sub:'Entra\u00een\u00e9 sur 23 400+ mesures de pompes centrifuges sur 5 modes de panne \u2014 profils capteurs physiquement r\u00e9alistes.',roi_lbl:'Impact business',roi_title:'Maintenance r\u00e9active vs. pr\u00e9dictive',roi_sub:'Chaque arr\u00eat impr\u00e9vu co\u00fbte du temps de production, des r\u00e9parations en urgence et du moral. Pilar change la donne.',roi_before:'Sans Pilar',roi_after:'Avec Pilar',feat_lbl:'Fonctionnalit\u00e9s',feat_title:'Ce que Pilar apporte \u00e0 votre \u00e9quipe',ind_lbl:'Secteurs',ind_title:'Con\u00e7u pour les environnements industriels',ind_sub:'Tout proc\u00e9d\u00e9 s\u2019appuyant sur des pompes centrifuges b\u00e9n\u00e9ficie de la surveillance pr\u00e9dictive.',pricing_lbl:'Tarifs',pricing_title:'Tarif simple, adapt\u00e9 \u00e0 vous',plan_free_desc:'D\u00e9marrez imm\u00e9diatement. Aucune carte bancaire requise.',plan_free_btn:'Commencer gratuitement',plan_custom_badge:'Contrat sur mesure',plan_custom_name:'Votre Plan',plan_custom_price:'Sur devis',plan_custom_desc:'Pas de niveaux fixes. Vous choisissez les fonctionnalit\u00e9s, on adapte le contrat \u00e0 vos op\u00e9rations.',plan_custom_btn:'Nous contacter',cta_h:'Vos machines vous envoient d\u00e9j\u00e0 un signal.',cta_btn:'Commencer gratuitement',footer_sign:'Connexion',footer_reg:'Cr\u00e9er un compte',footer_rights:'Tous droits r\u00e9serv\u00e9s.'}
 };
 function _lp(l){
   localStorage.setItem('pilar_lang',l);
-  var teal='#0d9488';var dim='rgba(235,235,245,0.3)';
+  var teal='#0d9488';var dim='rgba(61,82,104,1)';
   document.getElementById('_lEN').style.background=l==='en'?teal:'transparent';
   document.getElementById('_lEN').style.color=l==='en'?'#fff':dim;
   document.getElementById('_lFR').style.background=l==='fr'?teal:'transparent';
@@ -3828,30 +3805,47 @@ function _lp(l){
     if(tr[k]!==undefined){el.innerHTML=tr[k];}
   });
 }
-(function(){_lp(localStorage.getItem('pilar_lang')||'en');document.getElementById('_copy_yr').textContent=new Date().getFullYear();})();
+(function(){
+  _lp(localStorage.getItem('pilar_lang')||'en');
+  document.getElementById('_copy_yr').textContent=new Date().getFullYear();
+  var io=new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){
+        e.target.classList.add('visible');
+        var bars=e.target.querySelectorAll('.mrow-bar[data-width]');
+        bars.forEach(function(b){b.style.width=b.getAttribute('data-width')+'%';});
+        io.unobserve(e.target);
+      }
+    });
+  },{threshold:0.12});
+  document.querySelectorAll('.fade-up').forEach(function(el){io.observe(el);});
+})();
 </script>
+
 <!-- FOOTER -->
 <footer>
-  <div class="footer-left">
-    <div class="footer-logo">PILAR</div>
-    <div class="footer-text">Predictive Maintenance Intelligence &mdash; Built for industrial teams worldwide</div>
-    <div class="footer-legal">
-      &copy; <span id="_copy_yr"></span> Pilar. <span data-ilp="footer_rights">All rights reserved.</span><br>
-      Pilar is a registered trademark. Unauthorized reproduction or distribution is prohibited.<br>
-      <a href="mailto:contact@trypilar.com">contact@trypilar.com</a>
+  <div class="footer-inner">
+    <div class="footer-left">
+      <div class="footer-logo">PILAR</div>
+      <div class="footer-tagline">Predictive Maintenance Intelligence &mdash; Built for industrial teams worldwide</div>
+      <div class="footer-legal">
+        &copy; <span id="_copy_yr"></span> Pilar. <span data-ilp="footer_rights">All rights reserved.</span><br>
+        Pilar is a registered trademark. Unauthorized reproduction or distribution is prohibited.<br>
+        <a href="mailto:contact@trypilar.com">contact@trypilar.com</a>
+      </div>
     </div>
-  </div>
-  <div class="footer-right">
-    <div class="footer-links">
-      <a href="/login" data-ilp="footer_sign">Sign In</a>
-      <a href="/register" data-ilp="footer_reg">Create Account</a>
-      <a href="/api/docs">API Docs</a>
-      <a href="mailto:contact@trypilar.com">Contact</a>
-    </div>
-    <div class="footer-hiring">
-      <div class="footer-hiring-tag">We're hiring</div>
-      <div class="footer-hiring-text">Looking for engineers passionate about<br>industrial AI and predictive systems.</div>
-      <a href="mailto:aliguenbou07r@gmail.com?subject=Pilar%20%E2%80%94%20Job%20Application&body=Hi%2C%20I%27d%20like%20to%20apply%20to%20join%20the%20Pilar%20team.">Send your application</a>
+    <div class="footer-right">
+      <div class="footer-links">
+        <a href="/login" data-ilp="footer_sign">Sign In</a>
+        <a href="/register" data-ilp="footer_reg">Create Account</a>
+        <a href="/api/docs">API Docs</a>
+        <a href="mailto:contact@trypilar.com">Contact</a>
+      </div>
+      <div class="footer-hiring">
+        <div class="footer-hiring-tag">We're hiring</div>
+        <div class="footer-hiring-text">Looking for engineers passionate about<br>industrial AI and predictive systems.</div>
+        <a href="mailto:aliguenbou07r@gmail.com?subject=Pilar%20%E2%80%94%20Job%20Application&body=Hi%2C%20I%27d%20like%20to%20apply%20to%20join%20the%20Pilar%20team.">Send your application</a>
+      </div>
     </div>
   </div>
 </footer>
