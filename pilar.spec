@@ -90,8 +90,9 @@ hidden_imports = [
     # Imbalanced-learn
     "imblearn",
     "imblearn.over_sampling",
-    # FPdf
+    # FPdf2
     "fpdf",
+    "fpdf2",
     # Sync client (stdlib, no extras needed)
     "urllib.request",
     "urllib.error",
@@ -108,7 +109,11 @@ launcher_a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=["tkinter", "matplotlib", "cv2", "PyQt5", "wx"],
+    excludes=["tkinter", "matplotlib", "cv2", "PyQt5", "wx",
+              "torch", "torchvision", "torchaudio",
+              "numba", "llvmlite",
+              "IPython", "ipykernel", "jupyter",
+              "pytest", "unittest", "_pytest"],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=block_cipher,
@@ -133,8 +138,9 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    # Windows icon (place pilar.ico in same dir to enable)
-    icon=str(BASE / "pilar.ico") if (BASE / "pilar.ico").exists() else None,
+    # Windows icon
+    icon=str(BASE / "pilar.ico") if (BASE / "pilar.ico").exists()
+         else (str(BASE / "pilar.png") if (BASE / "pilar.png").exists() else None),
 )
 
 coll = COLLECT(

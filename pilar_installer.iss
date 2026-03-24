@@ -35,7 +35,7 @@ WizardStyle=modern
 ; Minimum Windows version: Windows 10
 MinVersion=10.0.17763
 ; Allow both 32-bit and 64-bit
-ArchitecturesInstallIn64BitMode=x64
+ArchitecturesInstallIn64BitMode=x64compatible
 ; Do NOT require admin (installs per-user if admin not available)
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
