@@ -104,38 +104,9 @@ def _wait_for_flask(timeout: float = 60.0) -> bool:
 
 # ── Auto-updater ───────────────────────────────────────────────────────────────
 def _check_update():
-    """Runs in background thread. Shows a Windows dialog if a newer version is available."""
-    try:
-        import urllib.request, json as _json
-        with urllib.request.urlopen(UPDATE_CHECK, timeout=6) as resp:
-            data = _json.loads(resp.read().decode())
-        latest = (data.get("version") or "").lstrip("v")
-        current = APP_VERSION.lstrip("v")
-        if latest and latest != current:
-            download_url = data.get("download_url", "")
-            _prompt_update(latest, download_url)
-    except Exception as e:
-        print(f"[PILAR] Update check skipped: {e}")
-
-
-def _prompt_update(latest_version: str, download_url: str):
-    """Show a native Windows messagebox asking the user to update."""
-    try:
-        import ctypes
-        msg = (
-            f"Une mise à jour PILAR est disponible.\n\n"
-            f"Version installée : {APP_VERSION}\n"
-            f"Nouvelle version  : {latest_version}\n\n"
-            f"Télécharger maintenant ?"
-        )
-        result = ctypes.windll.user32.MessageBoxW(
-            0, msg, "Mise à jour PILAR", 0x00000024  # MB_YESNO | MB_ICONQUESTION
-        )
-        if result == 6 and download_url:  # IDYES
-            import webbrowser
-            webbrowser.open(download_url)
-    except Exception as e:
-        print(f"[PILAR] Update prompt error: {e}")
+    """Runs in background thread. Sets PILAR_VERSION env var so etape7 can serve it."""
+    os.environ.setdefault("PILAR_VERSION", APP_VERSION)
+    print(f"[PILAR] Version {APP_VERSION} — update check delegated to in-app banner")
 
 
 # ── Tray actions ───────────────────────────────────────────────────────────────

@@ -27,8 +27,7 @@ AllowNoIcons=yes
 ; Output directory (relative to script location)
 OutputDir=dist
 OutputBaseFilename=PILAR_Setup_{#AppVersion}
-; Optional: set this to your .ico file path
-; SetupIconFile=pilar.ico
+SetupIconFile=pilar.ico
 Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
@@ -49,7 +48,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "french";  MessagesFile: "compiler:Languages\French.isl"
 
 [Tasks]
-Name: "desktopicon";     Description: "{cm:CreateDesktopIcon}";       GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+Name: "desktopicon";     Description: "{cm:CreateDesktopIcon}";       GroupDescription: "{cm:AdditionalIcons}"
 Name: "startupentry";    Description: "Launch PILAR when Windows starts"; GroupDescription: "Startup";              Flags: unchecked
 
 [Files]
@@ -58,10 +57,10 @@ Source: "dist\pilar\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs cr
 
 [Icons]
 ; Start Menu
-Name: "{group}\{#AppName}";            Filename: "{app}\{#AppExeName}"
+Name: "{group}\{#AppName}";            Filename: "{app}\{#AppExeName}"; IconFilename: "{app}\{#AppExeName}"
 Name: "{group}\Uninstall {#AppName}";  Filename: "{uninstallexe}"
-; Desktop shortcut (optional task)
-Name: "{autodesktop}\{#AppName}";      Filename: "{app}\{#AppExeName}"; Tasks: desktopicon
+; Desktop shortcut (created by default)
+Name: "{autodesktop}\{#AppName}";      Filename: "{app}\{#AppExeName}"; IconFilename: "{app}\{#AppExeName}"; Tasks: desktopicon
 
 [Registry]
 ; Startup entry (optional task)
