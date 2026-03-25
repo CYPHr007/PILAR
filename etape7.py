@@ -320,6 +320,18 @@ with app.app_context():
     except Exception as _sue:
         db.session.rollback()
         print(f"[Pilar] SuperUser setup: {_sue}")
+    # Upgrade all existing free users to pro — everyone who installed PILAR has a subscription
+    try:
+        _free_users = User.query.filter_by(plan='free').all()
+        for _u in _free_users:
+            _u.plan = 'pro'
+            _u.plan_expires_at = None
+        if _free_users:
+            db.session.commit()
+            print(f"[Pilar] Auto-upgraded {len(_free_users)} free user(s) to pro")
+    except Exception as _upe:
+        db.session.rollback()
+        print(f"[Pilar] Auto-upgrade error: {_upe}")
 
 try:
     with open(_pkl("modele_pannes.pkl"),"rb") as f: model = pickle.load(f)
@@ -5923,10 +5935,8 @@ def api_machines_create():
         return jsonify({'error': 'name required'}), 400
     if Machine.query.filter_by(user_id=uid, name=name).first():
         return jsonify({'error': 'A machine with this name already exists'}), 409
-    quota = (user.machine_quota or 3) if user else 3
     current_count = Machine.query.filter_by(user_id=uid, is_active=True).count()
-    if current_count >= quota and not (user and user.is_admin):
-        return jsonify({'error': f'Machine quota reached ({quota}). Contact your admin to increase it.'}), 403
+    _ = current_count  # no quota limit — all installed users have full access
     def _float_or_none(v):
         try: return float(v) if v not in (None, '') else None
         except (TypeError, ValueError): return None
@@ -6455,7 +6465,7 @@ def account():
     return render_template_string(ACCOUNT_HTML, user=user, team=team, members=members, my_role=my_role)
 
 def _paid_required():
-    """Returns redirect response if user doesn't have paid plan, else None."""
+    """All installed users have an active subscription — always allowed."""
     uid = current_uid()
     if not uid:
         return redirect('/login')
@@ -6463,9 +6473,7 @@ def _paid_required():
     if not user:
         session.clear()
         return redirect('/login')
-    if user.is_admin or user.plan in ('starter', 'pro'):
-        return None
-    return redirect('/upgrade')
+    return None
 
 @app.route('/upgrade')
 def upgrade():
@@ -6998,7 +7006,7 @@ def _api_rate_check(api_key, plan='free'):
         rec = {'count': 0, 'day': today}
     rec['count'] += 1
     _api_calls[api_key] = rec
-    limit = 50000 if plan != 'free' else 1000
+    limit = 50000  # all users have full API access
     return rec['count'] <= limit, rec['count'], limit
 
 def _resolve_api_user():
