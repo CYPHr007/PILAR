@@ -1,0 +1,1803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PILAR — Predictive Maintenance for Industrial Pumps</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#08090c;
+  --surface:#0f1117;
+  --surface2:#131720;
+  --border:#1c2130;
+  --border2:#252d3d;
+  --accent:#0d9488;
+  --accent-dim:rgba(13,148,136,0.12);
+  --accent-glow:rgba(13,148,136,0.06);
+  --text:#e2e8f0;
+  --text2:#94a3b8;
+  --text3:#64748b;
+  --red:#ef4444;
+  --red-dim:rgba(239,68,68,0.15);
+  --amber:#f59e0b;
+}
+
+html{scroll-behavior:smooth}
+
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'DM Sans',sans-serif;
+  font-size:16px;
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+
+/* ── Scrollbar ─────────────────────────────── */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+/* ── Grid pattern ──────────────────────────── */
+.grid-bg{
+  position:fixed;inset:0;
+  background-image:
+    linear-gradient(var(--border) 1px,transparent 1px),
+    linear-gradient(90deg,var(--border) 1px,transparent 1px);
+  background-size:60px 60px;
+  opacity:.03;
+  pointer-events:none;
+  z-index:0;
+}
+
+/* ── Glow ──────────────────────────────────── */
+/* ── Hero Technical Grid ───────────────────────────── */
+.hero-grid-eng{
+  position:absolute;inset:0;
+  pointer-events:none;
+  overflow:hidden;
+  z-index:0;
+}
+.hero-grid-eng svg{
+  width:100%;height:100%;
+  display:block;
+}
+
+/* ── Pillar Canvas ─────────────────────────────── */
+#pillar-canvas{
+  position:absolute;
+  right:0;top:0;
+  z-index:0;
+  opacity:0.9;
+  pointer-events:none;
+}
+
+/* ── NAV ───────────────────────────────────── */
+nav{
+  position:fixed;top:0;left:0;right:0;
+  z-index:100;
+  padding:0 2rem;
+  height:60px;
+  display:flex;align-items:center;justify-content:space-between;
+  transition:background .3s,border-bottom .3s;
+}
+nav.scrolled{
+  background:rgba(8,9,12,.85);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+}
+.nav-logo{
+  font-family:'JetBrains Mono',monospace;
+  font-size:.85rem;
+  font-weight:500;
+  letter-spacing:.35em;
+  color:var(--text);
+  text-decoration:none;
+  text-transform:uppercase;
+}
+.nav-right{
+  display:flex;align-items:center;gap:2rem;
+}
+.nav-link{
+  font-size:.875rem;
+  color:var(--text3);
+  text-decoration:none;
+  transition:color .2s;
+}
+.nav-link:hover{color:var(--text)}
+.nav-cta{
+  font-size:.8rem;
+  font-weight:500;
+  color:var(--text2);
+  text-decoration:none;
+  padding:.4rem .9rem;
+  border:1px solid var(--border2);
+  border-radius:4px;
+  transition:border-color .2s,color .2s;
+}
+.nav-cta:hover{border-color:var(--accent);color:var(--text)}
+
+/* ── SECTIONS ──────────────────────────────── */
+section{position:relative;z-index:1}
+
+.container{max-width:1100px;margin:0 auto;padding:0 2rem}
+
+/* ── HERO ──────────────────────────────────── */
+#hero{
+  min-height:100vh;
+  display:flex;align-items:center;justify-content:center;
+  text-align:center;
+  padding:120px 2rem 80px;
+  position:relative;overflow:hidden;
+}
+.hero-inner{max-width:760px;position:relative;z-index:1}
+
+.hero-label{
+  display:inline-block;
+  font-family:'JetBrains Mono',monospace;
+  font-size:.7rem;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  color:var(--accent);
+  margin-bottom:2rem;
+  padding:.3rem .7rem;
+  border:1px solid rgba(13,148,136,.25);
+  border-radius:3px;
+}
+
+h1{
+  font-family:'DM Serif Display',serif;
+  font-size:clamp(2.8rem,6vw,5.2rem);
+  line-height:1.08;
+  font-weight:400;
+  color:var(--text);
+  margin-bottom:1.5rem;
+  letter-spacing:-.02em;
+}
+
+.hero-sub{
+  font-size:clamp(1rem,2vw,1.2rem);
+  color:var(--text2);
+  font-weight:300;
+  max-width:560px;
+  margin:0 auto 2.5rem;
+  line-height:1.7;
+}
+
+.hero-actions{
+  display:flex;align-items:center;justify-content:center;
+  gap:1.5rem;flex-wrap:wrap;
+}
+
+.btn-primary{
+  display:inline-flex;align-items:center;
+  font-size:.875rem;font-weight:500;
+  color:#fff;
+  background:var(--accent);
+  padding:.7rem 1.6rem;
+  border-radius:4px;
+  text-decoration:none;
+  border:1px solid transparent;
+  transition:opacity .2s,box-shadow .2s,transform .15s;
+}
+.btn-primary:hover{
+  opacity:.9;
+  transform:translateY(-1px);
+  box-shadow:0 0 20px rgba(13,148,136,.3);
+}
+
+.btn-ghost{
+  font-size:.875rem;
+  color:var(--text3);
+  text-decoration:none;
+  transition:color .2s;
+}
+.btn-ghost:hover{color:var(--text)}
+
+/* ── PROOF BAR ─────────────────────────────── */
+#proof{
+  border-top:1px solid var(--border);
+  border-bottom:1px solid var(--border);
+  background:var(--surface);
+  padding:2rem 0;
+}
+.proof-stats{
+  display:flex;align-items:center;justify-content:center;
+  gap:0;flex-wrap:wrap;
+}
+.proof-stat{
+  padding:0 2.5rem;
+  font-family:'JetBrains Mono',monospace;
+  font-size:.9rem;
+  color:var(--text2);
+  font-weight:500;
+}
+.proof-stat+.proof-stat{
+  border-left:1px solid var(--border2);
+}
+.proof-caption{
+  text-align:center;
+  font-size:.8rem;
+  color:var(--text3);
+  margin-top:1.2rem;
+  font-weight:300;
+}
+
+/* ── PRODUCT EXPLANATION ───────────────────── */
+#product{padding:100px 0}
+.section-header{
+  margin-bottom:3rem;
+}
+.section-label{
+  font-family:'JetBrains Mono',monospace;
+  font-size:.68rem;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  color:var(--text3);
+  margin-bottom:.75rem;
+}
+.section-title{
+  font-family:'DM Serif Display',serif;
+  font-size:clamp(1.8rem,3.5vw,2.8rem);
+  font-weight:400;
+  line-height:1.15;
+  letter-spacing:-.01em;
+}
+
+.product-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:4rem;
+  align-items:start;
+}
+.product-body{
+  font-size:1.05rem;
+  color:var(--text2);
+  line-height:1.8;
+  font-weight:300;
+}
+.sensor-list{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:6px;
+  padding:1.5rem;
+}
+.sensor-list-title{
+  font-family:'JetBrains Mono',monospace;
+  font-size:.7rem;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--text3);
+  margin-bottom:1rem;
+}
+.sensor-item{
+  display:flex;align-items:center;gap:.75rem;
+  padding:.55rem 0;
+  border-bottom:1px solid var(--border);
+  font-size:.9rem;
+  color:var(--text2);
+}
+.sensor-item:last-child{border-bottom:none}
+.sensor-dot{
+  width:5px;height:5px;
+  border-radius:50%;
+  background:var(--border2);
+  flex-shrink:0;
+}
+.sensor-item.active .sensor-dot{background:var(--accent)}
+
+/* ── HOW IT WORKS ──────────────────────────── */
+#how{
+  padding:100px 0;
+  border-top:1px solid var(--border);
+}
+.steps-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:3rem;
+  margin-top:3rem;
+}
+.step{
+  padding-top:1.5rem;
+  border-top:1px solid var(--border);
+}
+.step-num{
+  font-family:'DM Serif Display',serif;
+  font-size:3rem;
+  color:var(--border2);
+  line-height:1;
+  margin-bottom:1.2rem;
+  letter-spacing:-.02em;
+}
+.step-title{
+  font-size:1.1rem;
+  font-weight:500;
+  color:var(--text);
+  margin-bottom:.75rem;
+}
+.step-body{
+  font-size:.9rem;
+  color:var(--text3);
+  line-height:1.7;
+  font-weight:300;
+}
+
+/* ── PRODUCT PREVIEW ───────────────────────── */
+#preview{
+  padding:100px 0;
+  background:var(--surface);
+  border-top:1px solid var(--border);
+  border-bottom:1px solid var(--border);
+}
+.dashboard-mock{
+  background:var(--bg);
+  border:1px solid var(--border);
+  border-radius:8px;
+  overflow:hidden;
+  margin-top:3rem;
+  box-shadow:0 20px 60px rgba(0,0,0,.5);
+}
+.mock-topbar{
+  display:flex;align-items:center;gap:.5rem;
+  padding:.75rem 1rem;
+  border-bottom:1px solid var(--border);
+  background:var(--surface);
+}
+.mock-dot{width:8px;height:8px;border-radius:50%;background:var(--border2)}
+.mock-title{
+  font-family:'JetBrains Mono',monospace;
+  font-size:.7rem;
+  color:var(--text3);
+  margin-left:.5rem;
+  letter-spacing:.08em;
+}
+.mock-body{padding:1.5rem;display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+
+.mock-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:6px;
+  padding:1.25rem;
+}
+.mock-card-label{
+  font-family:'JetBrains Mono',monospace;
+  font-size:.65rem;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  color:var(--text3);
+  margin-bottom:.75rem;
+}
+.risk-display{
+  display:flex;align-items:baseline;gap:.75rem;
+}
+.risk-number{
+  font-family:'DM Serif Display',serif;
+  font-size:3.5rem;
+  line-height:1;
+  color:var(--red);
+}
+.risk-badge{
+  font-family:'JetBrains Mono',monospace;
+  font-size:.65rem;
+  font-weight:500;
+  letter-spacing:.1em;
+  color:var(--red);
+  background:var(--red-dim);
+  padding:.2rem .5rem;
+  border-radius:3px;
+  border:1px solid rgba(239,68,68,.2);
+}
+.risk-sub{
+  font-size:.8rem;
+  color:var(--text3);
+  margin-top:.4rem;
+}
+
+.metrics-list{display:flex;flex-direction:column;gap:.6rem}
+.metric-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:.5rem .75rem;
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:4px;
+}
+.metric-name{font-size:.82rem;color:var(--text3)}
+.metric-val{
+  font-family:'JetBrains Mono',monospace;
+  font-size:.82rem;
+  color:var(--text);
+  display:flex;align-items:center;gap:.3rem;
+}
+.metric-up{color:var(--red);font-size:.7rem}
+.metric-down{color:var(--amber);font-size:.7rem}
+
+.mock-insight{
+  grid-column:1/-1;
+  background:var(--accent-dim);
+  border:1px solid rgba(13,148,136,.2);
+  border-radius:6px;
+  padding:1rem 1.25rem;
+  display:flex;gap:.75rem;align-items:flex-start;
+}
+.insight-icon{
+  font-family:'JetBrains Mono',monospace;
+  font-size:.65rem;
+  letter-spacing:.08em;
+  color:var(--accent);
+  background:rgba(13,148,136,.1);
+  padding:.2rem .4rem;
+  border-radius:3px;
+  flex-shrink:0;
+  margin-top:.1rem;
+}
+.insight-text{
+  font-size:.875rem;
+  color:var(--text2);
+  line-height:1.6;
+}
+.insight-text strong{color:var(--text);font-weight:500}
+
+/* ── OUTCOMES ──────────────────────────────── */
+#outcomes{padding:100px 0}
+.outcomes-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:2px;
+  border:1px solid var(--border);
+  border-radius:6px;
+  overflow:hidden;
+  margin-top:3rem;
+}
+.outcome{
+  padding:2rem 1.75rem;
+  background:var(--surface);
+  transition:background .2s;
+}
+.outcome:hover{background:var(--surface2)}
+.outcome-num{
+  font-family:'JetBrains Mono',monospace;
+  font-size:.68rem;
+  letter-spacing:.15em;
+  text-transform:uppercase;
+  color:var(--text3);
+  margin-bottom:.75rem;
+}
+.outcome-text{
+  font-family:'DM Serif Display',serif;
+  font-size:1.3rem;
+  line-height:1.35;
+  color:var(--text);
+  font-weight:400;
+}
+
+/* ── INDUSTRIES ────────────────────────────── */
+#industries{
+  padding:100px 0;
+  border-top:1px solid var(--border);
+}
+.industry-tags{
+  display:flex;gap:.75rem;flex-wrap:wrap;
+  margin:2rem 0 1.5rem;
+}
+.tag{
+  font-family:'JetBrains Mono',monospace;
+  font-size:.8rem;
+  color:var(--text2);
+  padding:.4rem .9rem;
+  border:1px solid var(--border2);
+  border-radius:3px;
+  letter-spacing:.05em;
+}
+.industry-note{
+  font-size:.95rem;
+  color:var(--text3);
+  font-weight:300;
+}
+
+/* ── FINAL CTA ─────────────────────────────── */
+#cta{
+  padding:100px 0;
+  text-align:center;
+  border-top:1px solid var(--border);
+}
+.cta-title{
+  font-family:'DM Serif Display',serif;
+  font-size:clamp(2rem,4vw,3.2rem);
+  font-weight:400;
+  margin-bottom:1rem;
+  letter-spacing:-.015em;
+}
+.cta-sub{
+  font-size:1rem;
+  color:var(--text3);
+  margin-bottom:2.5rem;
+  font-weight:300;
+}
+.cta-form{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:.75rem;
+  max-width:580px;
+  margin:0 auto;
+}
+.cta-form .cta-submit{
+  grid-column:1/-1;
+}
+@media(max-width:600px){
+  .cta-form{grid-template-columns:1fr}
+  .cta-form .cta-submit{grid-column:1}
+}
+.cta-input{
+  width:100%;
+  padding:.7rem 1rem;
+  background:var(--surface);
+  border:1px solid var(--border2);
+  border-radius:4px;
+  color:var(--text);
+  font-family:'DM Sans',sans-serif;
+  font-size:.875rem;
+  outline:none;
+  transition:border-color .2s;
+}
+.cta-input::placeholder{color:var(--text3)}
+.cta-input:focus{border-color:var(--accent)}
+.cta-submit{
+  padding:.7rem 1.4rem;
+  background:var(--accent);
+  border:none;
+  border-radius:4px;
+  color:#fff;
+  font-family:'DM Sans',sans-serif;
+  font-size:.875rem;
+  font-weight:500;
+  cursor:pointer;
+  transition:opacity .2s,box-shadow .2s,transform .15s;
+}
+.cta-submit:hover{
+  opacity:.9;
+  transform:translateY(-1px);
+  box-shadow:0 0 20px rgba(13,148,136,.3);
+}
+.cta-note{
+  font-size:.78rem;
+  color:var(--text3);
+  margin-top:1rem;
+  font-weight:300;
+}
+
+/* ── FOOTER ────────────────────────────────── */
+footer{
+  border-top:1px solid var(--border);
+  padding:2rem 0;
+}
+.footer-inner{
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:1rem;
+}
+.footer-logo{
+  font-family:'JetBrains Mono',monospace;
+  font-size:.78rem;
+  letter-spacing:.3em;
+  color:var(--text3);
+  text-transform:uppercase;
+}
+.footer-right{
+  display:flex;align-items:center;gap:2rem;flex-wrap:wrap;
+}
+.footer-link{
+  font-size:.78rem;
+  color:var(--text3);
+  text-decoration:none;
+  transition:color .2s;
+}
+.footer-link:hover{color:var(--text2)}
+.footer-copy{
+  font-size:.78rem;
+  color:var(--text3);
+}
+
+/* ── Scroll reveal ─────────────────────────── */
+.reveal{
+  opacity:0;
+  transform:translateY(16px);
+  transition:opacity .4s ease,transform .4s ease;
+}
+.reveal.visible{
+  opacity:1;
+  transform:translateY(0);
+}
+
+/* ── RESPONSIVE ────────────────────────────── */
+@media(max-width:768px){
+  .pilar-motif-wrap{display:none}
+  .product-grid,.steps-grid,.outcomes-grid,.mock-body{
+    grid-template-columns:1fr;
+  }
+  .steps-grid{gap:2rem}
+  .outcomes-grid{gap:1px}
+  .proof-stat{padding:0 1.2rem}
+  .mock-insight{grid-column:unset}
+  nav{padding:0 1.25rem}
+  .container{padding:0 1.25rem}
+  #hero{padding:100px 1.25rem 60px}
+  .footer-inner{flex-direction:column;align-items:flex-start}
+}
+@media(max-width:480px){
+  .nav-right .nav-link{display:none}
+  .proof-stats{flex-direction:column;gap:1rem;text-align:center}
+  .proof-stat+.proof-stat{border-left:none;border-top:1px solid var(--border2)}
+  .proof-stat{padding:.6rem 0}
+}
+</style>
+</head>
+<body>
+
+<div class="grid-bg"></div>
+
+<!-- NAV -->
+<nav id="nav">
+  <a href="#" class="nav-logo">P I L A R</a>
+  <div class="nav-right">
+    <a href="#product" class="nav-link">Product</a>
+    <a href="#cta" class="nav-link">Contact</a>
+    <a href="#cta" class="nav-cta">Request Access</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-grid-eng">
+    <svg viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <!-- Fine subdivision grid: 8px spacing -->
+        <pattern id="hg-fine" width="8" height="8" patternUnits="userSpaceOnUse">
+          <path d="M8 0L0 0 0 8" fill="none" stroke="#0d9488" stroke-width="0.3"/>
+        </pattern>
+        <!-- Main grid: 40px spacing -->
+        <pattern id="hg-main" width="40" height="40" patternUnits="userSpaceOnUse">
+          <path d="M40 0L0 0 0 40" fill="none" stroke="#0d9488" stroke-width="0.5"/>
+        </pattern>
+        <!-- Central diffuse teal glow -->
+        <radialGradient id="hg-glow" cx="720" cy="468" r="547" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#0d9488" stop-opacity="0.06"/>
+          <stop offset="100%" stop-color="#0d9488" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+
+      <!-- Fine subdivision grid: 1.5% opacity -->
+      <rect width="1440" height="900" fill="url(#hg-fine)" opacity="0.015"/>
+      <!-- Primary engineering grid: 4% opacity -->
+      <rect width="1440" height="900" fill="url(#hg-main)" opacity="0.04"/>
+      <!-- Central glow -->
+      <rect width="1440" height="900" fill="url(#hg-glow)"/>
+
+      <!-- Crosshair 1 — top-left zone (213, 162) -->
+      <g opacity="0.12" stroke="#0d9488" stroke-width="0.8" fill="none">
+        <line x1="205" y1="162" x2="221" y2="162"/>
+        <line x1="213" y1="154" x2="213" y2="170"/>
+        <circle cx="213" cy="162" r="3"/>
+      </g>
+      <text x="225" y="160" font-family="'JetBrains Mono',monospace" font-size="9" fill="#0d9488" opacity="0.08">X: 213.4</text>
+      <text x="225" y="171" font-family="'JetBrains Mono',monospace" font-size="9" fill="#0d9488" opacity="0.08">Y: 162.0</text>
+
+      <!-- Crosshair 2 — top-right zone (1094, 234) -->
+      <g opacity="0.12" stroke="#0d9488" stroke-width="0.8" fill="none">
+        <line x1="1086" y1="234" x2="1102" y2="234"/>
+        <line x1="1094" y1="226" x2="1094" y2="242"/>
+        <circle cx="1094" cy="234" r="3"/>
+      </g>
+      <text x="1106" y="232" font-family="'JetBrains Mono',monospace" font-size="9" fill="#0d9488" opacity="0.08">&#916;: 4.2 mm/s</text>
+      <text x="1106" y="243" font-family="'JetBrains Mono',monospace" font-size="9" fill="#0d9488" opacity="0.08">Y: 234.8</text>
+
+      <!-- Crosshair 3 — bottom-left zone (178, 718) -->
+      <g opacity="0.12" stroke="#0d9488" stroke-width="0.8" fill="none">
+        <line x1="170" y1="718" x2="186" y2="718"/>
+        <line x1="178" y1="710" x2="178" y2="726"/>
+        <circle cx="178" cy="718" r="3"/>
+      </g>
+      <text x="190" y="716" font-family="'JetBrains Mono',monospace" font-size="9" fill="#0d9488" opacity="0.08">P: 3.8 bar</text>
+      <text x="190" y="727" font-family="'JetBrains Mono',monospace" font-size="9" fill="#0d9488" opacity="0.08">X: 178.2</text>
+
+      <!-- Crosshair 4 — right-middle zone (1267, 487) -->
+      <g opacity="0.12" stroke="#0d9488" stroke-width="0.8" fill="none">
+        <line x1="1259" y1="487" x2="1275" y2="487"/>
+        <line x1="1267" y1="479" x2="1267" y2="495"/>
+        <circle cx="1267" cy="487" r="3"/>
+      </g>
+      <text x="1253" y="485" font-family="'JetBrains Mono',monospace" font-size="9" fill="#0d9488" opacity="0.08" text-anchor="end">T: 84.3&#176;C</text>
+      <text x="1253" y="496" font-family="'JetBrains Mono',monospace" font-size="9" fill="#0d9488" opacity="0.08" text-anchor="end">Y: 487.6</text>
+
+      <!-- Crosshair 5 — bottom-center zone (654, 798) -->
+      <g opacity="0.12" stroke="#0d9488" stroke-width="0.8" fill="none">
+        <line x1="646" y1="798" x2="662" y2="798"/>
+        <line x1="654" y1="790" x2="654" y2="806"/>
+        <circle cx="654" cy="798" r="3"/>
+      </g>
+      <text x="666" y="796" font-family="'JetBrains Mono',monospace" font-size="9" fill="#0d9488" opacity="0.08">RPM: 2940</text>
+      <text x="666" y="807" font-family="'JetBrains Mono',monospace" font-size="9" fill="#0d9488" opacity="0.08">X: 654.0</text>
+
+      <!-- Crosshair 6 — left-middle zone (342, 487) -->
+      <g opacity="0.12" stroke="#0d9488" stroke-width="0.8" fill="none">
+        <line x1="334" y1="487" x2="350" y2="487"/>
+        <line x1="342" y1="479" x2="342" y2="495"/>
+        <circle cx="342" cy="487" r="3"/>
+      </g>
+      <text x="354" y="485" font-family="'JetBrains Mono',monospace" font-size="9" fill="#0d9488" opacity="0.08">Q: 118.6 m3/h</text>
+      <text x="354" y="496" font-family="'JetBrains Mono',monospace" font-size="9" fill="#0d9488" opacity="0.08">Y: 487.3</text>
+    </svg>
+  </div>
+
+  <canvas id="pillar-canvas"></canvas>
+
+  <div class="hero-inner">
+    <div class="hero-label">Early Access — Predictive Maintenance</div>
+    <h1>Know before<br>it breaks.</h1>
+    <p class="hero-sub">Pilar monitors your existing pump sensors and surfaces failure signals days before they become downtime.</p>
+    <div class="hero-actions">
+      <a href="#cta" class="btn-primary">Request Early Access</a>
+      <a href="#how" class="btn-ghost">See how it works →</a>
+    </div>
+  </div>
+</section>
+
+<!-- PROOF BAR -->
+<section id="proof">
+  <div class="container">
+    <div class="proof-stats">
+      <div class="proof-stat">&lt; 24h setup</div>
+      <div class="proof-stat">No new hardware</div>
+      <div class="proof-stat">Early access open</div>
+    </div>
+    <p class="proof-caption">Designed for maintenance engineers in chemical, water treatment, and food processing facilities.</p>
+  </div>
+</section>
+
+<!-- PRODUCT EXPLANATION -->
+<section id="product">
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="section-label">What Pilar does</div>
+      <h2 class="section-title">Condition monitoring,<br>without the project.</h2>
+    </div>
+    <div class="product-grid">
+      <div class="reveal">
+        <p class="product-body">Most industrial pumps run without any condition monitoring. When they fail, it's sudden, expensive, and avoidable.<br><br>Pilar connects to your existing sensor data and builds a behavioral baseline for each machine. Deviations trigger early warnings — not alarms.</p>
+      </div>
+      <div class="sensor-list reveal">
+        <div class="sensor-list-title">Supported sensors</div>
+        <div class="sensor-item active"><div class="sensor-dot"></div>Vibration</div>
+        <div class="sensor-item active"><div class="sensor-dot"></div>Bearing temperature</div>
+        <div class="sensor-item active"><div class="sensor-dot"></div>Motor temperature</div>
+        <div class="sensor-item active"><div class="sensor-dot"></div>Flow rate</div>
+        <div class="sensor-item"><div class="sensor-dot"></div>Inlet pressure</div>
+        <div class="sensor-item"><div class="sensor-dot"></div>Outlet pressure</div>
+        <div class="sensor-item"><div class="sensor-dot"></div>Motor current</div>
+        <div class="sensor-item"><div class="sensor-dot"></div>Run hours</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="how">
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="section-label">How it works</div>
+      <h2 class="section-title">Three steps to visibility.</h2>
+    </div>
+    <div class="steps-grid">
+      <div class="step reveal">
+        <div class="step-num">01</div>
+        <div class="step-title">Connect</div>
+        <p class="step-body">Point Pilar at your existing sensor feed or upload historical CSV data. No new hardware required.</p>
+      </div>
+      <div class="step reveal">
+        <div class="step-num">02</div>
+        <div class="step-title">Learn</div>
+        <p class="step-body">Pilar builds a behavioral model of your specific pump under normal operating conditions.</p>
+      </div>
+      <div class="step reveal">
+        <div class="step-num">03</div>
+        <div class="step-title">Alert</div>
+        <p class="step-body">When sensor patterns diverge from baseline, you receive an early warning with the likely cause and estimated time to failure.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRODUCT PREVIEW -->
+<section id="preview">
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="section-label">Product preview</div>
+      <h2 class="section-title">What you see inside Pilar.</h2>
+    </div>
+    <div class="dashboard-mock reveal">
+      <div class="mock-topbar">
+        <div class="mock-dot"></div>
+        <div class="mock-dot"></div>
+        <div class="mock-dot"></div>
+        <div class="mock-title">PILAR — Pump P-204 · Sector 3</div>
+      </div>
+      <div class="mock-body">
+        <div class="mock-card">
+          <div class="mock-card-label">Risk Score</div>
+          <div class="risk-display">
+            <div class="risk-number" data-target="73" data-suffix="%">0%</div>
+            <div class="risk-badge">HIGH</div>
+          </div>
+          <div class="risk-sub">Updated 4 min ago</div>
+        </div>
+        <div class="mock-card">
+          <div class="mock-card-label">Sensor readings</div>
+          <div class="metrics-list">
+            <div class="metric-row">
+              <span class="metric-name">Vibration</span>
+              <span class="metric-val"><span class="js-metric" data-target="4.2" data-suffix=" mm/s">0 mm/s</span><span class="metric-up">↑</span></span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-name">Bearing temp</span>
+              <span class="metric-val"><span class="js-metric" data-target="84" data-suffix="°C">0°C</span><span class="metric-up">↑</span></span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-name">Flow rate</span>
+              <span class="metric-val"><span class="metric-down">−18%</span></span>
+            </div>
+          </div>
+        </div>
+        <div class="mock-insight">
+          <div class="insight-icon">AI</div>
+          <p class="insight-text">Anomaly pattern consistent with <strong>early bearing wear.</strong> Estimated <strong>38–52h</strong> before critical threshold. Recommend inspection at next maintenance window.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- OUTCOMES -->
+<section id="outcomes">
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="section-label">Key outcomes</div>
+      <h2 class="section-title">What operators report.</h2>
+    </div>
+    <div class="outcomes-grid">
+      <div class="outcome reveal">
+        <div class="outcome-num">01</div>
+        <div class="outcome-text">Catch failures 24–72h early</div>
+      </div>
+      <div class="outcome reveal">
+        <div class="outcome-num">02</div>
+        <div class="outcome-text">No hardware investment</div>
+      </div>
+      <div class="outcome reveal">
+        <div class="outcome-num">03</div>
+        <div class="outcome-text">Deployed in under a day</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- INDUSTRIES -->
+<section id="industries">
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="section-label">Built for</div>
+      <h2 class="section-title">Process industries.</h2>
+    </div>
+    <div class="industry-tags reveal">
+      <div class="tag">Chemical</div>
+      <div class="tag">Water Treatment</div>
+      <div class="tag">Food &amp; Beverage</div>
+    </div>
+    <p class="industry-note reveal">If you run centrifugal pumps, Pilar works with your setup.</p>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section id="cta">
+  <div class="container">
+    <div class="reveal">
+      <div class="section-label" style="justify-content:center;display:flex">Early access</div>
+      <h2 class="cta-title">Ready to stop guessing?</h2>
+      <p class="cta-sub">Join the early access program. We onboard 3 new facilities per month.</p>
+      <form class="cta-form" onsubmit="handleSubmit(event)">
+        <input type="text"  name="name"    class="cta-input" placeholder="Your name"   required>
+        <input type="text"  name="company" class="cta-input" placeholder="Company"     required>
+        <input type="email" name="email"   class="cta-input" placeholder="Work email"  required style="grid-column:1/-1">
+        <button type="submit" class="cta-submit">Request Access</button>
+      </form>
+      <p class="cta-note" id="form-note">No commitment. Response within 48 hours.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <div class="footer-inner">
+      <div class="footer-logo">P I L A R</div>
+      <div class="footer-right">
+        <a href="#product" class="footer-link">Product</a>
+        <a href="mailto:contact@pilar.io" class="footer-link">Contact</a>
+        <span class="footer-copy">© 2026 PILAR</span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+// Nav scroll effect
+var nav = document.getElementById('nav');
+window.addEventListener('scroll', function() {
+  nav.classList.toggle('scrolled', window.scrollY > 20);
+}, {passive:true});
+
+// Scroll reveal + counter trigger
+var countersRan = new WeakSet();
+var io = new IntersectionObserver(function(entries) {
+  entries.forEach(function(e) {
+    if (e.isIntersecting) {
+      e.target.classList.add('visible');
+      // Trigger counters inside this element
+      if (!countersRan.has(e.target)) {
+        countersRan.add(e.target);
+        triggerCounters(e.target);
+      }
+    }
+  });
+}, {threshold:0.12});
+
+document.querySelectorAll('.reveal').forEach(function(el) { io.observe(el); });
+
+function triggerCounters(container) {
+  // Risk score
+  container.querySelectorAll('[data-target]').forEach(function(el) {
+    var target = parseFloat(el.dataset.target);
+    var suffix = el.dataset.suffix || '';
+    var isInt = Number.isInteger(target);
+    var start = 0;
+    var duration = 900;
+    var startTime = null;
+    function step(ts) {
+      if (!startTime) startTime = ts;
+      var progress = Math.min((ts - startTime) / duration, 1);
+      var ease = 1 - Math.pow(1 - progress, 3);
+      var val = start + (target - start) * ease;
+      el.textContent = (isInt ? Math.round(val) : val.toFixed(1)) + suffix;
+      if (progress < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  });
+}
+
+function handleSubmit(e) {
+  e.preventDefault();
+  var form = e.target;
+  var btn  = form.querySelector('button');
+  var note = document.getElementById('form-note');
+  var fd   = new FormData(form);
+  btn.textContent = 'Sending…'; btn.disabled = true;
+  fetch('/api/request-access', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      name:    fd.get('name'),
+      company: fd.get('company'),
+      email:   fd.get('email')
+    })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(){
+    note.textContent = 'Request received. We will be in touch within 48 hours.';
+    note.style.color = 'var(--accent)';
+    btn.textContent = 'Sent';
+    btn.style.background = 'var(--surface)';
+    btn.style.border = '1px solid var(--border2)';
+    btn.style.color = 'var(--text3)';
+    form.querySelectorAll('input').forEach(function(i){i.disabled=true;});
+  })
+  .catch(function(){
+    note.textContent = 'Something went wrong. Please email us directly.';
+    note.style.color = 'var(--red)';
+    btn.textContent = 'Request Access'; btn.disabled = false;
+  });
+}
+
+// === PILAR — Ultra-Realistic Crack & Crumble ===
+(function(){
+  'use strict';
+  var PRM = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var hero = document.getElementById('hero');
+  var cvs  = document.getElementById('pillar-canvas');
+  if(!hero || !cvs) return;
+  var ctx = cvs.getContext('2d');
+
+  var S = {PAUSE:'pause', DEGRADING:'degrading', THRESHOLD:'threshold', REGEN:'regen'};
+  var W, H, PX, PY, PW_COL, PH_COL;
+  var CAP_EXT=15, BASE_EXT=20;
+
+  function layout(){
+    var hw = hero.offsetWidth||window.innerWidth;
+    var hh = hero.offsetHeight||window.innerHeight;
+    W = Math.round(hw*0.35); H = hh;
+    cvs.width=W; cvs.height=H;
+    cvs.style.width=W+'px'; cvs.style.height=H+'px';
+    PW_COL=80; PH_COL=Math.min(H*0.70,460);
+    PX=(W-PW_COL)/2; PY=H*0.88-PH_COL;
+  }
+
+  var grainPts=[], wearLines=[];
+  function computeTexture(){
+    var cH=PH_COL*0.10, sY=PY+cH, sH=PH_COL-cH*2;
+    grainPts=[];
+    for(var g=0;g<280;g++) grainPts.push([PX-4+Math.random()*(PW_COL+8),PY+Math.random()*PH_COL]);
+    wearLines=[];
+    for(var i=0;i<6;i++) wearLines.push({x1:PX+Math.random()*10,y:sY+Math.random()*sH,x2:PX+PW_COL-Math.random()*10});
+  }
+
+  // ─ Pillar drawing ────────────────────────────────────────
+  function drawPillar(scanY, glowA){
+    var capH=PH_COL*0.10, baseH=PH_COL*0.10, sY=PY+capH, sH=PH_COL-capH-baseH;
+    ctx.save();
+    var gr=ctx.createLinearGradient(PX-BASE_EXT,0,PX+PW_COL+BASE_EXT,0);
+    gr.addColorStop(0,'#2a3049'); gr.addColorStop(0.28,'#222840');
+    gr.addColorStop(0.74,'#1e2235'); gr.addColorStop(1,'#141724');
+
+    rr(PX-BASE_EXT, PY+PH_COL-baseH, PW_COL+BASE_EXT*2, baseH, 2);
+    ctx.fillStyle=gr; ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,0.05)';
+    ctx.fillRect(PX-BASE_EXT,PY+PH_COL-baseH,PW_COL+BASE_EXT*2,1);
+
+    rr(PX-CAP_EXT, PY, PW_COL+CAP_EXT*2, capH, 2);
+    ctx.fillStyle=gr; ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,0.06)';
+    ctx.fillRect(PX-CAP_EXT,PY,PW_COL+CAP_EXT*2,1);
+
+    var sg=ctx.createLinearGradient(PX,0,PX+PW_COL,0);
+    sg.addColorStop(0,'#2a3049'); sg.addColorStop(0.28,'#232942');
+    sg.addColorStop(0.72,'#1e2235'); sg.addColorStop(1,'#141724');
+    ctx.fillStyle=sg; ctx.fillRect(PX,sY,PW_COL,sH);
+    ctx.fillStyle='rgba(255,255,255,0.055)'; ctx.fillRect(PX,sY,1,sH);
+    ctx.fillStyle='rgba(0,0,0,0.22)'; ctx.fillRect(PX+PW_COL-1,sY,1,sH);
+    ctx.fillStyle='rgba(0,0,0,0.28)';
+    ctx.fillRect(PX-CAP_EXT,sY,PX-(PX-CAP_EXT),sH);
+    ctx.fillRect(PX+PW_COL,sY,(PX-CAP_EXT+PW_COL+CAP_EXT*2)-(PX+PW_COL),sH);
+
+    for(var i=1;i<=4;i++){
+      var fx=PX+i*(PW_COL/5);
+      ctx.beginPath();ctx.moveTo(fx,sY+4);ctx.lineTo(fx,sY+sH-4);
+      ctx.strokeStyle='rgba(0,0,0,0.20)';ctx.lineWidth=1.2;ctx.stroke();
+      ctx.beginPath();ctx.moveTo(fx+0.9,sY+4);ctx.lineTo(fx+0.9,sY+sH-4);
+      ctx.strokeStyle='rgba(255,255,255,0.038)';ctx.lineWidth=0.5;ctx.stroke();
+    }
+    ctx.lineWidth=0.35;
+    wearLines.forEach(function(m){
+      ctx.beginPath();ctx.moveTo(m.x1,m.y);ctx.lineTo(m.x2,m.y);
+      ctx.strokeStyle='rgba(0,0,0,0.09)';ctx.stroke();
+    });
+    ctx.fillStyle='rgba(255,255,255,0.016)';
+    grainPts.forEach(function(g){ctx.fillRect(g[0],g[1],1,1);});
+
+    if(scanY!==undefined && scanY>=PY && scanY<=PY+PH_COL){
+      var slg=ctx.createLinearGradient(PX-BASE_EXT,0,PX+PW_COL+BASE_EXT,0);
+      slg.addColorStop(0,'rgba(13,148,136,0.18)');
+      slg.addColorStop(0.5,'rgba(13,148,136,0.52)');
+      slg.addColorStop(1,'rgba(13,148,136,0.18)');
+      ctx.fillStyle=slg; ctx.fillRect(PX-BASE_EXT-2,scanY-2,PW_COL+BASE_EXT*2+4,5);
+      var sg2=ctx.createLinearGradient(0,scanY-18,0,scanY+18);
+      sg2.addColorStop(0,'rgba(13,148,136,0)');
+      sg2.addColorStop(0.5,'rgba(13,148,136,0.07)');
+      sg2.addColorStop(1,'rgba(13,148,136,0)');
+      ctx.fillStyle=sg2; ctx.fillRect(PX-BASE_EXT-8,scanY-18,PW_COL+BASE_EXT*2+16,36);
+    }
+    if(glowA>0){
+      var gg=ctx.createRadialGradient(PX+PW_COL/2,PY+PH_COL/2,0,PX+PW_COL/2,PY+PH_COL/2,W*0.65);
+      gg.addColorStop(0,'rgba(13,148,136,'+(glowA*0.09)+')');
+      gg.addColorStop(1,'rgba(13,148,136,0)');
+      ctx.fillStyle=gg; ctx.fillRect(0,0,W,H);
+    }
+    ctx.restore();
+  }
+
+  function rr(x,y,w,h,r){
+    ctx.beginPath(); ctx.moveTo(x+r,y);
+    ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+  }
+
+  // ─ Stochastic fracture helpers ─────────────────────────────
+  function generateCrackSeeds(){
+    return {
+      devFreq      : 2+Math.floor(Math.random()*4),       // deviation cadence 2-5 px
+      devAmp       : Math.PI/28+Math.random()*Math.PI/10, // ±6.5°→±18°
+      bifProb      : 0.18+Math.random()*0.32,             // branch probability 18-50%
+      bifInterval  : 11+Math.random()*13,                 // branch every 11-24 px
+      maxDepth     : Math.random()<0.25 ? 2 : 3,          // usually 3
+      speedBase    : 5000+Math.random()*4000,             // ms base duration
+      speedDecay   : 0.48+Math.random()*0.28,             // per-level speed reduction
+      branchWidthR : 0.42+Math.random()*0.22,             // child width ratio
+      branchLenR   : 0.26+Math.random()*0.26,             // child length ratio
+      accelPt      : 0.18+Math.random()*0.17,             // ramp-up end (was fixed 0.30)
+      decelPt      : 0.62+Math.random()*0.18,             // decel start (was fixed 0.70)
+      closeSpd0    : 1.8+Math.random()*1.0,               // root close speed
+      angMomentum  : 0.12+Math.random()*0.38,             // angular momentum carry-over
+      microDevProb : 0.12+Math.random()*0.22              // extra micro-jitter probability
+    };
+  }
+
+  function generateWeaknessMap(){
+    var nClusters=2+Math.floor(Math.random()*2);
+    var centers=[];
+    for(var c=0;c<nClusters;c++){
+      centers.push({
+        x: PX+PW_COL*(0.12+Math.random()*0.76),
+        y: PY+PH_COL*(0.08+Math.random()*0.84)
+      });
+    }
+    var total=8+Math.floor(Math.random()*5);
+    var pts=[];
+    for(var i=0;i<total;i++){
+      var ctr=centers[Math.floor(Math.random()*nClusters)];
+      var wx=ctr.x+(Math.random()-0.5)*PW_COL*0.55;
+      var wy=ctr.y+(Math.random()-0.5)*PH_COL*0.28;
+      wx=Math.max(PX+3,Math.min(PX+PW_COL-3,wx));
+      wy=Math.max(PY+3,Math.min(PY+PH_COL-3,wy));
+      // Edge proximity bias +40%
+      var dEdge=Math.min(wx-PX, (PX+PW_COL)-wx);
+      var wt=dEdge<10 ? 1.4 : 1.0;
+      // Existing hole proximity bias +60%
+      for(var h=0;h<holes.length;h++){
+        var hdx=wx-holes[h].x, hdy=wy-holes[h].y;
+        if(Math.sqrt(hdx*hdx+hdy*hdy)<22){wt*=1.6;break;}
+      }
+      pts.push({x:wx,y:wy,w:wt});
+    }
+    return pts;
+  }
+
+  function pickCrackOrigin(wmap,seeds){
+    var typeR=Math.random();
+    var sx,sy,angle;
+    if(typeR<0.15){
+      // edge → edge (rare 15%) — crosses full width
+      var left=Math.random()>0.5;
+      sx=left ? PX+1+Math.random()*3 : PX+PW_COL-1-Math.random()*3;
+      sy=PY+PH_COL*(0.12+Math.random()*0.76);
+      angle=left ? (Math.random()-0.5)*0.12 : Math.PI+(Math.random()-0.5)*0.12;
+    } else if(typeR<0.52){
+      // edge → interior (37%)
+      var left=Math.random()>0.5;
+      sx=left ? PX+1+Math.random()*3 : PX+PW_COL-1-Math.random()*3;
+      sy=PY+PH_COL*(0.10+Math.random()*0.80);
+      if(wmap.length>0){
+        var tw=wmap[Math.floor(Math.random()*wmap.length)];
+        angle=Math.atan2(tw.y-sy,tw.x-sx)+(Math.random()-0.5)*0.45;
+      } else {
+        angle=(left?0:Math.PI)+(Math.random()-0.5)*0.6;
+      }
+    } else {
+      // interior → interior (48%)
+      if(wmap.length>0){
+        var totalW=0;
+        for(var i=0;i<wmap.length;i++) totalW+=wmap[i].w;
+        var r=Math.random()*totalW,acc=0,chosen=wmap[0];
+        for(var i=0;i<wmap.length;i++){
+          acc+=wmap[i].w;
+          if(r<=acc){chosen=wmap[i];break;}
+        }
+        sx=chosen.x+(Math.random()-0.5)*10;
+        sy=chosen.y+(Math.random()-0.5)*10;
+      } else {
+        sx=PX+PW_COL*(0.12+Math.random()*0.76);
+        sy=PY+PH_COL*(0.12+Math.random()*0.62);
+      }
+      // slight downward bias — gravity effect
+      angle=Math.random()*Math.PI*2;
+      if(Math.random()<0.35) angle=Math.PI*0.3+(Math.random()-0.5)*1.2;
+    }
+    sx=Math.max(PX,Math.min(PX+PW_COL,sx));
+    sy=Math.max(PY,Math.min(PY+PH_COL,sy));
+    return {x:sx,y:sy,angle:angle};
+  }
+
+  // ─ CrackBranch ───────────────────────────────────────────
+  function CrackBranch(sx,sy,angle,maxLen,baseW,depth,seeds){
+    this.depth   = depth||0;
+    this.baseW   = Math.max(baseW,0.12);
+    this.maxLen  = maxLen;
+    this.drawnLen= 0;
+    this.done    = false;
+    this.closing = false;
+    this.children= [];
+    this.startAtPx=0;
+    this.started =false;
+    this.startEl =0;
+
+    // Seed parameters — fallback to legacy defaults if no seeds supplied
+    var sd=seeds||{
+      devFreq:3, devAmp:Math.PI/15, bifProb:0.35, bifInterval:15,
+      maxDepth:3, speedBase:7000+Math.random()*2000, speedDecay:0.60,
+      branchWidthR:0.54, branchLenR:0.33+Math.random()*0.26,
+      accelPt:0.30, decelPt:0.70, closeSpd0:2.4, angMomentum:0.25,
+      microDevProb:0.25
+    };
+    this._accelPt=sd.accelPt; this._decelPt=sd.decelPt;
+    this.spd=(maxLen/(sd.speedBase+Math.random()*1200))*Math.pow(sd.speedDecay,this.depth);
+    this.closeSpd=this.depth===0 ? sd.closeSpd0 : 1.6;
+
+    // Box-Muller Gaussian — more realistic angular deviation than uniform
+    function gauss(amp){
+      var u=0,v=0;
+      while(u===0)u=Math.random();
+      while(v===0)v=Math.random();
+      return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)*amp;
+    }
+
+    this.pts=[{x:sx,y:sy,irr:(Math.random()-0.5)*0.5,isBranch:false}];
+    var cx=sx,cy=sy,a=angle;
+    var devStep=sd.devFreq+Math.floor(Math.random()*3);
+    var nextBranchAt=sd.bifInterval*(0.8+Math.random()*0.4);
+    var angMom=0;
+
+    for(var i=1;i<=(maxLen|0)+2;i++){
+      if(i%devStep===0){
+        var dev=gauss(sd.devAmp)+angMom*sd.angMomentum;
+        a+=dev;
+        angMom=dev*0.28; // carry partial forward for natural curve
+        devStep=sd.devFreq+Math.floor(Math.random()*3);
+        if(Math.random()<sd.microDevProb)
+          a+=(Math.random()-0.5)*sd.devAmp*0.45;
+      }
+      cx+=Math.cos(a); cy+=Math.sin(a);
+      cy=Math.max(PY-8,Math.min(PY+PH_COL+8,cy));
+      cx=Math.max(4,Math.min(W-4,cx));
+      var isBranch=false;
+      if(this.depth<sd.maxDepth && i>=(nextBranchAt|0) && Math.random()<sd.bifProb){
+        var dir=(Math.random()>0.5?1:-1);
+        var ba=a+dir*(0.18+Math.random()*0.58);
+        var bLen=maxLen*(sd.branchLenR*(0.75+Math.random()*0.5));
+        var child=new CrackBranch(cx,cy,ba,bLen,baseW*sd.branchWidthR,depth+1,seeds);
+        child.startAtPx=i;
+        this.children.push(child);
+        isBranch=true;
+        nextBranchAt=i+sd.bifInterval*(0.8+Math.random()*0.6);
+      }
+      this.pts.push({x:cx,y:cy,irr:(Math.random()-0.5)*0.5,isBranch:isBranch});
+    }
+  }
+
+  CrackBranch.prototype.tick=function(dt,el){
+    if(this.closing){
+      this.drawnLen=Math.max(0,this.drawnLen-this.closeSpd*dt);
+      for(var c=0;c<this.children.length;c++) this.children[c].tick(dt,0);
+      return;
+    }
+    if(this.done) return;
+    var dtMs=dt*16.67;
+    // Speed profile driven by per-cycle seeds (accelPt / decelPt)
+    var p=this.drawnLen/this.maxLen;
+    var ap=this._accelPt||0.30, dp=this._decelPt||0.70;
+    var sf = p<ap  ? 0.22+(p/ap)*0.78
+           : p<dp  ? 1.0
+           :         1.0-((p-dp)/(1.0-dp))*0.65;
+    // Accelerate near existing holes
+    var vi=this.drawnLen|0;
+    if(vi<this.pts.length){
+      var cp=this.pts[vi];
+      for(var h=0;h<holes.length;h++){
+        var hdx=cp.x-holes[h].x, hdy=cp.y-holes[h].y;
+        if(hdx*hdx+hdy*hdy<100){sf*=1.6;break;}
+      }
+    }
+    var prev=this.drawnLen;
+    this.drawnLen=Math.min(this.maxLen,this.drawnLen+dtMs*this.spd*sf);
+    if(this.drawnLen>=this.maxLen) this.done=true;
+    // Emit micro-dust as crack grows
+    var growth=this.drawnLen-prev;
+    if(growth>0 && Math.random()<0.25*growth){
+      var ni=Math.min((this.drawnLen|0),this.pts.length-1);
+      var np=this.pts[ni];
+      microDust.push(new MicroDust(np.x,np.y));
+    }
+    // Update children
+    for(var c=0;c<this.children.length;c++){
+      var ch=this.children[c];
+      if(this.drawnLen>=ch.startAtPx){
+        if(!ch.started){ch.started=true;ch.startEl=el;}
+        ch.tick(dt,el-ch.startEl);
+      }
+    }
+  };
+
+  CrackBranch.prototype.draw=function(ctx){
+    var vis=Math.min((this.drawnLen|0)+1,this.pts.length);
+    if(vis<2) return;
+
+    // Build left/right offset paths for polygon-strip look
+    var lx=[],ly=[],rx=[],ry=[];
+    for(var i=0;i<vis;i++){
+      var pt=this.pts[i];
+      var t=i/Math.max(this.maxLen,1);
+      var hw=this.baseW*(1.0-t*0.92)+0.08;
+      var tx,ty;
+      if(i<vis-1){tx=this.pts[i+1].x-pt.x; ty=this.pts[i+1].y-pt.y;}
+      else{tx=pt.x-this.pts[Math.max(0,i-1)].x; ty=pt.y-this.pts[Math.max(0,i-1)].y;}
+      var tl=Math.sqrt(tx*tx+ty*ty)||1;
+      var nx=-ty/tl, ny=tx/tl;
+      lx.push(pt.x+nx*(hw*0.62)+pt.irr);    ly.push(pt.y+ny*(hw*0.62));
+      rx.push(pt.x-nx*(hw*0.48)-pt.irr*0.5); ry.push(pt.y-ny*(hw*0.48));
+    }
+
+    ctx.save(); ctx.lineCap='round'; ctx.lineJoin='round';
+
+    // Aura: compressed concrete (main crack only)
+    if(this.depth===0){
+      ctx.beginPath(); ctx.moveTo(this.pts[0].x,this.pts[0].y);
+      for(var i=1;i<vis;i++) ctx.lineTo(this.pts[i].x,this.pts[i].y);
+      ctx.strokeStyle='rgba(46,51,72,0.22)';
+      ctx.lineWidth=this.baseW*3.5+2.5; ctx.stroke();
+    }
+
+    // Interior fill (dark void)
+    ctx.beginPath(); ctx.moveTo(lx[0],ly[0]);
+    for(var i=1;i<vis;i++) ctx.lineTo(lx[i],ly[i]);
+    for(var i=vis-1;i>=0;i--) ctx.lineTo(rx[i],ry[i]);
+    ctx.closePath(); ctx.fillStyle='#050508'; ctx.fill();
+
+    // Shadow edge (left = deeper)
+    ctx.beginPath(); ctx.moveTo(lx[0],ly[0]);
+    for(var i=1;i<vis;i++) ctx.lineTo(lx[i],ly[i]);
+    ctx.strokeStyle='rgba(0,0,0,0.82)'; ctx.lineWidth=0.7; ctx.stroke();
+
+    // Highlight edge (right = light bounce)
+    ctx.beginPath(); ctx.moveTo(rx[0],ry[0]);
+    for(var i=1;i<vis;i++) ctx.lineTo(rx[i],ry[i]);
+    ctx.strokeStyle='rgba(255,255,255,0.055)'; ctx.lineWidth=0.45; ctx.stroke();
+
+    // Granular edge (every 2-3px on shadow side)
+    ctx.fillStyle='#1a1e2e';
+    for(var i=0;i<vis;i+=2){
+      ctx.fillRect(lx[i],ly[i],1,1);
+      if(i+1<vis) ctx.fillRect((lx[i]+lx[i+1])*0.5+0.5,(ly[i]+ly[i+1])*0.5,1,1);
+    }
+
+    ctx.restore();
+    // Draw children
+    for(var c=0;c<this.children.length;c++){
+      if(this.drawnLen>=this.children[c].startAtPx) this.children[c].draw(ctx);
+    }
+  };
+
+  // ─ Crumb ─────────────────────────────────────────────────
+  function randomSize(){
+    var r=Math.random();
+    return r<0.70 ? 1.5+Math.random()*2.5
+         : r<0.90 ? 5+Math.random()*5
+         : 11+Math.random()*7;
+  }
+
+  function makeFragPts(sz){
+    var sides=4+Math.floor(Math.random()*4);
+    var pts=[], baseA=Math.random()*Math.PI*2;
+    for(var i=0;i<sides;i++){
+      var a=baseA+(i/sides)*Math.PI*2+(Math.random()-0.5)*(Math.PI*2/sides)*0.38;
+      var r=sz*(0.42+Math.random()*0.58);
+      pts.push([Math.cos(a)*r,Math.sin(a)*r]);
+    }
+    return pts;
+  }
+
+  function Crumb(x,y,sz){
+    this.x=x; this.y=y; this.ox=x; this.oy=y;
+    this.sz=sz;
+    var micro=sz<4, small=sz>=4&&sz<10;
+    this.gravity  = micro?0.022:small?0.065:0.125;
+    this.airX     = micro?0.984:small?0.995:0.998;
+    this.rotSpd   = micro?(0.05+Math.random()*0.10)*((Math.random()>0.5?1:-1))
+                  : small?(0.012+Math.random()*0.015)*((Math.random()>0.5?1:-1))
+                  : (0.005+Math.random()*0.015)*((Math.random()>0.5?1:-1));
+    this.fadeOut  = micro; // micro-crumbs fade before ground
+    this.pile     = !micro; // larger crumbs accumulate
+    var side      = x<PX+PW_COL/2 ? -1 : 1;
+    this.vx       = side*(0.2+Math.random()*0.6);
+    this.vy       = 0.12+Math.random()*0.35;
+    this.rot      = Math.random()*Math.PI*2;
+    this.alpha    = 1; this.settled=false; this.returning=false;
+    this.retSpeed = 0; this.arrived=false;
+    this.pts      = makeFragPts(sz);
+    var v         = (Math.random()-0.5)*16;
+    this.cr=(26+v)|0; this.cg=(30+v)|0; this.cb=(46+v)|0;
+    // Face color (exposed fracture = slightly lighter)
+    this.fr=(58+(Math.random()-0.5)*10)|0;
+    this.fg=(62+(Math.random()-0.5)*10)|0;
+    this.fb=(85+(Math.random()-0.5)*10)|0;
+  }
+
+  Crumb.prototype.update=function(dt){
+    if(this.returning||this.settled) return;
+    this.vy+=this.gravity*dt;
+    this.vx*=Math.pow(this.airX,dt);
+    this.x+=this.vx*dt; this.y+=this.vy*dt;
+    this.rot+=this.rotSpd*dt;
+    this.rotSpd*=Math.pow(0.9985,dt);
+    var ground=H*0.88;
+    var fadeStart=ground-22;
+    if(this.fadeOut && this.y>fadeStart){
+      this.alpha=Math.max(0,1-(this.y-fadeStart)/22);
+      if(this.alpha<=0.01){this.settled=true;return;}
+    }
+    if(!this.fadeOut && this.y>=ground-22){
+      this.vy*=0.55; this.vx*=0.75;
+      if(this.y>=ground){
+        this.y=ground; this.vy=0; this.vx=0; this.rotSpd=0;
+        this.settled=true;
+      }
+    }
+  };
+
+  Crumb.prototype.updateReturn=function(dt){
+    if(!this.returning||this.arrived) return;
+    var dx=this.ox-this.x, dy=this.oy-this.y;
+    var dist=Math.sqrt(dx*dx+dy*dy);
+    if(dist<2){this.x=this.ox;this.y=this.oy;this.arrived=true;return;}
+    this.retSpeed=Math.min(this.retSpeed+0.7*dt,15);
+    var s=Math.min(this.retSpeed*dt,dist);
+    this.x+=dx/dist*s; this.y+=dy/dist*s;
+    this.alpha=Math.min(1,this.alpha+0.06*dt);
+    this.rot-=this.rotSpd*dt*0.6;
+  };
+
+  Crumb.prototype.draw=function(ctx,alpha){
+    if(this.alpha<0.01||this.pts.length<3) return;
+    var a=alpha!==undefined?alpha:this.alpha;
+    ctx.save(); ctx.globalAlpha=a;
+    ctx.translate(this.x,this.y); ctx.rotate(this.rot);
+    // Gradient (body color → fracture face color)
+    var hw=0;
+    for(var i=0;i<this.pts.length;i++) hw=Math.max(hw,Math.abs(this.pts[i][0]));
+    hw=Math.max(hw,1);
+    var gr=ctx.createLinearGradient(-hw,0,hw,0);
+    gr.addColorStop(0,'rgb('+this.fr+','+this.fg+','+this.fb+')');
+    gr.addColorStop(0.5,'rgb('+this.cr+','+this.cg+','+this.cb+')');
+    gr.addColorStop(1,'rgb('+(this.cr-10)+','+(this.cg-8)+','+(this.cb-12)+')');
+    ctx.beginPath(); ctx.moveTo(this.pts[0][0],this.pts[0][1]);
+    for(var i=1;i<this.pts.length;i++) ctx.lineTo(this.pts[i][0],this.pts[i][1]);
+    ctx.closePath(); ctx.fillStyle=gr; ctx.fill();
+    // Micro-grain on surface
+    if(this.sz>=4){
+      ctx.fillStyle='rgba(255,255,255,0.028)';
+      for(var k=0;k<3;k++){
+        var gx=(Math.random()-0.5)*hw*1.4, gy=(Math.random()-0.5)*hw*1.4;
+        ctx.fillRect(gx,gy,1,1);
+      }
+    }
+    ctx.restore();
+  };
+
+  // ─ MicroDust (crack propagation particles) ───────────────
+  function MicroDust(x,y){
+    this.x=x; this.y=y;
+    var a=Math.random()*Math.PI*2;
+    var sp=0.3+Math.random()*0.6;
+    this.vx=Math.cos(a)*sp; this.vy=Math.sin(a)*sp;
+    this.life=0.4+Math.random()*0.25; this.ml=this.life;
+  }
+  MicroDust.prototype.upd=function(dt){
+    this.vx+=(Math.random()-0.5)*0.08; this.vy+=(Math.random()-0.5)*0.08;
+    this.x+=this.vx*dt; this.y+=this.vy*dt;
+    this.life-=0.028*dt;
+  };
+  MicroDust.prototype.draw=function(ctx){
+    var a=Math.max(0,this.life/this.ml)*0.35;
+    ctx.fillStyle='rgba(100,116,139,'+a+')';
+    ctx.fillRect(this.x,this.y,1,1);
+  };
+
+  // ─ Detachment dust cloud ─────────────────────────────────
+  function DustPuff(x,y){
+    this.x=x; this.y=y;
+    var a=Math.random()*Math.PI*2;
+    var sp=0.5+Math.random()*1.2;
+    this.vx=Math.cos(a)*sp; this.vy=Math.sin(a)*sp-0.4;
+    this.life=0.55+Math.random()*0.35; this.ml=this.life;
+    this.r=0.8+Math.random()*1.2;
+  }
+  DustPuff.prototype.upd=function(dt){
+    this.vy+=0.015*dt; this.vx+=(Math.random()-0.5)*0.06;
+    this.x+=this.vx*dt; this.y+=this.vy*dt;
+    this.life-=0.022*dt;
+  };
+  DustPuff.prototype.draw=function(ctx){
+    var a=Math.max(0,this.life/this.ml)*0.30;
+    ctx.beginPath(); ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
+    ctx.fillStyle='rgba(100,116,139,'+a+')'; ctx.fill();
+  };
+
+  // ─ Teal spark (regen) ────────────────────────────────────
+  function Spark(x,y){
+    this.x=x; this.y=y;
+    this.vx=(Math.random()-0.5)*2.3; this.vy=-(Math.random()*2.6+0.3);
+    this.life=0.7+Math.random()*0.4; this.ml=this.life;
+    this.r=0.7+Math.random()*2.1;
+    this.col=Math.random()>0.5?'#0d9488':'#14b8a6';
+  }
+  Spark.prototype.upd=function(dt){
+    this.vy+=0.028*dt; this.vx+=(Math.random()-0.5)*0.06;
+    this.x+=this.vx*dt; this.y+=this.vy*dt;
+    this.life-=0.020*dt;
+  };
+  Spark.prototype.draw=function(ctx){
+    var a=Math.max(0,this.life/this.ml);
+    ctx.save(); ctx.globalAlpha=a;
+    ctx.beginPath(); ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
+    ctx.fillStyle=this.col; ctx.fill(); ctx.restore();
+  };
+
+  // ─ Hole ──────────────────────────────────────────────────
+  var holes=[];
+  function addHole(x,y,r){holes.push({x:x,y:y,r:Math.max(1,r),a:1});}
+  function drawHoles(belowY){
+    holes.forEach(function(h){
+      if(belowY!==undefined&&h.y>belowY) return;
+      ctx.save(); ctx.globalAlpha=h.a*0.80;
+      ctx.beginPath(); ctx.arc(h.x,h.y,h.r,0,Math.PI*2);
+      ctx.fillStyle='rgba(8,9,12,0.94)'; ctx.fill();
+      ctx.restore();
+    });
+  }
+
+  // ─ Spawn helpers ─────────────────────────────────────────
+  function spawnDustCloud(x,y,n){
+    for(var i=0;i<n;i++) dustPuffs.push(new DustPuff(x,y));
+  }
+
+  function spawnCrumbAt(x,y){
+    var sz=randomSize();
+    crumbs.push(new Crumb(x,y,sz));
+    if(sz>=4) addHole(x,y,sz*0.55);
+    spawnDustCloud(x,y, 3+Math.floor(sz*0.5));
+  }
+
+  // Collect spawn candidate points from cracks
+  function collectSpawnPts(){
+    var pts=[];
+    function fromBranch(ck){
+      var vis=Math.min((ck.drawnLen|0)+1,ck.pts.length);
+      for(var i=0;i<vis;i++){
+        var p=ck.pts[i];
+        var nearLeft  = Math.abs(p.x-PX)<9;
+        var nearRight = Math.abs(p.x-(PX+PW_COL))<9;
+        if(nearLeft||nearRight) pts.push({x:p.x,y:p.y,w:4});
+        if(p.isBranch) pts.push({x:p.x,y:p.y,w:3});
+      }
+      for(var c=0;c<ck.children.length;c++){
+        if(ck.drawnLen>=ck.children[c].startAtPx) fromBranch(ck.children[c]);
+      }
+    }
+    cracks.forEach(fromBranch);
+    // Check intersections between crack pairs (sample every 4th pt)
+    for(var i=0;i<cracks.length-1;i++){
+      var viA=Math.min((cracks[i].drawnLen|0)+1,cracks[i].pts.length);
+      for(var j=i+1;j<cracks.length;j++){
+        var viB=Math.min((cracks[j].drawnLen|0)+1,cracks[j].pts.length);
+        for(var pi=0;pi<viA;pi+=4){
+          for(var pj=0;pj<viB;pj+=4){
+            var dx=cracks[i].pts[pi].x-cracks[j].pts[pj].x;
+            var dy=cracks[i].pts[pi].y-cracks[j].pts[pj].y;
+            if(dx*dx+dy*dy<64) pts.push({
+              x:(cracks[i].pts[pi].x+cracks[j].pts[pj].x)*0.5,
+              y:(cracks[i].pts[pi].y+cracks[j].pts[pj].y)*0.5,
+              w:5
+            });
+          }
+        }
+      }
+    }
+    return pts;
+  }
+
+  // ─ State ─────────────────────────────────────────────────
+  var state=S.PAUSE, stateStart=0;
+  var crumbs=[], pile=[], cracks=[], microDust=[], dustPuffs=[], sparks=[];
+  var crumbCount=0, CRUMB_THRESH=15;
+  var crumbTimer=0;
+  var weaknessMap=[], cycleSeeds=null;
+  var crackSchedule=[4000,10000,16000];
+  var crackCreated=[false,false,false];
+  var finalCrack=null;
+  var scanY=undefined, glowA=0, flashA=0, regenStart=0;
+
+  function setClosingRecursive(ck){
+    ck.closing=true;
+    for(var c=0;c<ck.children.length;c++) setClosingRecursive(ck.children[c]);
+  }
+
+  function enter(s,now){
+    state=s; stateStart=now;
+    if(s===S.DEGRADING){
+      crumbs=[]; pile=[]; cracks=[]; microDust=[]; dustPuffs=[]; sparks=[];
+      holes=[]; crumbCount=0; finalCrack=null;
+      crackCreated=[false,false,false];
+      cycleSeeds=generateCrackSeeds(); weaknessMap=generateWeaknessMap();
+      crumbTimer=(PRM?2500:900)+Math.random()*300;
+      scanY=undefined; glowA=0; flashA=0;
+    }
+    if(s===S.REGEN){
+      regenStart=now;
+      pile.forEach(function(c){c.returning=true;c.retSpeed=0;crumbs.push(c);});
+      pile=[];
+      crumbs.forEach(function(c){if(!c.settled){c.returning=true;c.retSpeed=0;}});
+      cracks.forEach(setClosingRecursive);
+      if(finalCrack) setClosingRecursive(finalCrack);
+      for(var i=0;i<20;i++)
+        sparks.push(new Spark(PX+Math.random()*PW_COL,PY+PH_COL*0.2+Math.random()*PH_COL*0.6));
+      scanY=PY+PH_COL; glowA=0; flashA=1.0;
+    }
+  }
+
+  // ─ Main loop ─────────────────────────────────────────────
+  var lastTs=0, ready=false;
+
+  function loop(ts){
+    if(!ready){layout();computeTexture();ready=true;stateStart=ts;lastTs=ts;}
+    var dt=Math.min((ts-lastTs)/16.67,3.5); lastTs=ts;
+    var el=ts-stateStart;
+    ctx.clearRect(0,0,W,H);
+
+    // Draw ground line + pile (below pillar)
+    var gy=H*0.88;
+    ctx.strokeStyle='rgba(28,33,48,0.60)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(W,gy);ctx.stroke();
+    var dg=ctx.createLinearGradient(0,gy,0,gy+16);
+    dg.addColorStop(0,'rgba(28,33,48,0.18)');dg.addColorStop(1,'rgba(28,33,48,0)');
+    ctx.fillStyle=dg;ctx.fillRect(0,gy,W,16);
+    pile.forEach(function(c){c.draw(ctx,1);});
+
+    switch(state){
+
+      case S.PAUSE:
+        drawPillar(undefined,0);
+        if(el>2400) enter(S.DEGRADING,ts);
+        break;
+
+      case S.DEGRADING:
+        crumbTimer-=dt*16.67;
+        if(crumbTimer<=0){
+          crumbTimer=(PRM?2600:880)+Math.random()*380;
+          var spPts=collectSpawnPts();
+          if(spPts.length>0){
+            var sp=spPts[Math.floor(Math.random()*spPts.length)];
+            spawnCrumbAt(sp.x+(Math.random()-0.5)*6, sp.y+(Math.random()-0.5)*6);
+          } else {
+            var side=Math.random()>0.5;
+            spawnCrumbAt(side?PX+Math.random()*4:PX+PW_COL-Math.random()*4,
+                         PY+PH_COL*0.1+Math.random()*PH_COL*0.8);
+          }
+          crumbCount++;
+        }
+        for(var ci=0;ci<crackSchedule.length;ci++){
+          if(!crackCreated[ci]&&el>crackSchedule[ci]){
+            crackCreated[ci]=true;
+            var orig=pickCrackOrigin(weaknessMap,cycleSeeds);
+            var ck=new CrackBranch(orig.x,orig.y,orig.angle,42+Math.random()*32,1.5,0,cycleSeeds);
+            ck.startTime=ts; cracks.push(ck);
+          }
+        }
+        cracks.forEach(function(c){c.tick(dt,ts-c.startTime);});
+        for(var i=crumbs.length-1;i>=0;i--){
+          crumbs[i].update(dt);
+          if(crumbs[i].settled&&crumbs[i].pile){pile.push(crumbs[i]);crumbs.splice(i,1);}
+        }
+        for(var i=microDust.length-1;i>=0;i--){
+          microDust[i].upd(dt);if(microDust[i].life<=0)microDust.splice(i,1);
+        }
+        for(var i=dustPuffs.length-1;i>=0;i--){
+          dustPuffs[i].upd(dt);if(dustPuffs[i].life<=0)dustPuffs.splice(i,1);
+        }
+        microDust.forEach(function(p){p.draw(ctx);});
+        dustPuffs.forEach(function(p){p.draw(ctx);});
+        drawPillar(undefined,0);
+        drawHoles(undefined);
+        cracks.forEach(function(c){c.draw(ctx);});
+        crumbs.forEach(function(c){c.draw(ctx);});
+        if(crumbCount>=CRUMB_THRESH) enter(S.THRESHOLD,ts);
+        break;
+
+      case S.THRESHOLD:
+        if(!finalCrack&&el>180){
+          var fy=PY+PH_COL*(0.43+(Math.random()-0.5)*0.12);
+          finalCrack=new CrackBranch(PX-BASE_EXT-8,fy,0,PW_COL+BASE_EXT*2+18,1.8,0);
+          finalCrack.spd=(PW_COL+BASE_EXT*2+18)/1500; // px/ms fast
+          finalCrack.startTime=ts;
+        }
+        cracks.forEach(function(c){c.tick(dt,ts-c.startTime);});
+        if(finalCrack) finalCrack.tick(dt,ts-finalCrack.startTime);
+        for(var i=crumbs.length-1;i>=0;i--){
+          crumbs[i].update(dt);
+          if(crumbs[i].settled&&crumbs[i].pile){pile.push(crumbs[i]);crumbs.splice(i,1);}
+        }
+        for(var i=microDust.length-1;i>=0;i--){
+          microDust[i].upd(dt);if(microDust[i].life<=0)microDust.splice(i,1);
+        }
+        for(var i=dustPuffs.length-1;i>=0;i--){
+          dustPuffs[i].upd(dt);if(dustPuffs[i].life<=0)dustPuffs.splice(i,1);
+        }
+        microDust.forEach(function(p){p.draw(ctx);});
+        dustPuffs.forEach(function(p){p.draw(ctx);});
+        drawPillar(undefined,0);
+        drawHoles(undefined);
+        cracks.forEach(function(c){c.draw(ctx);});
+        if(finalCrack) finalCrack.draw(ctx);
+        crumbs.forEach(function(c){c.draw(ctx);});
+        if(finalCrack&&finalCrack.done&&el>1800) enter(S.REGEN,ts);
+        break;
+
+      case S.REGEN:
+        var rel=ts-regenStart;
+        flashA=Math.max(0,1-rel/300);
+        if(rel>300){
+          var rp=Math.min((rel-300)/2200,1);
+          scanY=PY+PH_COL-rp*PH_COL;
+          glowA=Math.sin(rp*Math.PI);
+          holes.forEach(function(h){if(h.y>scanY)h.a=Math.max(0,h.a-0.05*dt);});
+        }
+        cracks.forEach(function(c){c.tick(dt,ts-c.startTime);});
+        if(finalCrack) finalCrack.tick(dt,ts-finalCrack.startTime);
+        crumbs.forEach(function(c){
+          if(c.returning) c.updateReturn(dt);
+          else c.update(dt);
+        });
+        for(var i=sparks.length-1;i>=0;i--){
+          sparks[i].upd(dt);if(sparks[i].life<=0)sparks.splice(i,1);
+        }
+        crumbs.forEach(function(c){
+          if(c.arrived&&Math.random()<0.025*dt){
+            sparks.push(new Spark(c.ox,c.oy));c.arrived=false;
+          }
+        });
+        for(var i=microDust.length-1;i>=0;i--){
+          microDust[i].upd(dt);if(microDust[i].life<=0)microDust.splice(i,1);
+        }
+        microDust.forEach(function(p){p.draw(ctx);});
+        drawPillar(scanY,glowA);
+        drawHoles(scanY);
+        cracks.forEach(function(c){c.draw(ctx);});
+        if(finalCrack) finalCrack.draw(ctx);
+        crumbs.forEach(function(c){c.draw(ctx);});
+        sparks.forEach(function(p){p.draw(ctx);});
+        if(flashA>0&&!PRM){
+          var fg=ctx.createRadialGradient(PX+PW_COL/2,PY+PH_COL/2,0,PX+PW_COL/2,PY+PH_COL/2,W*0.7);
+          fg.addColorStop(0,'rgba(13,148,136,'+(flashA*0.55)+')');
+          fg.addColorStop(0.45,'rgba(13,148,136,'+(flashA*0.12)+')');
+          fg.addColorStop(1,'rgba(13,148,136,0)');
+          ctx.fillStyle=fg; ctx.fillRect(0,0,W,H);
+        }
+        if(rel>2500) enter(S.PAUSE,ts);
+        break;
+    }
+
+    requestAnimationFrame(loop);
+  }
+
+  var rsT=null;
+  window.addEventListener('resize',function(){
+    clearTimeout(rsT);
+    rsT=setTimeout(function(){
+      layout();computeTexture();
+      if(state===S.PAUSE||state===S.DEGRADING) enter(S.PAUSE,performance.now());
+    },180);
+  },{passive:true});
+
+  setTimeout(function(){requestAnimationFrame(loop);},600);
+})();
+
+</script>
+</body>
+</html>

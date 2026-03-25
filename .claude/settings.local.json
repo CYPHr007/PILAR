@@ -2,7 +2,20 @@
   "permissions": {
     "allow": [
       "Bash(python:*)",
-      "Bash(curl -s http://localhost:5000/ -o /dev/null -w \"%{http_code}\" 2>&1)"
+      "Bash(curl -s http://localhost:5000/ -o /dev/null -w \"%{http_code}\" 2>&1)",
+      "Bash(ls -la C:\\\\Users\\\\info\\\\prediction_pannes\\\\prediction_pannes\\\\*.pkl 2>/dev/null || echo \"No pkl files found\")",
+      "Bash(cd C:/Users/info/prediction_pannes/prediction_pannes && python -c \"\nimport os\nos.environ['SECRET_KEY'] = 'test'\nos.environ['DATABASE_URL'] = 'sqlite:///test_check.db'\nimport etape7\nimport json\n\nwith etape7.app.test_client\\(\\) as c:\n    data = {'type':1,'temp_air':298.15,'temp_process':308.15,'vitesse':1500,'couple':40,'usure':100}\n    r = c.post\\('/predire', json=data\\)\n    print\\('Status:', r.status_code\\)\n    print\\('Response:', r.get_data\\(as_text=True\\)[:500]\\)\n\" 2>&1 | tail -20)",
+      "Bash(curl -s -X POST https://trypilar.com/predire \\\\\n  -H \"Content-Type: application/json\" \\\\\n  -d '{\"type\":1,\"temp_air\":298.15,\"temp_process\":308.15,\"vitesse\":1500,\"couple\":40,\"usure\":100}' \\\\\n  -w \"\\\\nHTTP_STATUS:%{http_code}\")",
+      "Bash(node --check /tmp/script_0.js 2>&1 && echo \"Script 0 OK\" || echo \"Script 0 ERROR\"\nnode --check /tmp/script_1.js 2>&1 && echo \"Script 1 OK\" || echo \"Script 1 ERROR\"\nnode --check /tmp/script_2.js 2>&1 && echo \"Script 2 OK\" || echo \"Script 2 ERROR\")",
+      "Bash(node --check \"C:/Users/info/prediction_pannes/prediction_pannes/tmp_script_1.js\" 2>&1 && echo \"OK\" || echo \"ERROR\"\nnode --check \"C:/Users/info/prediction_pannes/prediction_pannes/tmp_script_2.js\" 2>&1 && echo \"OK\" || echo \"ERROR\")",
+      "Bash(cd \"C:/Users/info/prediction_pannes/prediction_pannes\" && for f in tmp_val_*.js; do node --check \"$f\" 2>&1 && echo \"$f OK\" || echo \"$f ERROR\"; done)",
+      "Bash(cd \"C:/Users/info/prediction_pannes/prediction_pannes\" && for f in tmp_val__tutorial_*.js; do node --check \"$f\" 2>&1 && echo \"$f OK\" || echo \"$f ERROR\"; done)",
+      "Bash(cd \"C:/Users/info/prediction_pannes/prediction_pannes\" && rm -f tmp_val_*.js tmp_val__tutorial_*.js && ls tmp_val* 2>&1 || echo \"All tmp_val files removed\")",
+      "Bash(for f:*)",
+      "Read(//c/Users/info/Downloads/**)",
+      "Bash(grep -n \"emoji\\\\|font-size:.*px.*>.\\\\{1,4\\\\}<\\\\|feature-icon\\\\|step-icon\\\\|preview-icon\" C:/Users/info/prediction_pannes/prediction_pannes/etape7.py | head -20)",
+      "Bash(python3 -c \"\nimport re\ntext = open\\('C:/Users/info/prediction_pannes/prediction_pannes/etape7.py', encoding='utf-8'\\).read\\(\\)\nemoji_pattern = re.compile\\('[\\\\\\\\U00010000-\\\\\\\\U0010ffff]|[\\\\\\\\U00002702-\\\\\\\\U000027B0]|[\\\\\\\\U0001F600-\\\\\\\\U0001F64F]|[\\\\\\\\U0001F300-\\\\\\\\U0001F5FF]|[\\\\\\\\U0001F680-\\\\\\\\U0001F6FF]|[\\\\\\\\U0001F1E0-\\\\\\\\U0001F1FF]', flags=re.UNICODE\\)\nmatches = [\\(m.group\\(\\), text.count\\('\\\\\\\\n', 0, m.start\\(\\)\\)+1\\) for m in emoji_pattern.finditer\\(text\\)]\nprint\\(matches if matches else 'No emojis found'\\)\n\" 2>&1)",
+      "Bash(cd \"C:/Users/info/prediction_pannes/prediction_pannes\" && node --check test_script_1.js 2>&1 && echo \"Script 1 OK\" && node --check test_script_2.js 2>&1 && echo \"Script 2 OK\" && node --check test_script_3.js 2>&1 && echo \"Script 3 OK\")"
     ]
   }
 }

@@ -1442,7 +1442,7 @@ tr:last-child td{border-bottom:none;}
 .ai-val{font-size:9px;color:var(--text3);margin-left:auto;white-space:nowrap;}
 </style>
 <script>
-const T={
+var T={
 fr:{nav_monitor:'Live Monitor',nav_twin:'Twin',nav_history:'Historique',nav_account:'Compte',nav_settings:'Réglages',
 page_monitor:'Monitor',page_twin:'Jumeau Numérique',page_history:'Historique',page_account:'Compte',page_settings:'Réglages',
 idle_l1:'Aucune analyse',idle_l2:'Configurez ci-dessous et lancez',
@@ -1558,7 +1558,7 @@ set_domain:'Domain',set_nav_title:'Navigation',set_twin_nav:'Digital Twin',
 ast_you:'You',ast_pilar:'Pilar AI',ast_error:'Error: ',ast_net_error:'Network error. Please retry.',
 ai_warming:'warming up',ai_ready:'ready',ai_in_twin:'Digital Twin'}
 };
-let LANG=localStorage.getItem('pilar_lang')||'en';
+var LANG=localStorage.getItem('pilar_lang')||'en';
 function t(k){return(T[LANG]&&T[LANG][k])||(T.en[k])||k;}
 function setLang(l){LANG=l;localStorage.setItem('pilar_lang',l);applyLang();}
 function applyLang(){
@@ -1801,7 +1801,7 @@ function updateSyncStatus(){{
     if(dot&&lbl){{
       if(d.online){{
         dot.className='sync-dot online';
-        lbl.textContent='Synced'+(d.last_sync?' · '+new Date(d.last_sync).toLocaleTimeString([],{{hour:'2-digit',minute:'2-digit'}}):'');
+        lbl.textContent=d.sync_url?(d.last_sync?'Synced · '+new Date(d.last_sync).toLocaleTimeString([],{{hour:'2-digit',minute:'2-digit'}}):'Synced'):'Online';
       }}else{{
         dot.className='sync-dot offline';
         lbl.textContent=d.queued>0?'Offline · '+d.queued+' queued':'Offline';
@@ -1829,7 +1829,7 @@ function openFleet(){{
         var risk=m.last_risk!=null?m.last_risk:'—';
         var cls=m.last_risk==null?'':'risk>=50'?'alert':m.last_risk>=22?'amber':'ok';
         var rc=m.last_risk==null?'var(--text3)':m.last_risk>=50?'var(--red)':m.last_risk>=22?'var(--amber)':'var(--green)';
-        html+='<a href="/machine/'+m.id+'" style="display:block;padding:14px;background:var(--bg);border:1px solid var(--border);border-radius:10px;text-decoration:none;margin-bottom:10px;transition:border-color .15s" onmouseover="this.style.borderColor=\'var(--border2)\'" onmouseout="this.style.borderColor=\'var(--border)\'">';
+        html+='<a href="/machine/'+m.id+'" style="display:block;padding:14px;background:var(--bg);border:1px solid var(--border);border-radius:10px;text-decoration:none;margin-bottom:10px;transition:border-color .15s">';
         html+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">';
         html+='<div style="font-size:13px;font-weight:600;color:var(--text)">'+m.name+'</div>';
         html+='<div style="font-size:20px;font-weight:800;color:'+rc+'">'+risk+(risk!=='—'?'%':'')+'</div></div>';
@@ -2127,7 +2127,11 @@ async function openLiveFile(){
       var fname=(await _lfHandle.getFile()).name;
       _showLzConn(fname);
       _lfLoop();
-    }catch(e){if(e.name!=='AbortError')console.error('LiveFile open error',e);}
+    }catch(e){
+      if(e.name==='AbortError')return;
+      console.warn('showOpenFilePicker failed, using fallback:',e);
+      document.getElementById('lfInput').click();
+    }
   }else{
     document.getElementById('lfInput').click();
   }
@@ -4698,8 +4702,8 @@ async function analyzeAll() {
   const btn = document.getElementById('analyze-all-btn');
   if (!btn) return;
   const withFiles = _machines.filter(m => m.saved_file);
-  if (!withFiles.length) { alert('Aucune machine n\'a de fichier CSV attaché. Uploadez un fichier via le bouton CSV de chaque machine.'); return; }
-  if (!confirm('Lancer l\'analyse sur ' + withFiles.length + ' machine(s) avec fichier CSV ?')) return;
+  if (!withFiles.length) { alert("Aucune machine n\u2019a de fichier CSV attach\u00e9. Uploadez un fichier via le bouton CSV de chaque machine."); return; }
+  if (!confirm("Lancer l\u2019analyse sur " + withFiles.length + " machine(s) avec fichier CSV ?")) return;
   btn.textContent = 'En cours...'; btn.disabled = true;
   try {
     const r = await fetch('/api/machines/analyze-all', {method: 'POST', headers: {'Content-Type': 'application/json'}});
@@ -7562,6 +7566,33 @@ with app.app_context():
         print(f"[Pilar] Sync table init: {_se}")
 
 
+# ── Internet connectivity check (independent of sync) ────────────────────────
+import socket as _socket
+_inet_cache = {'online': False, 'ts': 0}
+_inet_lock  = threading.Lock()
+
+def _check_internet_now():
+    try:
+        s = _socket.socket(_socket.AF_INET, _socket.SOCK_STREAM)
+        s.settimeout(2)
+        s.connect(('8.8.8.8', 53))
+        s.close()
+        return True
+    except Exception:
+        return False
+
+def _get_internet_status():
+    import time as _time
+    with _inet_lock:
+        if _time.time() - _inet_cache['ts'] < 30:
+            return _inet_cache['online']
+    result = _check_internet_now()
+    with _inet_lock:
+        _inet_cache['online'] = result
+        _inet_cache['ts'] = _time.time()
+    return result
+
+
 # ── SyncClient Class ──────────────────────────────────────────────────────────
 
 class SyncClient:
@@ -7917,8 +7948,9 @@ def sync_status_route():
     """Returns sync status for the desktop UI status bar."""
     queued = SyncQueue.query.filter_by(synced_at=None).count()
     pending_chat = LocalChatMessage.query.filter_by(is_local=True, synced_at=None).count()
+    online = _sync_client.is_online if PILAR_SYNC_URL else _get_internet_status()
     return jsonify({
-        'online':       _sync_client.is_online,
+        'online':       online,
         'queued':       queued,
         'pending_chat': pending_chat,
         'last_sync':    _sync_client.last_sync.isoformat() if _sync_client.last_sync else None,
