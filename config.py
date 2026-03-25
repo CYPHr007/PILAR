@@ -7,7 +7,7 @@ through 7 000 lines of app code. Grouped by concern.
 
 # ── APP ───────────────────────────────────────────────────────────────────────
 APP_VERSION  = '4.0'
-SESSION_DAYS = 30        # session cookie lifetime (days)
+SESSION_DAYS = 3650      # session cookie lifetime (10 years — accounts persist indefinitely)
 
 # ── SECURITY / RATE LIMITING ──────────────────────────────────────────────────
 RATE_WINDOW = 900    # seconds — sliding window for failed login attempts

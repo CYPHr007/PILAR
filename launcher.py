@@ -1,19 +1,17 @@
 """
 PILAR Desktop Launcher
 ======================
-Lance Flask en thread background, puis ouvre Edge en mode app (fenetre
-sans barre URL ni onglets — comme Discord/Notion).
+Lance Flask en thread background, puis ouvre une fenetre native pywebview
+(aucune barre URL, aucun onglet — vraie app desktop).
 
-- Profil Edge dedie : sessions persistantes (pas besoin de re-login)
 - Tray icon : Ouvrir PILAR / Quitter PILAR
-- Fallback Chrome si Edge absent, puis navigateur par defaut
+- pywebview utilise WebView2 (Edge runtime) sous le capot
 """
 
 import os
 import sys
 import time
 import threading
-import subprocess
 import multiprocessing
 from pathlib import Path
 
@@ -24,18 +22,16 @@ from PIL import Image, ImageDraw
 _FROZEN   = getattr(sys, "frozen", False)
 APP_HOST  = "127.0.0.1"
 APP_PORT  = 5000
-APP_URL   = f"http://{APP_HOST}:{APP_PORT}"
+APP_URL   = f"http://{APP_HOST}:{APP_PORT}/monitor"
 
 if _FROZEN:
     BASE_DIR = Path(sys.executable).parent.resolve()
 else:
     BASE_DIR = Path(__file__).parent.resolve()
 
-# Profil Edge isole pour PILAR (sessions persistantes entre redemarrages)
-EDGE_PROFILE = BASE_DIR / "edge_data"
-
 # ── State ──────────────────────────────────────────────────────────────────────
 _flask_started = False
+_window        = None
 _tray_icon     = None
 
 
@@ -96,82 +92,32 @@ def _wait_for_flask(timeout: float = 60.0) -> bool:
             urllib.request.urlopen(APP_URL + "/api/health", timeout=2)
             return True
         except urllib.error.HTTPError:
-            return True          # Le serveur repond (meme avec erreur HTTP) = pret
+            return True
         except Exception:
             pass
         time.sleep(0.5)
     return False
 
 
-# ── Fenetre Edge app mode ──────────────────────────────────────────────────────
-def _find_edge() -> str | None:
-    pf86 = os.environ.get("PROGRAMFILES(X86)", r"C:\Program Files (x86)")
-    pf64 = os.environ.get("PROGRAMFILES",       r"C:\Program Files")
-    candidates = [
-        os.path.join(pf86, r"Microsoft\Edge\Application\msedge.exe"),
-        os.path.join(pf64, r"Microsoft\Edge\Application\msedge.exe"),
-        r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
-        r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
-    ]
-    return next((p for p in candidates if os.path.exists(p)), None)
-
-
-def _find_chrome() -> str | None:
-    pf   = os.environ.get("PROGRAMFILES",       r"C:\Program Files")
-    pf86 = os.environ.get("PROGRAMFILES(X86)", r"C:\Program Files (x86)")
-    loc  = os.environ.get("LOCALAPPDATA", "")
-    candidates = [
-        os.path.join(pf,   r"Google\Chrome\Application\chrome.exe"),
-        os.path.join(pf86, r"Google\Chrome\Application\chrome.exe"),
-        os.path.join(loc,  r"Google\Chrome\Application\chrome.exe"),
-    ]
-    return next((p for p in candidates if os.path.exists(p)), None)
-
-
-def _open_window():
-    """Ouvre PILAR dans une fenetre app (sans URL, sans onglets)."""
-    edge = _find_edge()
-    if edge:
-        subprocess.Popen([
-            edge,
-            f"--app={APP_URL}",
-            f"--user-data-dir={EDGE_PROFILE}",
-            "--window-size=1280,800",
-            "--no-first-run",
-            "--disable-sync",
-            "--disable-extensions",
-            "--disable-default-browser-check",
-            "--no-default-browser-check",
-        ])
-        print("[PILAR] Opened in Edge app mode")
-        return
-
-    chrome = _find_chrome()
-    if chrome:
-        subprocess.Popen([
-            chrome,
-            f"--app={APP_URL}",
-            f"--user-data-dir={EDGE_PROFILE}",
-            "--window-size=1280,800",
-            "--no-first-run",
-            "--disable-extensions",
-        ])
-        print("[PILAR] Opened in Chrome app mode")
-        return
-
-    # Dernier recours
-    import webbrowser
-    webbrowser.open(APP_URL)
-    print(f"[PILAR] Opened in default browser: {APP_URL}")
-
-
-# ── Tray ───────────────────────────────────────────────────────────────────────
+# ── Tray actions ───────────────────────────────────────────────────────────────
 def action_open(icon, item):
-    _open_window()
+    global _window
+    if _window is not None:
+        try:
+            _window.show()
+            _window.restore()
+        except Exception:
+            pass
 
 
 def action_quit(icon, item):
+    global _window
     print("[PILAR] Quit requested")
+    if _window is not None:
+        try:
+            _window.destroy()
+        except Exception:
+            pass
     icon.stop()
 
 
@@ -185,7 +131,7 @@ def _build_menu():
 
 # ── Main ───────────────────────────────────────────────────────────────────────
 def main():
-    global _tray_icon
+    global _window, _tray_icon
 
     print(f"[PILAR] Launcher starting (frozen={_FROZEN}, base={BASE_DIR})")
 
@@ -200,10 +146,7 @@ def main():
         sys.exit(1)
     print("[PILAR] Flask ready")
 
-    # 3. Ouvrir la fenetre
-    _open_window()
-
-    # 4. Tray icon — boucle principale (bloquant jusqu'a Quitter)
+    # 3. Tray icon en thread detache (pywebview doit etre dans le main thread)
     icon_image = _make_icon(64)
     _tray_icon = pystray.Icon(
         name="pilar",
@@ -211,8 +154,26 @@ def main():
         title="PILAR",
         menu=_build_menu(),
     )
+    _tray_icon.run_detached()
     print("[PILAR] Tray icon running")
-    _tray_icon.run()
+
+    # 4. Fenetre native pywebview — main thread
+    import webview
+    _window = webview.create_window(
+        title="PILAR",
+        url=APP_URL,
+        width=1280,
+        height=800,
+        min_size=(900, 600),
+        resizable=True,
+        text_select=False,
+    )
+    webview.start()
+
+    # 5. Fenetre fermee — arreter le tray
+    print("[PILAR] Window closed, stopping tray")
+    if _tray_icon:
+        _tray_icon.stop()
 
     print("[PILAR] Done")
 

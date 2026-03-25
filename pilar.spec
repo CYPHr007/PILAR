@@ -93,6 +93,14 @@ hidden_imports = [
     # FPdf2
     "fpdf",
     "fpdf2",
+    # pywebview
+    "webview",
+    "webview.platforms.winforms",
+    "clr",
+    "proxy_tools",
+    "bottle",
+    "pythonnet",
+    "clr_loader",
     # Sync client (stdlib, no extras needed)
     "urllib.request",
     "urllib.error",
@@ -109,7 +117,7 @@ launcher_a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=["tkinter", "matplotlib", "cv2", "PyQt5", "wx",
+    excludes=["matplotlib", "cv2", "PyQt5", "wx",
               "torch", "torchvision", "torchaudio",
               "numba", "llvmlite",
               "IPython", "ipykernel", "jupyter",

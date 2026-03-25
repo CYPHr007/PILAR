@@ -535,138 +535,235 @@ def send_verify_email(email, token, base_url=None):
 # ── AUTH PAGES ────────────────────────────────────────────────────────────────
 _AUTH_HEAD = """<!DOCTYPE html><html lang="fr"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#07090f"><title>Pilar</title>
-<script>
-if('serviceWorker' in navigator){
-  navigator.serviceWorker.getRegistrations().then(function(regs){
-    regs.forEach(function(r){r.unregister();});
-  });
-}
-</script>
+<meta name="theme-color" content="#08090c"><title>PILAR</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(function(r){r.forEach(function(x){x.unregister();});});}</script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 :root{
---bg:#07090f;--surface:#0e1118;--surface2:#141820;--surface3:#1e2433;
---border:#1e2433;--border2:#252d3d;
---teal:#0d9488;--teal-light:#14b8a6;--teal-dim:rgba(13,148,136,0.08);
---red:#dc2626;--red-dim:rgba(220,38,38,0.08);
---green:#059669;--green-dim:rgba(5,150,105,0.08);
---amber:#d97706;--purple:#bf5af2;
---text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;
---r:12px;--r-sm:8px;--r-xs:6px;
---shadow:0 4px 24px rgba(0,0,0,0.5);--shadow-sm:0 2px 8px rgba(0,0,0,0.4);
+  --bg:#08090c;--surface:#0f1117;--surface2:#141820;
+  --border:#1c2130;--border2:#252d3d;
+  --teal:#0d9488;--tl:#14b8a6;--teal-dim:rgba(13,148,136,0.08);
+  --red:#dc2626;--red-dim:rgba(220,38,38,0.08);
+  --green:#059669;
+  --text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;
+  --r:10px;--r-sm:7px;
 }
-body{font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
-.ac{width:100%;max-width:400px;}
-.logo{font-size:13px;font-weight:700;letter-spacing:4px;color:var(--teal-light);text-transform:uppercase;text-align:center;margin-bottom:32px;}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:28px;box-shadow:var(--shadow-sm);}
-.ctitle{font-size:11px;font-weight:600;letter-spacing:0.02em;color:var(--text2);text-transform:uppercase;margin-bottom:20px;}
-.flbl{font-size:11px;font-weight:600;letter-spacing:0.02em;color:var(--text2);text-transform:uppercase;margin-bottom:7px;display:block;margin-top:14px;}
-.fi{width:100%;padding:11px 14px;background:rgba(120,120,128,0.18);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:13px;outline:none;transition:border-color 0.15s;}
-.fi:focus{border-color:var(--teal);}
+html,body{height:100%;}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);overflow:hidden;}
+.auth-layout{display:flex;height:100vh;}
+.canvas-side{flex:1;position:relative;overflow:hidden;background:var(--bg);border-right:1px solid var(--border);}
+#pillar-canvas{position:absolute;inset:0;display:block;width:100%;height:100%;}
+.pilar-wm{position:absolute;bottom:40px;left:50%;transform:translateX(-50%);
+  font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;
+  letter-spacing:9px;color:rgba(13,148,136,0.55);white-space:nowrap;pointer-events:none;}
+.form-side{width:440px;min-width:360px;background:var(--surface);
+  display:flex;flex-direction:column;justify-content:center;
+  padding:52px 44px;overflow-y:auto;}
+.form-logo{font-family:'DM Serif Display',serif;font-size:30px;color:var(--text);margin-bottom:6px;}
+.form-tagline{font-size:13px;color:var(--text3);margin-bottom:40px;}
+.flbl{font-size:11px;font-weight:600;letter-spacing:.06em;color:var(--text3);
+  text-transform:uppercase;margin-bottom:6px;display:block;margin-top:18px;}
+.fi{width:100%;padding:11px 14px;background:rgba(255,255,255,0.035);
+  border:1px solid var(--border);border-radius:var(--r);color:var(--text);
+  font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .15s,background .15s;}
+.fi:focus{border-color:var(--teal);background:rgba(255,255,255,0.055);}
 .fi::placeholder{color:var(--text3);}
-.btn{width:100%;padding:14px;background:var(--teal);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:600;letter-spacing:0;text-transform:none;cursor:pointer;margin-top:20px;transition:opacity 0.15s;}
-.btn:hover{opacity:0.85;}
-.err{padding:10px 14px;background:var(--red-dim);border:1px solid var(--red);border-radius:var(--r-sm);font-size:12px;color:var(--red);margin-top:14px;display:none;}
-.ok{padding:10px 14px;background:var(--green-dim);border:1px solid var(--green);border-radius:var(--r-sm);font-size:12px;color:var(--green);margin-top:14px;display:none;}
-.link{text-align:center;margin-top:18px;font-size:11px;color:var(--text3);}
-.link a{color:var(--teal-light);text-decoration:none;}
-.badge{padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:0;}
-.badge.ok{background:var(--green-dim);color:var(--green);}
-.badge.free{background:var(--teal-dim);color:var(--teal-light);}
-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:12px;}
-th{text-align:left;padding:8px 10px;color:var(--text2);font-size:11px;font-weight:600;letter-spacing:0.02em;border-bottom:1px solid var(--border);text-transform:uppercase;}
-td{padding:8px 10px;border-bottom:1px solid var(--border);color:var(--text2);}
-tr:last-child td{border-bottom:none;}
-.kgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:16px 0;}
-.kc{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;}
-.kv{font-size:22px;font-weight:800;color:var(--teal-light);}
-.kl{font-size:11px;font-weight:600;letter-spacing:0.02em;color:var(--text3);text-transform:uppercase;margin-top:3px;}
-.lang-sw{position:fixed;top:14px;right:14px;display:flex;gap:2px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:3px;z-index:99;}
-.lang-sw button{padding:4px 10px;border:none;border-radius:var(--r-xs);font-size:10px;font-weight:600;letter-spacing:0;cursor:pointer;background:transparent;color:var(--text3);transition:all .15s;}
+.btn-submit{width:100%;padding:13px;background:var(--teal);color:#fff;border:none;
+  border-radius:var(--r);font-size:14px;font-weight:600;font-family:'DM Sans',sans-serif;
+  cursor:pointer;margin-top:26px;transition:opacity .15s,box-shadow .15s;}
+.btn-submit:hover{opacity:.88;box-shadow:0 0 0 3px rgba(13,148,136,0.22);}
+.auth-err{padding:10px 14px;background:var(--red-dim);border:1px solid rgba(220,38,38,0.3);
+  border-radius:var(--r-sm);font-size:12px;color:#f87171;margin-top:14px;}
+.auth-link{text-align:center;margin-top:22px;font-size:12px;color:var(--text3);}
+.auth-link a{color:var(--tl);text-decoration:none;}
+.auth-link a:hover{text-decoration:underline;}
+.verify-box{text-align:center;padding:12px 0;}
+.verify-icon{width:46px;height:46px;border-radius:12px;background:var(--teal-dim);
+  border:1px solid rgba(13,148,136,0.18);display:flex;align-items:center;
+  justify-content:center;margin:0 auto 18px;}
+.verify-title{font-family:'DM Serif Display',serif;font-size:20px;color:var(--text);margin-bottom:8px;}
+.verify-sub{font-size:13px;color:var(--text2);line-height:1.65;}
+.verify-note{font-size:11px;color:var(--text3);margin-top:16px;}
+.btn-resend{width:100%;padding:11px;margin-top:20px;background:transparent;
+  border:1px solid var(--border2);border-radius:var(--r);color:var(--text3);
+  font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;
+  transition:border-color .15s,color .15s;}
+.btn-resend:hover{border-color:var(--teal);color:var(--tl);}
+.lang-sw{position:fixed;top:14px;right:14px;display:flex;gap:2px;
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:var(--r-sm);padding:3px;z-index:99;}
+.lang-sw button{padding:4px 10px;border:none;border-radius:5px;font-size:10px;
+  font-weight:600;cursor:pointer;background:transparent;color:var(--text3);transition:all .15s;}
 .lang-sw button.active{background:var(--teal);color:#fff;}
+@media(max-width:800px){
+  .auth-layout{flex-direction:column;}
+  .canvas-side{flex:none;height:220px;}
+  .form-side{width:100%;min-width:0;padding:32px 24px;flex:1;}
+}
 </style></head><body>
 <div class="lang-sw" id="_authLang">
   <button id="_authEN" onclick="_authSetLang('en')">EN</button>
   <button id="_authFR" onclick="_authSetLang('fr')">FR</button>
 </div>
 <script>
-var _aLang=localStorage.getItem('pilar_lang')||'en';
+var _aLang=localStorage.getItem('pilar_lang')||'fr';
 var _TA={
-en:{login_title:'SIGN IN',reg_title:'CREATE ACCOUNT',lbl_email:'Email',lbl_email_pro:'Professional Email',lbl_pw:'Password',lbl_pw_min:'Min. 8 characters',lbl_pw_conf:'Confirm Password',btn_login:'Sign In',btn_guest:'Continue without account',btn_reg:'Create Account',link_noreg:'No account yet? <a href="/register">Create one</a>',link_haveac:'Already have an account? <a href="/login">Sign In</a>',verify_title:'Check your email',verify_desc:'A confirmation link was sent to your address.<br>Click the link to activate your account.',verify_note:'Valid 24h · Check your spam',back_login:'Back to Sign In',resend_btn:'Resend email',resent_ok:'Email sent again!'},
-fr:{login_title:'CONNEXION',reg_title:'CRÉER UN COMPTE',lbl_email:'Email',lbl_email_pro:'Email professionnel',lbl_pw:'Mot de passe',lbl_pw_min:'8 caractères minimum',lbl_pw_conf:'Confirmer le mot de passe',btn_login:'Se connecter',btn_guest:'Continuer sans compte',btn_reg:'Créer mon compte',link_noreg:'Pas encore de compte ? <a href="/register">Créer un compte</a>',link_haveac:'Déjà un compte ? <a href="/login">Se connecter</a>',verify_title:'Vérifiez votre email',verify_desc:'Un lien de confirmation a été envoyé à votre adresse.<br>Cliquez sur le lien pour activer votre compte.',verify_note:'Lien valide 24h · Vérifiez vos spams',back_login:'Retour à la connexion',resend_btn:'Renvoyer l\'email',resent_ok:'Email renvoyé !'}
+en:{login_title:'Sign in',reg_title:'Create account',tagline:'Predictive maintenance platform',
+  lbl_email:'Email',lbl_pw:'Password',lbl_pw2:'Confirm password',
+  btn_login:'Sign in',btn_reg:'Create account',
+  link_reg:'No account? <a href="/register">Create one</a>',
+  link_login:'Already have an account? <a href="/login">Sign in</a>',
+  verify_title:'Check your inbox',
+  verify_sub:'A confirmation link was sent. Click it to activate your account.',
+  verify_note:'Valid 24h \u00b7 Check spam',back_login:'Back to sign in',
+  resend:'Resend email',resent:'Email sent again!'},
+fr:{login_title:'Connexion',reg_title:'Cr\u00e9er un compte',tagline:'Plateforme de maintenance pr\u00e9dictive',
+  lbl_email:'Email',lbl_pw:'Mot de passe',lbl_pw2:'Confirmer le mot de passe',
+  btn_login:'Se connecter',btn_reg:'Cr\u00e9er mon compte',
+  link_reg:'Pas encore de compte\u00a0? <a href="/register">Cr\u00e9er un compte</a>',
+  link_login:'D\u00e9j\u00e0 un compte\u00a0? <a href="/login">Se connecter</a>',
+  verify_title:'V\u00e9rifiez votre email',
+  verify_sub:'Un lien de confirmation a \u00e9t\u00e9 envoy\u00e9. Cliquez dessus pour activer votre compte.',
+  verify_note:'Valide 24h \u00b7 V\u00e9rifiez vos spams',back_login:'Retour \u00e0 la connexion',
+  resend:"Renvoyer l'email",resent:'Email renvoy\u00e9\u00a0!'}
 };
-function _tA(k){return(_TA[_aLang]||_TA.en)[k]||k;}
+function _tA(k){return(_TA[_aLang]||_TA.fr)[k]||k;}
 function _authSetLang(l){
   _aLang=l;localStorage.setItem('pilar_lang',l);
   document.getElementById('_authEN').className=l==='en'?'active':'';
   document.getElementById('_authFR').className=l==='fr'?'active':'';
-  document.querySelectorAll('[data-iauth]').forEach(function(el){
-    var k=el.getAttribute('data-iauth');var v=_tA(k);
+  document.querySelectorAll('[data-t]').forEach(function(el){
+    var k=el.getAttribute('data-t'),v=_tA(k);
     if(el.tagName==='INPUT'){el.placeholder=v;}else{el.innerHTML=v;}
   });
 }
 (function(){_authSetLang(_aLang);})();
 document.addEventListener('DOMContentLoaded',function(){_authSetLang(_aLang);});
-</script>"""
+</script>
+<div class="auth-layout">
+  <div class="canvas-side" id="canvas-wrap">
+    <canvas id="pillar-canvas"></canvas>
+    <div class="pilar-wm">P I L A R</div>
+  </div>
+  <div class="form-side">"""
+
+_AUTH_FOOT = """  </div>
+</div>
+<script>
+(function(){
+  'use strict';
+  var PRM=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var wrap=document.getElementById('canvas-wrap');
+  var cvs=document.getElementById('pillar-canvas');
+  if(!wrap||!cvs) return;
+  var ctx=cvs.getContext('2d');
+  var S={PAUSE:'pause',DEGRADING:'degrading',THRESHOLD:'threshold',REGEN:'regen'};
+  var W,H,PX,PY,PW_COL,PH_COL,CAP_EXT=15,BASE_EXT=20;
+  function layout(){W=wrap.offsetWidth||window.innerWidth*0.6;H=wrap.offsetHeight||window.innerHeight;cvs.width=W;cvs.height=H;PW_COL=80;PH_COL=Math.min(H*0.70,460);PX=(W-PW_COL)/2;PY=H*0.88-PH_COL;}
+  var grainPts=[],wearLines=[];
+  function computeTexture(){var cH=PH_COL*0.10,sY=PY+cH,sH=PH_COL-cH*2;grainPts=[];for(var g=0;g<280;g++)grainPts.push([PX-4+Math.random()*(PW_COL+8),PY+Math.random()*PH_COL]);wearLines=[];for(var i=0;i<6;i++)wearLines.push({x1:PX+Math.random()*10,y:sY+Math.random()*sH,x2:PX+PW_COL-Math.random()*10});}
+  function rr(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+  function drawPillar(scanY,glowA){var capH=PH_COL*0.10,baseH=PH_COL*0.10,sY=PY+capH,sH=PH_COL-capH-baseH;ctx.save();var gr=ctx.createLinearGradient(PX-BASE_EXT,0,PX+PW_COL+BASE_EXT,0);gr.addColorStop(0,'#2a3049');gr.addColorStop(0.28,'#222840');gr.addColorStop(0.74,'#1e2235');gr.addColorStop(1,'#141724');rr(PX-BASE_EXT,PY+PH_COL-baseH,PW_COL+BASE_EXT*2,baseH,2);ctx.fillStyle=gr;ctx.fill();ctx.fillStyle='rgba(255,255,255,0.05)';ctx.fillRect(PX-BASE_EXT,PY+PH_COL-baseH,PW_COL+BASE_EXT*2,1);rr(PX-CAP_EXT,PY,PW_COL+CAP_EXT*2,capH,2);ctx.fillStyle=gr;ctx.fill();ctx.fillStyle='rgba(255,255,255,0.06)';ctx.fillRect(PX-CAP_EXT,PY,PW_COL+CAP_EXT*2,1);var sg=ctx.createLinearGradient(PX,0,PX+PW_COL,0);sg.addColorStop(0,'#2a3049');sg.addColorStop(0.28,'#232942');sg.addColorStop(0.72,'#1e2235');sg.addColorStop(1,'#141724');ctx.fillStyle=sg;ctx.fillRect(PX,sY,PW_COL,sH);ctx.fillStyle='rgba(255,255,255,0.055)';ctx.fillRect(PX,sY,1,sH);ctx.fillStyle='rgba(0,0,0,0.22)';ctx.fillRect(PX+PW_COL-1,sY,1,sH);ctx.fillStyle='rgba(0,0,0,0.28)';ctx.fillRect(PX-CAP_EXT,sY,PX-(PX-CAP_EXT),sH);ctx.fillRect(PX+PW_COL,sY,(PX-CAP_EXT+PW_COL+CAP_EXT*2)-(PX+PW_COL),sH);for(var i=1;i<=4;i++){var fx=PX+i*(PW_COL/5);ctx.beginPath();ctx.moveTo(fx,sY+4);ctx.lineTo(fx,sY+sH-4);ctx.strokeStyle='rgba(0,0,0,0.20)';ctx.lineWidth=1.2;ctx.stroke();ctx.beginPath();ctx.moveTo(fx+0.9,sY+4);ctx.lineTo(fx+0.9,sY+sH-4);ctx.strokeStyle='rgba(255,255,255,0.038)';ctx.lineWidth=0.5;ctx.stroke();}ctx.lineWidth=0.35;wearLines.forEach(function(m){ctx.beginPath();ctx.moveTo(m.x1,m.y);ctx.lineTo(m.x2,m.y);ctx.strokeStyle='rgba(0,0,0,0.09)';ctx.stroke();});ctx.fillStyle='rgba(255,255,255,0.016)';grainPts.forEach(function(g){ctx.fillRect(g[0],g[1],1,1);});if(scanY!==undefined&&scanY>=PY&&scanY<=PY+PH_COL){var slg=ctx.createLinearGradient(PX-BASE_EXT,0,PX+PW_COL+BASE_EXT,0);slg.addColorStop(0,'rgba(13,148,136,0.18)');slg.addColorStop(0.5,'rgba(13,148,136,0.52)');slg.addColorStop(1,'rgba(13,148,136,0.18)');ctx.fillStyle=slg;ctx.fillRect(PX-BASE_EXT-2,scanY-2,PW_COL+BASE_EXT*2+4,5);var sg2=ctx.createLinearGradient(0,scanY-18,0,scanY+18);sg2.addColorStop(0,'rgba(13,148,136,0)');sg2.addColorStop(0.5,'rgba(13,148,136,0.07)');sg2.addColorStop(1,'rgba(13,148,136,0)');ctx.fillStyle=sg2;ctx.fillRect(PX-BASE_EXT-8,scanY-18,PW_COL+BASE_EXT*2+16,36);}if(glowA>0){var gg=ctx.createRadialGradient(PX+PW_COL/2,PY+PH_COL/2,0,PX+PW_COL/2,PY+PH_COL/2,W*0.65);gg.addColorStop(0,'rgba(13,148,136,'+(glowA*0.09)+')');gg.addColorStop(1,'rgba(13,148,136,0)');ctx.fillStyle=gg;ctx.fillRect(0,0,W,H);}ctx.restore();}
+  function generateCrackSeeds(){return {devFreq:2+Math.floor(Math.random()*4),devAmp:Math.PI/28+Math.random()*Math.PI/10,bifProb:0.18+Math.random()*0.32,bifInterval:11+Math.random()*13,maxDepth:Math.random()<0.25?2:3,speedBase:5000+Math.random()*4000,speedDecay:0.48+Math.random()*0.28,branchWidthR:0.42+Math.random()*0.22,branchLenR:0.26+Math.random()*0.26,accelPt:0.18+Math.random()*0.17,decelPt:0.62+Math.random()*0.18,closeSpd0:1.8+Math.random()*1.0,angMomentum:0.12+Math.random()*0.38,microDevProb:0.12+Math.random()*0.22};}
+  var holes=[];
+  function generateWeaknessMap(){var nC=2+Math.floor(Math.random()*2),centers=[];for(var c=0;c<nC;c++)centers.push({x:PX+PW_COL*(0.12+Math.random()*0.76),y:PY+PH_COL*(0.08+Math.random()*0.84)});var total=8+Math.floor(Math.random()*5),pts=[];for(var i=0;i<total;i++){var ctr=centers[Math.floor(Math.random()*nC)];var wx=ctr.x+(Math.random()-0.5)*PW_COL*0.55,wy=ctr.y+(Math.random()-0.5)*PH_COL*0.28;wx=Math.max(PX+3,Math.min(PX+PW_COL-3,wx));wy=Math.max(PY+3,Math.min(PY+PH_COL-3,wy));var dEdge=Math.min(wx-PX,(PX+PW_COL)-wx),wt=dEdge<10?1.4:1.0;for(var h=0;h<holes.length;h++){var hdx=wx-holes[h].x,hdy=wy-holes[h].y;if(Math.sqrt(hdx*hdx+hdy*hdy)<22){wt*=1.6;break;}}pts.push({x:wx,y:wy,w:wt});}return pts;}
+  function pickCrackOrigin(wmap,seeds){var typeR=Math.random(),sx,sy,angle;if(typeR<0.15){var left=Math.random()>0.5;sx=left?PX+1+Math.random()*3:PX+PW_COL-1-Math.random()*3;sy=PY+PH_COL*(0.12+Math.random()*0.76);angle=left?(Math.random()-0.5)*0.12:Math.PI+(Math.random()-0.5)*0.12;}else if(typeR<0.52){var left=Math.random()>0.5;sx=left?PX+1+Math.random()*3:PX+PW_COL-1-Math.random()*3;sy=PY+PH_COL*(0.10+Math.random()*0.80);if(wmap.length>0){var tw=wmap[Math.floor(Math.random()*wmap.length)];angle=Math.atan2(tw.y-sy,tw.x-sx)+(Math.random()-0.5)*0.45;}else{angle=(left?0:Math.PI)+(Math.random()-0.5)*0.6;}}else{if(wmap.length>0){var totalW=0;for(var i=0;i<wmap.length;i++)totalW+=wmap[i].w;var r=Math.random()*totalW,acc=0,chosen=wmap[0];for(var i=0;i<wmap.length;i++){acc+=wmap[i].w;if(r<=acc){chosen=wmap[i];break;}}sx=chosen.x+(Math.random()-0.5)*10;sy=chosen.y+(Math.random()-0.5)*10;}else{sx=PX+PW_COL*(0.12+Math.random()*0.76);sy=PY+PH_COL*(0.12+Math.random()*0.62);}angle=Math.random()*Math.PI*2;if(Math.random()<0.35)angle=Math.PI*0.3+(Math.random()-0.5)*1.2;}return {x:Math.max(PX,Math.min(PX+PW_COL,sx)),y:Math.max(PY,Math.min(PY+PH_COL,sy)),angle:angle};}
+  function CrackBranch(sx,sy,angle,maxLen,baseW,depth,seeds){this.depth=depth||0;this.baseW=Math.max(baseW,0.12);this.maxLen=maxLen;this.drawnLen=0;this.done=false;this.closing=false;this.children=[];this.startAtPx=0;this.started=false;this.startEl=0;var sd=seeds||{devFreq:3,devAmp:Math.PI/15,bifProb:0.35,bifInterval:15,maxDepth:3,speedBase:7000+Math.random()*2000,speedDecay:0.60,branchWidthR:0.54,branchLenR:0.33+Math.random()*0.26,accelPt:0.30,decelPt:0.70,closeSpd0:2.4,angMomentum:0.25,microDevProb:0.25};this._accelPt=sd.accelPt;this._decelPt=sd.decelPt;this.spd=(maxLen/(sd.speedBase+Math.random()*1200))*Math.pow(sd.speedDecay,this.depth);this.closeSpd=this.depth===0?sd.closeSpd0:1.6;function gauss(amp){var u=0,v=0;while(u===0)u=Math.random();while(v===0)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)*amp;}this.pts=[{x:sx,y:sy,irr:(Math.random()-0.5)*0.5,isBranch:false}];var cx=sx,cy=sy,a=angle,devStep=sd.devFreq+Math.floor(Math.random()*3),nextBranchAt=sd.bifInterval*(0.8+Math.random()*0.4),angMom=0;for(var i=1;i<=(maxLen|0)+2;i++){if(i%devStep===0){var dev=gauss(sd.devAmp)+angMom*sd.angMomentum;a+=dev;angMom=dev*0.28;devStep=sd.devFreq+Math.floor(Math.random()*3);if(Math.random()<sd.microDevProb)a+=(Math.random()-0.5)*sd.devAmp*0.45;}cx+=Math.cos(a);cy+=Math.sin(a);cy=Math.max(PY-8,Math.min(PY+PH_COL+8,cy));cx=Math.max(4,Math.min(W-4,cx));var isBranch=false;if(this.depth<sd.maxDepth&&i>=(nextBranchAt|0)&&Math.random()<sd.bifProb){var dir=(Math.random()>0.5?1:-1);var ba=a+dir*(0.18+Math.random()*0.58);var bLen=maxLen*(sd.branchLenR*(0.75+Math.random()*0.5));var child=new CrackBranch(cx,cy,ba,bLen,baseW*sd.branchWidthR,depth+1,seeds);child.startAtPx=i;this.children.push(child);isBranch=true;nextBranchAt=i+sd.bifInterval*(0.8+Math.random()*0.6);}this.pts.push({x:cx,y:cy,irr:(Math.random()-0.5)*0.5,isBranch:isBranch});}}
+  CrackBranch.prototype.tick=function(dt,el){if(this.closing){this.drawnLen=Math.max(0,this.drawnLen-this.closeSpd*dt);for(var c=0;c<this.children.length;c++)this.children[c].tick(dt,0);return;}if(this.done)return;var dtMs=dt*16.67,p=this.drawnLen/this.maxLen,ap=this._accelPt||0.30,dp=this._decelPt||0.70;var sf=p<ap?0.22+(p/ap)*0.78:p<dp?1.0:1.0-((p-dp)/(1.0-dp))*0.65;var vi=this.drawnLen|0;if(vi<this.pts.length){var cp=this.pts[vi];for(var h=0;h<holes.length;h++){var hdx=cp.x-holes[h].x,hdy=cp.y-holes[h].y;if(hdx*hdx+hdy*hdy<100){sf*=1.6;break;}}}var prev=this.drawnLen;this.drawnLen=Math.min(this.maxLen,this.drawnLen+dtMs*this.spd*sf);if(this.drawnLen>=this.maxLen)this.done=true;var growth=this.drawnLen-prev;if(growth>0&&Math.random()<0.25*growth){var ni=Math.min((this.drawnLen|0),this.pts.length-1);microDust.push(new MicroDust(this.pts[ni].x,this.pts[ni].y));}for(var c=0;c<this.children.length;c++){var ch=this.children[c];if(this.drawnLen>=ch.startAtPx){if(!ch.started){ch.started=true;ch.startEl=el;}ch.tick(dt,el-ch.startEl);}}};
+  CrackBranch.prototype.draw=function(ctx){var vis=Math.min((this.drawnLen|0)+1,this.pts.length);if(vis<2)return;var lx=[],ly=[],rx=[],ry=[];for(var i=0;i<vis;i++){var pt=this.pts[i],t=i/Math.max(this.maxLen,1),hw=this.baseW*(1.0-t*0.92)+0.08,tx,ty;if(i<vis-1){tx=this.pts[i+1].x-pt.x;ty=this.pts[i+1].y-pt.y;}else{tx=pt.x-this.pts[Math.max(0,i-1)].x;ty=pt.y-this.pts[Math.max(0,i-1)].y;}var tl=Math.sqrt(tx*tx+ty*ty)||1,nx=-ty/tl,ny=tx/tl;lx.push(pt.x+nx*(hw*0.62)+pt.irr);ly.push(pt.y+ny*(hw*0.62));rx.push(pt.x-nx*(hw*0.48)-pt.irr*0.5);ry.push(pt.y-ny*(hw*0.48));}ctx.save();ctx.lineCap='round';ctx.lineJoin='round';if(this.depth===0){ctx.beginPath();ctx.moveTo(this.pts[0].x,this.pts[0].y);for(var i=1;i<vis;i++)ctx.lineTo(this.pts[i].x,this.pts[i].y);ctx.strokeStyle='rgba(46,51,72,0.22)';ctx.lineWidth=this.baseW*3.5+2.5;ctx.stroke();}ctx.beginPath();ctx.moveTo(lx[0],ly[0]);for(var i=1;i<vis;i++)ctx.lineTo(lx[i],ly[i]);for(var i=vis-1;i>=0;i--)ctx.lineTo(rx[i],ry[i]);ctx.closePath();ctx.fillStyle='#050508';ctx.fill();ctx.beginPath();ctx.moveTo(lx[0],ly[0]);for(var i=1;i<vis;i++)ctx.lineTo(lx[i],ly[i]);ctx.strokeStyle='rgba(0,0,0,0.82)';ctx.lineWidth=0.7;ctx.stroke();ctx.beginPath();ctx.moveTo(rx[0],ry[0]);for(var i=1;i<vis;i++)ctx.lineTo(rx[i],ry[i]);ctx.strokeStyle='rgba(255,255,255,0.055)';ctx.lineWidth=0.45;ctx.stroke();ctx.fillStyle='#1a1e2e';for(var i=0;i<vis;i+=2){ctx.fillRect(lx[i],ly[i],1,1);if(i+1<vis)ctx.fillRect((lx[i]+lx[i+1])*0.5+0.5,(ly[i]+ly[i+1])*0.5,1,1);}ctx.restore();for(var c=0;c<this.children.length;c++){if(this.drawnLen>=this.children[c].startAtPx)this.children[c].draw(ctx);}};
+  function randomSize(){var r=Math.random();return r<0.70?1.5+Math.random()*2.5:r<0.90?5+Math.random()*5:11+Math.random()*7;}
+  function makeFragPts(sz){var sides=4+Math.floor(Math.random()*4),pts=[],baseA=Math.random()*Math.PI*2;for(var i=0;i<sides;i++){var a=baseA+(i/sides)*Math.PI*2+(Math.random()-0.5)*(Math.PI*2/sides)*0.38,r=sz*(0.42+Math.random()*0.58);pts.push([Math.cos(a)*r,Math.sin(a)*r]);}return pts;}
+  function Crumb(x,y,sz){this.x=x;this.y=y;this.ox=x;this.oy=y;this.sz=sz;var micro=sz<4,small=sz>=4&&sz<10;this.gravity=micro?0.022:small?0.065:0.125;this.airX=micro?0.984:small?0.995:0.998;this.rotSpd=micro?(0.05+Math.random()*0.10)*((Math.random()>0.5?1:-1)):small?(0.012+Math.random()*0.015)*((Math.random()>0.5?1:-1)):(0.005+Math.random()*0.015)*((Math.random()>0.5?1:-1));this.fadeOut=micro;this.pile=!micro;var side=x<PX+PW_COL/2?-1:1;this.vx=side*(0.2+Math.random()*0.6);this.vy=0.12+Math.random()*0.35;this.rot=Math.random()*Math.PI*2;this.alpha=1;this.settled=false;this.returning=false;this.retSpeed=0;this.arrived=false;this.pts=makeFragPts(sz);var v=(Math.random()-0.5)*16;this.cr=(26+v)|0;this.cg=(30+v)|0;this.cb=(46+v)|0;this.fr=(58+(Math.random()-0.5)*10)|0;this.fg=(62+(Math.random()-0.5)*10)|0;this.fb=(85+(Math.random()-0.5)*10)|0;}
+  Crumb.prototype.update=function(dt){if(this.returning||this.settled)return;this.vy+=this.gravity*dt;this.vx*=Math.pow(this.airX,dt);this.x+=this.vx*dt;this.y+=this.vy*dt;this.rot+=this.rotSpd*dt;this.rotSpd*=Math.pow(0.9985,dt);var ground=H*0.88,fadeStart=ground-22;if(this.fadeOut&&this.y>fadeStart){this.alpha=Math.max(0,1-(this.y-fadeStart)/22);if(this.alpha<=0.01){this.settled=true;return;}}if(!this.fadeOut&&this.y>=ground-22){this.vy*=0.55;this.vx*=0.75;if(this.y>=ground){this.y=ground;this.vy=0;this.vx=0;this.rotSpd=0;this.settled=true;}}};
+  Crumb.prototype.updateReturn=function(dt){if(!this.returning||this.arrived)return;var dx=this.ox-this.x,dy=this.oy-this.y,dist=Math.sqrt(dx*dx+dy*dy);if(dist<2){this.x=this.ox;this.y=this.oy;this.arrived=true;return;}this.retSpeed=Math.min(this.retSpeed+0.7*dt,15);var s=Math.min(this.retSpeed*dt,dist);this.x+=dx/dist*s;this.y+=dy/dist*s;this.alpha=Math.min(1,this.alpha+0.06*dt);this.rot-=this.rotSpd*dt*0.6;};
+  Crumb.prototype.draw=function(ctx,alpha){if(this.alpha<0.01||this.pts.length<3)return;var a=alpha!==undefined?alpha:this.alpha;ctx.save();ctx.globalAlpha=a;ctx.translate(this.x,this.y);ctx.rotate(this.rot);var hw=0;for(var i=0;i<this.pts.length;i++)hw=Math.max(hw,Math.abs(this.pts[i][0]));hw=Math.max(hw,1);var gr=ctx.createLinearGradient(-hw,0,hw,0);gr.addColorStop(0,'rgb('+this.fr+','+this.fg+','+this.fb+')');gr.addColorStop(0.5,'rgb('+this.cr+','+this.cg+','+this.cb+')');gr.addColorStop(1,'rgb('+(this.cr-10)+','+(this.cg-8)+','+(this.cb-12)+')');ctx.beginPath();ctx.moveTo(this.pts[0][0],this.pts[0][1]);for(var i=1;i<this.pts.length;i++)ctx.lineTo(this.pts[i][0],this.pts[i][1]);ctx.closePath();ctx.fillStyle=gr;ctx.fill();if(this.sz>=4){ctx.fillStyle='rgba(255,255,255,0.028)';for(var k=0;k<3;k++){var gx=(Math.random()-0.5)*hw*1.4,gy=(Math.random()-0.5)*hw*1.4;ctx.fillRect(gx,gy,1,1);}}ctx.restore();};
+  function MicroDust(x,y){this.x=x;this.y=y;var a=Math.random()*Math.PI*2,sp=0.3+Math.random()*0.6;this.vx=Math.cos(a)*sp;this.vy=Math.sin(a)*sp;this.life=0.4+Math.random()*0.25;this.ml=this.life;}
+  MicroDust.prototype.upd=function(dt){this.vx+=(Math.random()-0.5)*0.08;this.vy+=(Math.random()-0.5)*0.08;this.x+=this.vx*dt;this.y+=this.vy*dt;this.life-=0.028*dt;};
+  MicroDust.prototype.draw=function(ctx){var a=Math.max(0,this.life/this.ml)*0.35;ctx.fillStyle='rgba(100,116,139,'+a+')';ctx.fillRect(this.x,this.y,1,1);};
+  function DustPuff(x,y){this.x=x;this.y=y;var a=Math.random()*Math.PI*2,sp=0.5+Math.random()*1.2;this.vx=Math.cos(a)*sp;this.vy=Math.sin(a)*sp-0.4;this.life=0.55+Math.random()*0.35;this.ml=this.life;this.r=0.8+Math.random()*1.2;}
+  DustPuff.prototype.upd=function(dt){this.vy+=0.015*dt;this.vx+=(Math.random()-0.5)*0.06;this.x+=this.vx*dt;this.y+=this.vy*dt;this.life-=0.022*dt;};
+  DustPuff.prototype.draw=function(ctx){var a=Math.max(0,this.life/this.ml)*0.30;ctx.beginPath();ctx.arc(this.x,this.y,this.r,0,Math.PI*2);ctx.fillStyle='rgba(100,116,139,'+a+')';ctx.fill();};
+  function Spark(x,y){this.x=x;this.y=y;this.vx=(Math.random()-0.5)*2.3;this.vy=-(Math.random()*2.6+0.3);this.life=0.7+Math.random()*0.4;this.ml=this.life;this.r=0.7+Math.random()*2.1;this.col=Math.random()>0.5?'#0d9488':'#14b8a6';}
+  Spark.prototype.upd=function(dt){this.vy+=0.028*dt;this.vx+=(Math.random()-0.5)*0.06;this.x+=this.vx*dt;this.y+=this.vy*dt;this.life-=0.020*dt;};
+  Spark.prototype.draw=function(ctx){var a=Math.max(0,this.life/this.ml);ctx.save();ctx.globalAlpha=a;ctx.beginPath();ctx.arc(this.x,this.y,this.r,0,Math.PI*2);ctx.fillStyle=this.col;ctx.fill();ctx.restore();};
+  function addHole(x,y,r){holes.push({x:x,y:y,r:Math.max(1,r),a:1});}
+  function drawHoles(belowY){holes.forEach(function(h){if(belowY!==undefined&&h.y>belowY)return;ctx.save();ctx.globalAlpha=h.a*0.80;ctx.beginPath();ctx.arc(h.x,h.y,h.r,0,Math.PI*2);ctx.fillStyle='rgba(8,9,12,0.94)';ctx.fill();ctx.restore();});}
+  function spawnDustCloud(x,y,n){for(var i=0;i<n;i++)dustPuffs.push(new DustPuff(x,y));}
+  function spawnCrumbAt(x,y){var sz=randomSize();crumbs.push(new Crumb(x,y,sz));if(sz>=4)addHole(x,y,sz*0.55);spawnDustCloud(x,y,3+Math.floor(sz*0.5));}
+  function collectSpawnPts(){var pts=[];function fromBranch(ck){var vis=Math.min((ck.drawnLen|0)+1,ck.pts.length);for(var i=0;i<vis;i++){var p=ck.pts[i];if(Math.abs(p.x-PX)<9||Math.abs(p.x-(PX+PW_COL))<9)pts.push({x:p.x,y:p.y,w:4});if(p.isBranch)pts.push({x:p.x,y:p.y,w:3});}for(var c=0;c<ck.children.length;c++){if(ck.drawnLen>=ck.children[c].startAtPx)fromBranch(ck.children[c]);}}cracks.forEach(fromBranch);for(var i=0;i<cracks.length-1;i++){var viA=Math.min((cracks[i].drawnLen|0)+1,cracks[i].pts.length);for(var j=i+1;j<cracks.length;j++){var viB=Math.min((cracks[j].drawnLen|0)+1,cracks[j].pts.length);for(var pi=0;pi<viA;pi+=4){for(var pj=0;pj<viB;pj+=4){var dx=cracks[i].pts[pi].x-cracks[j].pts[pj].x,dy=cracks[i].pts[pi].y-cracks[j].pts[pj].y;if(dx*dx+dy*dy<64)pts.push({x:(cracks[i].pts[pi].x+cracks[j].pts[pj].x)*0.5,y:(cracks[i].pts[pi].y+cracks[j].pts[pj].y)*0.5,w:5});}}}}return pts;}
+  var state=S.PAUSE,stateStart=0,crumbs=[],pile=[],cracks=[],microDust=[],dustPuffs=[],sparks=[];
+  var crumbCount=0,CRUMB_THRESH=15,crumbTimer=0,weaknessMap=[],cycleSeeds=null;
+  var crackSchedule=[4000,10000,16000],crackCreated=[false,false,false];
+  var finalCrack=null,scanY=undefined,glowA=0,flashA=0,regenStart=0;
+  function setClosingRecursive(ck){ck.closing=true;for(var c=0;c<ck.children.length;c++)setClosingRecursive(ck.children[c]);}
+  function enter(s,now){state=s;stateStart=now;if(s===S.DEGRADING){crumbs=[];pile=[];cracks=[];microDust=[];dustPuffs=[];sparks=[];holes=[];crumbCount=0;finalCrack=null;crackCreated=[false,false,false];cycleSeeds=generateCrackSeeds();weaknessMap=generateWeaknessMap();crumbTimer=(PRM?2500:900)+Math.random()*300;scanY=undefined;glowA=0;flashA=0;}if(s===S.REGEN){regenStart=now;pile.forEach(function(c){c.returning=true;c.retSpeed=0;crumbs.push(c);});pile=[];crumbs.forEach(function(c){if(!c.settled){c.returning=true;c.retSpeed=0;}});cracks.forEach(setClosingRecursive);if(finalCrack)setClosingRecursive(finalCrack);for(var i=0;i<20;i++)sparks.push(new Spark(PX+Math.random()*PW_COL,PY+PH_COL*0.2+Math.random()*PH_COL*0.6));scanY=PY+PH_COL;glowA=0;flashA=1.0;}}
+  var lastTs=0,ready=false;
+  function loop(ts){if(!ready){layout();computeTexture();ready=true;stateStart=ts;lastTs=ts;}var dt=Math.min((ts-lastTs)/16.67,3.5);lastTs=ts;var el=ts-stateStart;ctx.clearRect(0,0,W,H);var gy=H*0.88;ctx.strokeStyle='rgba(28,33,48,0.60)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(W,gy);ctx.stroke();var dg=ctx.createLinearGradient(0,gy,0,gy+16);dg.addColorStop(0,'rgba(28,33,48,0.18)');dg.addColorStop(1,'rgba(28,33,48,0)');ctx.fillStyle=dg;ctx.fillRect(0,gy,W,16);pile.forEach(function(c){c.draw(ctx,1);});
+    switch(state){
+      case S.PAUSE:drawPillar(undefined,0);if(el>2400)enter(S.DEGRADING,ts);break;
+      case S.DEGRADING:crumbTimer-=dt*16.67;if(crumbTimer<=0){crumbTimer=(PRM?2600:880)+Math.random()*380;var spPts=collectSpawnPts();if(spPts.length>0){var sp=spPts[Math.floor(Math.random()*spPts.length)];spawnCrumbAt(sp.x+(Math.random()-0.5)*6,sp.y+(Math.random()-0.5)*6);}else{var side=Math.random()>0.5;spawnCrumbAt(side?PX+Math.random()*4:PX+PW_COL-Math.random()*4,PY+PH_COL*0.1+Math.random()*PH_COL*0.8);}crumbCount++;}for(var ci=0;ci<crackSchedule.length;ci++){if(!crackCreated[ci]&&el>crackSchedule[ci]){crackCreated[ci]=true;var orig=pickCrackOrigin(weaknessMap,cycleSeeds);var ck=new CrackBranch(orig.x,orig.y,orig.angle,42+Math.random()*32,1.5,0,cycleSeeds);ck.startTime=ts;cracks.push(ck);}}cracks.forEach(function(c){c.tick(dt,ts-c.startTime);});for(var i=crumbs.length-1;i>=0;i--){crumbs[i].update(dt);if(crumbs[i].settled&&crumbs[i].pile){pile.push(crumbs[i]);crumbs.splice(i,1);}}for(var i=microDust.length-1;i>=0;i--){microDust[i].upd(dt);if(microDust[i].life<=0)microDust.splice(i,1);}for(var i=dustPuffs.length-1;i>=0;i--){dustPuffs[i].upd(dt);if(dustPuffs[i].life<=0)dustPuffs.splice(i,1);}microDust.forEach(function(p){p.draw(ctx);});dustPuffs.forEach(function(p){p.draw(ctx);});drawPillar(undefined,0);drawHoles(undefined);cracks.forEach(function(c){c.draw(ctx);});crumbs.forEach(function(c){c.draw(ctx);});if(crumbCount>=CRUMB_THRESH)enter(S.THRESHOLD,ts);break;
+      case S.THRESHOLD:if(!finalCrack&&el>180){var fy=PY+PH_COL*(0.43+(Math.random()-0.5)*0.12);finalCrack=new CrackBranch(PX-BASE_EXT-8,fy,0,PW_COL+BASE_EXT*2+18,1.8,0);finalCrack.spd=(PW_COL+BASE_EXT*2+18)/1500;finalCrack.startTime=ts;}cracks.forEach(function(c){c.tick(dt,ts-c.startTime);});if(finalCrack)finalCrack.tick(dt,ts-finalCrack.startTime);for(var i=crumbs.length-1;i>=0;i--){crumbs[i].update(dt);if(crumbs[i].settled&&crumbs[i].pile){pile.push(crumbs[i]);crumbs.splice(i,1);}}for(var i=microDust.length-1;i>=0;i--){microDust[i].upd(dt);if(microDust[i].life<=0)microDust.splice(i,1);}for(var i=dustPuffs.length-1;i>=0;i--){dustPuffs[i].upd(dt);if(dustPuffs[i].life<=0)dustPuffs.splice(i,1);}microDust.forEach(function(p){p.draw(ctx);});dustPuffs.forEach(function(p){p.draw(ctx);});drawPillar(undefined,0);drawHoles(undefined);cracks.forEach(function(c){c.draw(ctx);});if(finalCrack)finalCrack.draw(ctx);crumbs.forEach(function(c){c.draw(ctx);});if(finalCrack&&finalCrack.done&&el>1800)enter(S.REGEN,ts);break;
+      case S.REGEN:var rel=ts-regenStart;flashA=Math.max(0,1-rel/300);if(rel>300){var rp=Math.min((rel-300)/2200,1);scanY=PY+PH_COL-rp*PH_COL;glowA=Math.sin(rp*Math.PI);holes.forEach(function(h){if(h.y>scanY)h.a=Math.max(0,h.a-0.05*dt);});}cracks.forEach(function(c){c.tick(dt,ts-c.startTime);});if(finalCrack)finalCrack.tick(dt,ts-finalCrack.startTime);crumbs.forEach(function(c){if(c.returning)c.updateReturn(dt);else c.update(dt);});for(var i=sparks.length-1;i>=0;i--){sparks[i].upd(dt);if(sparks[i].life<=0)sparks.splice(i,1);}crumbs.forEach(function(c){if(c.arrived&&Math.random()<0.025*dt){sparks.push(new Spark(c.ox,c.oy));c.arrived=false;}});for(var i=microDust.length-1;i>=0;i--){microDust[i].upd(dt);if(microDust[i].life<=0)microDust.splice(i,1);}microDust.forEach(function(p){p.draw(ctx);});drawPillar(scanY,glowA);drawHoles(scanY);cracks.forEach(function(c){c.draw(ctx);});if(finalCrack)finalCrack.draw(ctx);crumbs.forEach(function(c){c.draw(ctx);});sparks.forEach(function(p){p.draw(ctx);});if(flashA>0&&!PRM){var fg=ctx.createRadialGradient(PX+PW_COL/2,PY+PH_COL/2,0,PX+PW_COL/2,PY+PH_COL/2,W*0.7);fg.addColorStop(0,'rgba(13,148,136,'+(flashA*0.55)+')');fg.addColorStop(0.45,'rgba(13,148,136,'+(flashA*0.12)+')');fg.addColorStop(1,'rgba(13,148,136,0)');ctx.fillStyle=fg;ctx.fillRect(0,0,W,H);}if(rel>2500)enter(S.PAUSE,ts);break;
+    }
+    requestAnimationFrame(loop);
+  }
+  var rsT=null;
+  window.addEventListener('resize',function(){clearTimeout(rsT);rsT=setTimeout(function(){layout();computeTexture();if(state===S.PAUSE||state===S.DEGRADING)enter(S.PAUSE,performance.now());},180);},{passive:true});
+  setTimeout(function(){requestAnimationFrame(loop);},400);
+})();
+</script>
+</body></html>"""
+
 
 LOGIN_HTML = _AUTH_HEAD + """
-<div class="ac">
-  <div class="logo">PILAR</div>
-  <div class="card">
-    <div class="ctitle" data-iauth="login_title">CONNEXION</div>
-    {% if error %}<div class="err" style="display:block">{{ error }}</div>{% endif %}
+    <div class="form-logo" data-t="login_title">Connexion</div>
+    <div class="form-tagline" data-t="tagline">Plateforme de maintenance prédictive</div>
+    {% if error %}<div class="auth-err">{{ error }}</div>{% endif %}
     <form method="POST" action="/login">
-      <label class="flbl" for="em" data-iauth="lbl_email">Email</label>
+      <label class="flbl" for="em" data-t="lbl_email">Email</label>
       <input class="fi" type="email" id="em" name="email" placeholder="vous@entreprise.com" autocomplete="email" required>
-      <label class="flbl" for="pw" data-iauth="lbl_pw">Mot de passe</label>
+      <label class="flbl" for="pw" data-t="lbl_pw">Mot de passe</label>
       <input class="fi" type="password" id="pw" name="password" placeholder="••••••••" autocomplete="current-password" required>
-      <button type="submit" class="btn" data-iauth="btn_login">Se connecter</button>
+      <button type="submit" class="btn-submit" data-t="btn_login">Se connecter</button>
     </form>
-    <a href="/" class="btn" data-iauth="btn_guest" style="display:block;text-align:center;text-decoration:none;background:transparent;border:1px solid var(--border2);color:var(--text3);margin-top:8px;padding:14px;border-radius:12px;font-size:15px;font-weight:600;letter-spacing:0;text-transform:none">Continuer sans compte</a>
-  </div>
-  <div class="link" data-iauth="link_noreg">Pas encore de compte ? <a href="/register">Créer un compte</a></div>
-</div>
-</body></html>"""
+    <div class="auth-link" data-t="link_reg">Pas encore de compte ? <a href="/register">Créer un compte</a></div>
+""" + _AUTH_FOOT
+
 
 REGISTER_HTML = _AUTH_HEAD + """
-<div class="ac">
-  <div class="logo">PILAR</div>
-  {% if pending %}
-  <div class="card" style="text-align:center;padding:32px 24px">
-    <div style="width:48px;height:48px;border-radius:12px;background:var(--teal-dim);border:1px solid rgba(13,148,136,0.2);display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--teal-light)" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 01-2.06 0L2 7"/></svg>
+    {% if pending %}
+    <div class="verify-box">
+      <div class="verify-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0d9488" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 01-2.06 0L2 7"/></svg></div>
+      <div class="verify-title" data-t="verify_title">Vérifiez votre email</div>
+      <div class="verify-sub" data-t="verify_sub">Un lien de confirmation a été envoyé. Cliquez dessus pour activer votre compte.</div>
+      {% if resent|default(False) %}<div style="margin-top:12px;font-size:12px;color:#059669" data-t="resent">Email renvoyé !</div>{% endif %}
+      <div class="verify-note" data-t="verify_note">Valide 24h · Vérifiez vos spams</div>
+      <form method="POST" action="/resend-verification">
+        <input type="hidden" name="email" value="{{ pending_email|default('') }}">
+        <button type="submit" class="btn-resend" data-t="resend">Renvoyer l'email</button>
+      </form>
     </div>
-    <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:8px" data-iauth="verify_title">Vérifiez votre email</div>
-    <div style="font-size:12px;color:var(--text2);line-height:1.7" data-iauth="verify_desc">Un lien de confirmation a été envoyé à votre adresse.<br>Cliquez sur le lien pour activer votre compte.</div>
-    <div style="margin-top:20px;font-size:11px;color:var(--text3)" data-iauth="verify_note">Lien valide 24h · Vérifiez vos spams</div>
-    {% if resent|default(False) %}
-    <div style="margin-top:16px;padding:10px 14px;background:var(--green-dim);border:1px solid var(--green);border-radius:var(--r-sm);font-size:12px;color:var(--green)" data-iauth="resent_ok">Email renvoyé !</div>
-    {% endif %}
-    <form method="POST" action="/resend-verification" style="margin-top:20px">
-      <input type="hidden" name="email" value="{{ pending_email|default('') }}">
-      <button type="submit" style="width:100%;padding:12px;background:transparent;border:1px solid var(--border2);border-radius:12px;color:var(--text3);font-size:13px;font-weight:600;letter-spacing:0;cursor:pointer;transition:border-color 0.15s" onmouseover="this.style.borderColor='var(--teal)';this.style.color='var(--teal-light)'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text3)'" data-iauth="resend_btn">Renvoyer l'email</button>
-    </form>
-  </div>
-  <div class="link"><a href="/login" data-iauth="back_login">Retour à la connexion</a></div>
-  {% else %}
-  <div class="card">
-    <div class="ctitle" data-iauth="reg_title">CRÉER UN COMPTE</div>
-    {% if error %}<div class="err" style="display:block">{{ error }}</div>{% endif %}
+    <div class="auth-link"><a href="/login" data-t="back_login">Retour à la connexion</a></div>
+    {% else %}
+    <div class="form-logo" data-t="reg_title">Créer un compte</div>
+    <div class="form-tagline" data-t="tagline">Plateforme de maintenance prédictive</div>
+    {% if error %}<div class="auth-err">{{ error }}</div>{% endif %}
     <form method="POST" action="/register">
-      <label class="flbl" for="em" data-iauth="lbl_email_pro">Email professionnel</label>
+      <label class="flbl" for="em" data-t="lbl_email">Email</label>
       <input class="fi" type="email" id="em" name="email" placeholder="vous@entreprise.com" autocomplete="email" required>
-      <label class="flbl" for="pw" data-iauth="lbl_pw">Mot de passe</label>
-      <input class="fi" type="password" id="pw" name="password" data-iauth="lbl_pw_min" placeholder="8 caractères minimum" autocomplete="new-password" required minlength="8">
-      <label class="flbl" for="pw2" data-iauth="lbl_pw_conf">Confirmer le mot de passe</label>
+      <label class="flbl" for="pw" data-t="lbl_pw">Mot de passe</label>
+      <input class="fi" type="password" id="pw" name="password" placeholder="8 caractères minimum" autocomplete="new-password" required minlength="8">
+      <label class="flbl" for="pw2" data-t="lbl_pw2">Confirmer le mot de passe</label>
       <input class="fi" type="password" id="pw2" name="password2" placeholder="••••••••" autocomplete="new-password" required>
-      <button type="submit" class="btn" data-iauth="btn_reg">Créer mon compte</button>
+      <button type="submit" class="btn-submit" data-t="btn_reg">Créer mon compte</button>
     </form>
-  </div>
-  <div class="link" data-iauth="link_haveac">Déjà un compte ? <a href="/login">Se connecter</a></div>
-  {% endif %}
-</div>
-</body></html>"""
+    <div class="auth-link" data-t="link_login">Déjà un compte ? <a href="/login">Se connecter</a></div>
+    {% endif %}
+""" + _AUTH_FOOT
+
 
 ADMIN_HTML = """<!DOCTYPE html><html lang="fr"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -3272,883 +3369,6 @@ function adpDelFile(id,btn){
 document.addEventListener('DOMContentLoaded',adpLoadSaved);
 </script></body></html>"""
 
-# ── LANDING PAGE ──────────────────────────────────────────────────────────────
-LANDING_HTML = """<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Pilar — Predictive Maintenance for Industry</title>
-<meta name="description" content="Know before it breaks. Pilar reads your machine sensors, detects early failure signatures, and alerts your team hours before breakdown.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --bg:#080b10;--surface:#0d1218;--surface2:#111820;--surface3:#162030;
-  --border:#1a2535;--border2:#243044;
-  --teal:#0d9488;
-  --red:#e05252;--red-dim:rgba(220,82,82,0.08);
-  --green:#3dbd88;--green-dim:rgba(61,189,136,0.08);
-  --amber:#d4a244;
-  --text:#dce6f0;--text2:#7a92ab;--text3:#3d5268;
-  --mono:'JetBrains Mono',monospace;
-  --sans:'DM Sans',sans-serif;
-  --serif:'DM Serif Display',serif;
-  --r:8px;--r-sm:6px;
-  --container:1100px;
-  --section-pad:100px;
-}
-html{scroll-behavior:smooth}
-body{font-family:var(--sans);background:var(--bg);color:var(--text);overflow-x:hidden;-webkit-font-smoothing:antialiased}
-
-/* ── NAV ── */
-nav{position:fixed;top:0;left:0;right:0;z-index:100;height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 40px;background:rgba(8,11,16,0.92);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}
-.nav-logo{font-family:var(--sans);font-size:15px;font-weight:600;letter-spacing:0.06em;color:var(--text);text-decoration:none;display:flex;align-items:center;gap:10px}
-.nav-logo-beta{font-size:9px;font-weight:600;letter-spacing:0.08em;color:var(--teal);background:rgba(13,148,136,0.12);border:1px solid rgba(13,148,136,0.25);border-radius:4px;padding:2px 6px;vertical-align:middle}
-.nav-links{display:flex;align-items:center;gap:6px}
-.nav-lang{display:flex;gap:2px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:3px;margin-right:8px}
-.nav-lang button{padding:4px 10px;border:none;border-radius:4px;font-family:var(--sans);font-size:11px;font-weight:600;cursor:pointer;background:transparent;color:var(--text3);transition:all .15s;letter-spacing:0.04em}
-.btn-ghost{padding:8px 16px;background:transparent;border:1px solid var(--border2);color:var(--text2);border-radius:var(--r);font-family:var(--sans);font-size:13px;font-weight:500;cursor:pointer;transition:all .18s;text-decoration:none;display:inline-block}
-.btn-ghost:hover{border-color:var(--teal);color:var(--teal)}
-.btn-teal{padding:8px 18px;background:var(--teal);color:#fff;border:none;border-radius:var(--r);font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;transition:opacity .18s;text-decoration:none;display:inline-block}
-.btn-teal:hover{opacity:0.84}
-.nav-demo{font-size:13px;font-weight:500;color:var(--text2);text-decoration:none;padding:8px 14px;transition:color .15s}
-.nav-demo:hover{color:var(--text)}
-
-/* ── LAYOUT ── */
-.wrap{max-width:var(--container);margin:0 auto;padding:0 40px}
-
-/* ── HERO ── */
-.hero-outer{min-height:100vh;display:flex;align-items:center;padding-top:58px;border-bottom:1px solid var(--border)}
-.hero-inner{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center;padding:80px 40px 80px;max-width:var(--container);margin:0 auto;width:100%}
-.hero-eyebrow{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:0.06em;color:var(--teal);text-transform:uppercase;margin-bottom:28px;display:flex;align-items:center;gap:12px}
-.hero-eyebrow::before{content:'';display:block;width:20px;height:1px;background:var(--teal);flex-shrink:0}
-h1{font-family:var(--serif);font-size:clamp(60px,7.5vw,92px);font-weight:400;line-height:1.02;letter-spacing:-0.01em;margin-bottom:24px;color:var(--text)}
-.hero-sub{font-size:16px;color:var(--text2);max-width:440px;line-height:1.85;margin-bottom:40px;font-weight:400}
-.hero-ctas{display:flex;flex-wrap:wrap;gap:12px}
-.btn-primary{padding:13px 26px;background:var(--teal);color:#fff;border:none;border-radius:var(--r);font-family:var(--sans);font-size:14px;font-weight:600;cursor:pointer;transition:opacity .18s;text-decoration:none;display:inline-block}
-.btn-primary:hover{opacity:0.84}
-.btn-secondary{padding:12px 22px;background:transparent;border:1px solid var(--border2);color:var(--text2);border-radius:var(--r);font-family:var(--sans);font-size:14px;font-weight:500;cursor:pointer;transition:all .18s;text-decoration:none;display:inline-block}
-.btn-secondary:hover{border-color:var(--teal);color:var(--teal)}
-
-/* ── TERMINAL ── */
-.terminal{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;font-family:var(--mono)}
-.terminal-bar{background:var(--surface2);border-bottom:1px solid var(--border);padding:11px 16px;display:flex;align-items:center;gap:8px}
-.terminal-dots{display:flex;gap:5px}
-.terminal-dot{width:10px;height:10px;border-radius:50%}
-.terminal-title{font-size:10px;color:var(--text3);letter-spacing:0.05em;margin-left:8px;font-family:var(--mono)}
-.terminal-body{padding:22px 24px;font-size:12.5px;line-height:2}
-.t-comment{color:var(--text3)}
-.t-key{color:#7ab8d4}
-.t-val{color:var(--green)}
-.t-warn{color:var(--amber)}
-.t-error{color:var(--red)}
-.t-ok{color:var(--green)}
-.t-dim{color:var(--text3)}
-.t-divider{border:none;border-top:1px solid var(--border);margin:10px 0}
-.t-risk-bar{height:5px;background:var(--surface3);border-radius:4px;margin:10px 0 4px;overflow:hidden}
-.t-risk-fill{height:100%;width:0;background:linear-gradient(90deg,var(--amber),var(--red));animation:growfill 1.6s 0.4s ease-out forwards}
-@keyframes growfill{from{width:0}to{width:72%}}
-.t-alert{background:var(--red-dim);border:1px solid rgba(224,82,82,0.28);border-radius:var(--r-sm);padding:10px 14px;margin-top:12px}
-
-/* ── STATS STRIP ── */
-.stats-strip{border-top:1px solid var(--border);border-bottom:1px solid var(--border);display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface)}
-.stat-cell{padding:36px 32px;text-align:center;border-right:1px solid var(--border)}
-.stat-cell:last-child{border-right:none}
-.stat-n{font-family:var(--mono);font-size:34px;font-weight:500;color:var(--teal);letter-spacing:-0.02em;line-height:1}
-.stat-l{font-family:var(--sans);font-size:11px;font-weight:500;color:var(--text3);letter-spacing:0.04em;text-transform:uppercase;margin-top:10px}
-
-/* ── SECTIONS ── */
-.section{padding:var(--section-pad) 40px;max-width:var(--container);margin:0 auto}
-.section-divider{width:100%;height:1px;background:var(--border)}
-.eyebrow{font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:0.08em;color:var(--teal);text-transform:uppercase;margin-bottom:18px;display:flex;align-items:center;gap:10px}
-.eyebrow::before{content:'';display:block;width:16px;height:1px;background:var(--teal);flex-shrink:0}
-.section-h{font-family:var(--serif);font-size:clamp(36px,4.5vw,54px);font-weight:400;line-height:1.08;margin-bottom:16px;color:var(--text)}
-.section-sub{font-size:15px;color:var(--text2);max-width:540px;line-height:1.85;font-weight:400;margin-bottom:0}
-
-/* ── FADE-UP ANIMATION ── */
-.fade-up{opacity:0;transform:translateY(24px);transition:opacity 0.55s ease,transform 0.55s ease}
-.fade-up.visible{opacity:1;transform:translateY(0)}
-
-/* ── HOW IT WORKS — numbered list ── */
-.steps-list{margin-top:56px;display:flex;flex-direction:column;gap:0;border:1px solid var(--border);border-radius:var(--r)}
-.step-row{display:grid;grid-template-columns:64px 1fr;align-items:start;padding:32px 32px 32px 0;border-bottom:1px solid var(--border);transition:background .2s}
-.step-row:last-child{border-bottom:none}
-.step-row:hover{background:var(--surface)}
-.step-idx{font-family:var(--mono);font-size:11px;font-weight:500;color:var(--teal);padding:0 0 0 32px;padding-top:3px;letter-spacing:0.04em}
-.step-body-title{font-size:15px;font-weight:600;color:var(--text);margin-bottom:8px;font-family:var(--sans)}
-.step-body-desc{font-size:14px;color:var(--text2);line-height:1.8;font-weight:400;max-width:640px}
-
-/* ── PERFORMANCE ── */
-.perf-layout{display:grid;grid-template-columns:3fr 2fr;gap:20px;align-items:start;margin-top:56px}
-.perf-table{border:1px solid var(--border);border-radius:var(--r);overflow:hidden;background:var(--surface)}
-.mrow{padding:20px 24px;display:flex;align-items:center;gap:20px;border-bottom:1px solid var(--border)}
-.mrow:last-child{border-bottom:none}
-.mrow-name{font-size:13px;color:var(--text2);font-weight:400;min-width:160px}
-.mrow-bar-wrap{flex:1;height:3px;background:var(--surface3);border-radius:3px;overflow:hidden}
-.mrow-bar{height:100%;background:var(--teal);border-radius:3px;width:0;transition:width 1s ease}
-.mrow-val{font-family:var(--mono);font-size:13px;font-weight:500;color:var(--teal);min-width:50px;text-align:right}
-.perf-callout{border:1px solid var(--border);border-radius:var(--r);padding:36px 32px;background:var(--surface);display:flex;flex-direction:column;justify-content:space-between}
-.perf-big-lbl{font-family:var(--mono);font-size:10px;font-weight:500;color:var(--text3);letter-spacing:0.07em;text-transform:uppercase;margin-bottom:12px}
-.perf-big-num{font-family:var(--serif);font-size:80px;color:var(--teal);line-height:1;margin-bottom:4px}
-.perf-big-unit{font-family:var(--mono);font-size:11px;color:var(--text3);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:20px}
-.perf-big-note{font-size:13px;color:var(--text2);line-height:1.75}
-
-/* ── FEATURES LIST ── */
-.features-list{display:grid;grid-template-columns:1fr 1fr;gap:0;margin-top:48px;border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
-.feat-item{display:flex;align-items:flex-start;gap:16px;padding:24px 28px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);transition:background .2s}
-.feat-item:hover{background:var(--surface2)}
-.feat-item:nth-child(2n){border-right:none}
-.feat-item:nth-last-child(-n+2){border-bottom:none}
-.feat-icon{flex-shrink:0;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border2);border-radius:var(--r-sm);background:var(--surface2);margin-top:1px}
-.feat-text-title{font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px}
-.feat-text-desc{font-size:13px;color:var(--text2);line-height:1.7;font-weight:400}
-
-/* ── BEFORE / AFTER ── */
-.ba-grid{display:grid;grid-template-columns:1fr 1fr;margin-top:56px;border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
-.ba-col{padding:36px}
-.ba-col-before{border-right:1px solid var(--border)}
-.ba-tag{font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:24px;display:flex;align-items:center;gap:8px}
-.ba-tag-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
-.ba-item{display:flex;justify-content:space-between;align-items:baseline;padding:13px 0;border-bottom:1px solid var(--border)}
-.ba-item:last-child{border-bottom:none}
-.ba-item-lbl{font-size:13px;color:var(--text2);font-weight:400}
-.ba-item-val{font-size:12px;font-weight:600;font-family:var(--mono)}
-.ba-val-bad{color:var(--red)}
-.ba-val-good{color:var(--teal)}
-
-/* ── INDUSTRIES ── */
-.industries-line{font-size:14px;color:var(--text2);line-height:2;margin-top:32px}
-.industries-line span{color:var(--text3)}
-
-/* ── PRICING ── */
-.pricing-cols{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:56px;max-width:760px}
-.plan{padding:36px;border:1px solid var(--border);border-radius:var(--r);background:var(--surface)}
-.plan-featured{border-color:rgba(13,148,136,0.35);background:rgba(13,148,136,0.04)}
-.plan-tag{display:inline-block;padding:3px 10px;background:rgba(13,148,136,0.15);border:1px solid rgba(13,148,136,0.3);color:var(--teal);border-radius:4px;font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:0.06em;margin-bottom:20px}
-.plan-name{font-family:var(--mono);font-size:10px;font-weight:500;color:var(--text3);letter-spacing:0.07em;text-transform:uppercase;margin-bottom:10px}
-.plan-price-val{font-family:var(--serif);font-size:48px;color:var(--text);line-height:1;margin-bottom:4px}
-.plan-price-sub{font-size:12px;color:var(--text3);margin-bottom:20px;font-family:var(--sans)}
-.plan-desc{font-size:13px;color:var(--text2);line-height:1.8;margin-bottom:28px}
-.plan-ul{list-style:none;margin-bottom:32px}
-.plan-ul li{font-size:13px;color:var(--text2);padding:9px 0;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;font-weight:400}
-.plan-ul li:last-child{border-bottom:none}
-.plan-ul li::before{content:'—';color:var(--text3);font-family:var(--mono);font-size:11px;flex-shrink:0}
-.plan-ul li.inc::before{content:'\2713';color:var(--green);font-weight:700}
-.plan-ul li.off{color:var(--text3)}
-.plan-btn-p{display:block;width:100%;padding:13px;border-radius:var(--r);font-family:var(--sans);font-size:14px;font-weight:600;text-align:center;text-decoration:none;transition:opacity .18s;cursor:pointer;border:none;background:var(--teal);color:#fff}
-.plan-btn-p:hover{opacity:0.84}
-.plan-btn-g{display:block;width:100%;padding:12px;border-radius:var(--r);font-family:var(--sans);font-size:14px;font-weight:500;text-align:center;text-decoration:none;transition:all .18s;cursor:pointer;background:transparent;border:1px solid var(--border2);color:var(--text2)}
-.plan-btn-g:hover{border-color:var(--teal);color:var(--teal)}
-
-/* ── FINAL CTA ── */
-.cta-band{border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:var(--section-pad) 40px}
-.cta-inner{max-width:var(--container);margin:0 auto}
-.cta-h{font-family:var(--serif);font-size:clamp(36px,4.5vw,60px);font-weight:400;line-height:1.08;color:var(--text);margin-bottom:28px}
-.cta-btn-wrap{display:flex;gap:12px;flex-wrap:wrap}
-
-/* ── FOOTER ── */
-footer{border-top:1px solid var(--border);padding:44px 40px;background:var(--surface)}
-.footer-inner{max-width:var(--container);margin:0 auto;display:grid;grid-template-columns:1fr auto;gap:40px;align-items:start}
-.footer-logo{font-family:var(--sans);font-size:14px;font-weight:600;letter-spacing:0.06em;color:var(--text);margin-bottom:8px}
-.footer-tagline{font-size:12px;color:var(--text3);line-height:1.7;margin-bottom:18px}
-.footer-legal{font-size:11px;color:var(--text3);line-height:1.9}
-.footer-legal a{color:var(--text3);text-decoration:underline;text-underline-offset:3px;transition:color .15s}
-.footer-legal a:hover{color:var(--teal)}
-.footer-right{display:flex;flex-direction:column;align-items:flex-end;gap:24px}
-.footer-links{display:flex;gap:24px;flex-wrap:wrap;justify-content:flex-end}
-.footer-links a{font-size:13px;color:var(--text3);text-decoration:none;transition:color .15s;font-weight:500}
-.footer-links a:hover{color:var(--text)}
-.footer-hiring{border:1px solid var(--border);border-radius:var(--r-sm);padding:18px 20px;text-align:right}
-.footer-hiring-tag{font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:0.07em;color:var(--teal);text-transform:uppercase;margin-bottom:6px}
-.footer-hiring-text{font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.6}
-.footer-hiring a{font-size:12px;font-weight:600;color:var(--teal);text-decoration:none}
-.footer-hiring a:hover{text-decoration:underline}
-
-/* ── RESPONSIVE ── */
-@media(max-width:960px){
-  .hero-inner{grid-template-columns:1fr;gap:48px;padding:60px 24px 64px}
-  .perf-layout{grid-template-columns:1fr}
-  .ba-grid{grid-template-columns:1fr}
-  .ba-col-before{border-right:none;border-bottom:1px solid var(--border)}
-  .pricing-cols{grid-template-columns:1fr}
-  .features-list{grid-template-columns:1fr}
-  .feat-item:nth-child(2n){border-right:none}
-  .feat-item{border-right:none}
-  .feat-item:nth-last-child(-n+2){border-bottom:1px solid var(--border)}
-  .feat-item:last-child{border-bottom:none}
-  nav{padding:0 24px}
-  .section{padding:72px 24px}
-  .cta-band{padding:72px 24px}
-  footer{padding:36px 24px}
-}
-@media(max-width:700px){
-  .stats-strip{grid-template-columns:1fr 1fr}
-  .stat-cell:nth-child(2){border-right:none}
-  .stat-cell:nth-child(3){border-right:1px solid var(--border)}
-  .footer-inner{grid-template-columns:1fr}
-  .footer-right{align-items:flex-start}
-  .footer-links{justify-content:flex-start}
-  .footer-hiring{text-align:left}
-}
-@media(max-width:480px){
-  .stats-strip{grid-template-columns:1fr}
-  .stat-cell{border-right:none}
-  .steps-list .step-row{grid-template-columns:48px 1fr}
-  .step-idx{padding-left:20px}
-}
-</style>
-</head>
-<body>
-
-<!-- NAV -->
-<nav>
-  <a href="/" class="nav-logo">PILAR <span class="nav-logo-beta">BETA</span></a>
-  <div class="nav-links">
-    <div class="nav-lang">
-      <button id="_lEN" onclick="_lp('en')">EN</button>
-      <button id="_lFR" onclick="_lp('fr')">FR</button>
-    </div>
-    <a href="/demo" class="nav-demo" data-ilp="nav_demo">Try Demo</a>
-    <a href="/login" class="btn-ghost" data-ilp="nav_signin">Sign In</a>
-    <a href="/register" class="btn-teal" data-ilp="nav_start">Get Started</a>
-  </div>
-</nav>
-
-<!-- HERO -->
-<div class="hero-outer">
-  <div class="hero-inner">
-    <div class="hero-left">
-      <div class="hero-eyebrow" data-ilp="hero_badge">Predictive Maintenance &mdash; Public Beta</div>
-      <h1 data-ilp="hero_h">Know before<br>it breaks.</h1>
-      <p class="hero-sub" data-ilp="hero_sub">Pilar reads your machine sensors, detects early failure signatures, and alerts your team &mdash; hours before breakdown.</p>
-      <div class="hero-ctas">
-        <a href="/register" class="btn-primary" data-ilp="hero_cta1">Start for free</a>
-        <a href="/demo" class="btn-secondary" data-ilp="hero_cta2">Try the demo</a>
-      </div>
-    </div>
-    <div class="hero-right">
-      <div class="terminal">
-        <div class="terminal-bar">
-          <div class="terminal-dots">
-            <div class="terminal-dot" style="background:#ef4444"></div>
-            <div class="terminal-dot" style="background:#f59e0b"></div>
-            <div class="terminal-dot" style="background:#22c55e"></div>
-          </div>
-          <div class="terminal-title">pilar / live-monitor / machine-07</div>
-        </div>
-        <div class="terminal-body">
-          <div><span class="t-comment">// sensor reading &mdash; 14:32:07 UTC</span></div>
-          <div style="margin-top:6px">
-            <span class="t-key">vibration  &nbsp;&nbsp;</span><span class="t-warn">9.4 mm/s</span>
-          </div>
-          <div>
-            <span class="t-key">temp_palier &nbsp;</span><span class="t-error">107 &deg;C</span>
-          </div>
-          <div>
-            <span class="t-key">debit      &nbsp;&nbsp;&nbsp;&nbsp;</span><span class="t-warn">22 m&sup3;/h</span>
-          </div>
-          <div>
-            <span class="t-key">pression_e  &nbsp;&nbsp;</span><span class="t-error">0.38 bar</span>
-          </div>
-          <div>
-            <span class="t-key">heure_fonct &nbsp;</span><span class="t-val">14 208 h</span>
-          </div>
-          <hr class="t-divider">
-          <div><span class="t-comment">// AI pipeline &mdash; RF &middot; IsoForest &middot; SHAP &middot; RUL</span></div>
-          <div style="margin-top:6px">
-            <span class="t-key">failure_prob &nbsp;</span><span class="t-error">78.2%</span>
-          </div>
-          <div>
-            <span class="t-key">anomaly_score </span><span class="t-error">84/100</span>
-          </div>
-          <div>
-            <span class="t-key">rul_hours     </span><span class="t-warn">~23h</span>
-          </div>
-          <div class="t-risk-bar"><div class="t-risk-fill"></div></div>
-          <div style="margin-top:4px;font-size:11px">
-            <span class="t-dim">ROL </span><span class="t-error">HIGH</span>
-            <span class="t-dim" style="margin-left:14px">CAV </span><span class="t-warn">MED</span>
-            <span class="t-dim" style="margin-left:14px">ETN </span><span class="t-ok">LOW</span>
-            <span class="t-dim" style="margin-left:14px">MOT </span><span class="t-ok">LOW</span>
-          </div>
-          <div style="margin-top:5px;font-size:11px"><span class="t-dim">top factors: </span><span class="t-warn">vibration &#x2191;42%</span><span class="t-dim"> &middot; bearing_temp &#x2191;28%</span></div>
-          <div class="t-alert">
-            <div style="font-size:11px;color:#f87171;font-weight:500;font-family:var(--mono)">ALERT &mdash; ROL zone &mdash; bearing failure imminent</div>
-            <div style="font-size:10px;color:var(--text3);margin-top:3px;font-family:var(--mono)">email dispatched to maintenance@plant.local</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- STATS STRIP -->
-<div class="stats-strip">
-  <div class="stat-cell"><div class="stat-n">98.1%</div><div class="stat-l" data-ilp="stat1">Recall &mdash; failures caught</div></div>
-  <div class="stat-cell"><div class="stat-n">5</div><div class="stat-l" data-ilp="stat2">Failure zones detected</div></div>
-  <div class="stat-cell"><div class="stat-n">&lt;5s</div><div class="stat-l" data-ilp="stat3">Analysis per reading</div></div>
-  <div class="stat-cell"><div class="stat-n">23K+</div><div class="stat-l" data-ilp="stat4">Pump records trained</div></div>
-</div>
-
-<!-- HOW IT WORKS -->
-<section id="how-it-works" class="section fade-up">
-  <div class="eyebrow" data-ilp="how_lbl">Process</div>
-  <div class="section-h" data-ilp="how_title">Three steps to zero unplanned downtime</div>
-  <div class="section-sub" data-ilp="how_sub">Connect your machines, let Pilar learn, and receive precise alerts before failures happen.</div>
-  <div class="steps-list">
-    <div class="step-row">
-      <div class="step-idx">01</div>
-      <div>
-        <div class="step-body-title" data-ilp="s1t">Connect your sensors</div>
-        <div class="step-body-desc" data-ilp="s1d">Send readings via REST API from your PLCs, SCADA systems, or CSV files. Pilar accepts vibration, flow rate, pressure, bearing temp, motor current, and more.</div>
-      </div>
-    </div>
-    <div class="step-row">
-      <div class="step-idx">02</div>
-      <div>
-        <div class="step-body-title" data-ilp="s2t">Three AI layers analyze every reading</div>
-        <div class="step-body-desc" data-ilp="s2d">SVM classifies failure probability across 5 zones. Isolation Forest flags unseen anomalies without labels. SHAP tells you exactly which sensors drove the result &mdash; no black box.</div>
-      </div>
-    </div>
-    <div class="step-row">
-      <div class="step-idx">03</div>
-      <div>
-        <div class="step-body-title" data-ilp="s3t">Your team gets alerted</div>
-        <div class="step-body-desc" data-ilp="s3d">When risk exceeds threshold, Pilar sends an instant email alert with the failure zone, risk level, and recommended action &mdash; before breakdown occurs.</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<div class="section-divider"></div>
-
-<!-- PERFORMANCE -->
-<section class="section fade-up">
-  <div class="eyebrow" data-ilp="perf_lbl">Model Performance</div>
-  <div class="section-h" data-ilp="perf_title">Built on real industrial data</div>
-  <div class="section-sub" data-ilp="perf_sub">Trained on 23,400 centrifugal pump readings across 5 failure modes &mdash; physically realistic sensor profiles calibrated for industrial pumps.</div>
-  <div class="perf-layout">
-    <div class="perf-table">
-      <div class="mrow">
-        <div class="mrow-name">Recall (failures caught)</div>
-        <div class="mrow-bar-wrap"><div class="mrow-bar" data-width="98.1"></div></div>
-        <div class="mrow-val">98.1%</div>
-      </div>
-      <div class="mrow">
-        <div class="mrow-name">Precision</div>
-        <div class="mrow-bar-wrap"><div class="mrow-bar" data-width="89.8"></div></div>
-        <div class="mrow-val">89.8%</div>
-      </div>
-      <div class="mrow">
-        <div class="mrow-name">F1 Score</div>
-        <div class="mrow-bar-wrap"><div class="mrow-bar" data-width="93.8"></div></div>
-        <div class="mrow-val">93.8%</div>
-      </div>
-      <div class="mrow">
-        <div class="mrow-name">Zones detected</div>
-        <div class="mrow-bar-wrap"><div class="mrow-bar" data-width="100"></div></div>
-        <div class="mrow-val" style="font-size:9px;min-width:fit-content;letter-spacing:0.04em">CAV ROL ETN IMP MOT</div>
-      </div>
-    </div>
-    <div class="perf-callout">
-      <div>
-        <div class="perf-big-lbl">Failures missed per 1,000</div>
-        <div class="perf-big-num">19</div>
-        <div class="perf-big-unit">out of 1,000</div>
-      </div>
-      <div class="perf-big-note">Only 1.9% of real failures go undetected. In industrial maintenance, that number matters.<br><br>Pilar learns from your confirmed labels and retrains automatically on your own data.</div>
-    </div>
-  </div>
-</section>
-
-<div class="section-divider"></div>
-
-<!-- BEFORE / AFTER -->
-<section class="section fade-up">
-  <div class="eyebrow" data-ilp="roi_lbl">Business Impact</div>
-  <div class="section-h" data-ilp="roi_title">Reactive vs. predictive maintenance</div>
-  <div class="section-sub" data-ilp="roi_sub">Every unplanned breakdown costs production time, emergency repairs, and team morale. Pilar changes the equation.</div>
-  <div class="ba-grid">
-    <div class="ba-col ba-col-before">
-      <div class="ba-tag"><span class="ba-tag-dot" style="background:var(--red)"></span><span style="color:var(--red)" data-ilp="roi_before">Without Pilar</span></div>
-      <div class="ba-item"><span class="ba-item-lbl">Downtime per incident</span><span class="ba-item-val ba-val-bad">4 &ndash; 48 hours</span></div>
-      <div class="ba-item"><span class="ba-item-lbl">Repair cost (avg)</span><span class="ba-item-val ba-val-bad">$3k &ndash; $50k</span></div>
-      <div class="ba-item"><span class="ba-item-lbl">Detection method</span><span class="ba-item-val ba-val-bad">Machine breaks</span></div>
-      <div class="ba-item"><span class="ba-item-lbl">Maintenance planning</span><span class="ba-item-val ba-val-bad">Reactive</span></div>
-      <div class="ba-item"><span class="ba-item-lbl">Alert time</span><span class="ba-item-val ba-val-bad">0 min</span></div>
-    </div>
-    <div class="ba-col">
-      <div class="ba-tag"><span class="ba-tag-dot" style="background:var(--teal)"></span><span style="color:var(--teal)" data-ilp="roi_after">With Pilar</span></div>
-      <div class="ba-item"><span class="ba-item-lbl">Downtime per incident</span><span class="ba-item-val ba-val-good">Planned &mdash; near zero</span></div>
-      <div class="ba-item"><span class="ba-item-lbl">Repair cost (avg)</span><span class="ba-item-val ba-val-good">Parts only</span></div>
-      <div class="ba-item"><span class="ba-item-lbl">Detection method</span><span class="ba-item-val ba-val-good">AI alert before failure</span></div>
-      <div class="ba-item"><span class="ba-item-lbl">Maintenance planning</span><span class="ba-item-val ba-val-good">Predictive</span></div>
-      <div class="ba-item"><span class="ba-item-lbl">Alert time</span><span class="ba-item-val ba-val-good">Hours in advance</span></div>
-    </div>
-  </div>
-</section>
-
-<div class="section-divider"></div>
-
-<!-- FEATURES -->
-<section class="section fade-up">
-  <div class="eyebrow" data-ilp="feat_lbl">Features</div>
-  <div class="section-h" data-ilp="feat_title">What Pilar gives your team</div>
-  <div class="features-list">
-    <div class="feat-item">
-      <div class="feat-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="1.5"><path d="M4.93 4.93a10 10 0 000 14.14M19.07 4.93a10 10 0 010 14.14M9 12a3 3 0 106 0 3 3 0 00-6 0"/></svg></div>
-      <div><div class="feat-text-title">Live Sensor Monitoring</div><div class="feat-text-desc">Real-time analysis of vibration, bearing temp, flow rate, pressure, motor current and run hours via API or CSV.</div></div>
-    </div>
-    <div class="feat-item">
-      <div class="feat-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
-      <div><div class="feat-text-title">5-Zone Failure Detection</div><div class="feat-text-desc">Identifies Cavitation, Bearing Failure, Seal Failure, Impeller Wear, and Motor Fault with zone-level precision.</div></div>
-    </div>
-    <div class="feat-item">
-      <div class="feat-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="1.5"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 01-2.06 0L2 7"/></svg></div>
-      <div><div class="feat-text-title">Instant Email Alerts</div><div class="feat-text-desc">Automated alerts dispatched to your maintenance team when failure probability crosses your threshold.</div></div>
-    </div>
-    <div class="feat-item">
-      <div class="feat-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="1.5"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg></div>
-      <div><div class="feat-text-title">SHAP Explainability</div><div class="feat-text-desc">Every prediction shows the exact sensors that drove the result and their percentage contribution. No black box.</div></div>
-    </div>
-    <div class="feat-item">
-      <div class="feat-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
-      <div><div class="feat-text-title">Remaining Useful Life (RUL)</div><div class="feat-text-desc">Trend-based regression forecasts the precise time window before the 80% failure threshold is reached.</div></div>
-    </div>
-    <div class="feat-item">
-      <div class="feat-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="1.5"><path d="M18 8h1a4 4 0 010 8h-1M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8zM6 1v3M10 1v3M14 1v3"/></svg></div>
-      <div><div class="feat-text-title">REST API Integration</div><div class="feat-text-desc">Connect any PLC, SCADA, or IoT device via our documented REST API with Python and cURL examples.</div></div>
-    </div>
-  </div>
-</section>
-
-<div class="section-divider"></div>
-
-<!-- INDUSTRIES -->
-<section class="section fade-up">
-  <div class="eyebrow" data-ilp="ind_lbl">Industries</div>
-  <div class="section-h" data-ilp="ind_title">Built for industrial environments</div>
-  <div class="section-sub" data-ilp="ind_sub">Any process that relies on centrifugal pumps benefits from predictive monitoring.</div>
-  <div class="industries-line">
-    Chemical Processing<span> &middot; </span>Automotive Manufacturing<span> &middot; </span>Food &amp; Beverage<span> &middot; </span>Pharmaceutical<span> &middot; </span>Water Treatment<span> &middot; </span>Cement &amp; Mining<span> &middot; </span>Plastics &amp; Rubber<span> &middot; </span>Packaging Lines
-  </div>
-</section>
-
-<div class="section-divider"></div>
-
-<!-- PRICING -->
-<section id="pricing" class="section fade-up">
-  <div class="eyebrow" data-ilp="pricing_lbl">Pricing</div>
-  <div class="section-h" data-ilp="pricing_title">Simple pricing, built around you</div>
-  <div class="pricing-cols">
-    <div class="plan">
-      <div class="plan-name" data-ilp="plan_free_name">Free</div>
-      <div class="plan-price-val">$0</div>
-      <div class="plan-price-sub" data-ilp="plan_free_forever">forever</div>
-      <div class="plan-desc" data-ilp="plan_free_desc">Get started immediately. No credit card required.</div>
-      <ul class="plan-ul">
-        <li class="inc" data-ilp="pfree_1">Manual CSV analysis</li>
-        <li class="inc" data-ilp="pfree_2">One-off failure prediction</li>
-        <li class="off" data-ilp="pfree_3">Live sensor monitor</li>
-        <li class="off" data-ilp="pfree_4">Analysis history</li>
-        <li class="off" data-ilp="pfree_5">Digital Twin simulation</li>
-        <li class="off" data-ilp="pfree_6">API access</li>
-      </ul>
-      <a href="/register" class="plan-btn-g" data-ilp="plan_free_btn">Get started free</a>
-    </div>
-    <div class="plan plan-featured">
-      <div class="plan-tag" data-ilp="plan_custom_badge">Custom Contract</div>
-      <div class="plan-name" data-ilp="plan_custom_name">Your Plan</div>
-      <div class="plan-price-val" data-ilp="plan_custom_price">On demand</div>
-      <div class="plan-price-sub">&nbsp;</div>
-      <div class="plan-desc" data-ilp="plan_custom_desc">No fixed tiers. You choose the features, we adapt the contract to your operations and budget.</div>
-      <ul class="plan-ul">
-        <li class="inc" data-ilp="ppro_1">Full analysis history &amp; Digital Twin</li>
-        <li class="inc" data-ilp="ppro_2">Anomaly detection (Isolation Forest)</li>
-        <li class="inc" data-ilp="ppro_3">SHAP explainability</li>
-        <li class="inc" data-ilp="ppro_4">Remaining Useful Life forecasting</li>
-        <li class="inc" data-ilp="ppro_5">REST API access</li>
-        <li class="inc" data-ilp="ppro_6">Email alerts &amp; team collaboration</li>
-        <li class="inc" data-ilp="ppro_7">Dedicated onboarding &amp; support</li>
-      </ul>
-      <a href="mailto:aliguenbou07r@gmail.com?subject=Pilar%20%E2%80%94%20Custom%20Plan%20Request&body=Hi%2C%20I%27d%20like%20to%20discuss%20a%20custom%20plan%20for%20my%20team." class="plan-btn-p" data-ilp="plan_custom_btn">Contact us</a>
-    </div>
-  </div>
-</section>
-
-<!-- FINAL CTA -->
-<div class="cta-band fade-up">
-  <div class="cta-inner">
-    <div class="cta-h" data-ilp="cta_h">Your machines are already telling you something is wrong.</div>
-    <div class="cta-btn-wrap">
-      <a href="/register" class="btn-primary" data-ilp="cta_btn">Start for free</a>
-    </div>
-  </div>
-</div>
-
-<script>
-var _TLP={
-en:{nav_signin:'Sign In',nav_start:'Get Started',hero_badge:'Predictive Maintenance \u2014 Public Beta',hero_h:'Know before<br>it breaks.',hero_sub:'Pilar reads your machine sensors, detects early failure signatures, and alerts your team \u2014 hours before breakdown.',hero_cta1:'Start for free',hero_cta2:'Try the demo',stat1:'Recall \u2014 failures caught',stat2:'Failure zones detected',stat3:'Analysis per reading',stat4:'Pump records trained',how_lbl:'Process',how_title:'Three steps to zero unplanned downtime',how_sub:'Connect your machines, let Pilar learn, and receive precise alerts before failures happen.',s1t:'Connect your sensors',s1d:'Send readings via REST API from your PLCs, SCADA systems, or CSV files. Pilar accepts vibration, flow rate, pressure, bearing temp, motor current, and more.',s2t:'Three AI layers analyze every reading',s2d:'SVM classifies failure probability across 5 zones. Isolation Forest flags unseen anomalies without labels. SHAP tells you exactly which sensors drove the result \u2014 no black box.',s3t:'Your team gets alerted',s3d:'When risk exceeds threshold, Pilar sends an instant email alert with the failure zone, risk level, and recommended action \u2014 before breakdown occurs.',perf_lbl:'Model Performance',perf_title:'Built on real industrial data',perf_sub:'Trained on 23,400 centrifugal pump readings across 5 failure modes \u2014 physically realistic sensor profiles calibrated for industrial pumps.',roi_lbl:'Business Impact',roi_title:'Reactive vs. predictive maintenance',roi_sub:'Every unplanned breakdown costs production time, emergency repairs, and team morale. Pilar changes the equation.',roi_before:'Without Pilar',roi_after:'With Pilar',feat_lbl:'Features',feat_title:'What Pilar gives your team',ind_lbl:'Industries',ind_title:'Built for industrial environments',ind_sub:'Any process that relies on centrifugal pumps benefits from predictive monitoring.',pricing_lbl:'Pricing',pricing_title:'Simple pricing, built around you',plan_free_desc:'Get started immediately. No credit card required.',plan_free_btn:'Get started free',plan_custom_badge:'Custom Contract',plan_custom_name:'Your Plan',plan_custom_price:'On demand',plan_custom_desc:'No fixed tiers. You choose the features, we adapt the contract to your operations and budget.',plan_custom_btn:'Contact us',
-nav_demo:'Try Demo',
-plan_free_name:'Free',plan_free_forever:'forever',
-pfree_1:'Manual CSV analysis',pfree_2:'One-off failure prediction',pfree_3:'Live sensor monitor',pfree_4:'Analysis history',pfree_5:'Digital Twin simulation',pfree_6:'API access',
-ppro_1:'Full analysis history &amp; Digital Twin',ppro_2:'Anomaly detection (Isolation Forest)',ppro_3:'SHAP explainability',ppro_4:'Remaining Useful Life forecasting',ppro_5:'REST API access',ppro_6:'Email alerts &amp; team collaboration',ppro_7:'Dedicated onboarding &amp; support',
-cta_h:'Your machines are already telling you something is wrong.',cta_btn:'Start for free',
-footer_tagline:'Predictive Maintenance Intelligence \u2014 Built for industrial teams worldwide',
-footer_sign:'Sign In',footer_reg:'Create Account',footer_rights:'All rights reserved.',
-footer_trademark:'Pilar is a registered trademark. Unauthorized reproduction or distribution is prohibited.',
-footer_api:'API Docs',footer_contact:'Contact',
-footer_hiring_tag:"We're hiring",footer_hiring_text:'Looking for engineers passionate about<br>industrial AI and predictive systems.',footer_hiring_apply:'Send your application'},
-fr:{nav_signin:'Connexion',nav_start:'Commencer',hero_badge:'Maintenance Pr\u00e9dictive \u2014 B\u00eata Public',hero_h:'Sachez avant<br>que \u00e7a casse.',hero_sub:'Pilar lit vos capteurs, d\u00e9tecte les signatures de d\u00e9faillance, et alerte votre \u00e9quipe \u2014 des heures avant la panne.',hero_cta1:'Commencer gratuitement',hero_cta2:'Essayer la d\u00e9mo',stat1:'Rappel \u2014 pannes d\u00e9tect\u00e9es',stat2:'Zones de panne identifi\u00e9es',stat3:'Analyse par mesure',stat4:'Mesures pompes entra\u00een\u00e9es',how_lbl:'Processus',how_title:'Trois \u00e9tapes vers z\u00e9ro arr\u00eat impr\u00e9vu',how_sub:'Connectez vos machines, laissez Pilar apprendre, recevez des alertes pr\u00e9cises avant les pannes.',s1t:'Connectez vos capteurs',s1d:'Envoyez des mesures via API REST depuis vos automates, SCADA ou fichiers CSV. Pilar accepte vibration, d\u00e9bit, pression, temp. palier, courant moteur et bien plus.',s2t:'Trois couches IA analysent chaque mesure',s2d:'Le SVM classe la probabilit\u00e9 de panne sur 5 zones. L\u2019Isolation Forest d\u00e9tecte les anomalies sans labels. SHAP explique quels capteurs ont d\u00e9clench\u00e9 l\u2019alerte \u2014 sans bo\u00eete noire.',s3t:'Votre \u00e9quipe est alert\u00e9e',s3d:'Quand le risque d\u00e9passe le seuil, Pilar envoie un email instantan\u00e9 avec la zone de panne, le niveau de risque et l\u2019action recommand\u00e9e \u2014 avant la panne.',perf_lbl:'Performance du mod\u00e8le',perf_title:'Bas\u00e9 sur des donn\u00e9es industrielles r\u00e9elles',perf_sub:'Entra\u00een\u00e9 sur 23 400+ mesures de pompes centrifuges sur 5 modes de panne \u2014 profils capteurs physiquement r\u00e9alistes.',roi_lbl:'Impact business',roi_title:'Maintenance r\u00e9active vs. pr\u00e9dictive',roi_sub:'Chaque arr\u00eat impr\u00e9vu co\u00fbte du temps de production, des r\u00e9parations en urgence et du moral. Pilar change la donne.',roi_before:'Sans Pilar',roi_after:'Avec Pilar',feat_lbl:'Fonctionnalit\u00e9s',feat_title:'Ce que Pilar apporte \u00e0 votre \u00e9quipe',ind_lbl:'Secteurs',ind_title:'Con\u00e7u pour les environnements industriels',ind_sub:'Tout proc\u00e9d\u00e9 s\u2019appuyant sur des pompes centrifuges b\u00e9n\u00e9ficie de la surveillance pr\u00e9dictive.',pricing_lbl:'Tarifs',pricing_title:'Tarif simple, adapt\u00e9 \u00e0 vous',plan_free_desc:'D\u00e9marrez imm\u00e9diatement. Aucune carte bancaire requise.',plan_free_btn:'Commencer gratuitement',plan_custom_badge:'Contrat sur mesure',plan_custom_name:'Votre Plan',plan_custom_price:'Sur devis',plan_custom_desc:'Pas de niveaux fixes. Vous choisissez les fonctionnalit\u00e9s, on adapte le contrat \u00e0 vos op\u00e9rations.',plan_custom_btn:'Nous contacter',
-nav_demo:'Essayer la d\u00e9mo',
-plan_free_name:'Gratuit',plan_free_forever:'pour toujours',
-pfree_1:'Analyse CSV manuelle',pfree_2:'Pr\u00e9diction de panne ponctuelle',pfree_3:'Moniteur capteurs live',pfree_4:'Historique des analyses',pfree_5:'Simulation Digital Twin',pfree_6:'Acc\u00e8s API',
-ppro_1:'Historique complet &amp; Digital Twin',ppro_2:'D\u00e9tection d\u2019anomalies (Isolation Forest)',ppro_3:'Explicabilit\u00e9 SHAP',ppro_4:'Pr\u00e9vision Dur\u00e9e de Vie Utile (RUL)',ppro_5:'Acc\u00e8s API REST',ppro_6:'Alertes email &amp; collaboration \u00e9quipe',ppro_7:'Onboarding d\u00e9di\u00e9 &amp; support',
-cta_h:'Vos machines vous envoient d\u00e9j\u00e0 un signal.',cta_btn:'Commencer gratuitement',
-footer_tagline:'Intelligence de maintenance pr\u00e9dictive \u2014 Con\u00e7u pour les \u00e9quipes industrielles mondiales',
-footer_sign:'Connexion',footer_reg:'Cr\u00e9er un compte',footer_rights:'Tous droits r\u00e9serv\u00e9s.',
-footer_trademark:'Pilar est une marque d\u00e9pos\u00e9e. Toute reproduction ou distribution non autoris\u00e9e est interdite.',
-footer_api:'Documentation API',footer_contact:'Contact',
-footer_hiring_tag:'Nous recrutons',footer_hiring_text:'Nous recherchons des ing\u00e9nieurs passionn\u00e9s par<br>l\u2019IA industrielle et les syst\u00e8mes pr\u00e9dictifs.',footer_hiring_apply:'Envoyer votre candidature'}
-};
-function _lp(l){
-  localStorage.setItem('pilar_lang',l);
-  var teal='#0d9488';var dim='rgba(61,82,104,1)';
-  document.getElementById('_lEN').style.background=l==='en'?teal:'transparent';
-  document.getElementById('_lEN').style.color=l==='en'?'#fff':dim;
-  document.getElementById('_lFR').style.background=l==='fr'?teal:'transparent';
-  document.getElementById('_lFR').style.color=l==='fr'?'#fff':dim;
-  var tr=_TLP[l]||_TLP.en;
-  document.querySelectorAll('[data-ilp]').forEach(function(el){
-    var k=el.getAttribute('data-ilp');
-    if(tr[k]!==undefined){el.innerHTML=tr[k];}
-  });
-}
-(function(){
-  _lp(localStorage.getItem('pilar_lang')||'en');
-  document.getElementById('_copy_yr').textContent=new Date().getFullYear();
-  var io=new IntersectionObserver(function(entries){
-    entries.forEach(function(e){
-      if(e.isIntersecting){
-        e.target.classList.add('visible');
-        var bars=e.target.querySelectorAll('.mrow-bar[data-width]');
-        bars.forEach(function(b){b.style.width=b.getAttribute('data-width')+'%';});
-        io.unobserve(e.target);
-      }
-    });
-  },{threshold:0.12});
-  document.querySelectorAll('.fade-up').forEach(function(el){io.observe(el);});
-})();
-</script>
-
-<!-- FOOTER -->
-<footer>
-  <div class="footer-inner">
-    <div class="footer-left">
-      <div class="footer-logo">PILAR</div>
-      <div class="footer-tagline" data-ilp="footer_tagline">Predictive Maintenance Intelligence &mdash; Built for industrial teams worldwide</div>
-      <div class="footer-legal">
-        &copy; <span id="_copy_yr"></span> Pilar. <span data-ilp="footer_rights">All rights reserved.</span><br>
-        <span data-ilp="footer_trademark">Pilar is a registered trademark. Unauthorized reproduction or distribution is prohibited.</span><br>
-        <a href="mailto:contact@trypilar.com">contact@trypilar.com</a>
-      </div>
-    </div>
-    <div class="footer-right">
-      <div class="footer-links">
-        <a href="/login" data-ilp="footer_sign">Sign In</a>
-        <a href="/register" data-ilp="footer_reg">Create Account</a>
-        <a href="/api/docs" data-ilp="footer_api">API Docs</a>
-        <a href="mailto:contact@trypilar.com" data-ilp="footer_contact">Contact</a>
-      </div>
-      <div class="footer-hiring">
-        <div class="footer-hiring-tag" data-ilp="footer_hiring_tag">We're hiring</div>
-        <div class="footer-hiring-text" data-ilp="footer_hiring_text">Looking for engineers passionate about<br>industrial AI and predictive systems.</div>
-        <a href="mailto:aliguenbou07r@gmail.com?subject=Pilar%20%E2%80%94%20Job%20Application&body=Hi%2C%20I%27d%20like%20to%20apply%20to%20join%20the%20Pilar%20team." data-ilp="footer_hiring_apply">Send your application</a>
-      </div>
-    </div>
-  </div>
-</footer>
-
-</body>
-</html>"""
-
-# ── ONBOARDING PAGE ───────────────────────────────────────────────────────────
-ONBOARDING_HTML = """<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Pilar — Get started</title>
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --bg:#07090f;--surface:#0e1118;--surface2:#141820;--surface3:#1e2433;
-  --border:#1e2433;--border2:#252d3d;
-  --teal:#0d9488;--teal2:#14b8a6;--teal-dim:rgba(13,148,136,0.08);
-  --red:#dc2626;--red-dim:rgba(220,38,38,0.08);
-  --green:#059669;--green-dim:rgba(5,150,105,0.08);
-  --amber:#d97706;--purple:#bf5af2;
-  --text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;
-  --r:12px;--r-sm:8px;--r-xs:6px;
-  --shadow:0 4px 24px rgba(0,0,0,0.5);--shadow-sm:0 2px 8px rgba(0,0,0,0.4);
-}
-html,body{height:100%}
-body{font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column;min-height:100vh}
-
-/* TOP BAR */
-.topbar{padding:0 32px;height:60px;display:flex;align-items:center;justify-content:space-between;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);background:rgba(28,28,30,0.92);border-bottom:1px solid var(--border);flex-shrink:0}
-.topbar-logo{font-size:15px;font-weight:700;letter-spacing:0.04em;color:var(--text);text-decoration:none}
-.topbar-skip{font-size:13px;font-weight:500;color:var(--text3);text-decoration:none}
-.topbar-skip:hover{color:var(--teal2)}
-
-/* STEP BAR */
-.stepbar{display:flex;align-items:stretch;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--surface)}
-.step-tab{flex:1;padding:16px 20px;display:flex;align-items:center;gap:12px;border-right:1px solid var(--border);cursor:default;transition:background .18s}
-.step-tab:last-child{border-right:none}
-.step-tab.active{background:var(--surface2)}
-.step-tab.done{background:rgba(13,148,136,0.06)}
-.step-tab.inactive{opacity:.4}
-.step-num{font-size:11px;font-weight:600;width:26px;height:26px;border-radius:50%;border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text3)}
-.step-tab.active .step-num{border-color:var(--teal2);color:var(--teal2)}
-.step-tab.done .step-num{border-color:var(--teal);background:var(--teal);color:#fff}
-.step-label{font-size:13px;font-weight:500;color:var(--text2)}
-.step-tab.active .step-label{color:var(--text)}
-
-/* CONTENT */
-.content{flex:1;display:flex;align-items:flex-start;justify-content:center;padding:48px 24px}
-.panel{width:100%;max-width:640px}
-
-/* STEP 1 — WELCOME */
-.welcome-icon{width:56px;height:56px;border-radius:var(--r);border:1px solid rgba(13,148,136,0.3);background:var(--teal-dim);display:flex;align-items:center;justify-content:center;margin-bottom:24px}
-.welcome-h{font-size:clamp(36px,5vw,56px);font-weight:700;line-height:1.05;letter-spacing:-0.025em;color:var(--text);margin-bottom:12px}
-.welcome-h span{color:var(--teal2)}
-.welcome-sub{font-size:16px;color:var(--text2);line-height:1.8;margin-bottom:36px}
-.checklist{list-style:none;margin-bottom:40px;display:grid;gap:10px}
-.checklist li{display:flex;align-items:flex-start;gap:12px;padding:16px 18px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);font-size:14px;color:var(--text2);box-shadow:var(--shadow-sm)}
-.checklist li::before{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--teal2);margin-top:6px;flex-shrink:0}
-.checklist li strong{color:var(--text);display:block;margin-bottom:2px;font-size:14px}
-
-/* STEP 2 — FORM */
-.form-intro{margin-bottom:28px}
-.form-intro p{font-size:15px;color:var(--text2);line-height:1.75}
-.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}
-.field{display:flex;flex-direction:column;gap:6px}
-.field label{font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--text3)}
-.field input,.field select{background:rgba(120,120,128,0.18);border:1px solid var(--border);color:var(--text);padding:11px 14px;font-size:13px;border-radius:10px;outline:none;transition:border-color .18s;width:100%}
-.field input:focus,.field select:focus{border-color:var(--teal)}
-.field select option{background:#0e1118}
-.field-hint{font-size:11px;color:var(--text3);line-height:1.5}
-.form-note{background:var(--teal-dim);border:1px solid rgba(13,148,136,0.2);padding:12px 16px;font-size:13px;color:var(--text2);line-height:1.65;margin-bottom:24px;border-radius:var(--r-sm)}
-
-/* STEP 3 — RESULT */
-.result-hero{border:1px solid var(--border);padding:28px;margin-bottom:20px;background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow-sm)}
-.result-hero.ok{border-color:rgba(48,209,88,0.4);background:var(--green-dim)}
-.result-hero.warn{border-color:rgba(255,159,10,0.4);background:rgba(255,159,10,0.08)}
-.result-hero.danger{border-color:rgba(255,69,58,0.4);background:var(--red-dim)}
-.result-row{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px}
-.result-label{font-size:11px;font-weight:600;letter-spacing:0.04em;color:var(--text3);text-transform:uppercase}
-.result-pct{font-size:48px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
-.result-hero.ok .result-pct{color:var(--green)}
-.result-hero.warn .result-pct{color:var(--amber)}
-.result-hero.danger .result-pct{color:var(--red)}
-.result-bar-bg{height:6px;background:var(--surface3);border-radius:6px;overflow:hidden;margin-bottom:12px}
-.result-bar-fill{height:100%;border-radius:6px;transition:width .6s ease}
-.result-verdict{font-size:14px;color:var(--text2);line-height:1.7}
-.zones-row{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:20px}
-.zone-chip{padding:10px 8px;text-align:center;border:1px solid var(--border);background:var(--surface2);border-radius:var(--r-sm)}
-.zone-chip-name{font-size:11px;font-weight:700;letter-spacing:0.02em}
-.zone-chip-val{font-size:10px;margin-top:4px;color:var(--text3);font-variant-numeric:tabular-nums}
-.zone-chip.high{border-color:rgba(255,69,58,0.4);background:var(--red-dim)}.zone-chip.high .zone-chip-name{color:var(--red)}.zone-chip.high .zone-chip-val{color:var(--red)}
-.zone-chip.med{border-color:rgba(255,159,10,0.3);background:rgba(255,159,10,0.08)}.zone-chip.med .zone-chip-name{color:var(--amber)}.zone-chip.med .zone-chip-val{color:var(--amber)}
-.zone-chip.low .zone-chip-name{color:var(--text3)}
-.result-saved{font-size:11px;font-weight:600;color:var(--teal2);margin-bottom:24px;letter-spacing:0.02em}
-
-/* BUTTONS */
-.btn-next{display:block;width:100%;padding:15px;background:var(--teal);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:600;letter-spacing:0;text-transform:none;cursor:pointer;transition:opacity .18s;text-align:center;text-decoration:none}
-.btn-next:hover{opacity:0.85}
-.btn-next:disabled{opacity:.5;cursor:not-allowed}
-.btn-back{display:inline-block;padding:9px 18px;background:transparent;border:1px solid var(--border2);color:var(--text3);border-radius:12px;font-size:13px;font-weight:500;cursor:pointer;transition:all .18s;margin-bottom:20px}
-.btn-back:hover{border-color:var(--teal);color:var(--teal2)}
-.err-box{background:var(--red-dim);border:1px solid rgba(255,69,58,0.3);color:var(--red);padding:12px 16px;font-size:13px;border-radius:var(--r-sm);margin-bottom:16px;display:none}
-</style>
-</head>
-<body>
-
-<div class="topbar">
-  <a href="/" class="topbar-logo">PILAR</a>
-  <a href="/onboarding/skip" class="topbar-skip">Skip setup &rarr;</a>
-</div>
-
-<div class="stepbar">
-  <div class="step-tab active" id="tab0">
-    <div class="step-num">1</div>
-    <div class="step-label">Welcome</div>
-  </div>
-  <div class="step-tab inactive" id="tab1">
-    <div class="step-num">2</div>
-    <div class="step-label">Your machine</div>
-  </div>
-  <div class="step-tab inactive" id="tab2">
-    <div class="step-num">3</div>
-    <div class="step-label">First result</div>
-  </div>
-</div>
-
-<div class="content">
-
-  <!-- STEP 1: WELCOME -->
-  <div class="panel" id="step0">
-    <div class="welcome-icon">
-      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--teal2)" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-    </div>
-    <div class="welcome-h">Connect your<br><span>first machine</span></div>
-    <div class="welcome-sub">You're 3 steps away from your first failure prediction. Here's what we'll do:</div>
-    <ul class="checklist">
-      <li><div><strong>Enter your machine parameters</strong>Temperature, rotation speed, torque, and tool wear — the same data your sensors already produce.</div></li>
-      <li><div><strong>Run the AI analysis</strong>Pilar's model analyzes your data across 5 failure zones and returns a risk score in seconds.</div></li>
-      <li><div><strong>See your result</strong>A clear risk level, failure zone breakdown, and what to do next. Saved to your history automatically.</div></li>
-    </ul>
-    <button class="btn-next" onclick="goTo(1)">Let's start &rarr;</button>
-  </div>
-
-  <!-- STEP 2: MACHINE FORM -->
-  <div class="panel" id="step1" style="display:none">
-    <button class="btn-back" onclick="goTo(0)">&larr; Back</button>
-    <div class="form-intro">
-      <div style="font-size:11px;font-weight:600;letter-spacing:0.04em;color:var(--teal2);text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:8px"><span style="display:inline-block;width:16px;height:1px;background:var(--teal2)"></span>Step 2 of 3</div>
-      <div style="font-size:32px;font-weight:700;letter-spacing:-0.02em;color:var(--text);margin-bottom:8px">Enter your machine data</div>
-      <p>Fill in the current readings from your machine. Don't worry about being exact — you can refine this later.</p>
-    </div>
-    <div class="form-note">Enter your pump's sensor readings. All fields are optional — missing values will be estimated from typical pump baselines.</div>
-    <div id="err-box" class="err-box"></div>
-    <div class="field-grid">
-      <div class="field">
-        <label>Vibration (mm/s)</label>
-        <input type="number" id="f-vib" value="2.5" step="0.1" min="0" max="30">
-        <div class="field-hint">Normal range: 0.5 – 4.5 mm/s</div>
-      </div>
-      <div class="field">
-        <label>Bearing temperature (°C)</label>
-        <input type="number" id="f-tp" value="65" step="1" min="20" max="150">
-        <div class="field-hint">Normal range: 40 – 85 °C</div>
-      </div>
-      <div class="field">
-        <label>Flow rate (m³/h)</label>
-        <input type="number" id="f-dbt" value="45" step="1" min="0" max="300">
-        <div class="field-hint">Depends on pump rated capacity</div>
-      </div>
-      <div class="field">
-        <label>Inlet pressure (bar)</label>
-        <input type="number" id="f-pe" value="1.5" step="0.1" min="0" max="15">
-        <div class="field-hint">Suction side pressure</div>
-      </div>
-      <div class="field">
-        <label>Outlet pressure (bar)</label>
-        <input type="number" id="f-ps" value="4.5" step="0.1" min="0" max="40">
-        <div class="field-hint">Discharge pressure</div>
-      </div>
-      <div class="field">
-        <label>Run hours (h)</label>
-        <input type="number" id="f-hf" value="5000" step="100" min="0" max="100000">
-        <div class="field-hint">Total cumulative operating hours</div>
-      </div>
-    </div>
-    <button class="btn-next" id="btn-analyse" onclick="runAnalysis()">Analyse my machine &rarr;</button>
-  </div>
-
-  <!-- STEP 3: RESULT -->
-  <div class="panel" id="step2" style="display:none">
-    <div style="font-size:11px;font-weight:600;letter-spacing:0.04em;color:var(--teal2);text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:8px"><span style="display:inline-block;width:16px;height:1px;background:var(--teal2)"></span>Step 3 of 3 — Your first result</div>
-    <div style="font-size:32px;font-weight:700;letter-spacing:-0.02em;color:var(--text);margin-bottom:24px">Analysis complete</div>
-
-    <div class="result-hero" id="res-block">
-      <div class="result-row">
-        <div class="result-label">Failure risk</div>
-        <div class="result-pct" id="res-pct">—</div>
-      </div>
-      <div class="result-bar-bg"><div class="result-bar-fill" id="res-bar" style="width:0%"></div></div>
-      <div class="result-verdict" id="res-verdict"></div>
-    </div>
-
-    <div class="zones-row" id="res-zones"></div>
-
-    <div class="result-saved">&#10003; Analysis saved to your history</div>
-
-    <a href="/monitor" class="btn-next" onclick="markDone(event)">Go to your dashboard &rarr;</a>
-    <div style="text-align:center;margin-top:16px">
-      <a href="/history" style="font-size:13px;font-weight:500;color:var(--text3);text-decoration:none" onmouseover="this.style.color='var(--teal2)'" onmouseout="this.style.color='var(--text3)'">View analysis history</a>
-    </div>
-  </div>
-
-</div>
-
-<script>
-function goTo(n){
-  document.querySelectorAll('[id^="step"]').forEach(function(el,i){el.style.display=i===n?'':'none'});
-  ['tab0','tab1','tab2'].forEach(function(id,i){
-    var t=document.getElementById(id);
-    t.className='step-tab '+(i<n?'done':i===n?'active':'inactive');
-  });
-}
-
-function runAnalysis(){
-  var btn=document.getElementById('btn-analyse');
-  var err=document.getElementById('err-box');
-  err.style.display='none';
-  btn.disabled=true;
-  btn.textContent='Analysing...';
-  var data={
-    vibration:parseFloat(document.getElementById('f-vib').value),
-    temp_palier:parseFloat(document.getElementById('f-tp').value),
-    debit:parseFloat(document.getElementById('f-dbt').value),
-    pression_entree:parseFloat(document.getElementById('f-pe').value),
-    pression_sortie:parseFloat(document.getElementById('f-ps').value),
-    heure_fonctionnement:parseFloat(document.getElementById('f-hf').value)
-  };
-  fetch('/onboarding/analyse',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
-    .then(function(r){return r.json()})
-    .then(function(d){
-      if(d.error){err.textContent=d.error;err.style.display='block';btn.disabled=false;btn.textContent='Analyse my machine \u2192';return;}
-      showResult(d);
-      goTo(2);
-    })
-    .catch(function(){err.textContent='Network error. Please try again.';err.style.display='block';btn.disabled=false;btn.textContent='Analyse my machine \u2192';});
-}
-
-function showResult(d){
-  var risk=d.risk;
-  var cls=risk>=50?'danger':risk>=20?'warn':'ok';
-  var color=risk>=50?'var(--red)':risk>=20?'var(--amber)':'var(--green)';
-  var verdict=risk>=50?'High risk — intervention recommended before next operation cycle.':risk>=20?'Moderate risk — schedule inspection within 48 hours.':'All systems nominal. Continue monitoring normally.';
-  var block=document.getElementById('res-block');
-  block.className='result-hero '+cls;
-  document.getElementById('res-pct').textContent=risk+'%';
-  var bar=document.getElementById('res-bar');
-  bar.style.width=risk+'%';
-  bar.style.background=color;
-  document.getElementById('res-verdict').textContent=d.verdict||verdict;
-  var zc=document.getElementById('res-zones');
-  zc.innerHTML='';
-  if(d.zones&&d.zones.length>0){
-    d.zones.forEach(function(z){
-      var pct=z.proba||0;
-      var level=pct>65?'high':pct>35?'med':'low';
-      zc.innerHTML+='<div class="zone-chip '+level+'"><div class="zone-chip-name">'+(z.nom||z)+'</div><div class="zone-chip-val">'+pct+'%</div></div>';
-    });
-  }
-}
-
-function markDone(e){
-  e.preventDefault();
-  fetch('/onboarding/complete',{method:'POST'}).then(function(){window.location='/monitor';});
-}
-</script>
-</body>
-</html>"""
-
 # ── DEMO PAGE ─────────────────────────────────────────────────────────────────
 DEMO_HTML = """<!DOCTYPE html>
 <html lang="en">
@@ -6641,7 +5861,7 @@ def impersonate(uid):
 # ── ROUTES PAGES ──────────────────────────────────────────────────────────────
 @app.route('/')
 def index():
-    return LANDING_HTML
+    return redirect('/monitor')
 
 @app.route('/demo')
 def demo():
