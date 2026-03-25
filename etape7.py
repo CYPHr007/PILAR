@@ -1499,7 +1499,7 @@ adp_ignore:'(Ignorer)',adp_desc:'Convertissez n\u2019importe quel CSV au format 
 page_tutorial:'Import & Analyse',tut_csv_desc:"Votre CSV doit contenir ces colonnes (l'ordre n'a pas d'importance) :",tut_click_csv:'Cliquez pour sélectionner un fichier CSV',tut_no_file_sel:'Aucun fichier sélectionné',tut_progress:'Progression',tut_check_every:'Vérifier toutes les',tut_row:'Ligne',
 set_domain:'Domaine',set_nav_title:'Navigation',set_twin_nav:'Jumeau Numérique',
 ast_you:'Vous',ast_pilar:'Pilar IA',ast_error:'Erreur\u00a0: ',ast_net_error:'Erreur réseau. Réessayez.',
-ai_warming:'se réchauffe',ai_ready:'prêt',ai_in_twin:'Jumeau Numérique'},
+ai_warming:'se réchauffe',ai_ready:'prêt',ai_in_twin:'Jumeau Numérique',fl_title:'Vue Flotte',fl_sub:'Surveillance de vos pompes centrifuges',fl_add:'+ Ajouter une machine',fl_analyze_all:'Analyser tout',fl_analyzing:'Analyse en cours…',fl_total:'Machines actives',fl_alerts:'Alertes actives',fl_avg:'Risque moyen flotte',fl_critical:'Critiques',fl_never:'Jamais',fl_badge_ok:'Normal',fl_badge_warn:'Attention',fl_badge_crit:'Critique',fl_badge_inactive:'Inactif',fl_badge_new:'Sans données',fl_btn_analyze:'Analyser',fl_btn_csv:'Importer CSV',fl_btn_edit:'Modifier',fl_btn_rerun:'Relancer',fl_modal_add:'Ajouter une machine',fl_modal_edit:'Modifier la machine',fl_save:'Enregistrer',fl_cancel:'Annuler',fl_save_changes:'Sauvegarder les modifications',fl_name_lbl:'Nom de la machine',fl_name_ph:'ex. POMPE-01, Compresseur-A3',fl_name_hint:'Ce nom est utilisé comme machine_id dans l’API.',fl_desc_lbl:'Description',fl_desc_ph:'Optionnel — emplacement, modèle, notes',fl_class_sel:'Classe machine',fl_thresh_lbl:'Seuil d’alerte %',fl_thresh_hint:'L’alerte se déclenche au-dessus de ce seuil.',fl_pump_sel:'Type de pompe',fl_fluid_sel:'Type de fluide',fl_mat_sel:'Matériau de la roue',fl_email_lbl:'Email d’alerte principal',fl_email_ph:'tech@entreprise.com',fl_esc_lbl:'Email d’escalade',fl_esc_ph:'responsable@entreprise.com',fl_esc_hint:'Si l’alerte n’est pas acquittée sous 30 min, ce contact est notifié.',fl_upload_title:'Importer des données machine',fl_upload_desc:'CSV exporté depuis votre SCADA, API ou système capteurs. Pilar détecte les colonnes automatiquement et analyse chaque ligne. Résultats sauvegardés dans l’historique.',fl_upload_click:'Cliquez pour sélectionner un fichier CSV',fl_upload_hint:'Tout délimiteur · noms libres · conversion d’unités auto',fl_upload_run:'Lancer l’analyse',fl_upload_other:'Importer un autre fichier',fl_upload_rows:'Lignes',fl_upload_failures:'Anomalies',fl_upload_peak:'Risque max',fl_upload_avg:'Risque moy.',fl_upload_history:'Sauvegardé dans l’historique',fl_an_run:'Lancer l’analyse',fl_an_again:'Relancer',fl_an_close:'Fermer',fl_an_zones:'Zones de défaillance',fl_an_no_zone:'Aucune zone spécifique',fl_an_failure:'⚠ PANNE',fl_an_normal:'✓ NORMAL',fl_an_anom:'Score anomalie',fl_an_rul:'Délai estimé',fl_del_confirm_msg:'Supprimer cette machine ? Action irréversible.',fl_del_file_msg:'Supprimer ce fichier de la machine ?',fl_ap_title:'Analyse de la flotte',fl_ap_confirm:'Lancer l’analyse sur {n} machine(s) avec fichier CSV ?',fl_ap_done:'Analyse terminée',fl_ap_rows:'lignes',fl_ap_anom:'anomalies',fl_ap_avg:'risque moy.',fl_ap_skip:'ignorée',fl_ap_close:'Fermer',fl_empty_title:'Aucune machine configurée',fl_empty_desc:'Ajoutez votre première machine pour démarrer la surveillance de la flotte.',fl_add_first:'+ Ajouter ma première machine',fl_class_lbl:'Classe',fl_pump_lbl:'Pompe',fl_fluid_lbl:'Fluide',fl_mat_lbl:'Matériau',fl_thresh_card:'Seuil',fl_last_lbl:'Dernière mesure',fl_no_file_msg:'Aucune machine avec fichier CSV. Utilisez le bouton Importer CSV sur chaque carte.',fl_full_page:'Page flotte complète →',fl_loading:'Chargement de la flotte…',fl_load_fail:'Erreur de chargement. ',fl_error:'Erreur',fl_net_error:'Erreur réseau. Réessayez.',fl_retry:'Réessayer',fl_risk_lbl:'RISQUE'},
 en:{nav_monitor:'Live Monitor',nav_twin:'Twin',nav_history:'History',nav_account:'Account',nav_settings:'Settings',
 page_monitor:'Monitor',page_twin:'Digital Twin',page_history:'History',page_account:'Account',page_settings:'Settings',
 idle_l1:'No analysis yet',idle_l2:'Configure below and run',
@@ -1556,7 +1556,7 @@ adp_ignore:'(Ignore)',adp_desc:'Convert any CSV to Pilar format',adp_save:'Save 
 page_tutorial:'Import & Run',tut_csv_desc:'Your CSV must contain these columns (order does not matter):',tut_click_csv:'Click to select a CSV file',tut_no_file_sel:'No file selected',tut_progress:'Progress',tut_check_every:'Check every',tut_row:'Row',
 set_domain:'Domain',set_nav_title:'Navigation',set_twin_nav:'Digital Twin',
 ast_you:'You',ast_pilar:'Pilar AI',ast_error:'Error: ',ast_net_error:'Network error. Please retry.',
-ai_warming:'warming up',ai_ready:'ready',ai_in_twin:'Digital Twin'}
+ai_warming:'warming up',ai_ready:'ready',ai_in_twin:'Digital Twin',fl_title:'Fleet Overview',fl_sub:'Monitor your centrifugal pumps',fl_add:'+ Add Machine',fl_analyze_all:'Analyze All',fl_analyzing:'Analyzing…',fl_total:'Active Machines',fl_alerts:'Active Alerts',fl_avg:'Avg Fleet Risk',fl_critical:'Critical',fl_never:'Never',fl_badge_ok:'Normal',fl_badge_warn:'Warning',fl_badge_crit:'Critical',fl_badge_inactive:'Inactive',fl_badge_new:'No data',fl_btn_analyze:'Analyze',fl_btn_csv:'Upload CSV',fl_btn_edit:'Edit',fl_btn_rerun:'Re-run',fl_modal_add:'Add Machine',fl_modal_edit:'Edit Machine',fl_save:'Save',fl_cancel:'Cancel',fl_save_changes:'Save Changes',fl_name_lbl:'Machine Name',fl_name_ph:'e.g. PUMP-01, Compressor-A3',fl_name_hint:'Used as machine_id when sending data via API.',fl_desc_lbl:'Description',fl_desc_ph:'Optional — location, model, notes',fl_class_sel:'Machine Class',fl_thresh_lbl:'Alert threshold %',fl_thresh_hint:'Alert fires above this threshold.',fl_pump_sel:'Pump Type',fl_fluid_sel:'Fluid Type',fl_mat_sel:'Impeller Material',fl_email_lbl:'Primary Alert Email',fl_email_ph:'tech@yourcompany.com',fl_esc_lbl:'Escalation Email',fl_esc_ph:'manager@yourcompany.com',fl_esc_hint:'If primary alert is unacknowledged after 30 min, this contact is notified.',fl_upload_title:'Upload Machine Data',fl_upload_desc:'Upload a CSV exported from your SCADA, PLC, or sensor system. Pilar auto-detects columns and runs a full analysis on every row. Results are saved to history.',fl_upload_click:'Click to select a CSV file',fl_upload_hint:'Any delimiter · any column names · auto unit conversion',fl_upload_run:'Run Analysis',fl_upload_other:'Upload another file',fl_upload_rows:'Rows',fl_upload_failures:'Failures',fl_upload_peak:'Peak risk',fl_upload_avg:'Avg risk',fl_upload_history:'Saved to history',fl_an_run:'Run Analysis',fl_an_again:'Run Again',fl_an_close:'Close',fl_an_zones:'Failure Zones',fl_an_no_zone:'No specific zone',fl_an_failure:'⚠ FAILURE',fl_an_normal:'✓ NORMAL',fl_an_anom:'Anomaly score',fl_an_rul:'Est. time to failure',fl_del_confirm_msg:'Delete this machine? This cannot be undone.',fl_del_file_msg:'Delete this file from the machine?',fl_ap_title:'Fleet Analysis',fl_ap_confirm:'Run analysis on {n} machine(s) with CSV file?',fl_ap_done:'Analysis complete',fl_ap_rows:'rows',fl_ap_anom:'anomalies',fl_ap_avg:'avg risk',fl_ap_skip:'skipped',fl_ap_close:'Close',fl_empty_title:'No machines yet',fl_empty_desc:'Add your first machine to start monitoring your fleet.',fl_add_first:'+ Add First Machine',fl_class_lbl:'Class',fl_pump_lbl:'Pump',fl_fluid_lbl:'Fluid',fl_mat_lbl:'Material',fl_thresh_card:'Threshold',fl_last_lbl:'Last seen',fl_no_file_msg:'No machines with CSV attached. Use the Upload CSV button on each card.',fl_full_page:'Full fleet page →',fl_loading:'Loading fleet…',fl_load_fail:'Failed to load fleet. ',fl_error:'Error',fl_net_error:'Network error. Please retry.',fl_retry:'Retry',fl_risk_lbl:'RISK'}
 };
 var LANG=localStorage.getItem('pilar_lang')||'en';
 function t(k){return(T[LANG]&&T[LANG][k])||(T.en[k])||k;}
@@ -4347,8 +4347,14 @@ DASHBOARD_HTML = _HEAD.replace("{FAV}", FAV_B64) + """
 <div class="desktop-layout">
 """ + nav("fl") + """
 <div class="main-content">
-<header><span class="logo">PILAR</span><div class="hd"></div><span class="hsub">Fleet Overview</span>
-<div class="hright" style="display:flex;gap:8px;align-items:center"><button id="analyze-all-btn" onclick="analyzeAll()" class="btn" style="font-size:11px;padding:6px 14px;background:var(--teal);color:#fff">Analyser tout</button><button onclick="openAdd()" class="btn" style="font-size:11px;padding:6px 14px">+ Add Machine</button></div>
+<header>
+  <span class="logo">PILAR</span>
+  <div class="hd"></div>
+  <span class="hsub" data-i18n="fl_title">Fleet Overview</span>
+  <div class="hright" style="display:flex;gap:8px;align-items:center">
+    <button id="analyze-all-btn" onclick="analyzeAll()" class="btn" style="font-size:11px;padding:6px 14px;background:var(--teal);color:#fff" data-i18n="fl_analyze_all">Analyser tout</button>
+    <button onclick="openAdd()" class="btn" style="font-size:11px;padding:6px 14px" data-i18n="fl_add">+ Ajouter</button>
+  </div>
 </header>
 <div class="page pad">
 <style>
@@ -4356,13 +4362,13 @@ DASHBOARD_HTML = _HEAD.replace("{FAV}", FAV_B64) + """
 .page-title{font-size:28px;font-weight:700;letter-spacing:-0.03em;}
 .page-sub{font-size:13px;color:var(--text3);margin-top:4px;}
 .fleet-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px;}
-.machine-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:24px;position:relative;transition:border-color .2s;box-shadow:var(--shadow-sm);}
-.machine-card:hover{border-color:var(--border2);}
+.machine-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:24px;position:relative;transition:border-color .2s,box-shadow .2s;box-shadow:var(--shadow-sm);}
+.machine-card:hover{border-color:var(--border2);box-shadow:var(--shadow);}
 .machine-card.inactive{opacity:.5;}
 .card-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;}
 .machine-name{font-size:16px;font-weight:700;letter-spacing:-.01em;}
 .machine-desc{font-size:12px;color:var(--text3);margin-top:3px;}
-.badge{display:inline-block;padding:3px 10px;font-size:11px;font-weight:700;letter-spacing:0;border-radius:20px;text-transform:none;}
+.badge{display:inline-block;padding:3px 10px;font-size:11px;font-weight:700;border-radius:20px;}
 .badge-ok{background:var(--green-dim);color:var(--green);border:1px solid rgba(48,209,88,.3);}
 .badge-warn{background:var(--amber-dim);color:var(--amber);border:1px solid rgba(255,159,10,.3);}
 .badge-crit{background:var(--red-dim);color:var(--red);border:1px solid rgba(255,69,58,.3);}
@@ -4374,11 +4380,12 @@ DASHBOARD_HTML = _HEAD.replace("{FAV}", FAV_B64) + """
 .risk-pct{font-size:22px;font-weight:700;}
 .risk-bar{height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
 .risk-fill{height:100%;border-radius:2px;transition:width .4s;}
-.meta-row{display:flex;gap:16px;margin-top:12px;}
-.meta-item{flex:1;}
-.meta-label{font-size:10px;color:var(--text3);font-weight:600;margin-bottom:2px;}
+.meta-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px;}
+.meta-item{background:rgba(120,120,128,0.08);border-radius:6px;padding:7px 8px;}
+.meta-label{font-size:9px;color:var(--text3);font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-bottom:3px;}
 .meta-val{font-size:12px;font-weight:600;color:var(--text2);}
-.card-actions{display:flex;gap:8px;margin-top:18px;padding-top:16px;border-top:1px solid var(--border);}
+.card-actions{display:flex;gap:6px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border);}
+.file-chip{display:flex;align-items:center;gap:6px;margin:10px 0 6px;padding:7px 10px;background:rgba(13,148,136,0.06);border:1px solid rgba(13,148,136,0.2);border-radius:8px;font-size:11px;color:var(--teal2);}
 .empty-state{grid-column:1/-1;text-align:center;padding:80px 32px;color:var(--text3);}
 .empty-state h3{font-size:18px;font-weight:700;color:var(--text2);margin-bottom:8px;}
 .empty-state p{font-size:13px;line-height:1.7;margin-bottom:24px;}
@@ -4386,132 +4393,235 @@ DASHBOARD_HTML = _HEAD.replace("{FAV}", FAV_B64) + """
 .modal-overlay.open{display:flex;}
 .modal{background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);padding:32px;width:480px;max-width:90vw;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow);}
 .modal-title{font-size:18px;font-weight:700;margin-bottom:24px;}
-.form-group{margin-bottom:18px;}
-.form-label{font-size:11px;font-weight:600;color:var(--text3);display:block;margin-bottom:6px;}
-.form-input{width:100%;background:rgba(120,120,128,0.18);border:1px solid var(--border2);border-radius:10px;padding:10px 12px;font-size:13px;color:var(--text);outline:none;transition:border-color .15s;}
+.form-group{margin-bottom:16px;}
+.form-label{font-size:11px;font-weight:600;color:var(--text3);display:block;margin-bottom:5px;letter-spacing:.3px;text-transform:uppercase;}
+.form-input{width:100%;background:rgba(120,120,128,0.18);border:1px solid var(--border2);border-radius:10px;padding:10px 12px;font-size:13px;color:var(--text);outline:none;transition:border-color .15s;box-sizing:border-box;}
 .form-input:focus{border-color:var(--teal);}
 .form-hint{font-size:11px;color:var(--text3);margin-top:4px;}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
 .modal-footer{display:flex;gap:10px;justify-content:flex-end;margin-top:24px;padding-top:20px;border-top:1px solid var(--border);}
-.summary-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:32px;}
-.stat-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;box-shadow:var(--shadow-sm);}
-.stat-label{font-size:10px;font-weight:600;color:var(--text3);margin-bottom:6px;}
-.stat-val{font-size:28px;font-weight:700;line-height:1;}
-.stat-sub{font-size:11px;color:var(--text3);margin-top:4px;}
-@media(max-width:700px){.fleet-grid{grid-template-columns:1fr}.summary-strip{grid-template-columns:1fr 1fr}}
+.summary-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:28px;}
+.stat-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px;box-shadow:var(--shadow-sm);}
+.stat-label{font-size:9px;font-weight:700;color:var(--text3);margin-bottom:5px;letter-spacing:.5px;text-transform:uppercase;}
+.stat-val{font-size:26px;font-weight:700;line-height:1;}
+.stat-sub{font-size:10px;color:var(--text3);margin-top:3px;}
+.ap-row{display:grid;grid-template-columns:1fr auto auto auto;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-size:12px;}
+.ap-row:last-child{border-bottom:none;}
+.ap-machine{font-weight:600;color:var(--text);}
+.ap-val{font-weight:700;text-align:right;}
+.ap-skip{color:var(--text3);font-style:italic;grid-column:2/-1;}
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid var(--border2);border-top-color:var(--teal);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:8px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(max-width:900px){.summary-strip{grid-template-columns:repeat(2,1fr)}.fleet-grid{grid-template-columns:1fr}}
 </style>
-  <div class="summary-strip" id="summary-strip">
-    <div class="stat-box"><div class="stat-label">Total Machines</div><div class="stat-val" id="s-total">—</div></div>
-    <div class="stat-box"><div class="stat-label">Active Alerts</div><div class="stat-val" id="s-alerts" style="color:var(--red)">—</div></div>
-    <div class="stat-box"><div class="stat-label">Avg Fleet Risk</div><div class="stat-val" id="s-avg">—</div></div>
-    <div class="stat-box"><div class="stat-label">Critical</div><div class="stat-val" id="s-crit" style="color:var(--red)">—</div></div>
-    <div class="stat-box" style="border-color:rgba(13,148,136,.3);background:rgba(13,148,136,.06)">
-      <div class="stat-label" style="color:var(--teal2)">AI Layers</div>
-      <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap">
-        <span style="font-size:10px;font-weight:600;color:var(--teal2);background:var(--teal-dim);border:1px solid rgba(13,148,136,.3);padding:3px 8px;border-radius:20px">SVM</span>
-        <span style="font-size:10px;font-weight:600;color:var(--teal2);background:var(--teal-dim);border:1px solid rgba(13,148,136,.3);padding:3px 8px;border-radius:20px">ISOFOREST</span>
-        <span style="font-size:10px;font-weight:600;color:var(--teal2);background:var(--teal-dim);border:1px solid rgba(13,148,136,.3);padding:3px 8px;border-radius:20px">SHAP</span>
-        <span style="font-size:10px;font-weight:600;color:var(--teal2);background:var(--teal-dim);border:1px solid rgba(13,148,136,.3);padding:3px 8px;border-radius:20px">RUL</span>
-      </div>
+
+<div class="summary-strip" id="summary-strip">
+  <div class="stat-box">
+    <div class="stat-label" data-i18n="fl_total">Machines actives</div>
+    <div class="stat-val" id="s-total">\u2014</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-label" data-i18n="fl_alerts">Alertes actives</div>
+    <div class="stat-val" id="s-alerts" style="color:var(--red)">\u2014</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-label" data-i18n="fl_avg">Risque moyen</div>
+    <div class="stat-val" id="s-avg">\u2014</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-label" data-i18n="fl_critical">Critiques</div>
+    <div class="stat-val" id="s-crit" style="color:var(--red)">\u2014</div>
+  </div>
+  <div class="stat-box" style="border-color:rgba(13,148,136,.3);background:rgba(13,148,136,.06)">
+    <div class="stat-label" style="color:var(--teal2)" data-i18n="set_aimodel">Couches IA</div>
+    <div style="display:flex;gap:5px;margin-top:6px;flex-wrap:wrap">
+      <span style="font-size:9px;font-weight:700;color:var(--teal2);background:var(--teal-dim);border:1px solid rgba(13,148,136,.3);padding:2px 7px;border-radius:20px">SVM</span>
+      <span style="font-size:9px;font-weight:700;color:var(--teal2);background:var(--teal-dim);border:1px solid rgba(13,148,136,.3);padding:2px 7px;border-radius:20px">ISOFOREST</span>
+      <span style="font-size:9px;font-weight:700;color:var(--teal2);background:var(--teal-dim);border:1px solid rgba(13,148,136,.3);padding:2px 7px;border-radius:20px">SHAP</span>
+      <span style="font-size:9px;font-weight:700;color:var(--teal2);background:var(--teal-dim);border:1px solid rgba(13,148,136,.3);padding:2px 7px;border-radius:20px">RUL</span>
     </div>
   </div>
-  <div class="fleet-grid" id="fleet-grid"><div class="empty-state" id="loading-state" style="grid-column:1/-1"><p style="color:var(--text3)">Loading fleet...</p></div></div>
+</div>
+
+<div class="fleet-grid" id="fleet-grid">
+  <div class="empty-state" id="loading-state" style="grid-column:1/-1">
+    <p style="color:var(--text3)" data-i18n="fl_loading">Chargement de la flotte\u2026</p>
+  </div>
+</div>
 </div>
 
 <!-- Add / Edit Modal -->
 <div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)closeModal()">
   <div class="modal">
-    <div class="modal-title" id="modal-title">Add Machine</div>
+    <div class="modal-title" id="modal-title">Ajouter une machine</div>
     <form id="machine-form" onsubmit="submitMachine(event)">
       <input type="hidden" id="edit-id" value="">
       <div class="form-group">
-        <label class="form-label">Machine Name</label>
-        <input class="form-input" id="f-name" placeholder="e.g. CNC-01, Compressor-A3" required>
-        <div class="form-hint">This name is used as the machine_id when sending data via API.</div>
+        <label class="form-label" data-i18n="fl_name_lbl">Nom de la machine</label>
+        <input class="form-input" id="f-name" required>
+        <div class="form-hint" data-i18n="fl_name_hint">Ce nom est utilis\u00e9 comme machine_id dans l\u2019API.</div>
       </div>
       <div class="form-group">
-        <label class="form-label">Description</label>
-        <input class="form-input" id="f-desc" placeholder="Optional — location, model, notes">
+        <label class="form-label" data-i18n="fl_desc_lbl">Description</label>
+        <input class="form-input" id="f-desc">
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label class="form-label">Machine Class</label>
+          <label class="form-label" data-i18n="fl_class_sel">Classe machine</label>
           <select class="form-input" id="f-type">
-            <option value="L">L — Low quality</option>
-            <option value="M" selected>M — Medium quality</option>
-            <option value="H">H — High quality</option>
+            <option value="L">L \u2014 Basse qualit\u00e9</option>
+            <option value="M" selected>M \u2014 Qualit\u00e9 standard</option>
+            <option value="H">H \u2014 Haute qualit\u00e9</option>
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label">Risk Threshold %</label>
+          <label class="form-label" data-i18n="fl_thresh_lbl">Seuil d\u2019alerte %</label>
           <input class="form-input" id="f-threshold" type="number" min="10" max="95" step="1" value="45">
-          <div class="form-hint">Alert fires above this %.</div>
+          <div class="form-hint" data-i18n="fl_thresh_hint">L\u2019alerte se d\u00e9clenche au-dessus de ce seuil.</div>
         </div>
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label class="form-label">Pump Type</label>
+          <label class="form-label" data-i18n="fl_pump_sel">Type de pompe</label>
           <select class="form-input" id="f-pump-type">
-            <option value="centrifuge" selected>Centrifugal</option>
-            <option value="pompe_a_vis">Screw pump</option>
-            <option value="pompe_a_engrenage">Gear pump</option>
-            <option value="pompe_a_palettes">Vane pump</option>
-            <option value="pompe_a_piston">Piston pump</option>
-            <option value="peristaltique">Peristaltic</option>
+            <option value="centrifuge" selected>Centrifuge</option>
+            <option value="pompe_a_vis">Pompe \u00e0 vis</option>
+            <option value="pompe_a_engrenage">Pompe \u00e0 engrenages</option>
+            <option value="pompe_a_palettes">Pompe \u00e0 palettes</option>
+            <option value="pompe_a_piston">Pompe \u00e0 piston</option>
+            <option value="peristaltique">P\u00e9ristaltique</option>
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label">Fluid Type</label>
+          <label class="form-label" data-i18n="fl_fluid_sel">Type de fluide</label>
           <select class="form-input" id="f-fluid-type">
-            <option value="eau" selected>Water</option>
-            <option value="eau_chargee">Slurry / charged water</option>
-            <option value="huile">Oil</option>
-            <option value="acide">Acid</option>
-            <option value="base">Base / alkaline</option>
-            <option value="autre">Other</option>
+            <option value="eau" selected>Eau</option>
+            <option value="eau_chargee">Eau charg\u00e9e / boues</option>
+            <option value="huile">Huile</option>
+            <option value="acide">Acide</option>
+            <option value="base">Base / alcalin</option>
+            <option value="autre">Autre</option>
           </select>
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label">Impeller Material</label>
+        <label class="form-label" data-i18n="fl_mat_sel">Mat\u00e9riau de la roue</label>
         <select class="form-input" id="f-roue-material">
-          <option value="inox_316" selected>Stainless 316</option>
-          <option value="fonte">Cast iron</option>
-          <option value="titane">Titanium</option>
+          <option value="inox_316" selected>Inox 316</option>
+          <option value="fonte">Fonte grise</option>
+          <option value="titane">Titane</option>
           <option value="bronze">Bronze</option>
-          <option value="plastique">Plastic / PVDF</option>
-          <option value="autre">Other</option>
+          <option value="plastique">Plastique / PVDF</option>
+          <option value="autre">Autre</option>
         </select>
       </div>
       <div class="form-group">
-        <label class="form-label">Primary Alert Email</label>
-        <input class="form-input" id="f-email" type="email" placeholder="tech@yourcompany.com">
+        <label class="form-label" data-i18n="fl_email_lbl">Email d\u2019alerte principal</label>
+        <input class="form-input" id="f-email" type="email">
       </div>
       <div class="form-group">
-        <label class="form-label">Escalation Email</label>
-        <input class="form-input" id="f-esc" type="email" placeholder="manager@yourcompany.com">
-        <div class="form-hint">If primary alert is unacknowledged after 30 min, this contact is notified.</div>
+        <label class="form-label" data-i18n="fl_esc_lbl">Email d\u2019escalade</label>
+        <input class="form-input" id="f-esc" type="email">
+        <div class="form-hint" data-i18n="fl_esc_hint">Si l\u2019alerte n\u2019est pas acquitt\u00e9e sous 30\u00a0min, ce contact est notifi\u00e9.</div>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancel</button>
-        <button type="submit" class="btn btn-primary" id="modal-submit">Save</button>
+        <button type="button" class="btn btn-ghost" onclick="closeModal()" data-i18n="fl_cancel">Annuler</button>
+        <button type="submit" class="btn btn-primary" id="modal-submit" data-i18n="fl_save">Enregistrer</button>
       </div>
     </form>
   </div>
 </div>
 
-<script>
-let _machines = [];
+<!-- CSV Upload Modal -->
+<div class="modal-overlay" id="upload-overlay" onclick="if(event.target===this)closeUpload()">
+  <div class="modal">
+    <div class="modal-title" data-i18n="fl_upload_title">Importer des donn\u00e9es machine</div>
+    <p style="font-size:12px;color:var(--text3);margin-bottom:20px;line-height:1.6" data-i18n="fl_upload_desc">CSV export\u00e9 depuis votre SCADA ou syst\u00e8me capteurs.</p>
+    <div id="upload-drop" style="border:2px dashed var(--border2);border-radius:10px;padding:28px;text-align:center;margin-bottom:16px;cursor:pointer;transition:border-color .15s" onclick="document.getElementById('upload-input').click()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:28px;height:28px;color:var(--text3);margin:0 auto 10px;display:block"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div style="font-size:12px;color:var(--text2);font-weight:600" data-i18n="fl_upload_click">Cliquez pour s\u00e9lectionner un fichier CSV</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:4px" data-i18n="fl_upload_hint">Tout d\u00e9limiteur \u00b7 noms libres \u00b7 conversion auto</div>
+      <input type="file" id="upload-input" accept=".csv" style="display:none">
+      <div id="upload-fname" style="display:none;margin-top:10px;font-size:11px;color:var(--teal2);font-weight:600"></div>
+    </div>
+    <div id="upload-result"></div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-ghost" onclick="closeUpload()" data-i18n="fl_an_close">Fermer</button>
+      <button type="button" class="btn btn-primary" id="upload-submit" onclick="runUpload()" data-i18n="fl_upload_run">Lancer l\u2019analyse</button>
+    </div>
+  </div>
+</div>
 
+<!-- Quick Analyse Modal -->
+<div class="modal-overlay" id="analyse-overlay" onclick="if(event.target===this)closeAnalyse()">
+  <div class="modal" style="width:520px">
+    <div class="modal-title" id="an-title">Analyse</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:4px">
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label" data-i18n="p_vibration">Vibration <span style="color:var(--text3);font-weight:400;letter-spacing:0">mm/s</span></label>
+        <input class="form-input" id="an-vib" type="number" step="0.01" min="0">
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label" data-i18n="p_temp_palier">Temp. palier <span style="color:var(--text3);font-weight:400;letter-spacing:0">\u00b0C</span></label>
+        <input class="form-input" id="an-tp" type="number" step="0.1" min="0">
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label" data-i18n="p_debit">D\u00e9bit <span style="color:var(--text3);font-weight:400;letter-spacing:0">m\u00b3/h</span></label>
+        <input class="form-input" id="an-dbt" type="number" step="0.001" min="0">
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label" data-i18n="p_pression_e">Pression entr\u00e9e <span style="color:var(--text3);font-weight:400;letter-spacing:0">bar</span></label>
+        <input class="form-input" id="an-pe" type="number" step="0.01" min="0">
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label" data-i18n="p_pression_s">Pression sortie <span style="color:var(--text3);font-weight:400;letter-spacing:0">bar</span></label>
+        <input class="form-input" id="an-ps" type="number" step="0.01" min="0">
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label" data-i18n="p_courant">Courant moteur <span style="color:var(--text3);font-weight:400;letter-spacing:0">A</span></label>
+        <input class="form-input" id="an-im" type="number" step="0.1" min="0">
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label" data-i18n="p_temp_moteur">Temp. moteur <span style="color:var(--text3);font-weight:400;letter-spacing:0">\u00b0C</span></label>
+        <input class="form-input" id="an-tm" type="number" step="0.1" min="0">
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label" data-i18n="p_heure">Heures fonct. <span style="color:var(--text3);font-weight:400;letter-spacing:0">h</span></label>
+        <input class="form-input" id="an-hf" type="number" step="1" min="0">
+      </div>
+    </div>
+    <div id="an-result" style="margin-top:16px;display:none"></div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-ghost" onclick="closeAnalyse()" data-i18n="fl_an_close">Fermer</button>
+      <button type="button" class="btn btn-primary" id="an-submit" onclick="runAnalyse()" data-i18n="fl_an_run">Lancer l\u2019analyse</button>
+    </div>
+  </div>
+</div>
+
+<!-- Analyze All — Progress / Results Modal -->
+<div class="modal-overlay" id="ap-overlay" onclick="if(event.target===this)closeAP()">
+  <div class="modal" style="width:560px">
+    <div class="modal-title" id="ap-title" data-i18n="fl_ap_title">Analyse de la flotte</div>
+    <div id="ap-content" style="min-height:80px"></div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-primary" id="ap-close-btn" onclick="closeAP()" data-i18n="fl_ap_close">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var _machines = [];
+
+// ── LOAD FLEET ──────────────────────────────────────────────────────────────
 async function loadFleet() {
   try {
-    const r = await fetch('/api/machines');
+    var r = await fetch('/api/machines');
     if (!r.ok) throw new Error('HTTP ' + r.status);
     _machines = await r.json();
     if (!Array.isArray(_machines)) throw new Error('Bad response');
     renderFleet();
   } catch(e) {
-    document.getElementById('fleet-grid').innerHTML = '<div class="empty-state"><p>Failed to load fleet (' + e.message + '). <a href="#" onclick="loadFleet()">Retry</a></p></div>';
+    document.getElementById('fleet-grid').innerHTML = '<div class="empty-state"><p style="color:var(--red)">' + t('fl_load_fail') + e.message + '.</p><button class="btn btn-ghost" onclick="loadFleet()" data-i18n="fl_retry">R\u00e9essayer</button></div>';
   }
 }
 
@@ -4523,83 +4633,102 @@ function riskColor(r) {
 }
 
 function riskBadge(r) {
-  if (r === null || r === undefined) return '<span class="badge badge-new">No data</span>';
-  if (r >= 70) return '<span class="badge badge-crit">Critical</span>';
-  if (r >= 45) return '<span class="badge badge-warn">Warning</span>';
-  return '<span class="badge badge-ok">OK</span>';
+  if (r === null || r === undefined) return '<span class="badge badge-new">' + t('fl_badge_new') + '</span>';
+  if (r >= 70) return '<span class="badge badge-crit">' + t('fl_badge_crit') + '</span>';
+  if (r >= 45) return '<span class="badge badge-warn">' + t('fl_badge_warn') + '</span>';
+  return '<span class="badge badge-ok">' + t('fl_badge_ok') + '</span>';
 }
 
+// ── RENDER FLEET ────────────────────────────────────────────────────────────
 function renderFleet() {
-  const grid = document.getElementById('fleet-grid');
+  var grid = document.getElementById('fleet-grid');
   if (!_machines.length) {
-    grid.innerHTML = `<div class="empty-state">
-      <h3>No machines yet</h3>
-      <p>Add your first machine to start monitoring your fleet.<br>Use the machine name as <code>machine_id</code> in the API.</p>
-      <button class="btn btn-primary" onclick="openAdd()">+ Add First Machine</button>
-    </div>`;
+    grid.innerHTML = '<div class="empty-state">'
+      + '<h3 data-i18n="fl_empty_title">' + t('fl_empty_title') + '</h3>'
+      + '<p data-i18n="fl_empty_desc">' + t('fl_empty_desc') + '</p>'
+      + '<button class="btn btn-primary" onclick="openAdd()" data-i18n="fl_add_first">' + t('fl_add_first') + '</button>'
+      + '</div>';
     document.getElementById('s-total').textContent = '0';
     document.getElementById('s-alerts').textContent = '0';
-    document.getElementById('s-avg').textContent = '—';
+    document.getElementById('s-avg').textContent = '\u2014';
     document.getElementById('s-crit').textContent = '0';
     return;
   }
-  const active = _machines.filter(m => m.is_active);
-  const withData = active.filter(m => m.last_risk !== null);
-  const alerts = active.filter(m => m.last_prediction === 1).length;
-  const avgRisk = withData.length ? Math.round(withData.reduce((s,m) => s+m.last_risk,0)/withData.length*10)/10 : null;
-  const crit = active.filter(m => m.last_risk >= 70).length;
+  var active = _machines.filter(function(m){return m.is_active;});
+  var withData = active.filter(function(m){return m.last_risk !== null;});
+  var alerts = active.filter(function(m){return m.last_prediction === 1;}).length;
+  var avgRisk = withData.length ? Math.round(withData.reduce(function(s,m){return s+m.last_risk;},0)/withData.length*10)/10 : null;
+  var crit = active.filter(function(m){return m.last_risk >= 70;}).length;
   document.getElementById('s-total').textContent = active.length;
   document.getElementById('s-alerts').textContent = alerts;
-  document.getElementById('s-avg').textContent = avgRisk !== null ? avgRisk+'%' : '—';
+  document.getElementById('s-avg').textContent = avgRisk !== null ? avgRisk+'%' : '\u2014';
   document.getElementById('s-crit').textContent = crit;
 
-  grid.innerHTML = _machines.map(m => {
-    const risk = m.last_risk;
-    const rFill = risk !== null ? Math.min(risk, 100) : 0;
-    const rColor = riskColor(risk);
-    const badge = m.is_active ? riskBadge(risk) : '<span class="badge badge-inactive">Inactive</span>';
-    const lastSeen = m.last_seen ? new Date(m.last_seen).toLocaleString() : 'Never';
-    const typeLabel = m.machine_type || 'M';
-    const pumpLabels = {centrifuge:'Centrifugal',pompe_a_vis:'Screw',pompe_a_engrenage:'Gear',pompe_a_palettes:'Vane',pompe_a_piston:'Piston',peristaltique:'Peristaltic'};
-    const fluidLabels = {eau:'Water',eau_chargee:'Slurry',huile:'Oil',acide:'Acid',base:'Base',autre:'Other'};
-    const matLabels   = {inox_316:'SS316',fonte:'Cast iron',titane:'Titanium',bronze:'Bronze',plastique:'Plastic',autre:'Other'};
-    const pumpL = pumpLabels[m.pump_type] || m.pump_type || 'Centrifugal';
-    const fluidL = fluidLabels[m.fluid_type] || m.fluid_type || 'Water';
-    const matL   = matLabels[m.roue_material] || m.roue_material || 'SS316';
-    return `<div class="machine-card${m.is_active?'':' inactive'}">
-      <div class="card-header">
-        <div>
-          <div class="machine-name">${esc(m.name)}</div>
-          ${m.description ? `<div class="machine-desc">${esc(m.description)}</div>` : ''}
-        </div>
-        <div>${badge}</div>
-      </div>
-      ${m.is_active && risk !== null ? `
-      <div class="risk-bar-wrap">
-        <div class="risk-label">
-          <span>RISK</span>
-          <span class="risk-pct" style="color:${rColor}">${risk}%</span>
-        </div>
-        <div class="risk-bar"><div class="risk-fill" style="width:${rFill}%;background:${rColor}"></div></div>
-      </div>` : ''}
-      <div class="meta-row">
-        <div class="meta-item"><div class="meta-label">Class</div><div class="meta-val">${typeLabel}</div></div>
-        <div class="meta-item"><div class="meta-label">Pump</div><div class="meta-val">${pumpL}</div></div>
-        <div class="meta-item"><div class="meta-label">Fluid</div><div class="meta-val">${fluidL}</div></div>
-      </div>
-      <div class="meta-row" style="margin-top:6px">
-        <div class="meta-item"><div class="meta-label">Material</div><div class="meta-val">${matL}</div></div>
-        <div class="meta-item"><div class="meta-label">Threshold</div><div class="meta-val">${m.threshold}%</div></div>
-        <div class="meta-item"><div class="meta-label">Last seen</div><div class="meta-val" style="font-size:11px">${lastSeen}</div></div>
-      </div>
-      ${m.saved_file ? `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding:8px 10px;background:rgba(13,148,136,0.06);border:1px solid rgba(13,148,136,0.2);border-radius:8px;font-size:11px;color:var(--teal2)"><svg viewBox="0 0 20 20" fill="currentColor" style="width:14px;height:14px;flex-shrink:0"><path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/></svg><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(m.saved_file.filename)}</span><span style="color:var(--text3);flex-shrink:0">${m.saved_file.row_count} rows</span><button onclick="event.stopPropagation();rerunFile(${m.id})" style="background:var(--teal);border:none;border-radius:5px;color:#fff;font-size:10px;font-weight:700;padding:3px 8px;cursor:pointer;flex-shrink:0">Re-run</button><button onclick="event.stopPropagation();deleteFile(${m.id},${m.saved_file.id})" style="background:transparent;border:none;color:var(--text3);cursor:pointer;padding:2px 4px;font-size:13px;line-height:1;flex-shrink:0">&#x2715;</button></div>` : ''}
-      <div class="card-actions">
-        <button class="btn btn-primary" style="flex:1;justify-content:center" onclick="openAnalyse(${m.id})">&#9889; Analyse</button>
-        <button class="btn btn-ghost" style="flex:1;justify-content:center" onclick="openUpload(${m.id})">CSV</button>
-        <button class="btn btn-ghost" onclick="openEdit(${m.id})">Edit</button>
-        <button class="btn btn-danger" onclick="deleteMachine(${m.id})">&#x2715;</button>
-      </div>
-    </div>`;
+  var pumpLabels = {centrifuge:t('LANG')==='fr'?'Centrifuge':'Centrifugal',pompe_a_vis:'Vis',pompe_a_engrenage:'Engrenages',pompe_a_palettes:'Palettes',pompe_a_piston:'Piston',peristaltique:'P\u00e9ristaltique'};
+  var pumpLabelsEn = {centrifuge:'Centrifugal',pompe_a_vis:'Screw',pompe_a_engrenage:'Gear',pompe_a_palettes:'Vane',pompe_a_piston:'Piston',peristaltique:'Peristaltic'};
+  var fluidLabelsFr = {eau:'Eau',eau_chargee:'Eau charg\u00e9e',huile:'Huile',acide:'Acide',base:'Base',autre:'Autre'};
+  var fluidLabelsEn = {eau:'Water',eau_chargee:'Slurry',huile:'Oil',acide:'Acid',base:'Base',autre:'Other'};
+  var matLabelsFr = {inox_316:'Inox\u00a0316',fonte:'Fonte',titane:'Titane',bronze:'Bronze',plastique:'Plastique',autre:'Autre'};
+  var matLabelsEn = {inox_316:'SS316',fonte:'Cast iron',titane:'Titanium',bronze:'Bronze',plastique:'Plastic',autre:'Other'};
+  var isFr = (LANG === 'fr');
+  var pumpL_map = isFr ? pumpLabels : pumpLabelsEn;
+  var fluidL_map = isFr ? fluidLabelsFr : fluidLabelsEn;
+  var matL_map = isFr ? matLabelsFr : matLabelsEn;
+
+  grid.innerHTML = _machines.map(function(m) {
+    var risk = m.last_risk;
+    var rFill = risk !== null ? Math.min(risk, 100) : 0;
+    var rColor = riskColor(risk);
+    var badge = m.is_active ? riskBadge(risk) : '<span class="badge badge-inactive">' + t('fl_badge_inactive') + '</span>';
+    var lastSeen = m.last_seen ? localTime(m.last_seen) : t('fl_never');
+    var pumpL = pumpL_map[m.pump_type] || m.pump_type || 'Centrifugal';
+    var fluidL = fluidL_map[m.fluid_type] || m.fluid_type || 'Eau';
+    var matL = matL_map[m.roue_material] || m.roue_material || 'SS316';
+
+    var fileChip = '';
+    if (m.saved_file) {
+      fileChip = '<div class="file-chip">'
+        + '<svg viewBox="0 0 20 20" fill="currentColor" style="width:13px;height:13px;flex-shrink:0"><path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/></svg>'
+        + '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600">' + esc(m.saved_file.filename) + '</span>'
+        + '<span style="color:var(--text3);flex-shrink:0;font-size:10px">' + m.saved_file.row_count + ' ' + t('fl_ap_rows') + '</span>'
+        + '<button onclick="event.stopPropagation();rerunFile(' + m.id + ')" style="background:var(--teal);border:none;border-radius:5px;color:#fff;font-size:10px;font-weight:700;padding:3px 8px;cursor:pointer;flex-shrink:0" data-i18n="fl_btn_rerun">' + t('fl_btn_rerun') + '</button>'
+        + '<button onclick="event.stopPropagation();deleteFile(' + m.id + ',' + m.saved_file.id + ')" style="background:transparent;border:none;color:var(--text3);cursor:pointer;padding:2px 5px;font-size:14px;line-height:1;flex-shrink:0">\u2715</button>'
+        + '</div>';
+    }
+
+    var riskBar = '';
+    if (m.is_active && risk !== null) {
+      riskBar = '<div class="risk-bar-wrap">'
+        + '<div class="risk-label">'
+        + '<span>' + t('fl_risk_lbl') + '</span>'
+        + '<span class="risk-pct" style="color:' + rColor + '">' + risk + '%</span>'
+        + '</div>'
+        + '<div class="risk-bar"><div class="risk-fill" style="width:' + rFill + '%;background:' + rColor + '"></div></div>'
+        + '</div>';
+    }
+
+    return '<div class="machine-card' + (m.is_active ? '' : ' inactive') + '">'
+      + '<div class="card-header">'
+      + '<div><div class="machine-name">' + esc(m.name) + '</div>'
+      + (m.description ? '<div class="machine-desc">' + esc(m.description) + '</div>' : '')
+      + '</div><div>' + badge + '</div></div>'
+      + riskBar
+      + '<div class="meta-grid">'
+      + '<div class="meta-item"><div class="meta-label">' + t('fl_class_lbl') + '</div><div class="meta-val">' + (m.machine_type || 'M') + '</div></div>'
+      + '<div class="meta-item"><div class="meta-label">' + t('fl_pump_lbl') + '</div><div class="meta-val">' + pumpL + '</div></div>'
+      + '<div class="meta-item"><div class="meta-label">' + t('fl_fluid_lbl') + '</div><div class="meta-val">' + fluidL + '</div></div>'
+      + '<div class="meta-item"><div class="meta-label">' + t('fl_mat_lbl') + '</div><div class="meta-val">' + matL + '</div></div>'
+      + '<div class="meta-item"><div class="meta-label">' + t('fl_thresh_card') + '</div><div class="meta-val">' + m.threshold + '%</div></div>'
+      + '<div class="meta-item"><div class="meta-label">' + t('fl_last_lbl') + '</div><div class="meta-val" style="font-size:10px">' + lastSeen + '</div></div>'
+      + '</div>'
+      + fileChip
+      + '<div class="card-actions">'
+      + '<button class="btn btn-primary" style="flex:1;justify-content:center;font-size:11px" onclick="openAnalyse(' + m.id + ')">\u26a1 ' + t('fl_btn_analyze') + '</button>'
+      + '<button class="btn btn-ghost" style="flex:1;justify-content:center;font-size:11px" onclick="openUpload(' + m.id + ')">\u2191 ' + t('fl_btn_csv') + '</button>'
+      + '<button class="btn btn-ghost" style="font-size:11px" onclick="openEdit(' + m.id + ')">' + t('fl_btn_edit') + '</button>'
+      + '<button class="btn btn-danger" onclick="deleteMachine(' + m.id + ')">\u2715</button>'
+      + '</div>'
+      + '</div>';
   }).join('');
 }
 
@@ -4607,19 +4736,21 @@ function esc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+// ── ADD / EDIT MODAL ────────────────────────────────────────────────────────
 function openAdd() {
-  document.getElementById('modal-title').textContent = 'Add Machine';
+  document.getElementById('modal-title').textContent = t('fl_modal_add');
   document.getElementById('edit-id').value = '';
   document.getElementById('machine-form').reset();
   document.getElementById('f-threshold').value = 45;
-  document.getElementById('modal-submit').textContent = 'Add Machine';
+  document.getElementById('modal-submit').textContent = t('fl_save');
   document.getElementById('modal-overlay').classList.add('open');
+  applyLang();
 }
 
 function openEdit(id) {
-  const m = _machines.find(x => x.id === id);
+  var m = _machines.find(function(x){return x.id===id;});
   if (!m) return;
-  document.getElementById('modal-title').textContent = 'Edit Machine';
+  document.getElementById('modal-title').textContent = t('fl_modal_edit');
   document.getElementById('edit-id').value = id;
   document.getElementById('f-name').value = m.name;
   document.getElementById('f-desc').value = m.description || '';
@@ -4630,8 +4761,9 @@ function openEdit(id) {
   document.getElementById('f-roue-material').value = m.roue_material || 'inox_316';
   document.getElementById('f-email').value = m.alert_email || '';
   document.getElementById('f-esc').value = m.escalation_email || '';
-  document.getElementById('modal-submit').textContent = 'Save Changes';
+  document.getElementById('modal-submit').textContent = t('fl_save_changes');
   document.getElementById('modal-overlay').classList.add('open');
+  applyLang();
 }
 
 function closeModal() {
@@ -4640,8 +4772,8 @@ function closeModal() {
 
 async function submitMachine(e) {
   e.preventDefault();
-  const id = document.getElementById('edit-id').value;
-  const body = {
+  var id = document.getElementById('edit-id').value;
+  var body = {
     name: document.getElementById('f-name').value.trim(),
     description: document.getElementById('f-desc').value.trim(),
     machine_type: document.getElementById('f-type').value,
@@ -4652,88 +4784,126 @@ async function submitMachine(e) {
     alert_email: document.getElementById('f-email').value.trim(),
     escalation_email: document.getElementById('f-esc').value.trim(),
   };
-  const url = id ? `/api/machines/${id}` : '/api/machines';
-  const method = id ? 'PUT' : 'POST';
-  const r = await fetch(url, {method, headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
-  const d = await r.json();
-  if (!r.ok) { alert(d.error || 'Error'); return; }
+  var url = id ? ('/api/machines/'+id) : '/api/machines';
+  var method = id ? 'PUT' : 'POST';
+  var r = await fetch(url, {method:method, headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+  var d = await r.json();
+  if (!r.ok) { alert(d.error || t('fl_error')); return; }
   closeModal();
   loadFleet();
 }
 
 async function toggleActive(id, active) {
-  await fetch(`/api/machines/${id}`, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({is_active:active})});
+  await fetch('/api/machines/'+id, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({is_active:active})});
   loadFleet();
 }
 
 async function deleteMachine(id) {
-  const m = _machines.find(x => x.id === id);
-  if (!confirm(`Delete machine "${m?.name}"? This cannot be undone.`)) return;
-  await fetch(`/api/machines/${id}`, {method:'DELETE'});
+  var m = _machines.find(function(x){return x.id===id;});
+  if (!confirm(t('fl_del_confirm_msg') + (m ? ' (' + m.name + ')' : ''))) return;
+  await fetch('/api/machines/'+id, {method:'DELETE'});
   loadFleet();
 }
 
 async function rerunFile(mid) {
-  const m = _machines.find(x => x.id === mid);
+  var m = _machines.find(function(x){return x.id===mid;});
   if (!m || !m.saved_file) return;
-  const btn = event.target;
+  var btn = event.target;
   btn.textContent = '...'; btn.disabled = true;
   try {
-    // Récupérer le contenu et le renvoyer comme FormData
-    const r = await fetch('/api/machines/' + mid + '/files');
-    const files = await r.json();
-    if (!files.length) { btn.textContent = 'Re-run'; btn.disabled = false; return; }
-    // Le contenu est déjà stocké, on appelle analyze-all pour cette machine seulement
-    const r2 = await fetch('/api/machines/analyze-all', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({machine_ids: [mid]})});
-    const d = await r2.json();
+    var r2 = await fetch('/api/machines/analyze-all', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({machine_ids:[mid]})});
+    await r2.json();
     loadFleet();
-  } catch(e) { btn.textContent = 'Re-run'; btn.disabled = false; }
+  } catch(ex) {}
+  btn.textContent = t('fl_btn_rerun'); btn.disabled = false;
 }
 
 async function deleteFile(mid, fid) {
-  if (!confirm('Supprimer ce fichier de la machine ?')) return;
+  if (!confirm(t('fl_del_file_msg'))) return;
   try {
-    await fetch('/api/machines/' + mid + '/files/' + fid, {method: 'DELETE'});
+    await fetch('/api/machines/'+mid+'/files/'+fid, {method:'DELETE'});
     loadFleet();
-  } catch(e) { alert('Erreur reseau'); }
+  } catch(ex) { alert(t('fl_net_error')); }
+}
+
+// ── ANALYZE ALL — with results modal ───────────────────────────────────────
+function showAP(content) {
+  document.getElementById('ap-content').innerHTML = content;
+  document.getElementById('ap-overlay').classList.add('open');
+}
+function closeAP() {
+  document.getElementById('ap-overlay').classList.remove('open');
 }
 
 async function analyzeAll() {
-  const btn = document.getElementById('analyze-all-btn');
+  var btn = document.getElementById('analyze-all-btn');
   if (!btn) return;
-  const withFiles = _machines.filter(m => m.saved_file);
-  if (!withFiles.length) { alert("Aucune machine n\u2019a de fichier CSV attach\u00e9. Uploadez un fichier via le bouton CSV de chaque machine."); return; }
-  if (!confirm("Lancer l\u2019analyse sur " + withFiles.length + " machine(s) avec fichier CSV ?")) return;
-  btn.textContent = 'En cours...'; btn.disabled = true;
+  // Always refresh fleet before checking — avoids stale state after upload
+  await loadFleet();
+  var withFiles = _machines.filter(function(m){return m.saved_file;});
+  if (!withFiles.length) {
+    showAP('<div style="color:var(--text3);font-size:13px;padding:12px 0">' + t('fl_no_file_msg') + '</div>');
+    return;
+  }
+  var confirmMsg = t('fl_ap_confirm').replace('{n}', withFiles.length);
+  if (!confirm(confirmMsg)) return;
+  btn.textContent = t('fl_analyzing'); btn.disabled = true;
+  showAP('<div style="text-align:center;padding:24px 0"><span class="spinner"></span><span style="color:var(--text3);font-size:13px">' + t('fl_analyzing') + '</span></div>');
   try {
-    const r = await fetch('/api/machines/analyze-all', {method: 'POST', headers: {'Content-Type': 'application/json'}});
-    const d = await r.json();
-    if (!d.ok) { alert(d.error || 'Erreur'); btn.textContent = 'Analyser tout'; btn.disabled = false; return; }
-    const ok = d.results.filter(x => !x.skipped);
-    const skip = d.results.filter(x => x.skipped);
-    let msg = 'Analyse terminée :\\n';
-    ok.forEach(x => { msg += '\\n' + x.machine + ' : ' + x.total + ' lignes, ' + x.failures + ' anomalies, risque moy. ' + x.avg_risk + '%'; });
-    if (skip.length) { msg += '\\n\\nIgnorées : ' + skip.map(x => x.machine + ' (' + x.reason + ')').join(', '); }
-    alert(msg);
+    var r = await fetch('/api/machines/analyze-all', {method:'POST', headers:{'Content-Type':'application/json'}});
+    var d = await r.json();
+    if (!d.ok) {
+      showAP('<div style="color:var(--red);font-size:13px;padding:12px 0">' + (d.error || t('fl_error')) + '</div>');
+      btn.textContent = t('fl_analyze_all'); btn.disabled = false;
+      return;
+    }
+    var ok = d.results.filter(function(x){return !x.skipped;});
+    var skip = d.results.filter(function(x){return x.skipped;});
+    var html = '<div style="font-size:11px;font-weight:700;color:var(--teal2);letter-spacing:1px;text-transform:uppercase;margin-bottom:14px">' + t('fl_ap_done') + ' \u2014 ' + ok.length + ' ' + t('fl_btn_analyze').toLowerCase() + '</div>';
+    if (ok.length) {
+      html += '<div style="margin-bottom:8px">';
+      ok.forEach(function(x) {
+        var rCol = x.avg_risk >= 70 ? 'var(--red)' : x.avg_risk >= 45 ? 'var(--amber)' : 'var(--green)';
+        html += '<div class="ap-row">'
+          + '<div class="ap-machine">' + esc(x.machine) + '</div>'
+          + '<div class="ap-val" style="color:var(--text3)">' + x.total + ' ' + t('fl_ap_rows') + '</div>'
+          + '<div class="ap-val" style="color:var(--amber)">' + x.failures + ' ' + t('fl_ap_anom') + '</div>'
+          + '<div class="ap-val" style="color:' + rCol + '">' + x.avg_risk + '% ' + t('fl_ap_avg') + '</div>'
+          + '</div>';
+      });
+      html += '</div>';
+    }
+    if (skip.length) {
+      html += '<div style="font-size:11px;color:var(--text3);padding-top:10px;border-top:1px solid var(--border)">';
+      skip.forEach(function(x) {
+        html += '<div style="padding:4px 0">' + esc(x.machine) + ' \u2014 ' + t('fl_ap_skip') + ' (' + (x.reason||'') + ')</div>';
+      });
+      html += '</div>';
+    }
+    showAP(html);
     loadFleet();
-  } catch(e) { alert('Erreur reseau'); }
-  btn.textContent = 'Analyser tout'; btn.disabled = false;
+  } catch(ex) {
+    showAP('<div style="color:var(--red);font-size:13px;padding:12px 0">' + t('fl_net_error') + '</div>');
+  }
+  btn.textContent = t('fl_analyze_all'); btn.disabled = false;
 }
 
-loadFleet();
-
-// ── QUICK ANALYSE ──────────────────────────────────────────────────────────
-let _analyseMid = null;
-const _MEDIANS = {vibration:0.61,temp_palier:44.8,debit:0.395,pression_entree:1.987,pression_sortie:107.73,courant_moteur:4.58,temp_moteur:58.0,heure_fonctionnement:1103.0};
+// ── QUICK ANALYSE ───────────────────────────────────────────────────────────
+var _analyseMid = null;
+var _MEDIANS = {vibration:0.61,temp_palier:44.8,debit:0.395,pression_entree:1.987,pression_sortie:107.73,courant_moteur:4.58,temp_moteur:58.0,heure_fonctionnement:1103.0};
 
 function openAnalyse(id) {
   _analyseMid = id;
-  const m = _machines.find(x => x.id === id);
-  const fluidLabels = {eau:'Water',eau_chargee:'Slurry',huile:'Oil',acide:'Acid',base:'Base',autre:'Other'};
-  const pumpLabels  = {centrifuge:'Centrifugal',pompe_a_vis:'Screw',pompe_a_engrenage:'Gear',pompe_a_palettes:'Vane',pompe_a_piston:'Piston',peristaltique:'Peristaltic'};
-  const subtitle = m ? ` — ${pumpLabels[m.pump_type]||'Centrifugal'} · ${fluidLabels[m.fluid_type]||'Water'}` : '';
-  document.getElementById('an-title').textContent = 'Analyse' + (m ? ' — ' + esc(m.name) : '') + subtitle;
-  // reset form to medians
+  var m = _machines.find(function(x){return x.id===id;});
+  var fluidLabelsFr = {eau:'Eau',eau_chargee:'Eau charg\u00e9e',huile:'Huile',acide:'Acide',base:'Base',autre:'Autre'};
+  var fluidLabelsEn = {eau:'Water',eau_chargee:'Slurry',huile:'Oil',acide:'Acid',base:'Base',autre:'Other'};
+  var pumpLabelsFr = {centrifuge:'Centrifuge',pompe_a_vis:'Vis',pompe_a_engrenage:'Engrenages',pompe_a_palettes:'Palettes',pompe_a_piston:'Piston',peristaltique:'P\u00e9ristaltique'};
+  var pumpLabelsEn = {centrifuge:'Centrifugal',pompe_a_vis:'Screw',pompe_a_engrenage:'Gear',pompe_a_palettes:'Vane',pompe_a_piston:'Piston',peristaltique:'Peristaltic'};
+  var isFr = (LANG === 'fr');
+  var pL = isFr ? pumpLabelsFr : pumpLabelsEn;
+  var fL = isFr ? fluidLabelsFr : fluidLabelsEn;
+  var subtitle = m ? ' \u2014 ' + (pL[m.pump_type]||'Centrifugal') + ' \u00b7 ' + (fL[m.fluid_type]||'Eau') : '';
+  document.getElementById('an-title').textContent = t('fl_an_title') + (m ? ' \u2014 ' + esc(m.name) : '') + subtitle;
   document.getElementById('an-vib').value  = _MEDIANS.vibration;
   document.getElementById('an-tp').value   = _MEDIANS.temp_palier;
   document.getElementById('an-dbt').value  = _MEDIANS.debit;
@@ -4745,8 +4915,9 @@ function openAnalyse(id) {
   document.getElementById('an-result').style.display = 'none';
   document.getElementById('an-result').innerHTML = '';
   var btn = document.getElementById('an-submit');
-  btn.disabled = false; btn.textContent = 'Run Analysis';
+  btn.disabled = false; btn.textContent = t('fl_an_run');
   document.getElementById('analyse-overlay').classList.add('open');
+  applyLang();
 }
 
 function closeAnalyse() {
@@ -4758,51 +4929,57 @@ function _anGv(id) { return parseFloat(document.getElementById(id).value) || 0; 
 
 async function runAnalyse() {
   if (!_analyseMid) return;
-  const m = _machines.find(x => x.id === _analyseMid);
+  var m = _machines.find(function(x){return x.id===_analyseMid;});
   var btn = document.getElementById('an-submit');
-  btn.disabled = true; btn.textContent = 'Analysing...';
+  btn.disabled = true; btn.textContent = t('fl_analyzing');
   var payload = {
-    vibration: _anGv('an-vib'), temp_palier: _anGv('an-tp'),
-    debit: _anGv('an-dbt'), pression_entree: _anGv('an-pe'),
-    pression_sortie: _anGv('an-ps'), courant_moteur: _anGv('an-im'),
-    temp_moteur: _anGv('an-tm'), heure_fonctionnement: _anGv('an-hf'),
+    vibration:_anGv('an-vib'), temp_palier:_anGv('an-tp'),
+    debit:_anGv('an-dbt'), pression_entree:_anGv('an-pe'),
+    pression_sortie:_anGv('an-ps'), courant_moteur:_anGv('an-im'),
+    temp_moteur:_anGv('an-tm'), heure_fonctionnement:_anGv('an-hf'),
     machine_id: m ? m.name : String(_analyseMid),
     threshold: m ? m.threshold : 45,
-    pump_type: m ? (m.pump_type || 'centrifuge') : 'centrifuge',
-    fluid_type: m ? (m.fluid_type || 'eau') : 'eau',
-    roue_material: m ? (m.roue_material || 'inox_316') : 'inox_316',
+    pump_type: m ? (m.pump_type||'centrifuge') : 'centrifuge',
+    fluid_type: m ? (m.fluid_type||'eau') : 'eau',
+    roue_material: m ? (m.roue_material||'inox_316') : 'inox_316',
   };
   try {
     var r = await fetch('/predire', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
     var d = await r.json();
     var res = document.getElementById('an-result');
     res.style.display = 'block';
-    if (d.error) { res.innerHTML = '<div style="color:var(--red);font-size:13px">' + d.error + '</div>'; btn.disabled=false; btn.textContent='Run Analysis'; return; }
+    if (d.error) { res.innerHTML = '<div style="color:var(--red);font-size:13px">' + d.error + '</div>'; btn.disabled=false; btn.textContent=t('fl_an_run'); return; }
     var risk = d.probabilite;
-    var rCol = risk >= 70 ? 'var(--red)' : risk >= 45 ? 'var(--amber)' : 'var(--green)';
-    var status = d.prediction === 1 ? '<span style="color:var(--red);font-weight:700">⚠ FAILURE</span>' : '<span style="color:var(--green);font-weight:700">✓ NORMAL</span>';
-    var zonesHtml = (d.zones && d.zones.length) ? d.zones.map(z => '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--text2)">' + z.nom + '</span><span style="font-size:11px;font-weight:700;color:var(--red)">' + z.proba + '%</span></div>').join('') : '<div style="font-size:11px;color:var(--text3)">No specific zone</div>';
-    var anomHtml = d.anomaly_score != null ? '<div style="margin-top:10px;font-size:11px;color:var(--text3)">Anomaly score: <strong style="color:var(--text)">' + d.anomaly_score + '/100</strong></div>' : '';
-    var rulHtml  = d.rul_hours != null ? '<div style="margin-top:6px;font-size:11px;color:var(--text3)">Est. RUL: <strong style="color:var(--teal2)">' + d.rul_hours + ' h</strong></div>' : '';
-    var warnHtml = (d.domain_warnings && d.domain_warnings.length) ? '<div style="margin-top:8px;padding:8px;background:var(--amber-dim);border:1px solid rgba(255,159,10,0.25);border-radius:var(--r-sm);font-size:11px;color:var(--amber)">' + d.domain_warnings.map(w=>'&#9888; '+w).join('<br>') + '</div>' : '';
-    res.innerHTML = '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px">'
+    var rCol = risk>=70 ? 'var(--red)' : risk>=45 ? 'var(--amber)' : 'var(--green)';
+    var status = d.prediction===1
+      ? '<span style="color:var(--red);font-weight:700">' + t('fl_an_failure') + '</span>'
+      : '<span style="color:var(--green);font-weight:700">' + t('fl_an_normal') + '</span>';
+    var zonesHtml = (d.zones && d.zones.length)
+      ? d.zones.map(function(z){return '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--text2)">'+z.nom+'</span><span style="font-size:11px;font-weight:700;color:var(--red)">'+z.proba+'%</span></div>';}).join('')
+      : '<div style="font-size:11px;color:var(--text3)">' + t('fl_an_no_zone') + '</div>';
+    var anomHtml = d.anomaly_score!=null ? '<div style="margin-top:10px;font-size:11px;color:var(--text3)">' + t('fl_an_anom') + ': <strong style="color:var(--text)">' + d.anomaly_score + '/100</strong></div>' : '';
+    var rulHtml  = d.rul_hours!=null ? '<div style="margin-top:6px;font-size:11px;color:var(--text3)">' + t('fl_an_rul') + ': <strong style="color:var(--teal2)">' + d.rul_hours + ' h</strong></div>' : '';
+    var warnHtml = (d.domain_warnings && d.domain_warnings.length)
+      ? '<div style="margin-top:8px;padding:8px;background:var(--amber-dim);border:1px solid rgba(255,159,10,0.25);border-radius:var(--r-sm);font-size:11px;color:var(--amber)">' + d.domain_warnings.map(function(w){return '\u26a0 '+w;}).join('<br>') + '</div>'
+      : '';
+    res.innerHTML = '<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:16px">'
       + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'
-      + '<div style="font-size:42px;font-weight:800;color:' + rCol + ';line-height:1">' + risk + '<span style="font-size:16px;color:var(--text3)">%</span></div>'
-      + '<div>' + status + '</div></div>'
-      + '<div style="height:4px;background:var(--border);border-radius:2px;margin-bottom:14px;overflow:hidden"><div style="height:100%;width:' + Math.min(risk,100) + '%;background:' + rCol + ';border-radius:2px"></div></div>'
-      + '<div style="font-size:9px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:8px">Failure Zones</div>'
+      + '<div style="font-size:42px;font-weight:800;color:'+rCol+';line-height:1">'+risk+'<span style="font-size:16px;color:var(--text3)">%</span></div>'
+      + '<div>'+status+'</div></div>'
+      + '<div style="height:4px;background:var(--border);border-radius:2px;margin-bottom:14px;overflow:hidden"><div style="height:100%;width:'+Math.min(risk,100)+'%;background:'+rCol+';border-radius:2px"></div></div>'
+      + '<div style="font-size:9px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:8px">' + t('fl_an_zones') + '</div>'
       + zonesHtml + anomHtml + rulHtml + warnHtml
       + '</div>';
-    btn.textContent = 'Run Again'; btn.disabled = false;
+    btn.textContent = t('fl_an_again'); btn.disabled = false;
     loadFleet();
-  } catch(e) {
-    document.getElementById('an-result').innerHTML = '<div style="color:var(--red);font-size:13px">Network error</div>';
-    btn.disabled=false; btn.textContent='Run Analysis';
+  } catch(ex) {
+    document.getElementById('an-result').innerHTML = '<div style="color:var(--red);font-size:13px">' + t('fl_net_error') + '</div>';
+    btn.disabled=false; btn.textContent=t('fl_an_run');
   }
 }
 
-// ── CSV UPLOAD ─────────────────────────────────────────────────────────────
-let _uploadMid = null;
+// ── CSV UPLOAD ──────────────────────────────────────────────────────────────
+var _uploadMid = null;
 
 function openUpload(id) {
   _uploadMid = id;
@@ -4810,10 +4987,12 @@ function openUpload(id) {
   document.getElementById('upload-input').value = '';
   document.getElementById('upload-result').style.display = 'none';
   document.getElementById('upload-result').innerHTML = '';
-  document.getElementById('upload-submit').disabled = false;
-  document.getElementById('upload-submit').textContent = 'Run Analysis';
+  var btn = document.getElementById('upload-submit');
+  btn.disabled = false; btn.textContent = t('fl_upload_run');
+  btn.onclick = runUpload;
   document.getElementById('upload-fname').textContent = '';
   document.getElementById('upload-fname').style.display = 'none';
+  applyLang();
 }
 
 function closeUpload() {
@@ -4835,106 +5014,49 @@ if (_uploadInput) {
 async function runUpload() {
   if (!_uploadMid) return;
   var input = document.getElementById('upload-input');
-  if (!input.files[0]) { alert('Please select a CSV file.'); return; }
+  if (!input.files[0]) { alert(t('fl_upload_click')); return; }
   var btn = document.getElementById('upload-submit');
-  btn.disabled = true; btn.textContent = 'Analysing...';
+  btn.disabled = true; btn.textContent = t('fl_analyzing');
   var fd = new FormData();
   fd.append('file', input.files[0]);
   try {
-    var r = await fetch('/api/machines/' + _uploadMid + '/analyze-csv', { method: 'POST', body: fd });
+    var r = await fetch('/api/machines/'+_uploadMid+'/analyze-csv', {method:'POST', body:fd});
     var d = await r.json();
     var res = document.getElementById('upload-result');
     res.style.display = 'block';
     if (!r.ok || d.error) {
-      res.innerHTML = '<div style="color:var(--red);font-size:13px;">' + (d.error || 'Error') + '</div>';
-      btn.disabled = false; btn.textContent = 'Run Analysis';
+      res.innerHTML = '<div style="color:var(--red);font-size:13px">' + (d.error||t('fl_error')) + '</div>';
+      btn.disabled=false; btn.textContent=t('fl_upload_run');
       return;
     }
-    var status = d.failures > 0 ? 'var(--amber)' : 'var(--green)';
-    res.innerHTML = '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px">'
-      + '<div style="font-size:9px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:12px">Analysis complete — ' + d.machine_name + '</div>'
+    var sColor = d.failures>0 ? 'var(--amber)' : 'var(--green)';
+    res.innerHTML = '<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:16px">'
+      + '<div style="font-size:9px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:12px">' + t('fl_ap_done') + ' \u2014 ' + esc(d.machine_name) + '</div>'
       + '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">'
-      + '<div style="text-align:center"><div style="font-size:28px;font-weight:800;color:var(--text)">' + d.total + '</div><div style="font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-top:3px">Rows</div></div>'
-      + '<div style="text-align:center"><div style="font-size:28px;font-weight:800;color:' + status + '">' + d.failures + '</div><div style="font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-top:3px">Failures</div></div>'
-      + '<div style="text-align:center"><div style="font-size:28px;font-weight:800;color:' + status + '">' + d.max_risk + '%</div><div style="font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-top:3px">Peak risk</div></div>'
+      + '<div style="text-align:center"><div style="font-size:28px;font-weight:800;color:var(--text)">' + d.total + '</div><div style="font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-top:3px">' + t('fl_upload_rows') + '</div></div>'
+      + '<div style="text-align:center"><div style="font-size:28px;font-weight:800;color:' + sColor + '">' + d.failures + '</div><div style="font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-top:3px">' + t('fl_upload_failures') + '</div></div>'
+      + '<div style="text-align:center"><div style="font-size:28px;font-weight:800;color:' + sColor + '">' + d.max_risk + '%</div><div style="font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-top:3px">' + t('fl_upload_peak') + '</div></div>'
       + '</div>'
-      + '<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--text3)">Avg risk: ' + d.avg_risk + '% — All rows saved to history</div>'
+      + '<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--text3)">'
+      + t('fl_upload_avg') + ': ' + d.avg_risk + '% \u2014 ' + t('fl_upload_history') + '</div>'
       + '</div>';
-    btn.textContent = 'Upload another';
+    btn.textContent = t('fl_upload_other');
     btn.disabled = false;
-    btn.onclick = function() { document.getElementById('upload-input').value=''; document.getElementById('upload-fname').style.display='none'; document.getElementById('upload-result').style.display='none'; btn.textContent='Run Analysis'; btn.onclick=runUpload; };
-  } catch(e) {
-    document.getElementById('upload-result').innerHTML = '<div style="color:var(--red);font-size:13px;">Network error: ' + e.message + '</div>';
-    btn.disabled = false; btn.textContent = 'Run Analysis';
+    btn.onclick = function() {
+      input.value = '';
+      document.getElementById('upload-fname').style.display = 'none';
+      res.style.display = 'none';
+      btn.textContent = t('fl_upload_run');
+      btn.onclick = runUpload;
+    };
+  } catch(ex) {
+    document.getElementById('upload-result').innerHTML = '<div style="color:var(--red);font-size:13px">' + t('fl_net_error') + ': ' + ex.message + '</div>';
+    btn.disabled=false; btn.textContent=t('fl_upload_run');
   }
 }
+
+loadFleet();
 </script>
-
-<!-- Quick Analyse Modal -->
-<div class="modal-overlay" id="analyse-overlay" onclick="if(event.target===this)closeAnalyse()">
-  <div class="modal" style="width:520px">
-    <div class="modal-title" id="an-title">Analyse Machine</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:4px">
-      <div class="form-group" style="margin-bottom:0">
-        <label class="form-label">Vibration <span style="color:var(--text3);font-weight:400;letter-spacing:0">mm/s</span></label>
-        <input class="form-input" id="an-vib" type="number" step="0.01" min="0">
-      </div>
-      <div class="form-group" style="margin-bottom:0">
-        <label class="form-label">Bearing Temp <span style="color:var(--text3);font-weight:400;letter-spacing:0">°C</span></label>
-        <input class="form-input" id="an-tp" type="number" step="0.1" min="0">
-      </div>
-      <div class="form-group" style="margin-bottom:0">
-        <label class="form-label">Flow Rate <span style="color:var(--text3);font-weight:400;letter-spacing:0">m³/h</span></label>
-        <input class="form-input" id="an-dbt" type="number" step="0.001" min="0">
-      </div>
-      <div class="form-group" style="margin-bottom:0">
-        <label class="form-label">Inlet Pressure <span style="color:var(--text3);font-weight:400;letter-spacing:0">bar</span></label>
-        <input class="form-input" id="an-pe" type="number" step="0.01" min="0">
-      </div>
-      <div class="form-group" style="margin-bottom:0">
-        <label class="form-label">Outlet Pressure <span style="color:var(--text3);font-weight:400;letter-spacing:0">bar</span></label>
-        <input class="form-input" id="an-ps" type="number" step="0.01" min="0">
-      </div>
-      <div class="form-group" style="margin-bottom:0">
-        <label class="form-label">Motor Current <span style="color:var(--text3);font-weight:400;letter-spacing:0">A</span></label>
-        <input class="form-input" id="an-im" type="number" step="0.1" min="0">
-      </div>
-      <div class="form-group" style="margin-bottom:0">
-        <label class="form-label">Motor Temp <span style="color:var(--text3);font-weight:400;letter-spacing:0">°C</span></label>
-        <input class="form-input" id="an-tm" type="number" step="0.1" min="0">
-      </div>
-      <div class="form-group" style="margin-bottom:0">
-        <label class="form-label">Run Hours <span style="color:var(--text3);font-weight:400;letter-spacing:0">h</span></label>
-        <input class="form-input" id="an-hf" type="number" step="1" min="0">
-      </div>
-    </div>
-    <div id="an-result" style="margin-top:16px;display:none"></div>
-    <div class="modal-footer">
-      <button type="button" class="btn btn-ghost" onclick="closeAnalyse()">Close</button>
-      <button type="button" class="btn btn-primary" id="an-submit" onclick="runAnalyse()">Run Analysis</button>
-    </div>
-  </div>
-</div>
-
-<!-- CSV Upload Modal -->
-<div class="modal-overlay" id="upload-overlay" onclick="if(event.target===this)closeUpload()">
-  <div class="modal">
-    <div class="modal-title">Upload Machine Data</div>
-    <p style="font-size:12px;color:var(--text3);margin-bottom:20px;line-height:1.6">Upload a CSV file exported from your SCADA, PLC, or sensor system. Pilar auto-detects columns and runs a full analysis on every row. Results are saved to history with this machine's ID.</p>
-    <div style="border:2px dashed var(--border2);border-radius:8px;padding:28px;text-align:center;margin-bottom:16px;cursor:pointer;transition:border-color .15s" onclick="document.getElementById('upload-input').click()" onmouseover="this.style.borderColor='var(--teal)'" onmouseout="this.style.borderColor='var(--border2)'">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:28px;height:28px;color:var(--text3);margin:0 auto 10px;display:block"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <div style="font-size:12px;color:var(--text2);font-weight:600">Click to select CSV file</div>
-      <div style="font-size:10px;color:var(--text3);margin-top:4px">Any column names · any delimiter · auto unit conversion</div>
-      <input type="file" id="upload-input" accept=".csv" style="display:none">
-      <div id="upload-fname" style="display:none;margin-top:10px;font-size:11px;color:var(--teal2);font-weight:600"></div>
-    </div>
-    <div id="upload-result"></div>
-    <div class="modal-footer">
-      <button type="button" class="btn btn-ghost" onclick="closeUpload()">Close</button>
-      <button type="button" class="btn btn-primary" id="upload-submit" onclick="runUpload()">Run Analysis</button>
-    </div>
-  </div>
-</div>
 </div>
 </div>
 </div>
