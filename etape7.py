@@ -29,7 +29,11 @@ app = Flask(__name__)
 import os
 import sys as _sys
 _FROZEN  = getattr(_sys, 'frozen', False)
-_APP_DIR = os.path.dirname(_sys.executable) if _FROZEN else os.path.dirname(os.path.abspath(__file__))
+# PyInstaller 6.x dir-build: data files land in _internal/ (sys._MEIPASS), not next to the exe
+if _FROZEN:
+    _APP_DIR = getattr(_sys, '_MEIPASS', os.path.dirname(_sys.executable))
+else:
+    _APP_DIR = os.path.dirname(os.path.abspath(__file__))
 def _pkl(name): return os.path.join(_APP_DIR, name)
 from config import (
     RATE_WINDOW, RATE_MAX, SESSION_DAYS,
@@ -5946,7 +5950,7 @@ def api_machines_list():
     machines = Machine.query.filter_by(user_id=uid).order_by(Machine.created_at.desc()).all()
     result = []
     for m in machines:
-        last = Analysis.query.filter_by(user_id=uid, machine_id=m.name).order_by(Analysis.timestamp.desc()).first()
+        last = Analysis.query.filter_by(machine_id=m.id).order_by(Analysis.timestamp.desc()).first()
         result.append({
             'id': m.id, 'name': m.name, 'description': m.description,
             'machine_type': m.machine_type, 'threshold': m.threshold,
