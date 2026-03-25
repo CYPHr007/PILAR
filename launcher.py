@@ -6,6 +6,7 @@ Lance Flask en thread background, puis ouvre une fenetre native pywebview
 
 - Tray icon : Ouvrir PILAR / Quitter PILAR
 - pywebview utilise WebView2 (Edge runtime) sous le capot
+- Auto-updater : verifie Railway au demarrage, propose mise a jour si nouvelle version
 """
 
 import os
@@ -19,10 +20,12 @@ import pystray
 from PIL import Image, ImageDraw
 
 # ── Config ─────────────────────────────────────────────────────────────────────
-_FROZEN   = getattr(sys, "frozen", False)
-APP_HOST  = "127.0.0.1"
-APP_PORT  = 5000
-APP_URL   = f"http://{APP_HOST}:{APP_PORT}/monitor"
+_FROZEN      = getattr(sys, "frozen", False)
+APP_HOST     = "127.0.0.1"
+APP_PORT     = 5000
+APP_URL      = f"http://{APP_HOST}:{APP_PORT}/monitor"
+APP_VERSION  = "1.0.0"   # bump this with every release
+UPDATE_CHECK = "https://pilar-website.up.railway.app/api/latest"
 
 if _FROZEN:
     BASE_DIR = Path(sys.executable).parent.resolve()
@@ -99,6 +102,42 @@ def _wait_for_flask(timeout: float = 60.0) -> bool:
     return False
 
 
+# ── Auto-updater ───────────────────────────────────────────────────────────────
+def _check_update():
+    """Runs in background thread. Shows a Windows dialog if a newer version is available."""
+    try:
+        import urllib.request, json as _json
+        with urllib.request.urlopen(UPDATE_CHECK, timeout=6) as resp:
+            data = _json.loads(resp.read().decode())
+        latest = (data.get("version") or "").lstrip("v")
+        current = APP_VERSION.lstrip("v")
+        if latest and latest != current:
+            download_url = data.get("download_url", "")
+            _prompt_update(latest, download_url)
+    except Exception as e:
+        print(f"[PILAR] Update check skipped: {e}")
+
+
+def _prompt_update(latest_version: str, download_url: str):
+    """Show a native Windows messagebox asking the user to update."""
+    try:
+        import ctypes
+        msg = (
+            f"Une mise à jour PILAR est disponible.\n\n"
+            f"Version installée : {APP_VERSION}\n"
+            f"Nouvelle version  : {latest_version}\n\n"
+            f"Télécharger maintenant ?"
+        )
+        result = ctypes.windll.user32.MessageBoxW(
+            0, msg, "Mise à jour PILAR", 0x00000024  # MB_YESNO | MB_ICONQUESTION
+        )
+        if result == 6 and download_url:  # IDYES
+            import webbrowser
+            webbrowser.open(download_url)
+    except Exception as e:
+        print(f"[PILAR] Update prompt error: {e}")
+
+
 # ── Tray actions ───────────────────────────────────────────────────────────────
 def action_open(icon, item):
     global _window
@@ -146,7 +185,10 @@ def main():
         sys.exit(1)
     print("[PILAR] Flask ready")
 
-    # 3. Tray icon en thread detache (pywebview doit etre dans le main thread)
+    # 3. Check for updates in background (non-blocking)
+    threading.Thread(target=_check_update, daemon=True, name="updater").start()
+
+    # 4. Tray icon en thread detache (pywebview doit etre dans le main thread)
     icon_image = _make_icon(64)
     _tray_icon = pystray.Icon(
         name="pilar",
@@ -157,7 +199,7 @@ def main():
     _tray_icon.run_detached()
     print("[PILAR] Tray icon running")
 
-    # 4. Fenetre native pywebview — main thread
+    # 5. Fenetre native pywebview — main thread
     import webview
     _window = webview.create_window(
         title="PILAR",
@@ -170,7 +212,7 @@ def main():
     )
     webview.start()
 
-    # 5. Fenetre fermee — arreter le tray
+    # 6. Fenetre fermee — arreter le tray
     print("[PILAR] Window closed, stopping tray")
     if _tray_icon:
         _tray_icon.stop()
