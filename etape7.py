@@ -545,9 +545,11 @@ def send_verify_email(email, token, base_url=None):
 
 
 # ── AUTH PAGES ────────────────────────────────────────────────────────────────
-_AUTH_HEAD = """<!DOCTYPE html><html lang="fr"><head>
+_AUTH_HEAD = ("""<!DOCTYPE html><html lang="fr"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#08090c"><title>PILAR</title>
+<meta name="theme-color" content="#08090c">
+<link rel="icon" type="image/png" href="data:image/png;base64,""" + FAVICON + """">
+<title>PILAR</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -660,7 +662,7 @@ document.addEventListener('DOMContentLoaded',function(){_authSetLang(_aLang);});
     <canvas id="pillar-canvas"></canvas>
     <div class="pilar-wm">P I L A R</div>
   </div>
-  <div class="form-side">"""
+  <div class="form-side">""")
 
 _AUTH_FOOT = """  </div>
 </div>
@@ -1533,6 +1535,7 @@ let LANG=localStorage.getItem('pilar_lang')||'en';
 function t(k){return(T[LANG]&&T[LANG][k])||(T.en[k])||k;}
 function setLang(l){LANG=l;localStorage.setItem('pilar_lang',l);applyLang();}
 function applyLang(){
+  try{
   document.querySelectorAll('[data-i18n]').forEach(function(el){
     var k=el.getAttribute('data-i18n');
     if(el.tagName==='INPUT'){el.placeholder=t(k);}else{el.textContent=t(k);}
@@ -1542,9 +1545,10 @@ function applyLang(){
   document.querySelectorAll('td .badge.alert').forEach(function(el){el.textContent=t('hist_anomaly');});
   document.querySelectorAll('td .badge.ok').forEach(function(el){el.textContent=t('hist_ok');});
   document.querySelectorAll('td .mb').forEach(function(el){el.textContent=t('hist_sent');});
-  updateSensorUnits();
+  try{updateSensorUnits();}catch(e){}
   document.querySelectorAll('.acc-role').forEach(function(el){el.textContent=t(el.dataset.role==='leader'?'acc_role_leader':'acc_role_member');});
   document.querySelectorAll('[data-i18n-count]').forEach(function(el){var n=el.dataset.icount||'0';el.textContent=n+t(el.getAttribute('data-i18n-count'));});
+  }catch(e){console.warn('[PILAR] applyLang error:',e);}
 }
 function toDisplay(raw,type){
   if(LANG!=='fr')return raw;
@@ -1738,7 +1742,7 @@ _SIDEBAR = """
     </a>
   </nav>
   <div class="sidebar-footer">
-    <div class="sync-status-bar" id="sidebarSyncBar">
+    <div class="sync-status-bar" id="sidebarSyncBar" onclick="updateSyncStatus()" title="Click to refresh sync status" style="cursor:pointer">
       <span class="sync-dot offline" id="sidebarSyncDot"></span>
       <span id="sidebarSyncLabel">Offline</span>
     </div>
@@ -1762,25 +1766,24 @@ _SIDEBAR = """
 (function(){{
   var lbl=document.getElementById('_langLbl');
   if(lbl)lbl.textContent=(localStorage.getItem('pilar_lang')||'en').toUpperCase();
-  // Poll sync status every 30s and update sidebar indicator
-  function updateSyncStatus(){{
-    fetch('/api/sync/status').then(function(r){{return r.json();}}).then(function(d){{
-      var dot=document.getElementById('sidebarSyncDot');
-      var lbl=document.getElementById('sidebarSyncLabel');
-      if(dot&&lbl){{
-        if(d.online){{
-          dot.className='sync-dot online';
-          lbl.textContent='Synced'+(d.last_sync?' · '+new Date(d.last_sync).toLocaleTimeString([],{{hour:'2-digit',minute:'2-digit'}}):'');
-        }}else{{
-          dot.className='sync-dot offline';
-          lbl.textContent=d.queued>0?'Offline · '+d.queued+' queued':'Offline';
-        }}
-      }}
-    }}).catch(function(){{}});
-  }}
-  updateSyncStatus();
-  setInterval(updateSyncStatus,30000);
 }})();
+function updateSyncStatus(){{
+  fetch('/api/sync/status').then(function(r){{return r.json();}}).then(function(d){{
+    var dot=document.getElementById('sidebarSyncDot');
+    var lbl=document.getElementById('sidebarSyncLabel');
+    if(dot&&lbl){{
+      if(d.online){{
+        dot.className='sync-dot online';
+        lbl.textContent='Synced'+(d.last_sync?' · '+new Date(d.last_sync).toLocaleTimeString([],{{hour:'2-digit',minute:'2-digit'}}):'');
+      }}else{{
+        dot.className='sync-dot offline';
+        lbl.textContent=d.queued>0?'Offline · '+d.queued+' queued':'Offline';
+      }}
+    }}
+  }}).catch(function(){{}});
+}}
+updateSyncStatus();
+setInterval(updateSyncStatus,30000);
 function _toggleLang(){{
   var next=LANG==='en'?'fr':'en';
   setLang(next);
@@ -5583,7 +5586,12 @@ def login():
             print(f"[Pilar/auth] Banned login attempt: {email} IP={ip}")
             return render_template_string(LOGIN_HTML, error='Ce compte a été suspendu. Contactez le support.')
         if not user.email_verified:
-            return render_template_string(LOGIN_HTML, error='Confirmez votre email avant de vous connecter. Vérifiez vos spams.')
+            # If GMAIL is not configured, no verification email was ever sent — auto-verify
+            if not GMAIL:
+                user.email_verified = True
+                db.session.commit()
+            else:
+                return render_template_string(LOGIN_HTML, error='Confirmez votre email avant de vous connecter. Vérifiez vos spams.')
         session['user_id'] = user.id
         session.permanent = True
         print(f"[Pilar/auth] Login OK: {email} IP={ip}")
