@@ -1443,24 +1443,24 @@ tr:last-child td{border-bottom:none;}
 </style>
 <script>
 var T={
-fr:{nav_monitor:'Live Monitor',nav_twin:'Twin',nav_history:'Historique',nav_account:'Compte',nav_settings:'Réglages',
-page_monitor:'Monitor',page_twin:'Jumeau Numérique',page_history:'Historique',page_account:'Compte',page_settings:'Réglages',
-idle_l1:'Aucune analyse',idle_l2:'Configurez ci-dessous et lancez',
+fr:{nav_monitor:'Surveillance',nav_twin:'Jumeau Numérique',nav_history:'Historique',nav_account:'Compte',nav_settings:'Paramètres',
+page_monitor:'Surveillance',page_twin:'Jumeau Numérique',page_history:'Historique',page_account:'Compte',page_settings:'Paramètres',
+idle_l1:'En attente de données',idle_l2:'Renseignez les paramètres ci-dessous pour lancer le diagnostic',
 machine_class:'Classe machine',sensor_params:'Paramètres capteurs',
-air_temp:'Température air',proc_temp:'Température process',rot_speed:'Vitesse rotation',torque:'Couple',tool_wear:'Usure outil',
-p_vibration:'Vibration',p_temp_palier:'Temp. palier',p_debit:'Débit',p_pression_e:'Pression entrée',p_pression_s:'Pression sortie',p_courant:'Courant moteur',p_temp_moteur:'Temp. moteur',p_heure:'Heures fonct.',
+air_temp:'Température air',proc_temp:'Température process',rot_speed:'Vitesse de rotation',torque:'Couple moteur',tool_wear:'Usure de l’outil',
+p_vibration:'Vibration',p_temp_palier:'Temp. palier',p_debit:'Débit',p_pression_e:'Pression entrée',p_pression_s:'Pression sortie',p_courant:'Courant moteur',p_temp_moteur:'Temp. moteur',p_heure:'Heures de marche',
 run_btn:"Lancer l'analyse",zone_title:'Analyse zones de panne',
 status_ok:'Fonctionnement normal',status_alert:'Anomalie détectée',failure_prob:'Prob. panne',
 u_temp:'°C',u_speed:'m³/h',u_torque:'bar',u_wear:'h',
 r_ta_min:'21.9°C',r_ta_max:'31.9°C',r_tp_min:'31.9°C',r_tp_max:'41.9°C',
 r_v_min:'1000',r_v_max:'3000',r_c_min:'3',r_c_max:'80N·m',r_u_min:'0',r_u_max:'4.17h',
-twin_loading:'Chargement simulation...',twin_no_data:'Aucune donnée',twin_no_data2:"Lancez d'abord une analyse dans Monitor",twin_go:'Aller à Monitor',
-twin_healthy:'Système sain',twin_failure:'Panne dans ~',twin_trend:'Tendance\u00a0:',twin_cur_risk:'Risque actuel',twin_avg:'Risque moyen',twin_anom:"Taux d'anomalie",
+twin_loading:'Chargement simulation...',twin_no_data:'Aucun historique disponible',twin_no_data2:'Lancez d’abord un diagnostic dans Surveillance',twin_go:'Aller à Surveillance',
+twin_healthy:'Système sain',twin_failure:'Défaillance prévue dans ~',twin_trend:'Tendance\u00a0:',twin_cur_risk:'Risque actuel',twin_avg:'Risque moyen',twin_anom:"Taux d'anomalie",
 twin_c_risk:'Risque — Historique + Simulation 24h',twin_c_wear:'Projection heures fonct.',twin_c_temp:'Température palier',twin_c_sim:'Simulateur de scénario',
 twin_speed:'Débit (m³/h)',twin_torque:'Pression sortie (bar)',twin_wear:'Heures fonct. (h)',twin_airtemp:'Vibration (mm/s)',twin_sim:'Simuler',twin_sim_r:'Risque simulé',
 hist_total:'Total',hist_anom:'Anomalies',hist_avg:'Risque moy.',hist_alerts:'Alertes envoyées',hist_reliability:'Fiabilité',
-hist_time:'Heure',hist_class:'Classe',hist_risk:'Risque',hist_status:'Statut',hist_zones:'Zones',hist_alert:'Alerte',hist_feedback:'Retour',
-hist_anomaly:'Anomalie',hist_ok:'OK',hist_sent:'Envoyé',hist_reliability_hint:'Notez les alertes avec +/- pour mesurer la précision du modèle sur vos données.',
+hist_time:'Heure',hist_class:'Classe',hist_risk:'Risque',hist_status:'Statut',hist_zones:'Zones',hist_alert:'Alerte',hist_feedback:'Qualification',
+hist_anomaly:'Anomalie',hist_ok:'OK',hist_sent:'Envoyé',hist_reliability_hint:'Qualifiez chaque alerte pour affiner la précision du modèle sur votre installation.',
 set_email:"Email d'alerte",set_email_lbl:'Adresse destinataire',set_email_ph:'maintenance@entreprise.com',set_email_btn:'Enregistrer',set_saved:'Enregistré',
 set_notif:'Notifications navigateur',set_notif_desc:'Recevez des alertes quand le risque dépasse 50%.',set_notif_btn:'Activer les notifications',set_notif_on:'Notifications activées',set_notif_blocked:'Bloqué — Activez dans les réglages',
 set_sys:'Infos système',set_version:'Version',set_aimodel:'Modèle IA',set_db:'Base de données',set_lang:'Langue',
@@ -1472,15 +1472,15 @@ acc_role_leader:'Responsable',acc_role_member:'Membre',acc_you:'(vous)',
 acc_promote:'Promouvoir',acc_kick:'Retirer',
 acc_add_title:'Ajouter un membre',acc_add_ph:'email@entreprise.com',acc_add_btn:'Ajouter',acc_added:'Membre ajouté !',
 acc_members:' membre(s)',acc_leave:"Quitter l'équipe",
-nav_import:'Manuel',nav_assistant:'Assistant',
-live_connect:'Connecter fichier',live_on:'Live actif',live_disconnect:'Déconnecter',
-live_rows:'Lignes lues',live_fail:'Pannes',live_ok:'Normal',live_last:'Dernier',
+nav_import:'Import CSV',nav_assistant:'Assistant IA',
+live_connect:'Connecter un fichier',live_on:'Flux actif',live_disconnect:'Déconnecter',
+live_rows:'Lignes lues',live_fail:'Défaillances',live_ok:'Normal',live_last:'Dernier',
 live_no_api:'Sélectionnez votre fichier CSV. Cliquez Actualiser pour relire les nouvelles lignes.',
 live_refresh:'Actualiser',
 tut_format:'Format CSV',tut_cols:'Colonne',tut_unit:'Unité',tut_range:'Plage',tut_desc:'Description',
 tut_sample:'Télécharger exemple CSV',tut_import:'Importer un fichier',tut_speed:'Vitesse',tut_start:'Démarrer',
 tut_pause:'Pause',tut_resume:'Reprendre',tut_stop:'Arrêter',tut_done:'Terminé',
-tut_live:'Moniteur fichier live',tut_live_desc:"Connectez un fichier CSV mis à jour par votre SCADA. Pilar détecte les nouvelles lignes automatiquement.",
+tut_live:'Suivi de fichier en direct',tut_live_desc:"Connectez un fichier CSV mis à jour par votre SCADA. Pilar détecte les nouvelles lignes automatiquement.",
 tut_connect:'Connecter fichier',tut_no_file:'Aucun fichier connecté',tut_disconnected:'Déconnecté',
 ast_placeholder:'Posez votre question sur la machine...',ast_send:'Envoyer',
 ast_hello:"Bonjour. Je suis votre assistant maintenance prédictive. Partagez vos relevés capteurs ou posez-moi vos questions.",
@@ -1499,8 +1499,8 @@ adp_ignore:'(Ignorer)',adp_desc:'Convertissez n\u2019importe quel CSV au format 
 page_tutorial:'Import & Analyse',tut_csv_desc:"Votre CSV doit contenir ces colonnes (l'ordre n'a pas d'importance) :",tut_click_csv:'Cliquez pour sélectionner un fichier CSV',tut_no_file_sel:'Aucun fichier sélectionné',tut_progress:'Progression',tut_check_every:'Vérifier toutes les',tut_row:'Ligne',
 set_domain:'Domaine',set_nav_title:'Navigation',set_twin_nav:'Jumeau Numérique',
 ast_you:'Vous',ast_pilar:'Pilar IA',ast_error:'Erreur\u00a0: ',ast_net_error:'Erreur réseau. Réessayez.',
-ai_warming:'se réchauffe',ai_ready:'prêt',ai_in_twin:'Jumeau Numérique',fl_title:'Vue Flotte',fl_sub:'Surveillance de vos pompes centrifuges',fl_add:'+ Ajouter une machine',fl_analyze_all:'Analyser tout',fl_analyzing:'Analyse en cours…',fl_total:'Machines actives',fl_alerts:'Alertes actives',fl_avg:'Risque moyen flotte',fl_critical:'Critiques',fl_never:'Jamais',fl_badge_ok:'Normal',fl_badge_warn:'Attention',fl_badge_crit:'Critique',fl_badge_inactive:'Inactif',fl_badge_new:'Sans données',fl_btn_analyze:'Analyser',fl_btn_csv:'Importer CSV',fl_btn_edit:'Modifier',fl_btn_rerun:'Relancer',fl_modal_add:'Ajouter une machine',fl_modal_edit:'Modifier la machine',fl_save:'Enregistrer',fl_cancel:'Annuler',fl_save_changes:'Sauvegarder les modifications',fl_name_lbl:'Nom de la machine',fl_name_ph:'ex. POMPE-01, Compresseur-A3',fl_name_hint:'Ce nom est utilisé comme machine_id dans l’API.',fl_desc_lbl:'Description',fl_desc_ph:'Optionnel — emplacement, modèle, notes',fl_class_sel:'Classe machine',fl_thresh_lbl:'Seuil d’alerte %',fl_thresh_hint:'L’alerte se déclenche au-dessus de ce seuil.',fl_pump_sel:'Type de pompe',fl_fluid_sel:'Type de fluide',fl_mat_sel:'Matériau de la roue',fl_email_lbl:'Email d’alerte principal',fl_email_ph:'tech@entreprise.com',fl_esc_lbl:'Email d’escalade',fl_esc_ph:'responsable@entreprise.com',fl_esc_hint:'Si l’alerte n’est pas acquittée sous 30 min, ce contact est notifié.',fl_upload_title:'Importer des données machine',fl_upload_desc:'CSV exporté depuis votre SCADA, API ou système capteurs. Pilar détecte les colonnes automatiquement et analyse chaque ligne. Résultats sauvegardés dans l’historique.',fl_upload_click:'Cliquez pour sélectionner un fichier CSV',fl_upload_hint:'Tout délimiteur · noms libres · conversion d’unités auto',fl_upload_run:'Lancer l’analyse',fl_upload_other:'Importer un autre fichier',fl_upload_rows:'Lignes',fl_upload_failures:'Anomalies',fl_upload_peak:'Risque max',fl_upload_avg:'Risque moy.',fl_upload_history:'Sauvegardé dans l’historique',fl_an_run:'Lancer l’analyse',fl_an_again:'Relancer',fl_an_close:'Fermer',fl_an_zones:'Zones de défaillance',fl_an_no_zone:'Aucune zone spécifique',fl_an_failure:'⚠ PANNE',fl_an_normal:'✓ NORMAL',fl_an_anom:'Score anomalie',fl_an_rul:'Délai estimé',fl_del_confirm_msg:'Supprimer cette machine ? Action irréversible.',fl_del_file_msg:'Supprimer ce fichier de la machine ?',fl_ap_title:'Analyse de la flotte',fl_ap_confirm:'Lancer l’analyse sur {n} machine(s) avec fichier CSV ?',fl_ap_done:'Analyse terminée',fl_ap_rows:'lignes',fl_ap_anom:'anomalies',fl_ap_avg:'risque moy.',fl_ap_skip:'ignorée',fl_ap_close:'Fermer',fl_empty_title:'Aucune machine configurée',fl_empty_desc:'Ajoutez votre première machine pour démarrer la surveillance de la flotte.',fl_add_first:'+ Ajouter ma première machine',fl_class_lbl:'Classe',fl_pump_lbl:'Pompe',fl_fluid_lbl:'Fluide',fl_mat_lbl:'Matériau',fl_thresh_card:'Seuil',fl_last_lbl:'Dernière mesure',fl_no_file_msg:'Aucune machine avec fichier CSV. Utilisez le bouton Importer CSV sur chaque carte.',fl_full_page:'Page flotte complète →',fl_loading:'Chargement de la flotte…',fl_load_fail:'Erreur de chargement. ',fl_error:'Erreur',fl_net_error:'Erreur réseau. Réessayez.',fl_retry:'Réessayer',fl_risk_lbl:'RISQUE'},
-en:{nav_monitor:'Live Monitor',nav_twin:'Twin',nav_history:'History',nav_account:'Account',nav_settings:'Settings',
+ai_warming:'se réchauffe',ai_ready:'prêt',ai_in_twin:'Jumeau Numérique',fl_title:'Vue Flotte',fl_sub:'Suivi de l’état de vos pompes centrifuges',fl_add:'+ Ajouter une machine',fl_analyze_all:'Analyser la flotte',fl_analyzing:'Analyse en cours…',fl_total:'Machines actives',fl_alerts:'Alertes actives',fl_avg:'Risque moyen flotte',fl_critical:'Critiques',fl_never:'Jamais',fl_badge_ok:'Nominal',fl_badge_warn:'Surveillance',fl_badge_crit:'Critique',fl_badge_inactive:'Hors service',fl_badge_new:'Non renseignée',fl_btn_analyze:'Analyser',fl_btn_csv:'Importer CSV',fl_btn_edit:'Modifier',fl_btn_rerun:'Réanalyser',fl_modal_add:'Ajouter une machine',fl_modal_edit:'Modifier la machine',fl_save:'Enregistrer',fl_cancel:'Annuler',fl_save_changes:'Sauvegarder les modifications',fl_name_lbl:'Nom de la machine',fl_name_ph:'ex. POMPE-01, Compresseur-A3',fl_name_hint:'Ce nom est utilisé comme machine_id dans l’API.',fl_desc_lbl:'Description',fl_desc_ph:'Optionnel — emplacement, modèle, notes',fl_class_sel:'Classe machine',fl_thresh_lbl:'Seuil d’alerte %',fl_thresh_hint:'L’alerte se déclenche au-dessus de ce seuil.',fl_pump_sel:'Type de pompe',fl_fluid_sel:'Type de fluide',fl_mat_sel:'Matériau de la roue',fl_email_lbl:'Email d’alerte principal',fl_email_ph:'tech@entreprise.com',fl_esc_lbl:'Email d’escalade',fl_esc_ph:'responsable@entreprise.com',fl_esc_hint:'Si l’alerte n’est pas acquittée sous 30 min, ce contact est notifié.',fl_upload_title:'Importer des données machine',fl_upload_desc:'CSV exporté depuis votre SCADA, API ou système capteurs. Pilar détecte les colonnes automatiquement et analyse chaque ligne. Résultats sauvegardés dans l’historique.',fl_upload_click:'Cliquez pour sélectionner un fichier CSV',fl_upload_hint:'Tout délimiteur · noms libres · conversion d’unités auto',fl_upload_run:'Lancer l’analyse',fl_upload_other:'Importer un autre fichier',fl_upload_rows:'Lignes',fl_upload_failures:'Anomalies',fl_upload_peak:'Risque maximal',fl_upload_avg:'Risque moy.',fl_upload_history:'Sauvegardé dans l’historique',fl_an_run:'Lancer l’analyse',fl_an_again:'Relancer',fl_an_close:'Fermer',fl_an_zones:'Zones de défaillance',fl_an_no_zone:'Aucune zone spécifique',fl_an_failure:'PANNE',fl_an_normal:'NORMAL',fl_an_anom:'Indice d’anomalie',fl_an_rul:'Durée résiduelle estimée',fl_del_confirm_msg:'Supprimer cette machine ? Action irréversible.',fl_del_file_msg:'Supprimer ce fichier de la machine ?',fl_ap_title:'Analyse de la flotte',fl_ap_confirm:'Lancer l’analyse sur {n} machine(s) avec fichier CSV ?',fl_ap_done:'Analyse terminée',fl_ap_rows:'lignes',fl_ap_anom:'anomalies',fl_ap_avg:'risque moyen',fl_ap_skip:'ignorée',fl_ap_close:'Fermer',fl_empty_title:'Aucune machine configurée',fl_empty_desc:'Ajoutez votre première machine pour démarrer la surveillance de la flotte.',fl_add_first:'+ Ajouter ma première machine',fl_class_lbl:'Classe',fl_pump_lbl:'Pompe',fl_fluid_lbl:'Fluide',fl_mat_lbl:'Matériau',fl_thresh_card:'Seuil',fl_last_lbl:'Dernière mesure',fl_no_file_msg:'Aucune machine avec fichier CSV. Utilisez le bouton Importer CSV sur chaque carte.',fl_full_page:'Page flotte complète →',fl_loading:'Chargement de la flotte…',fl_load_fail:'Erreur de chargement. ',fl_error:'Erreur',fl_net_error:'Erreur réseau. Réessayez.',fl_retry:'Réessayer',fl_risk_lbl:'RISQUE',fl_btn_details:'Fiche machine',fl_del_btn:'Supprimer',fl_det_title:'Fiche machine',fl_det_last:'Dernières analyses',fl_det_risk_max:'Risque maximal',fl_det_risk_min:'Risque minimal',fl_det_anomalies:'Anomalies',fl_det_trend:'Tendance',fl_det_history:'Voir historique complet →',fl_det_no_data:'Aucune analyse pour cette machine.',fl_det_zones:'Zones',fl_det_time:'Heure',fl_det_status:'Statut',hist_ai_hint:'Qualifiez chaque détection pour améliorer la fiabilité du modèle sur votre installation : <strong style="color:var(--green)">alerte justifiée</strong>, <strong style="color:var(--red)">fausse alarme</strong> ou panne non détectée.',app_subtitle:'Maintenance Prédictive',nav_section_analysis:'Diagnostic',nav_section_fleet:'Flotte',nav_section_user:'Utilisateur',set_change_pw:'Changer le mot de passe',set_pw_current:'Mot de passe actuel',set_pw_new:'Nouveau mot de passe',set_pw_confirm:'Confirmer le nouveau mot de passe',set_pw_update:'Mettre à jour',set_session:'Session',set_signout:'Se déconnecter',set_pw_required:'Tous les champs sont obligatoires.',set_pw_mismatch:'Les mots de passe ne correspondent pas.',set_pw_short:'Minimum 8 caractères.',set_pw_ok:'Mot de passe mis à jour.',acc_api_desc:'Utilisez votre clé API pour envoyer des données capteurs depuis vos automates ou scripts.',acc_api_copy:'COPIER',acc_api_regen:'Regénérer la clé',acc_api_gen:'Générer une clé API',acc_api_docs:'Documentation API',opt_class_l:'L — Basse qualité',opt_class_m:'M — Standard',opt_class_h:'H — Haute qualité',opt_pump_centrifuge:'Centrifuge',opt_pump_vis:'Pompe à vis',opt_pump_engrenage:'Pompe à engrenages',opt_pump_palettes:'Pompe à palettes',opt_pump_piston:'Pompe à piston',opt_pump_peristaltique:'Péristaltique',opt_fluid_eau:'Eau',opt_fluid_eau_c:'Eau chargée / boues',opt_fluid_huile:'Huile',opt_fluid_acide:'Acide',opt_fluid_base:'Base / alcalin',opt_fluid_autre:'Autre',opt_mat_inox:'Inox 316',opt_mat_fonte:'Fonte grise',opt_mat_titane:'Titane',opt_mat_bronze:'Bronze',opt_mat_plastique:'Plastique / PVDF',opt_mat_autre:'Autre',fl_anom_rate:'Taux anomalies',fl_rows_analyzed:'Lignes analysées'},
+en:{nav_monitor:'Monitor',nav_twin:'Digital Twin',nav_history:'History',nav_account:'Account',nav_settings:'Settings',
 page_monitor:'Monitor',page_twin:'Digital Twin',page_history:'History',page_account:'Account',page_settings:'Settings',
 idle_l1:'No analysis yet',idle_l2:'Configure below and run',
 machine_class:'Machine class',sensor_params:'Sensor parameters',
@@ -1556,7 +1556,7 @@ adp_ignore:'(Ignore)',adp_desc:'Convert any CSV to Pilar format',adp_save:'Save 
 page_tutorial:'Import & Run',tut_csv_desc:'Your CSV must contain these columns (order does not matter):',tut_click_csv:'Click to select a CSV file',tut_no_file_sel:'No file selected',tut_progress:'Progress',tut_check_every:'Check every',tut_row:'Row',
 set_domain:'Domain',set_nav_title:'Navigation',set_twin_nav:'Digital Twin',
 ast_you:'You',ast_pilar:'Pilar AI',ast_error:'Error: ',ast_net_error:'Network error. Please retry.',
-ai_warming:'warming up',ai_ready:'ready',ai_in_twin:'Digital Twin',fl_title:'Fleet Overview',fl_sub:'Monitor your centrifugal pumps',fl_add:'+ Add Machine',fl_analyze_all:'Analyze All',fl_analyzing:'Analyzing…',fl_total:'Active Machines',fl_alerts:'Active Alerts',fl_avg:'Avg Fleet Risk',fl_critical:'Critical',fl_never:'Never',fl_badge_ok:'Normal',fl_badge_warn:'Warning',fl_badge_crit:'Critical',fl_badge_inactive:'Inactive',fl_badge_new:'No data',fl_btn_analyze:'Analyze',fl_btn_csv:'Upload CSV',fl_btn_edit:'Edit',fl_btn_rerun:'Re-run',fl_modal_add:'Add Machine',fl_modal_edit:'Edit Machine',fl_save:'Save',fl_cancel:'Cancel',fl_save_changes:'Save Changes',fl_name_lbl:'Machine Name',fl_name_ph:'e.g. PUMP-01, Compressor-A3',fl_name_hint:'Used as machine_id when sending data via API.',fl_desc_lbl:'Description',fl_desc_ph:'Optional — location, model, notes',fl_class_sel:'Machine Class',fl_thresh_lbl:'Alert threshold %',fl_thresh_hint:'Alert fires above this threshold.',fl_pump_sel:'Pump Type',fl_fluid_sel:'Fluid Type',fl_mat_sel:'Impeller Material',fl_email_lbl:'Primary Alert Email',fl_email_ph:'tech@yourcompany.com',fl_esc_lbl:'Escalation Email',fl_esc_ph:'manager@yourcompany.com',fl_esc_hint:'If primary alert is unacknowledged after 30 min, this contact is notified.',fl_upload_title:'Upload Machine Data',fl_upload_desc:'Upload a CSV exported from your SCADA, PLC, or sensor system. Pilar auto-detects columns and runs a full analysis on every row. Results are saved to history.',fl_upload_click:'Click to select a CSV file',fl_upload_hint:'Any delimiter · any column names · auto unit conversion',fl_upload_run:'Run Analysis',fl_upload_other:'Upload another file',fl_upload_rows:'Rows',fl_upload_failures:'Failures',fl_upload_peak:'Peak risk',fl_upload_avg:'Avg risk',fl_upload_history:'Saved to history',fl_an_run:'Run Analysis',fl_an_again:'Run Again',fl_an_close:'Close',fl_an_zones:'Failure Zones',fl_an_no_zone:'No specific zone',fl_an_failure:'⚠ FAILURE',fl_an_normal:'✓ NORMAL',fl_an_anom:'Anomaly score',fl_an_rul:'Est. time to failure',fl_del_confirm_msg:'Delete this machine? This cannot be undone.',fl_del_file_msg:'Delete this file from the machine?',fl_ap_title:'Fleet Analysis',fl_ap_confirm:'Run analysis on {n} machine(s) with CSV file?',fl_ap_done:'Analysis complete',fl_ap_rows:'rows',fl_ap_anom:'anomalies',fl_ap_avg:'avg risk',fl_ap_skip:'skipped',fl_ap_close:'Close',fl_empty_title:'No machines yet',fl_empty_desc:'Add your first machine to start monitoring your fleet.',fl_add_first:'+ Add First Machine',fl_class_lbl:'Class',fl_pump_lbl:'Pump',fl_fluid_lbl:'Fluid',fl_mat_lbl:'Material',fl_thresh_card:'Threshold',fl_last_lbl:'Last seen',fl_no_file_msg:'No machines with CSV attached. Use the Upload CSV button on each card.',fl_full_page:'Full fleet page →',fl_loading:'Loading fleet…',fl_load_fail:'Failed to load fleet. ',fl_error:'Error',fl_net_error:'Network error. Please retry.',fl_retry:'Retry',fl_risk_lbl:'RISK'}
+ai_warming:'warming up',ai_ready:'ready',ai_in_twin:'Digital Twin',fl_title:'Fleet Overview',fl_sub:'Monitor your centrifugal pumps',fl_add:'+ Add Machine',fl_analyze_all:'Analyze All',fl_analyzing:'Analyzing…',fl_total:'Active Machines',fl_alerts:'Active Alerts',fl_avg:'Avg Fleet Risk',fl_critical:'Critical',fl_never:'Never',fl_badge_ok:'Normal',fl_badge_warn:'Warning',fl_badge_crit:'Critical',fl_badge_inactive:'Inactive',fl_badge_new:'No data',fl_btn_analyze:'Analyze',fl_btn_csv:'Upload CSV',fl_btn_edit:'Edit',fl_btn_rerun:'Re-run',fl_modal_add:'Add Machine',fl_modal_edit:'Edit Machine',fl_save:'Save',fl_cancel:'Cancel',fl_save_changes:'Save Changes',fl_name_lbl:'Machine Name',fl_name_ph:'e.g. PUMP-01, Compressor-A3',fl_name_hint:'Used as machine_id when sending data via API.',fl_desc_lbl:'Description',fl_desc_ph:'Optional — location, model, notes',fl_class_sel:'Machine Class',fl_thresh_lbl:'Alert threshold %',fl_thresh_hint:'Alert fires above this threshold.',fl_pump_sel:'Pump Type',fl_fluid_sel:'Fluid Type',fl_mat_sel:'Impeller Material',fl_email_lbl:'Primary Alert Email',fl_email_ph:'tech@yourcompany.com',fl_esc_lbl:'Escalation Email',fl_esc_ph:'manager@yourcompany.com',fl_esc_hint:'If primary alert is unacknowledged after 30 min, this contact is notified.',fl_upload_title:'Upload Machine Data',fl_upload_desc:'Upload a CSV exported from your SCADA, PLC, or sensor system. Pilar auto-detects columns and runs a full analysis on every row. Results are saved to history.',fl_upload_click:'Click to select a CSV file',fl_upload_hint:'Any delimiter · any column names · auto unit conversion',fl_upload_run:'Run Analysis',fl_upload_other:'Upload another file',fl_upload_rows:'Rows',fl_upload_failures:'Failures',fl_upload_peak:'Peak risk',fl_upload_avg:'Avg risk',fl_upload_history:'Saved to history',fl_an_run:'Run Analysis',fl_an_again:'Run Again',fl_an_close:'Close',fl_an_zones:'Failure Zones',fl_an_no_zone:'No specific zone',fl_an_failure:'FAILURE',fl_an_normal:'NORMAL',fl_an_anom:'Anomaly score',fl_an_rul:'Est. time to failure',fl_del_confirm_msg:'Delete this machine? This cannot be undone.',fl_del_file_msg:'Delete this file from the machine?',fl_ap_title:'Fleet Analysis',fl_ap_confirm:'Run analysis on {n} machine(s) with CSV file?',fl_ap_done:'Analysis complete',fl_ap_rows:'rows',fl_ap_anom:'anomalies',fl_ap_avg:'avg risk',fl_ap_skip:'skipped',fl_ap_close:'Close',fl_empty_title:'No machines yet',fl_empty_desc:'Add your first machine to start monitoring your fleet.',fl_add_first:'+ Add First Machine',fl_class_lbl:'Class',fl_pump_lbl:'Pump',fl_fluid_lbl:'Fluid',fl_mat_lbl:'Material',fl_thresh_card:'Threshold',fl_last_lbl:'Last seen',fl_no_file_msg:'No machines with CSV attached. Use the Upload CSV button on each card.',fl_full_page:'Full fleet page →',fl_loading:'Loading fleet…',fl_load_fail:'Failed to load fleet. ',fl_error:'Error',fl_net_error:'Network error. Please retry.',fl_retry:'Retry',fl_risk_lbl:'RISK',fl_btn_details:'Details',fl_del_btn:'Delete',fl_det_title:'Machine Details',fl_det_last:'Recent analyses',fl_det_risk_max:'Max risk',fl_det_risk_min:'Min risk',fl_det_anomalies:'Anomalies',fl_det_trend:'Trend',fl_det_history:'View full history →',fl_det_no_data:'No analyses for this machine.',fl_det_zones:'Zones',fl_det_time:'Time',fl_det_status:'Status',hist_ai_hint:'Rate each detection to improve model accuracy on your installation: <strong style="color:var(--green)">confirmed alert</strong>, <strong style="color:var(--red)">false alarm</strong> or missed failure.',app_subtitle:'Predictive Maintenance',nav_section_analysis:'Analysis',nav_section_fleet:'Fleet',nav_section_user:'User',set_change_pw:'Change Password',set_pw_current:'Current password',set_pw_new:'New password',set_pw_confirm:'Confirm new password',set_pw_update:'Update Password',set_session:'Session',set_signout:'Sign Out',set_pw_required:'All fields required.',set_pw_mismatch:'Passwords do not match.',set_pw_short:'Minimum 8 characters.',set_pw_ok:'Password updated.',acc_api_desc:'Use your API key to send sensor data from PLCs or scripts.',acc_api_copy:'COPY',acc_api_regen:'Regenerate key',acc_api_gen:'Generate API key',acc_api_docs:'API Docs',opt_class_l:'L — Low quality',opt_class_m:'M — Standard',opt_class_h:'H — High quality',opt_pump_centrifuge:'Centrifugal',opt_pump_vis:'Screw pump',opt_pump_engrenage:'Gear pump',opt_pump_palettes:'Vane pump',opt_pump_piston:'Piston pump',opt_pump_peristaltique:'Peristaltic',opt_fluid_eau:'Water',opt_fluid_eau_c:'Slurry / sludge',opt_fluid_huile:'Oil',opt_fluid_acide:'Acid',opt_fluid_base:'Base / alkaline',opt_fluid_autre:'Other',opt_mat_inox:'Stainless 316',opt_mat_fonte:'Cast iron',opt_mat_titane:'Titanium',opt_mat_bronze:'Bronze',opt_mat_plastique:'Plastic / PVDF',opt_mat_autre:'Other',fl_anom_rate:'Anomaly rate',fl_rows_analyzed:'Rows analyzed'}
 };
 var LANG=localStorage.getItem('pilar_lang')||'en';
 function t(k){return(T[LANG]&&T[LANG][k])||(T.en[k])||k;}
@@ -1721,6 +1721,7 @@ function buildPilarRow(vals,map){
   row._unknown=unknown;
   return row;
 }
+document.addEventListener('DOMContentLoaded',function(){applyLang();});
 </script></head>"""
 
 _SIDEBAR = """
@@ -1732,46 +1733,46 @@ _SIDEBAR = """
     </div>
     <div>
       <div class="logo-text">PILAR</div>
-      <div class="logo-sub">Predictive Maintenance</div>
+      <div class="logo-sub" data-i18n="app_subtitle">Maintenance Prédictive</div>
     </div>
   </div>
   <nav class="sidebar-nav">
-    <div class="sidebar-section">Analysis</div>
+    <div class="sidebar-section" data-i18n="nav_section_analysis">Diagnostic</div>
     <a href="/monitor" class="ni {m}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-      <span class="ni-label" data-i18n="nav_monitor">Monitor</span>
+      <span class="ni-label" data-i18n="nav_monitor">Moniteur</span>
     </a>
     <a href="/tutorial" class="ni {tut}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-      <span class="ni-label" data-i18n="nav_import">Import</span>
+      <span class="ni-label" data-i18n="nav_import">Manuel</span>
     </a>
     <a href="/history" class="ni {h}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-      <span class="ni-label" data-i18n="nav_history">History</span>
+      <span class="ni-label" data-i18n="nav_history">Historique</span>
     </a>
     <a href="/twin" class="ni {tw}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
-      <span class="ni-label" data-i18n="nav_twin">Digital Twin</span>
+      <span class="ni-label" data-i18n="nav_twin">Jumeau</span>
     </a>
-    <div class="sidebar-section">Fleet</div>
+    <div class="sidebar-section" data-i18n="nav_section_fleet">Flotte</div>
     <a href="/dashboard" class="ni {fl}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-      <span class="ni-label">Fleet Overview</span>
+      <span class="ni-label" data-i18n="fl_title">Vue Flotte</span>
     </a>
-    <div class="sidebar-section">User</div>
+    <div class="sidebar-section" data-i18n="nav_section_user">Utilisateur</div>
     <a href="/account" class="ni {a}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z"/></svg>
-      <span class="ni-label">Lobby</span>
+      <span class="ni-label" data-i18n="nav_account">Compte</span>
     </a>
     <a href="/settings" class="ni {s}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-      <span class="ni-label" data-i18n="nav_settings">Settings</span>
+      <span class="ni-label" data-i18n="nav_settings">Réglages</span>
     </a>
   </nav>
   <div class="sidebar-footer">
     <div class="sync-status-bar" id="sidebarSyncBar" onclick="updateSyncStatus()" title="Click to refresh sync status" style="cursor:pointer">
       <span class="sync-dot offline" id="sidebarSyncDot"></span>
-      <span id="sidebarSyncLabel">Offline</span>
+      <span id="sidebarSyncLabel" data-i18n="sync_offline">Hors ligne</span>
     </div>
     <button class="ni lang-toggle" id="_langBtn" onclick="_toggleLang()" title="Switch language" style="padding:6px 10px;font-size:10px;"><span id="_langLbl">EN</span></button>
   </div>
@@ -2016,7 +2017,7 @@ function toggleManual(){
 }
 function updN(){const b=document.getElementById('nb');if(!b)return;const p=Notification.permission;if(p==='granted'){b.textContent='Notifs ON';b.className='nb on';}else{b.textContent='Enable Notifs';b.className='nb';}}
 async function toggleN(){if(Notification.permission==='granted')return;await Notification.requestPermission();updN();}
-function sendN(risk,zones){if(Notification.permission!=='granted')return;new Notification('Pilar — Risk: '+risk+'%',{body:zones.length?'Zones: '+zones.map(z=>z.nom).join(', '):'No specific zone',requireInteraction:true,tag:'pilar'});}
+function sendN(risk,zones){if(Notification.permission!=='granted')return;new Notification('Pilar — Risque : '+risk+'%',{body:zones.length?'Zones : '+zones.map(z=>z.nom).join(', '):'Aucune zone spécifique',requireInteraction:true,tag:'pilar'});}
 updN();
 function ss(s,n,d,type){
   var el=document.getElementById(n);
@@ -2039,7 +2040,7 @@ async function analyse(){
     const res=await fetch('/predire',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(lastD)});
     let r;
     try{r=await res.json();}catch(je){
-      document.getElementById('res').innerHTML='<div class="idle"><span class="l1" style="color:#dc2626">Server error ('+res.status+')</span></div>';
+      document.getElementById('res').innerHTML='<div class="idle"><span class="l1" style="color:#dc2626">Erreur serveur ('+res.status+')</span></div>';
       btn.disabled=false;btn.textContent=t('run_btn');return;
     }
     if(r.error){
@@ -2052,7 +2053,7 @@ async function analyse(){
     render(lastR);
     if(lastR.probabilite>=50){sendN(lastR.probabilite,lastR.zones);const a=document.getElementById('abn');a.style.display='block';setTimeout(()=>a.style.display='none',4000);}
   }catch(err){
-    document.getElementById('res').innerHTML='<div class="idle"><span class="l1" style="color:#dc2626">Network error: '+err.message+'</span></div>';
+    document.getElementById('res').innerHTML='<div class="idle"><span class="l1" style="color:#dc2626">Erreur réseau : '+err.message+'</span></div>';
   }
   btn.disabled=false;btn.textContent=t('run_btn');
 }
@@ -2344,16 +2345,16 @@ ACCOUNT_HTML = _HEAD.replace("{FAV}", FAV_B64) + """
 {% if user %}
 <div class="card">
   <div class="ctitle">API</div>
-  <div style="font-size:11px;color:var(--text3);margin-bottom:10px">Use your API key to send sensor data from PLCs or scripts.</div>
+  <div style="font-size:11px;color:var(--text3);margin-bottom:10px" data-i18n="acc_api_desc">Utilisez votre clé API pour envoyer des données capteurs depuis vos automates ou scripts.</div>
   {% if user.api_key %}
   <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
     <code style="font-size:11px;color:var(--teal-light);flex:1;word-break:break-all">{{ user.api_key }}</code>
-    <button onclick="navigator.clipboard.writeText('{{ user.api_key }}')" style="background:none;border:1px solid var(--border2);border-radius:4px;padding:3px 10px;color:var(--text3);font-size:10px;cursor:pointer;white-space:nowrap;flex-shrink:0">COPY</button>
+    <button onclick="navigator.clipboard.writeText('{{ user.api_key }}')" style="background:none;border:1px solid var(--border2);border-radius:4px;padding:3px 10px;color:var(--text3);font-size:10px;cursor:pointer;white-space:nowrap;flex-shrink:0" data-i18n="acc_api_copy">COPIER</button>
   </div>
   {% endif %}
   <div style="display:flex;gap:8px">
-    <button onclick="rotateKey(this)" style="flex:1;padding:10px;background:transparent;border:1px solid var(--border2);color:var(--text3);border-radius:6px;font-size:11px;cursor:pointer">{% if user.api_key %}Regenerate key{% else %}Generate API key{% endif %}</button>
-    <a href="/api/docs" style="flex:1;padding:10px;background:var(--teal);color:#fff;border-radius:6px;font-size:11px;font-weight:700;text-decoration:none;display:flex;align-items:center;justify-content:center;letter-spacing:1px;text-transform:uppercase">API Docs</a>
+    <button onclick="rotateKey(this)" style="flex:1;padding:10px;background:transparent;border:1px solid var(--border2);color:var(--text3);border-radius:6px;font-size:11px;cursor:pointer" data-i18n="{% if user.api_key %}acc_api_regen{% else %}acc_api_gen{% endif %}">{% if user.api_key %}Regénérer la clé{% else %}Générer une clé API{% endif %}</button>
+    <a href="/api/docs" style="flex:1;padding:10px;background:var(--teal);color:#fff;border-radius:6px;font-size:11px;font-weight:700;text-decoration:none;display:flex;align-items:center;justify-content:center;letter-spacing:1px;text-transform:uppercase" data-i18n="acc_api_docs">Documentation API</a>
   </div>
 </div>
 {% endif %}
@@ -2366,7 +2367,7 @@ ACCOUNT_HTML = _HEAD.replace("{FAV}", FAV_B64) + """
 <script>
 async function createTeam(){
   const btn=event.target;btn.disabled=true;
-  const name=document.getElementById('tname').value.trim()||'My Team';
+  const name=document.getElementById('tname').value.trim()||'Mon équipe';
   try{
     const r=await fetch('/team/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});
     if(!r.ok&&r.status===302){window.location='/login';return;}
@@ -2437,13 +2438,13 @@ async function rotateKey(btn){
 
 <div id="chat-panel">
   <div id="chat-head">
-    <span>{{ team.name }} — Team Chat</span>
+    <span>{{ team.name }} — Discussion équipe</span>
     <button onclick="toggleChat()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;line-height:1">×</button>
   </div>
   <div id="chat-msgs"></div>
   <form id="chat-form" onsubmit="sendMsg(event)">
     <input id="chat-input" placeholder="Message..." maxlength="1000" autocomplete="off">
-    <button id="chat-send" type="submit">Send</button>
+    <button id="chat-send" type="submit">Envoyer</button>
   </form>
 </div>
 
@@ -2520,7 +2521,7 @@ TWIN_HTML = _HEAD.replace("{FAV}","iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJA
 <div class="desktop-layout">
 """ + nav("tw") + """
 <div class="main-content">
-<header><span class="logo">PILAR</span><div class="hd"></div><span class="hsub">Digital Twin — Pump Simulation</span></header>
+<header><span class="logo">PILAR</span><div class="hd"></div><span class="hsub" data-i18n="page_twin">Jumeau Numérique</span></header>
 <div class="page pad" id="tc"><div class="idle"><span class="l1" data-i18n="twin_loading">Loading simulation...</span></div></div>
 </div>
 </div>
@@ -2571,6 +2572,7 @@ async function sim(){
   document.getElementById('wr').innerHTML='<div style="padding:14px;background:var(--bg);border:1px solid '+c[cls]+';border-radius:6px"><div style="font-size:9px;letter-spacing:1.5px;color:var(--text3);text-transform:uppercase">'+t('twin_sim_r')+'</div><div style="font-size:32px;font-weight:800;color:'+c[cls]+';margin:4px 0">'+d.risk+'%</div><div style="font-size:12px;font-weight:600;color:'+c[cls]+'">'+d.status+'</div><div style="font-size:11px;color:var(--text3);margin-top:3px">'+d.message+'</div>'+(d.zones.length?'<div style="font-size:10px;color:var(--amber);margin-top:6px">Zones: '+d.zones.map(z=>z.nom+' '+z.proba+'%').join(' · ')+'</div>':'')+'</div>';
 }
 load();
+applyLang();
 </script></body></html>"""
 
 # ── HISTORY ───────────────────────────────────────────────────────────────────
@@ -2590,7 +2592,7 @@ HISTORY_HTML = _HEAD.replace("{FAV}","iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+
   </div>
   <div style="font-size:11px;color:var(--text3);margin:6px 0 16px;padding:10px 14px;background:var(--bg2);border-radius:8px;border-left:3px solid var(--teal);display:flex;align-items:center;gap:10px">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:14px;height:14px;flex-shrink:0;color:var(--teal)"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    <span>Your feedback trains the AI — mark each result as <strong style="color:var(--green)">Confirmed</strong> or <strong style="color:var(--red)">False alarm</strong> to improve accuracy over time.</span>
+    <span data-i18n-html="hist_ai_hint">Qualifiez chaque détection pour améliorer la fiabilité du modèle sur votre installation : <strong style="color:var(--green)">alerte justifiée</strong>, <strong style="color:var(--red)">fausse alarme</strong> ou panne non détectée.</span>
   </div>
   <div class="tw">
     <table>
@@ -2598,16 +2600,16 @@ HISTORY_HTML = _HEAD.replace("{FAV}","iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+
       <tbody>
       {% for a in analyses %}
       <tr><td data-utc="{{ a.timestamp.isoformat() }}Z">{{ a.timestamp.strftime('%d/%m %H:%M') }}</td><td>{{ a.machine_type }}</td><td>{{ a.risk }}%</td>
-          <td><span class="badge {{ 'alert' if a.prediction else 'ok' }}">{{ 'Anomaly' if a.prediction else 'OK' }}</span></td>
+          <td><span class="badge {{ 'alert' if a.prediction else 'ok' }}">{{ 'Anomalie' if a.prediction else 'Normal' }}</span></td>
           <td>{{ a.zones or '—' }}</td>
-          <td>{% if a.mail_sent %}<span class="mb">Sent</span>{% else %}—{% endif %}</td>
+          <td>{% if a.mail_sent %}<span class="mb">Envoyé</span>{% else %}—{% endif %}</td>
           <td>
             <span class="fbtn" data-id="{{ a.id }}" data-fb="{{ a.feedback or '' }}" data-pred="{{ a.prediction }}">
               {% if a.prediction %}
-              <button onclick="rate({{ a.id }},'tp',this)" class="fb-btn fb-confirm {{ 'fb-active-tp' if a.feedback=='tp' else '' }}">{% if a.feedback=='tp' %}✓ Confirmed{% else %}Confirm{% endif %}</button>
-              <button onclick="rate({{ a.id }},'fp',this)" class="fb-btn fb-false  {{ 'fb-active-fp' if a.feedback=='fp' else '' }}">{% if a.feedback=='fp' %}✗ False alarm{% else %}False alarm{% endif %}</button>
+              <button onclick="rate({{ a.id }},'tp',this)" class="fb-btn fb-confirm {{ 'fb-active-tp' if a.feedback=='tp' else '' }}">{% if a.feedback=='tp' %}Alerte justifiée{% else %}Justifier{% endif %}</button>
+              <button onclick="rate({{ a.id }},'fp',this)" class="fb-btn fb-false  {{ 'fb-active-fp' if a.feedback=='fp' else '' }}">{% if a.feedback=='fp' %}Fausse alarme{% else %}Fausse alarme{% endif %}</button>
               {% else %}
-              <button onclick="rate({{ a.id }},'fn',this)" class="fb-btn fb-false {{ 'fb-active-fn' if a.feedback=='fn' else '' }}">{% if a.feedback=='fn' %}⚠ Missed failure{% else %}Missed?{% endif %}</button>
+              <button onclick="rate({{ a.id }},'fn',this)" class="fb-btn fb-false {{ 'fb-active-fn' if a.feedback=='fn' else '' }}">{% if a.feedback=='fn' %}Non détectée{% else %}Panne omise ?{% endif %}</button>
               {% endif %}
             </span>
           </td></tr>
@@ -2618,11 +2620,11 @@ HISTORY_HTML = _HEAD.replace("{FAV}","iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+
   {% if total_pages > 1 %}
   <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-top:20px;font-size:13px;color:var(--text2)">
     {% if page > 1 %}
-    <a href="/history?page={{ page - 1 }}" style="padding:6px 16px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--teal);text-decoration:none;font-weight:600">&lsaquo; Prev</a>
+    <a href="/history?page={{ page - 1 }}" style="padding:6px 16px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--teal);text-decoration:none;font-weight:600">&lsaquo; Précédent</a>
     {% endif %}
     <span>Page {{ page }} / {{ total_pages }}</span>
     {% if page < total_pages %}
-    <a href="/history?page={{ page + 1 }}" style="padding:6px 16px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--teal);text-decoration:none;font-weight:600">Next &rsaquo;</a>
+    <a href="/history?page={{ page + 1 }}" style="padding:6px 16px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--teal);text-decoration:none;font-weight:600">Suivant &rsaquo;</a>
     {% endif %}
   </div>
   {% endif %}
@@ -2654,20 +2656,20 @@ async function rate(id, fb, btn){
     });
     if(newFb==='tp'){
       var b=span.querySelector('.fb-confirm');
-      if(b){b.classList.add('fb-active-tp');b.textContent='✓ Confirmed';}
+      if(b){b.classList.add('fb-active-tp');b.textContent='Alerte justifiée';}
     } else if(newFb==='fp'){
       var b=span.querySelector('.fb-false');
-      if(b){b.classList.add('fb-active-fp');b.textContent='✗ False alarm';}
+      if(b){b.classList.add('fb-active-fp');b.textContent='Fausse alarme';}
     } else if(newFb==='fn'){
       var b=span.querySelector('.fb-false');
-      if(b){b.classList.add('fb-active-fn');b.textContent='⚠ Missed failure';}
+      if(b){b.classList.add('fb-active-fn');b.textContent='Non détectée';}
     } else {
       // toggled off — reset labels
       var pred=span.dataset.pred==='1';
       var bc=span.querySelector('.fb-confirm');
       var bf=span.querySelector('.fb-false');
-      if(bc) bc.textContent='Confirm';
-      if(bf) bf.textContent=pred?'False alarm':'Missed?';
+      if(bc) bc.textContent='Justifier';
+      if(bf) bf.textContent=pred?'Fausse alarme':'Panne omise ?';
     }
   }catch(e){}
 }
@@ -2709,24 +2711,24 @@ SETTINGS_HTML = _HEAD.replace("{FAV}","iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC
     <div class="ctitle" data-i18n="set_sys">System info</div>
     <div style="display:flex;flex-direction:column;gap:8px">
       <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--text3)" data-i18n="set_version">Version</span><span>Pilar v4.0</span></div>
-      <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--text3)" data-i18n="set_aimodel">AI Model</span><span>RandomForest + GBT + SHAP + RUL</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--text3)" data-i18n="set_aimodel">Modèle IA</span><span>RandomForest + GBT + SHAP + RUL</span></div>
       <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--text3)" data-i18n="set_domain">Domain</span><span>trypilar.com</span></div>
     </div>
   </div>
   <div class="card">
-    <div class="ctitle">Change Password</div>
-    <label class="flbl">Current password</label>
+    <div class="ctitle" data-i18n="set_change_pw">Changer le mot de passe</div>
+    <label class="flbl" data-i18n="set_pw_current">Mot de passe actuel</label>
     <input class="fi" type="password" id="pwOld" placeholder="••••••••" style="margin-bottom:10px">
-    <label class="flbl">New password</label>
+    <label class="flbl" data-i18n="set_pw_new">Nouveau mot de passe</label>
     <input class="fi" type="password" id="pwNew" placeholder="••••••••" style="margin-bottom:10px">
-    <label class="flbl">Confirm new password</label>
+    <label class="flbl" data-i18n="set_pw_confirm">Confirmer le nouveau mot de passe</label>
     <input class="fi" type="password" id="pwConf" placeholder="••••••••" style="margin-bottom:12px">
     <div id="pwMsg" style="font-size:11px;margin-bottom:10px;display:none"></div>
-    <button class="btn" onclick="changePassword()">Update Password</button>
+    <button class="btn" onclick="changePassword()" data-i18n="set_pw_update">Mettre à jour</button>
   </div>
   <div class="card">
-    <div class="ctitle">Session</div>
-    <button class="btn" onclick="window.location='/logout'" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text2)">Sign Out</button>
+    <div class="ctitle" data-i18n="set_session">Session</div>
+    <button class="btn" onclick="window.location='/logout'" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text2)" data-i18n="set_signout">Se déconnecter</button>
   </div>
 </div>
 </div>
@@ -2741,15 +2743,16 @@ async function changePassword(){
   const cf=document.getElementById('pwConf').value;
   const msg=document.getElementById('pwMsg');
   msg.style.display='block';
-  if(!old||!nw||!cf){msg.style.color='var(--red)';msg.textContent='All fields required.';return;}
-  if(nw!==cf){msg.style.color='var(--red)';msg.textContent='Passwords do not match.';return;}
-  if(nw.length<8){msg.style.color='var(--red)';msg.textContent='Minimum 8 characters.';return;}
+  if(!old||!nw||!cf){msg.style.color='var(--red)';msg.textContent=t('set_pw_required');return;}
+  if(nw!==cf){msg.style.color='var(--red)';msg.textContent=t('set_pw_mismatch');return;}
+  if(nw.length<8){msg.style.color='var(--red)';msg.textContent=t('set_pw_short');return;}
   const r=await fetch('/change_password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({old_password:old,new_password:nw})});
   const d=await r.json();
-  if(d.ok){msg.style.color='var(--green)';msg.textContent='Password updated.';document.getElementById('pwOld').value='';document.getElementById('pwNew').value='';document.getElementById('pwConf').value='';}
-  else{msg.style.color='var(--red)';msg.textContent=d.error||'Error.';}
+  if(d.ok){msg.style.color='var(--green)';msg.textContent=t('set_pw_ok');document.getElementById('pwOld').value='';document.getElementById('pwNew').value='';document.getElementById('pwConf').value='';}
+  else{msg.style.color='var(--red)';msg.textContent=d.error||t('fl_error');}
 }
 updN();
+applyLang();
 </script></body></html>"""
 
 
@@ -2760,11 +2763,11 @@ ASSISTANT_HTML = _HEAD.replace("{FAV}", FAV_B64) + """
 """ + nav("ai") + """
 <div class="main-content">
 <header><span class="logo">PILAR</span><div class="hd"></div><span class="hsub" data-i18n="nav_assistant">Assistant</span>
-<div class="hright"><a href="/account" style="font-size:10px;color:var(--text3);text-decoration:none;letter-spacing:1px" data-i18n="nav_account">Account</a></div>
+<div class="hright"><a href="/account" style="font-size:10px;color:var(--text3);text-decoration:none;letter-spacing:1px" data-i18n="nav_account">Compte</a></div>
 </header>
 <div class="cw">
   <div class="cm" id="cm">
-    <div class="msg bot"><span class="ms" id="ast-pilar-lbl">Pilar AI</span><div class="mb2" id="ast-hello">Hello. I am your predictive maintenance assistant. Share your sensor readings or ask me anything about your machine health.</div></div>
+    <div class="msg bot"><span class="ms" id="ast-pilar-lbl">Pilar IA</span><div class="mb2" id="ast-hello">Bonjour. Je suis votre assistant de maintenance prédictive. Partagez vos relevés capteurs ou posez-moi vos questions sur l’état de votre installation.</div></div>
   </div>
   <div class="cia">
     <textarea class="cta" id="ci" placeholder="Ask about your machine..." rows="1" onkeydown="kd(event)" data-i18n="ast_placeholder"></textarea>
@@ -2807,6 +2810,7 @@ async function send(){
   }catch(e){tb.classList.remove('typing');tb.textContent=t('ast_net_error');}
   sb.disabled=false;ci.focus();
 }
+applyLang();
 </script></body></html>"""
 
 # ── TUTORIAL ───────────────────────────────────────────────────────────────────
@@ -3166,6 +3170,7 @@ function stopLive(){
   document.getElementById('btnLiveConnect').style.display='inline-block';
   document.getElementById('liveName').textContent='No file connected';
 }
+applyLang();
 </script></body></html>"""
 
 # ── CSV ADAPTER ───────────────────────────────────────────────────────────────
@@ -3430,6 +3435,7 @@ function adpDelFile(id,btn){
 }
 
 document.addEventListener('DOMContentLoaded',adpLoadSaved);
+applyLang();
 </script></body></html>"""
 
 # ── DEMO PAGE ─────────────────────────────────────────────────────────────────
@@ -3813,7 +3819,7 @@ function loadScenario(i){
     }
   }
 }
-
+applyLang();
 </script>
 </body>
 </html>"""
@@ -4089,7 +4095,7 @@ header{height:48px;border-bottom:1px solid var(--border);display:flex;align-item
       <p style="font-size:13px;color:var(--text3);margin-bottom:20px;">Upload a CSV file with sensor readings. Columns are auto-detected. Each row is one reading — all rows will be analysed and saved.</p>
       <div class="upload-area" id="upload-area" onclick="document.getElementById('csv-file').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="handleDrop(event)">
         <input type="file" id="csv-file" accept=".csv" onchange="handleFileSelect(event)">
-        <div class="upload-icon">📂</div>
+        <div class="upload-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:32px;height:32px;color:var(--teal2)"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
         <div class="upload-label" id="upload-label">Drop CSV here or click to browse</div>
         <div class="upload-hint">vibration · temp_palier · debit · pression_entree/sortie · courant_moteur · temp_moteur · heure_fonctionnement</div>
       </div>
@@ -4338,6 +4344,7 @@ function loadHistory() {
 // Auto-load monitor on page open
 loadMonitor();
 setInterval(loadMonitor, 30000);
+applyLang();
 </script>
 </body></html>"""
 
@@ -4481,7 +4488,7 @@ DASHBOARD_HTML = _HEAD.replace("{FAV}", FAV_B64) + """
           <div class="form-group">
             <label class="form-label" data-i18n="fl_class_sel">Classe machine</label>
             <select class="form-input" id="f-type">
-              <option value="L">L \u2014 Basse qualit\u00e9</option>
+              <option value="L" data-i18n="opt_class_l">L \u2014 Basse qualit\u00e9</option>
               <option value="M" selected>M \u2014 Standard</option>
               <option value="H">H \u2014 Haute qualit\u00e9</option>
             </select>
@@ -4495,7 +4502,7 @@ DASHBOARD_HTML = _HEAD.replace("{FAV}", FAV_B64) + """
           <div class="form-group">
             <label class="form-label" data-i18n="fl_pump_sel">Type de pompe</label>
             <select class="form-input" id="f-pump-type">
-              <option value="centrifuge" selected>Centrifuge</option>
+              <option value="centrifuge" selected data-i18n="opt_pump_centrifuge">Centrifuge</option>
               <option value="pompe_a_vis">Pompe \u00e0 vis</option>
               <option value="pompe_a_engrenage">Pompe \u00e0 engrenages</option>
               <option value="pompe_a_palettes">Pompe \u00e0 palettes</option>
@@ -4506,12 +4513,12 @@ DASHBOARD_HTML = _HEAD.replace("{FAV}", FAV_B64) + """
           <div class="form-group">
             <label class="form-label" data-i18n="fl_fluid_sel">Type de fluide</label>
             <select class="form-input" id="f-fluid-type">
-              <option value="eau" selected>Eau</option>
+              <option value="eau" selected data-i18n="opt_fluid_eau">Eau</option>
               <option value="eau_chargee">Eau charg\u00e9e / boues</option>
-              <option value="huile">Huile</option>
-              <option value="acide">Acide</option>
-              <option value="base">Base / alcalin</option>
-              <option value="autre">Autre</option>
+              <option value="huile" data-i18n="opt_fluid_huile">Huile</option>
+              <option value="acide" data-i18n="opt_fluid_acide">Acide</option>
+              <option value="base" data-i18n="opt_fluid_base">Base / alcalin</option>
+              <option value="autre" data-i18n="opt_fluid_autre">Autre</option>
             </select>
           </div>
         </div>
@@ -4519,12 +4526,12 @@ DASHBOARD_HTML = _HEAD.replace("{FAV}", FAV_B64) + """
           <div class="form-group">
             <label class="form-label" data-i18n="fl_mat_sel">Mat\u00e9riau roue</label>
             <select class="form-input" id="f-roue-material">
-              <option value="inox_316" selected>Inox 316</option>
-              <option value="fonte">Fonte grise</option>
-              <option value="titane">Titane</option>
-              <option value="bronze">Bronze</option>
-              <option value="plastique">Plastique / PVDF</option>
-              <option value="autre">Autre</option>
+              <option value="inox_316" selected data-i18n="opt_mat_inox">Inox 316</option>
+              <option value="fonte" data-i18n="opt_mat_fonte">Fonte grise</option>
+              <option value="titane" data-i18n="opt_mat_titane">Titane</option>
+              <option value="bronze" data-i18n="opt_mat_bronze">Bronze</option>
+              <option value="plastique" data-i18n="opt_mat_plastique">Plastique / PVDF</option>
+              <option value="autre" data-i18n="opt_mat_autre">Autre</option>
             </select>
           </div>
           <div class="form-group">
@@ -4585,6 +4592,17 @@ DASHBOARD_HTML = _HEAD.replace("{FAV}", FAV_B64) + """
     <div class="modal-footer">
       <button type="button" class="btn btn-ghost" onclick="closeAnalyse()" data-i18n="fl_an_close">Fermer</button>
       <button type="button" class="btn btn-primary" id="an-submit" onclick="runAnalyse()" data-i18n="fl_an_run">Lancer l\u2019analyse</button>
+    </div>
+  </div>
+</div>
+
+<!-- Machine Details Modal -->
+<div class="modal-overlay" id="det-overlay" onclick="if(event.target===this)closeDetails()">
+  <div class="modal" style="width:600px;max-height:85vh;overflow-y:auto">
+    <div class="modal-title" id="det-title"></div>
+    <div id="det-body" style="min-height:80px"></div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-primary" onclick="closeDetails()" data-i18n="fl_cancel">Fermer</button>
     </div>
   </div>
 </div>
@@ -4718,7 +4736,7 @@ function renderFleet() {
         +'<svg viewBox="0 0 20 20" fill="currentColor" style="width:13px;height:13px;flex-shrink:0;color:var(--teal2)"><path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/></svg>'
         +'<span class="file-name">'+esc(m.saved_file.filename)+'</span>'
         +'<button onclick="event.stopPropagation();rerunFile('+m.id+')" style="background:var(--teal);border:none;border-radius:5px;color:#fff;font-size:10px;font-weight:700;padding:3px 8px;cursor:pointer" id="rerun-'+m.id+'">'+t('fl_btn_rerun')+'</button>'
-        +'<button onclick="event.stopPropagation();deleteFile('+m.id+','+m.saved_file.id+')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:15px;line-height:1;padding:2px 4px">\u2715</button>'
+        +'<button onclick="event.stopPropagation();deleteFile('+m.id+','+m.saved_file.id+')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:10px;font-weight:600;padding:2px 6px">'+t('fl_del_btn')+'</button>'
         +'</div>';
     }
 
@@ -4742,12 +4760,130 @@ function renderFleet() {
       +statsSection
       +dropZone
       +'<div class="card-actions">'
-      +'<button class="card-action-btn primary" onclick="openAnalyse('+m.id+')">\u26a1 '+t('fl_btn_analyze')+'</button>'
+      +'<button class="card-action-btn primary" onclick="openAnalyse('+m.id+')">'+t('fl_btn_analyze')+'</button>'
+      +'<button class="card-action-btn" onclick="openDetails('+m.id+')">'+t('fl_btn_details')+'</button>'
       +'<button class="card-action-btn" onclick="openEdit('+m.id+')">'+t('fl_btn_edit')+'</button>'
-      +'<button class="card-action-btn danger" onclick="deleteMachine('+m.id+')">\u2715</button>'
+      +'<button class="card-action-btn danger" onclick="deleteMachine('+m.id+')">'+t('fl_del_btn')+'</button>'
       +'</div>'
       +'</div>';
   }).join('');
+}
+
+// ── MACHINE DETAILS MODAL ────────────────────────────────────────────────────
+function closeDetails() { document.getElementById('det-overlay').classList.remove('open'); }
+
+async function openDetails(id) {
+  var m = _machines.find(function(x){return x.id===id;});
+  if (!m) return;
+  var ov = document.getElementById('det-overlay');
+  var body = document.getElementById('det-body');
+  var rCol = riskColor(m.last_risk);
+  var badge = riskBadge(m.last_risk);
+
+  // Header
+  var isFr = (LANG==='fr');
+  var pumpFr = {centrifuge:'Centrifuge',pompe_a_vis:'Vis',pompe_a_engrenage:'Engrenages',pompe_a_palettes:'Palettes',pompe_a_piston:'Piston',peristaltique:'P\u00e9ristaltique'};
+  var pumpEn = {centrifuge:'Centrifugal',pompe_a_vis:'Screw',pompe_a_engrenage:'Gear',pompe_a_palettes:'Vane',pompe_a_piston:'Piston',peristaltique:'Peristaltic'};
+  var flFr = {eau:'Eau',eau_chargee:'Eau charg\u00e9e',huile:'Huile',acide:'Acide',base:'Base',autre:'Autre'};
+  var flEn = {eau:'Water',eau_chargee:'Slurry',huile:'Oil',acide:'Acid',base:'Base',autre:'Other'};
+  var pL = isFr ? pumpFr : pumpEn;
+  var fL = isFr ? flFr : flEn;
+  var pumpTxt = pL[m.pump_type]||m.pump_type||'Centrifuge';
+  var fluidTxt = fL[m.fluid_type]||m.fluid_type||'Eau';
+
+  document.getElementById('det-title').textContent = m.name;
+
+  var html = '<div style="display:flex;gap:16px;align-items:flex-start;margin-bottom:16px;flex-wrap:wrap">'
+    +'<div style="flex:1;min-width:160px">'
+    +'<div style="font-size:11px;color:var(--text3);margin-bottom:2px">'+pumpTxt+' \u00b7 '+fluidTxt+'</div>'
+    +(m.description?'<div style="font-size:12px;color:var(--text2);margin-bottom:4px">'+esc(m.description)+'</div>':'')
+    +'<div style="font-size:11px;color:var(--text3)">'+(isFr?'Seuil':'Threshold')+' : '+m.threshold+'%</div>'
+    +(m.saved_file?'<div style="font-size:11px;color:var(--teal2);margin-top:4px">&#128196; '+esc(m.saved_file.filename)+'</div>':'')
+    +'</div>'
+    +(m.last_risk!==null?
+      '<div style="text-align:center;padding:12px 20px;background:var(--surface);border:1px solid var(--border);border-radius:8px">'
+      +'<div style="font-size:32px;font-weight:800;color:'+rCol+'">'+m.last_risk+'<span style="font-size:14px;color:var(--text3)">%</span></div>'
+      +'<div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-top:2px">'+t('fl_risk_lbl')+'</div>'
+      +'<div style="margin-top:6px">'+badge+'</div>'
+      +'</div>'
+    :'')
+    +'</div>';
+
+  body.innerHTML = html + '<div id="det-history-area"><div style="text-align:center;padding:16px"><span class="spinner"></span></div></div>'
+    +'<div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border)">'
+    +'<a href="/history" onclick="closeDetails()" style="font-size:12px;font-weight:600;color:var(--teal2);text-decoration:none">'+t('fl_det_history')+'</a>'
+    +'</div>';
+
+  ov.classList.add('open');
+
+  // Fetch history
+  try {
+    var r = await fetch('/api/machine_history/'+id+'?limit=20');
+    var d = await r.json();
+    var analyses = (d.analyses||[]);
+    var ha = document.getElementById('det-history-area');
+    if (!ha) return;
+    if (!analyses.length) {
+      ha.innerHTML = '<p style="font-size:12px;color:var(--text3)">'+t('fl_det_no_data')+'</p>';
+      return;
+    }
+
+    // Stats row
+    var risks = analyses.map(function(a){return a.risk;});
+    var maxR = Math.max.apply(null,risks);
+    var minR = Math.min.apply(null,risks);
+    var anom = analyses.filter(function(a){return a.prediction===1;}).length;
+    var rc = maxR>=70?'var(--red)':maxR>=45?'var(--amber)':'var(--green)';
+
+    var statsHtml = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px">'
+      +'<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px;text-align:center">'
+      +'<div style="font-size:20px;font-weight:800;color:'+rc+'">'+maxR+'%</div>'
+      +'<div style="font-size:9px;color:var(--text3);text-transform:uppercase;margin-top:2px">'+t('fl_det_risk_max')+'</div>'
+      +'</div>'
+      +'<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px;text-align:center">'
+      +'<div style="font-size:20px;font-weight:800;color:var(--green)">'+minR+'%</div>'
+      +'<div style="font-size:9px;color:var(--text3);text-transform:uppercase;margin-top:2px">'+t('fl_det_risk_min')+'</div>'
+      +'</div>'
+      +'<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px;text-align:center">'
+      +'<div style="font-size:20px;font-weight:800;color:var(--amber)">'+anom+'</div>'
+      +'<div style="font-size:9px;color:var(--text3);text-transform:uppercase;margin-top:2px">'+t('fl_det_anomalies')+'</div>'
+      +'</div>'
+      +'</div>';
+
+    // Mini sparkline SVG
+    var W=380, H=44, n=analyses.length;
+    var pts = analyses.slice().reverse().map(function(a,i){
+      var x = n>1 ? (i/(n-1))*W : W/2;
+      var y = H - (a.risk/100)*H;
+      return x+','+y;
+    }).join(' ');
+    var sparkHtml = '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:44px;display:block;margin-bottom:14px">'
+      +'<polyline points="'+pts+'" fill="none" stroke="'+rc+'" stroke-width="2" stroke-linejoin="round"/>'
+      +'<line x1="0" y1="'+(H-(45/100)*H)+'" x2="'+W+'" y2="'+(H-(45/100)*H)+'" stroke="var(--amber)" stroke-width="1" stroke-dasharray="4,4" opacity="0.5"/>'
+      +'</svg>';
+
+    // Last 10 rows table
+    var tableHtml = '<div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">'+t('fl_det_last')+'</div>'
+      +'<div style="overflow:hidden;border:1px solid var(--border);border-radius:6px">'
+      +'<div style="display:grid;grid-template-columns:1fr 70px 80px;font-size:10px;font-weight:700;color:var(--text3);padding:6px 10px;background:rgba(0,0,0,.2);text-transform:uppercase;letter-spacing:.5px">'
+      +'<span>'+t('fl_det_time')+'</span><span>'+t('fl_risk_lbl')+'</span><span>'+t('fl_det_status')+'</span></div>';
+    analyses.slice(0,10).forEach(function(a){
+      var rr = a.risk>=70?'var(--red)':a.risk>=45?'var(--amber)':'var(--green)';
+      var ts = a.timestamp ? a.timestamp.replace('T',' ').substring(0,16) : '—';
+      tableHtml += '<div style="display:grid;grid-template-columns:1fr 70px 80px;font-size:11px;padding:6px 10px;border-top:1px solid var(--border)">'
+        +'<span style="color:var(--text3)">'+ts+'</span>'
+        +'<span style="font-weight:700;color:'+rr+'">'+a.risk+'%</span>'
+        +'<span style="font-size:10px;color:'+(a.prediction?'var(--red)':'var(--green)')+'">'+
+        (a.prediction?t('fl_an_failure'):t('fl_an_normal'))+'</span>'
+        +'</div>';
+    });
+    tableHtml += '</div>';
+
+    ha.innerHTML = statsHtml + sparkHtml + tableHtml;
+  } catch(ex) {
+    var ha2 = document.getElementById('det-history-area');
+    if (ha2) ha2.innerHTML = '<p style="color:var(--red);font-size:12px">'+t('fl_net_error')+'</p>';
+  }
 }
 
 // ── DRAG & DROP on cards ─────────────────────────────────────────────────────
@@ -4936,40 +5072,105 @@ async function deleteFile(mid, fid) {
 // ── ANALYZE ALL ──────────────────────────────────────────────────────────────
 function showAP(html) { document.getElementById('ap-content').innerHTML=html; document.getElementById('ap-overlay').classList.add('open'); }
 function closeAP() { document.getElementById('ap-overlay').classList.remove('open'); }
+function apToggleDetail(el) {
+  var id = el.getAttribute('data-detail');
+  var panel = document.getElementById(id);
+  if (!panel) return;
+  var open = panel.style.display !== 'none';
+  panel.style.display = open ? 'none' : 'block';
+  var chev = el.querySelector('.ap-chevron');
+  if (chev) chev.textContent = open ? '\u25b8' : '\u25be';
+}
 
 async function analyzeAll() {
   var btn = document.getElementById('analyze-all-btn');
-  if (btn) { btn.textContent=t('fl_analyzing'); btn.disabled=true; }
-  await loadFleet();
-  var withFiles = _machines.filter(function(m){return m.saved_file;});
-  if (!withFiles.length) { showAP('<p style="color:var(--text3);font-size:13px">'+t('fl_no_file_msg')+'</p>'); if(btn){btn.textContent=t('fl_analyze_all');btn.disabled=false;} return; }
-  showAP('<div style="text-align:center;padding:20px"><span class="spinner"></span><span style="font-size:13px;color:var(--text3)">'+t('fl_analyzing')+'</span></div>');
   try {
-    var r = await fetch('/api/machines/analyze-all', {method:'POST', headers:{'Content-Type':'application/json'}});
-    var d = await r.json();
-    if (!d.ok) { showAP('<p style="color:var(--red);font-size:13px">'+(d.error||t('fl_error'))+'</p>'); if(btn){btn.textContent=t('fl_analyze_all');btn.disabled=false;} return; }
-    var ok = d.results.filter(function(x){return !x.skipped;});
-    var skip = d.results.filter(function(x){return x.skipped;});
-    var html = '<div style="font-size:11px;font-weight:700;color:var(--teal2);letter-spacing:1px;text-transform:uppercase;margin-bottom:14px">'+t('fl_ap_done')+' \u2014 '+ok.length+' machines</div>';
+    if (btn) { btn.textContent=t('fl_analyzing'); btn.disabled=true; }
+    await loadFleet();
+    var withFiles = _machines.filter(function(m){return m.saved_file;});
+    if (!withFiles.length) {
+      showAP('<p style="color:var(--text3);font-size:13px">'+t('fl_no_file_msg')+'</p>');
+      return;
+    }
+    showAP('<div style="text-align:center;padding:20px"><span class="spinner"></span><span style="font-size:13px;color:var(--text3)">'+t('fl_analyzing')+'</span></div>');
+    var r = await fetch('/api/machines/analyze-all', {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'});
+    var bodyText = await r.text();
+    var d;
+    try { d = JSON.parse(bodyText); } catch(je) {
+      showAP('<p style="color:var(--red);font-size:12px">HTTP '+r.status+': '+bodyText.substring(0,300)+'</p>');
+      return;
+    }
+    if (!d.ok) {
+      showAP('<p style="color:var(--red);font-size:13px">'+(d.error||t('fl_error'))+'</p>');
+      return;
+    }
+    var results = d.results || [];
+    var ok = results.filter(function(x){return !x.skipped;});
+    var skip = results.filter(function(x){return x.skipped;});
+    var html = '<div style="font-size:11px;font-weight:700;color:var(--teal2);letter-spacing:1px;text-transform:uppercase;margin-bottom:14px">'+t('fl_ap_done')+' \u2014 '+ok.length+' machine(s)</div>';
     if (ok.length) {
-      html += '<div>';
-      ok.forEach(function(x) {
-        var rc = x.avg_risk>=70?'var(--red)':x.avg_risk>=45?'var(--amber)':'var(--green)';
-        html += '<div class="ap-row"><div style="font-weight:600">'+esc(x.machine)+'</div>'
-          +'<div style="color:var(--text3)">'+x.total+' '+t('fl_ap_rows')+'</div>'
-          +'<div style="color:var(--amber)">'+x.failures+' '+t('fl_ap_anom')+'</div>'
-          +'<div style="color:'+rc+'">'+x.avg_risk+'% '+t('fl_ap_avg')+'</div></div>';
+      html += '<div id="ap-results-list">';
+      ok.forEach(function(x, idx) {
+        var avgR = parseFloat(x.avg_risk)||0;
+        var maxR = parseFloat(x.max_risk)||0;
+        var rc = avgR>=70?'var(--red)':avgR>=45?'var(--amber)':'var(--green)';
+        var rcMax = maxR>=70?'var(--red)':maxR>=45?'var(--amber)':'var(--green)';
+        var failRate = x.total ? Math.round((x.failures/x.total)*100) : 0;
+        var detailId = 'ap-detail-'+idx;
+        html += '<div style="border:1px solid var(--border);border-radius:8px;margin-bottom:8px;overflow:hidden">'
+          // Summary row
+          +'<div style="display:grid;grid-template-columns:1fr auto auto auto auto;gap:10px;align-items:center;padding:10px 12px;cursor:pointer;background:var(--surface)" data-detail="'+detailId+'" onclick="apToggleDetail(this)">'
+          +'<div style="font-weight:600;font-size:13px">'+esc(String(x.machine||''))+'</div>'
+          +'<div style="font-size:11px;color:var(--text3)">'+(x.total||0)+' '+t('fl_ap_rows')+'</div>'
+          +'<div style="font-size:11px;color:var(--amber)">'+(x.failures||0)+' '+t('fl_ap_anom')+'</div>'
+          +'<div style="font-size:12px;font-weight:700;color:'+rc+'">'+avgR+'%</div>'
+          +'<span class="ap-chevron" style="font-size:10px;color:var(--text3)">\u25b8</span>'
+          +'</div>'
+          // Detail panel (hidden by default)
+          +'<div id="'+detailId+'" style="display:none;padding:12px;background:rgba(0,0,0,.2);border-top:1px solid var(--border)">'
+          // Risk bar
+          +'<div style="margin-bottom:12px">'
+          +'<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-bottom:4px"><span>'+t('fl_ap_avg')+'</span><span style="color:'+rc+';font-weight:700">'+avgR+'%</span></div>'
+          +'<div style="height:6px;background:var(--border2);border-radius:3px;overflow:hidden"><div style="height:100%;width:'+Math.min(avgR,100)+'%;background:'+rc+';transition:width .5s ease;border-radius:3px"></div></div>'
+          +'</div>'
+          // Stats grid
+          +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">'
+          +'<div style="background:var(--surface2,var(--surface));border:1px solid var(--border);border-radius:6px;padding:8px;text-align:center">'
+          +'<div style="font-size:18px;font-weight:800;color:'+rcMax+'">'+maxR+'%</div>'
+          +'<div style="font-size:9px;color:var(--text3);text-transform:uppercase;margin-top:2px">'+t('fl_det_risk_max')+'</div>'
+          +'</div>'
+          +'<div style="background:var(--surface2,var(--surface));border:1px solid var(--border);border-radius:6px;padding:8px;text-align:center">'
+          +'<div style="font-size:18px;font-weight:800;color:var(--amber)">'+failRate+'%</div>'
+          +'<div style="font-size:9px;color:var(--text3);text-transform:uppercase;margin-top:2px">'+t('fl_anom_rate')+'</div>'
+          +'</div>'
+          +'<div style="background:var(--surface2,var(--surface));border:1px solid var(--border);border-radius:6px;padding:8px;text-align:center">'
+          +'<div style="font-size:18px;font-weight:800">'+(x.total||0)+'</div>'
+          +'<div style="font-size:9px;color:var(--text3);text-transform:uppercase;margin-top:2px">'+t('fl_rows_analyzed')+'</div>'
+          +'</div>'
+          +'</div>'
+          // File name + history link
+          +(x.file?'<div style="font-size:10px;color:var(--text3);margin-bottom:10px">&#128196; '+esc(String(x.file))+'</div>':'')
+          +'<a href="/history" style="display:inline-block;font-size:11px;font-weight:600;color:var(--teal2);text-decoration:none;border:1px solid rgba(13,148,136,.3);border-radius:5px;padding:5px 10px" onclick="closeAP()">Voir historique complet \u2192</a>'
+          +'</div>'
+          +'</div>';
       });
       html += '</div>';
     }
     if (skip.length) {
-      html += '<div style="font-size:11px;color:var(--text3);padding-top:8px;border-top:1px solid var(--border)">';
-      skip.forEach(function(x){html+='<div style="padding:3px 0">'+esc(x.machine)+' \u2014 '+(x.reason||t('fl_ap_skip'))+'</div>';});
+      html += '<div style="font-size:11px;color:var(--text3);padding-top:8px;border-top:1px solid var(--border);margin-top:8px">';
+      skip.forEach(function(x){
+        html += '<div style="padding:3px 0">'+esc(String(x.machine||''))+' \u2014 '+(x.reason||t('fl_ap_skip'))+'</div>';
+      });
       html += '</div>';
     }
-    showAP(html); loadFleet();
-  } catch(ex) { showAP('<p style="color:var(--red);font-size:13px">'+t('fl_net_error')+'</p>'); }
-  if (btn) { btn.textContent=t('fl_analyze_all'); btn.disabled=false; }
+    showAP(html);
+    loadFleet();
+  } catch(ex) {
+    var msg = ex && ex.message ? ex.message : String(ex);
+    showAP('<p style="color:var(--red);font-size:12px">\u26a0 '+msg+'</p>');
+  } finally {
+    if (btn) { btn.textContent=t('fl_analyze_all'); btn.disabled=false; }
+  }
 }
 
 // ── QUICK ANALYSE MODAL ──────────────────────────────────────────────────────
@@ -5041,6 +5242,7 @@ async function runAnalyse() {
 }
 
 loadFleet();
+applyLang();
 </script>
 </div>
 </div>
