@@ -6,7 +6,7 @@ Lance Flask en thread background, puis ouvre une fenetre native pywebview
 
 - Tray icon : Ouvrir PILAR / Quitter PILAR
 - pywebview utilise WebView2 (Edge runtime) sous le capot
-- Auto-updater : verifie Railway au demarrage, propose mise a jour si nouvelle version
+- Auto-updater : verifie GitHub Releases au demarrage, propose mise a jour si nouvelle version
 """
 
 import os
@@ -14,7 +14,10 @@ import sys
 import time
 import threading
 import multiprocessing
+import tempfile
+import subprocess
 from pathlib import Path
+from packaging.version import Version
 
 import pystray
 from PIL import Image, ImageDraw
@@ -25,7 +28,7 @@ APP_HOST     = "127.0.0.1"
 APP_PORT     = 5000
 APP_URL      = f"http://{APP_HOST}:{APP_PORT}/monitor"
 APP_VERSION  = "1.0.0"   # bump this with every release
-UPDATE_CHECK = "https://pilar-website.up.railway.app/api/latest"
+GITHUB_API   = "https://api.github.com/repos/CYPHr007/PILAR/releases/latest"
 
 if _FROZEN:
     BASE_DIR = Path(sys.executable).parent.resolve()
@@ -77,6 +80,7 @@ def _run_flask():
     print(f"[PILAR] Starting Flask on {APP_URL}")
     os.chdir(str(BASE_DIR))
     os.environ["PILAR_LAUNCHER"] = "1"
+    os.environ.setdefault("PILAR_VERSION", APP_VERSION)
     if str(BASE_DIR) not in sys.path:
         sys.path.insert(0, str(BASE_DIR))
     import etape7
@@ -103,10 +107,142 @@ def _wait_for_flask(timeout: float = 60.0) -> bool:
 
 
 # ── Auto-updater ───────────────────────────────────────────────────────────────
+def _parse_version(tag: str) -> Version:
+    """Parse a git tag like 'v1.2.3' or '1.2.3' into a Version object."""
+    return Version(tag.lstrip("v"))
+
+
+def _fetch_latest_release():
+    """
+    Interroge l'API GitHub Releases.
+    Retourne (latest_version_str, download_url) ou (None, None) en cas d'erreur.
+    """
+    import urllib.request
+    import json
+    try:
+        req = urllib.request.Request(
+            GITHUB_API,
+            headers={"User-Agent": f"PILAR-Desktop/{APP_VERSION}"},
+        )
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            data = json.loads(resp.read())
+        tag = data.get("tag_name", "")
+        assets = data.get("assets", [])
+        # Cherche le .exe dans les assets
+        exe_url = None
+        for asset in assets:
+            name = asset.get("name", "")
+            if name.endswith(".exe") and "Setup" in name:
+                exe_url = asset.get("browser_download_url")
+                break
+        if not exe_url:
+            # Fallback: utilise le zipball si pas d'exe
+            exe_url = data.get("zipball_url")
+        return tag, exe_url
+    except Exception as e:
+        print(f"[PILAR] Update check failed: {e}")
+        return None, None
+
+
+def _download_and_install(url: str, version: str):
+    """
+    Telecharge le nouvel installeur dans un fichier temp,
+    le lance (silencieux) puis ferme l'app courante.
+    """
+    import urllib.request
+    global _window, _tray_icon
+
+    print(f"[PILAR] Downloading update from {url}")
+    try:
+        # Fichier temp avec extension .exe
+        tmp = tempfile.NamedTemporaryFile(
+            delete=False, suffix=".exe",
+            prefix=f"PILAR_Setup_{version}_"
+        )
+        tmp_path = tmp.name
+        tmp.close()
+
+        # Telechargement avec barre de progression dans la console
+        def _progress(block_count, block_size, total_size):
+            if total_size > 0:
+                pct = min(100, block_count * block_size * 100 // total_size)
+                print(f"\r[PILAR] Download: {pct}%", end="", flush=True)
+
+        urllib.request.urlretrieve(url, tmp_path, reporthook=_progress)
+        print()  # newline apres la barre de progression
+        print(f"[PILAR] Download complete: {tmp_path}")
+
+        # Lance l'installeur et ferme l'app
+        subprocess.Popen([tmp_path], close_fds=True)
+        print("[PILAR] Installer launched — closing app")
+
+        # Ferme la fenetre webview et le tray
+        if _window is not None:
+            try:
+                _window.destroy()
+            except Exception:
+                pass
+        if _tray_icon is not None:
+            try:
+                _tray_icon.stop()
+            except Exception:
+                pass
+
+    except Exception as e:
+        print(f"[PILAR] Download failed: {e}")
+        _show_error_dialog(f"Echec du telechargement :\n{e}")
+
+
+def _show_update_dialog(latest: str, url: str):
+    """Affiche une boite de dialogue native Windows pour proposer la mise a jour."""
+    import ctypes
+    MB_YESNO    = 0x04
+    MB_ICONINFO = 0x40
+    IDYES       = 6
+
+    msg = (
+        f"Une nouvelle version de PILAR est disponible.\n\n"
+        f"Version actuelle : {APP_VERSION}\n"
+        f"Nouvelle version : {latest}\n\n"
+        f"Voulez-vous mettre a jour maintenant ?\n"
+        f"(L'application se fermera et l'installeur se lancera automatiquement.)"
+    )
+    result = ctypes.windll.user32.MessageBoxW(
+        0, msg, "PILAR — Mise a jour disponible", MB_YESNO | MB_ICONINFO
+    )
+    if result == IDYES:
+        _download_and_install(url, latest)
+
+
+def _show_error_dialog(msg: str):
+    import ctypes
+    MB_OK        = 0x00
+    MB_ICONERROR = 0x10
+    ctypes.windll.user32.MessageBoxW(0, msg, "PILAR — Erreur", MB_OK | MB_ICONERROR)
+
+
 def _check_update():
-    """Runs in background thread. Sets PILAR_VERSION env var so etape7 can serve it."""
-    os.environ.setdefault("PILAR_VERSION", APP_VERSION)
-    print(f"[PILAR] Version {APP_VERSION} — update check delegated to in-app banner")
+    """Runs in background thread — non-bloquant."""
+    print(f"[PILAR] Version {APP_VERSION} — checking for updates...")
+    tag, url = _fetch_latest_release()
+    if not tag or not url:
+        print("[PILAR] No update info available (offline or no release).")
+        return
+    try:
+        latest  = _parse_version(tag)
+        current = _parse_version(APP_VERSION)
+    except Exception as e:
+        print(f"[PILAR] Version parse error: {e}")
+        return
+
+    if latest > current:
+        print(f"[PILAR] Update available: {tag}")
+        # Le dialog doit etre appele depuis le main thread sur Windows
+        # On utilise un flag + on appelle depuis le thread principal apres webview.start()
+        # Solution simple : appel direct (ctypes MessageBox fonctionne depuis n'importe quel thread)
+        _show_update_dialog(tag, url)
+    else:
+        print(f"[PILAR] Up to date ({APP_VERSION}).")
 
 
 # ── Tray actions ───────────────────────────────────────────────────────────────

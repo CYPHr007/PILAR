@@ -68,6 +68,8 @@ hidden_imports = [
     "pandas",
     "scipy",
     # Misc
+    "packaging",
+    "packaging.version",
     "pickle",
     "apscheduler",
     "apscheduler.schedulers.background",
