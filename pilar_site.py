@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 from functools import wraps
 
 from flask import (Flask, request, render_template_string, redirect,
-                   url_for, session, jsonify, abort)
+                   url_for, session, jsonify, abort, make_response)
 from flask_sqlalchemy import SQLAlchemy
 
 try:
@@ -168,6 +168,11 @@ nav{{position:fixed;top:0;left:0;right:0;z-index:100;padding:0 2rem;height:56px;
 # ─────────────────────────────────────────────────────────────────────────────
 #  LANDING PAGE  /
 # ─────────────────────────────────────────────────────────────────────────────
+_LANDING_HTML_PATH = os.path.join(os.path.dirname(__file__), 'landing.html')
+with open(_LANDING_HTML_PATH, 'r', encoding='utf-8') as _f:
+    LANDING_HTML_NEW = _f.read()
+
+# Legacy variables kept for reference (no longer used by the / route)
 LANDING_CSS = """
 .grid-bg{position:fixed;inset:0;
   background-image:linear-gradient(var(--border) 1px,transparent 1px),
@@ -479,7 +484,9 @@ document.getElementById('req-form').addEventListener('submit', async function(e)
 
 @app.route('/')
 def index():
-    return _page('Predictive Maintenance for Industry', LANDING_HTML, LANDING_CSS)
+    resp = make_response(LANDING_HTML_NEW, 200)
+    resp.headers['Content-Type'] = 'text/html; charset=utf-8'
+    return resp
 
 
 # ─────────────────────────────────────────────────────────────────────────────
