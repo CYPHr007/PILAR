@@ -1100,6 +1100,18 @@ def download_page():
     body = f"""<div class="dl-wrap">
   <div class="dl-hero">
     <div class="dl-container">
+      <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem">
+        <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="20" cy="20" r="19" fill="#0e1118" stroke="#0d9488" stroke-width="1.5"/>
+          <circle cx="20" cy="20" r="12" fill="none" stroke="#0d9488" stroke-width="1.2" stroke-dasharray="3 2"/>
+          <circle cx="20" cy="20" r="5" fill="#0d9488"/>
+          <line x1="20" y1="8" x2="20" y2="13" stroke="#0d9488" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="20" y1="27" x2="20" y2="32" stroke="#0d9488" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="8" y1="20" x2="13" y2="20" stroke="#0d9488" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="27" y1="20" x2="32" y2="20" stroke="#0d9488" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:.85rem;font-weight:500;letter-spacing:.3em;color:#e2e8f0">P I L A R</span>
+      </div>
       <div class="dl-welcome">Welcome back, {first_name}</div>
       <div class="dl-title">PILAR Pilot <span class="version-badge">{APP_VERSION}</span></div>
       <div class="dl-sub">Your early access to predictive maintenance for centrifugal pumps.</div>
@@ -1110,11 +1122,11 @@ def download_page():
     <div class="dl-grid">
       <div class="dl-card">
         <div class="dl-card-label">Download</div>
-        <div class="dl-card-title">PILAR Pilot — Windows</div>
+        <div class="dl-card-title">PILAR Pilot — Windows <span class="version-badge">{APP_VERSION}</span></div>
         <div class="dl-card-sub">Desktop application for Windows 10/11.<br>
-          Requires no internet connection after setup.</div>
-        <a href="{DOWNLOAD_URL}" class="dl-btn" {'target="_blank"' if DOWNLOAD_URL != '#' else ''}>
-          ↓ Download PILAR Pilot
+          Extract zip and run PILAR.exe — no installer required.</div>
+        <a href="{DOWNLOAD_URL}" class="dl-btn" target="_blank">
+          ↓ Download PILAR {APP_VERSION}
         </a>
       </div>
 
@@ -1122,8 +1134,8 @@ def download_page():
         <div class="dl-card-label">Installation</div>
         <div class="dl-card-title">Getting started</div>
         <div class="install-steps">
-          <div class="install-step"><span class="step-n">1</span>Run the installer (PILAR_Setup.exe)</div>
-          <div class="install-step"><span class="step-n">2</span>Launch PILAR from your desktop</div>
+          <div class="install-step"><span class="step-n">1</span>Extract the zip to a folder of your choice</div>
+          <div class="install-step"><span class="step-n">2</span>Run <strong>PILAR.exe</strong> inside the folder</div>
           <div class="install-step"><span class="step-n">3</span>Create your admin account on first launch</div>
           <div class="install-step"><span class="step-n">4</span>Upload a CSV or connect your sensor feed</div>
         </div>
