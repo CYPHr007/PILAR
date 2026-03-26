@@ -7,7 +7,7 @@
 ; To suppress SmartScreen in production, sign the exe with a trusted cert.
 
 #define AppName       "PILAR"
-#define AppVersion    "1.0.0"
+#define AppVersion    "1.1.0"
 #define AppPublisher  "PILAR — Predictive Maintenance"
 #define AppURL        "https://pilar.app"
 #define AppExeName    "PILAR.exe"

@@ -27,7 +27,7 @@ _FROZEN      = getattr(sys, "frozen", False)
 APP_HOST     = "127.0.0.1"
 APP_PORT     = 5000
 APP_URL      = f"http://{APP_HOST}:{APP_PORT}/monitor"
-APP_VERSION  = "1.0.0"   # bump this with every release
+APP_VERSION  = "1.1.0"   # bump this with every release
 GITHUB_API   = "https://api.github.com/repos/CYPHr007/PILAR/releases/latest"
 
 if _FROZEN:
