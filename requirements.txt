@@ -16,4 +16,5 @@ APScheduler
 shap
 pystray
 pillow
-requestspackaging
+requests
+packaging
