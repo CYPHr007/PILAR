@@ -115,7 +115,8 @@ def _parse_version(tag: str) -> Version:
 def _fetch_latest_release():
     """
     Interroge l'API GitHub Releases.
-    Retourne (latest_version_str, download_url) ou (None, None) en cas d'erreur.
+    Retourne (latest_version_str, download_url, is_zip) ou (None, None, False).
+    Priorite : Setup.exe > .zip > zipball_url
     """
     import urllib.request
     import json
@@ -128,55 +129,78 @@ def _fetch_latest_release():
             data = json.loads(resp.read())
         tag = data.get("tag_name", "")
         assets = data.get("assets", [])
-        # Cherche le .exe dans les assets
         exe_url = None
+        zip_url = None
         for asset in assets:
             name = asset.get("name", "")
-            if name.endswith(".exe") and "Setup" in name:
-                exe_url = asset.get("browser_download_url")
-                break
-        if not exe_url:
-            # Fallback: utilise le zipball si pas d'exe
-            exe_url = data.get("zipball_url")
-        return tag, exe_url
+            url  = asset.get("browser_download_url", "")
+            if name.endswith(".exe") and "Setup" in name and not exe_url:
+                exe_url = url
+            elif name.endswith(".zip") and not zip_url:
+                zip_url = url
+        if exe_url:
+            return tag, exe_url, False
+        if zip_url:
+            return tag, zip_url, True
+        # Dernier recours : archive source GitHub
+        return tag, data.get("zipball_url", ""), True
     except Exception as e:
         print(f"[PILAR] Update check failed: {e}")
-        return None, None
+        return None, None, False
 
 
-def _download_and_install(url: str, version: str):
+def _download_and_install(url: str, version: str, is_zip: bool = False):
     """
-    Telecharge le nouvel installeur dans un fichier temp,
-    le lance (silencieux) puis ferme l'app courante.
+    - Si .exe (installer Inno Setup) : telecharge et lance directement.
+    - Si .zip : telecharge, extrait dans %LOCALAPPDATA%\PILAR_update\,
+      lance PILAR.exe depuis ce dossier, ferme l'app courante.
     """
     import urllib.request
+    import zipfile
+    import shutil
     global _window, _tray_icon
 
-    print(f"[PILAR] Downloading update from {url}")
+    print(f"[PILAR] Downloading update from {url} (zip={is_zip})")
+
+    def _progress(block_count, block_size, total_size):
+        if total_size > 0:
+            pct = min(100, block_count * block_size * 100 // total_size)
+            print(f"\r[PILAR] Download: {pct}%", end="", flush=True)
+
     try:
-        # Fichier temp avec extension .exe
-        tmp = tempfile.NamedTemporaryFile(
-            delete=False, suffix=".exe",
-            prefix=f"PILAR_Setup_{version}_"
-        )
+        suffix = ".zip" if is_zip else ".exe"
+        prefix = f"PILAR_{version}_"
+        tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix, prefix=prefix)
         tmp_path = tmp.name
         tmp.close()
 
-        # Telechargement avec barre de progression dans la console
-        def _progress(block_count, block_size, total_size):
-            if total_size > 0:
-                pct = min(100, block_count * block_size * 100 // total_size)
-                print(f"\r[PILAR] Download: {pct}%", end="", flush=True)
-
         urllib.request.urlretrieve(url, tmp_path, reporthook=_progress)
-        print()  # newline apres la barre de progression
+        print()
         print(f"[PILAR] Download complete: {tmp_path}")
 
-        # Lance l'installeur et ferme l'app
-        subprocess.Popen([tmp_path], close_fds=True)
-        print("[PILAR] Installer launched — closing app")
+        if is_zip:
+            # Extrait dans un dossier dedie
+            update_dir = Path(os.environ.get("LOCALAPPDATA", tempfile.gettempdir())) / "PILAR_update"
+            if update_dir.exists():
+                shutil.rmtree(update_dir)
+            update_dir.mkdir(parents=True)
+            with zipfile.ZipFile(tmp_path, "r") as z:
+                z.extractall(update_dir)
+            os.unlink(tmp_path)
+            # Cherche PILAR.exe dans l'arborescence extraite
+            pilar_exe = None
+            for f in update_dir.rglob("PILAR.exe"):
+                pilar_exe = f
+                break
+            if pilar_exe is None:
+                raise FileNotFoundError("PILAR.exe introuvable dans l'archive.")
+            subprocess.Popen([str(pilar_exe)], cwd=str(pilar_exe.parent), close_fds=True)
+            print(f"[PILAR] Launched new version from {pilar_exe}")
+        else:
+            subprocess.Popen([tmp_path], close_fds=True)
+            print("[PILAR] Installer launched")
 
-        # Ferme la fenetre webview et le tray
+        # Ferme l'app courante
         if _window is not None:
             try:
                 _window.destroy()
@@ -189,11 +213,11 @@ def _download_and_install(url: str, version: str):
                 pass
 
     except Exception as e:
-        print(f"[PILAR] Download failed: {e}")
-        _show_error_dialog(f"Echec du telechargement :\n{e}")
+        print(f"[PILAR] Download/install failed: {e}")
+        _show_error_dialog(f"Echec de la mise a jour :\n{e}")
 
 
-def _show_update_dialog(latest: str, url: str):
+def _show_update_dialog(latest: str, url: str, is_zip: bool = False):
     """Affiche une boite de dialogue native Windows pour proposer la mise a jour."""
     import ctypes
     MB_YESNO    = 0x04
@@ -211,7 +235,7 @@ def _show_update_dialog(latest: str, url: str):
         0, msg, "PILAR — Mise a jour disponible", MB_YESNO | MB_ICONINFO
     )
     if result == IDYES:
-        _download_and_install(url, latest)
+        _download_and_install(url, latest, is_zip)
 
 
 def _show_error_dialog(msg: str):
@@ -224,7 +248,7 @@ def _show_error_dialog(msg: str):
 def _check_update():
     """Runs in background thread — non-bloquant."""
     print(f"[PILAR] Version {APP_VERSION} — checking for updates...")
-    tag, url = _fetch_latest_release()
+    tag, url, is_zip = _fetch_latest_release()
     if not tag or not url:
         print("[PILAR] No update info available (offline or no release).")
         return
@@ -236,11 +260,8 @@ def _check_update():
         return
 
     if latest > current:
-        print(f"[PILAR] Update available: {tag}")
-        # Le dialog doit etre appele depuis le main thread sur Windows
-        # On utilise un flag + on appelle depuis le thread principal apres webview.start()
-        # Solution simple : appel direct (ctypes MessageBox fonctionne depuis n'importe quel thread)
-        _show_update_dialog(tag, url)
+        print(f"[PILAR] Update available: {tag} (zip={is_zip})")
+        _show_update_dialog(tag, url, is_zip)
     else:
         print(f"[PILAR] Up to date ({APP_VERSION}).")
 
