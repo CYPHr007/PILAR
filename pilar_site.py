@@ -52,6 +52,10 @@ class AccessRequest(db.Model):
     status       = db.Column(db.String(20), default='pending')  # pending | approved | rejected
     signup_token = db.Column(db.String(64), unique=True)
     approved_at  = db.Column(db.DateTime)
+    utm_source   = db.Column(db.String(100), default='')
+    utm_medium   = db.Column(db.String(100), default='')
+    utm_campaign = db.Column(db.String(100), default='')
+    visit_count  = db.Column(db.Integer, default=1)
 
 class User(db.Model):
     __tablename__ = 'users'
@@ -486,6 +490,14 @@ document.getElementById('req-form').addEventListener('submit', async function(e)
 def index():
     resp = make_response(LANDING_HTML_NEW, 200)
     resp.headers['Content-Type'] = 'text/html; charset=utf-8'
+    # Store UTM params in cookies (30 days) — first touch wins
+    for param in ('utm_source', 'utm_medium', 'utm_campaign'):
+        val = request.args.get(param, '').strip()[:100]
+        if val and not request.cookies.get(param):
+            resp.set_cookie(param, val, max_age=30*24*3600, samesite='Lax')
+    # Visit counter
+    visits = int(request.cookies.get('visit_count', 0)) + 1
+    resp.set_cookie('visit_count', str(visits), max_age=30*24*3600, samesite='Lax')
     return resp
 
 
@@ -503,10 +515,18 @@ def api_request_access():
     existing = AccessRequest.query.filter_by(email=email).first()
     if existing:
         return jsonify(message='We already have your request. We will be in touch soon.'), 200
-    req = AccessRequest(email=email, name=name, company=company)
+    utm_source   = request.cookies.get('utm_source', '')
+    utm_medium   = request.cookies.get('utm_medium', '')
+    utm_campaign = request.cookies.get('utm_campaign', '')
+    visit_count  = int(request.cookies.get('visit_count', 1))
+    req = AccessRequest(email=email, name=name, company=company,
+                        utm_source=utm_source, utm_medium=utm_medium,
+                        utm_campaign=utm_campaign, visit_count=visit_count)
     db.session.add(req)
     db.session.commit()
     _sheet({'email': email, 'name': name, 'company': company,
+            'utm_source': utm_source, 'utm_medium': utm_medium,
+            'utm_campaign': utm_campaign, 'visit_count': visit_count,
             'submitted_at': req.submitted_at.isoformat(), 'type': 'access_request'})
     return jsonify(message='Request received. We will be in touch within 48 hours.'), 200
 
@@ -582,9 +602,12 @@ def _admin_body():
             link_btn = f'<button class="btn-sm btn-copy" onclick="copyLink(\'{r.signup_token}\')">Copy link</button> '
         approve_btn = '' if r.status == 'approved' else f'<button class="btn-sm btn-approve" onclick="approveReq({r.id})">Approve</button> '
         reject_btn  = '' if r.status == 'rejected' else f'<button class="btn-sm btn-reject" onclick="rejectReq({r.id})">Reject</button>'
+        src = r.utm_source or '—'
+        visits = r.visit_count or 1
+        utm_cell = f'<span style="font-size:.75rem;color:var(--text3)">{src} · {visits}v</span>'
         return f'''<tr id="req-{r.id}">
           <td>{r.email}</td><td>{r.name or '—'}</td><td>{r.company or '—'}</td>
-          <td>{date}</td><td>{badge}</td>
+          <td>{utm_cell}</td><td>{date}</td><td>{badge}</td>
           <td style="white-space:nowrap">{link_btn}{approve_btn}{reject_btn}</td>
         </tr>'''
 
