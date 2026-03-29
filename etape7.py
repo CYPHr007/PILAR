@@ -5,7 +5,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import pandas as pd, numpy as np, warnings, time, collections
 warnings.filterwarnings("ignore")
 
@@ -41,7 +41,7 @@ from config import (
     SENSOR_BOUNDS, FLUID_RUL_FACTORS, MATERIAL_RUL_FACTORS,
     FLUID_ZONE_SENSITIVITY, NON_CENTRIFUGE_TYPES, DOMAIN_KB,
     RETRAIN_TRIGGER, CLAUDE_MODEL, CLAUDE_MAX_TOKENS, CHAT_DAILY_LIMIT,
-    RUL_SCALE_FACTOR,
+    RUL_SCALE_FACTOR, APP_VERSION,
 )
 db_url = (os.environ.get("DATABASE_URL")
           or os.environ.get("DATABASE_PUBLIC_URL")
@@ -89,7 +89,7 @@ def set_security_headers(response):
 class Team(db.Model):
     id         = db.Column(db.Integer, primary_key=True)
     name       = db.Column(db.String(200), default='My Team')
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
 class TeamMember(db.Model):
     id        = db.Column(db.Integer, primary_key=True)
@@ -97,7 +97,7 @@ class TeamMember(db.Model):
     user_id   = db.Column(db.Integer, nullable=False)
     role      = db.Column(db.String(20), default='member')  # 'leader' or 'member'
     is_kicked = db.Column(db.Boolean, default=False)
-    joined_at = db.Column(db.DateTime, default=datetime.utcnow)
+    joined_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
 class User(db.Model):
     id             = db.Column(db.Integer, primary_key=True)
@@ -112,15 +112,17 @@ class User(db.Model):
     is_admin       = db.Column(db.Boolean, default=False)
     is_banned      = db.Column(db.Boolean, default=False)
     team_id        = db.Column(db.Integer, nullable=True)
-    onboarded      = db.Column(db.Boolean, default=False)
-    machine_quota  = db.Column(db.Integer, default=3)
-    created_at     = db.Column(db.DateTime, default=datetime.utcnow)
+    onboarded           = db.Column(db.Boolean, default=False)
+    machine_quota       = db.Column(db.Integer, default=3)
+    reset_token         = db.Column(db.String(64), nullable=True)
+    reset_token_expires = db.Column(db.DateTime, nullable=True)
+    created_at          = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
 class BannedEmail(db.Model):
     id         = db.Column(db.Integer, primary_key=True)
     email      = db.Column(db.String(200), unique=True, nullable=False)
     reason     = db.Column(db.String(300), nullable=True)
-    banned_at  = db.Column(db.DateTime, default=datetime.utcnow)
+    banned_at  = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
 class Settings(db.Model):
     id      = db.Column(db.Integer, primary_key=True)
@@ -137,7 +139,7 @@ class Analysis(db.Model):
     #   usure        = run hours            (heure_fonctionnement, h)
     # TODO: rename via DB migration once traffic is stable.
     id           = db.Column(db.Integer, primary_key=True)
-    timestamp    = db.Column(db.DateTime, default=datetime.utcnow)
+    timestamp    = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     machine_type = db.Column(db.String(10))
     temp_air     = db.Column(db.Float)   # bearing temp (temp_palier)
     temp_process = db.Column(db.Float)   # motor temp   (temp_moteur)
@@ -162,7 +164,7 @@ class SavedFile(db.Model):
     filename   = db.Column(db.String(200), nullable=False)
     content    = db.Column(db.Text, nullable=False)
     row_count  = db.Column(db.Integer, default=0)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
 class TeamMessage(db.Model):
     id         = db.Column(db.Integer, primary_key=True)
@@ -170,7 +172,7 @@ class TeamMessage(db.Model):
     user_id    = db.Column(db.Integer, nullable=False)
     user_email = db.Column(db.String(200))
     content    = db.Column(db.Text, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
 class DiscoveredParam(db.Model):
     id           = db.Column(db.Integer, primary_key=True)
@@ -181,8 +183,8 @@ class DiscoveredParam(db.Model):
     n_samples    = db.Column(db.Integer, default=0)
     samples_json = db.Column(db.Text)
     risks_json   = db.Column(db.Text)
-    created_at   = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at   = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at   = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at   = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     user_id      = db.Column(db.Integer, nullable=True)
 
 class Machine(db.Model):
@@ -206,7 +208,7 @@ class Machine(db.Model):
     alert_email      = db.Column(db.String(200))
     escalation_email = db.Column(db.String(200))
     is_active        = db.Column(db.Boolean, default=True)
-    created_at       = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at       = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
 class MachineNote(db.Model):
     id         = db.Column(db.Integer, primary_key=True)
@@ -214,7 +216,7 @@ class MachineNote(db.Model):
     user_id    = db.Column(db.Integer, nullable=False)
     user_email = db.Column(db.String(200))
     content    = db.Column(db.Text, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
 class AlertLog(db.Model):
     id               = db.Column(db.Integer, primary_key=True)
@@ -223,7 +225,7 @@ class AlertLog(db.Model):
     analysis_id      = db.Column(db.Integer, nullable=True)
     email_to         = db.Column(db.String(200))
     probabilite      = db.Column(db.Float)
-    sent_at          = db.Column(db.DateTime, default=datetime.utcnow)
+    sent_at          = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     acked_at         = db.Column(db.DateTime, nullable=True)
     ack_token        = db.Column(db.String(64), unique=True)
     escalated_at     = db.Column(db.DateTime, nullable=True)
@@ -237,7 +239,7 @@ class MachineRequest(db.Model):
     rpm_range    = db.Column(db.String(100))
     torque_range = db.Column(db.String(100))
     description  = db.Column(db.Text)
-    submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
+    submitted_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     status       = db.Column(db.String(20), default='pending')  # pending / integrated
 
 with app.app_context():
@@ -409,15 +411,9 @@ def _compute_shap(x_scaled):
                 return []
             sv = _shap_explainer.shap_values(x_scaled, nsamples=50, silent=True)
             vals = sv[1][0] if isinstance(sv, list) else sv[0]
-        labels = {
-            'vibration': 'Vibration', 'temp_palier': 'Bearing temp',
-            'debit': 'Flow rate', 'pression_entree': 'Inlet pressure',
-            'pression_sortie': 'Outlet pressure', 'courant_moteur': 'Motor current',
-            'temp_moteur': 'Motor temp', 'heure_fonctionnement': 'Run hours'
-        }
         total_abs = sum(abs(v) for v in vals) or 1.0
         top3 = sorted(zip(COLONNES, vals), key=lambda x: abs(x[1]), reverse=True)[:3]
-        return [{'feature': labels.get(f, f),
+        return [{'feature_key': f,
                  'impact': ('+' if v > 0 else '') + str(round(abs(v) / total_abs * 100)) + '%',
                  'direction': 'up' if v > 0 else 'down'} for f, v in top3]
     except Exception as _e:
@@ -458,7 +454,7 @@ def _check_update_background():
     """Called by launcher or on first boot — checks Railway for newer version."""
     try:
         import urllib.request as _ur, json as _j
-        APP_VER = os.environ.get('PILAR_VERSION', '1.0.0')
+        APP_VER = os.environ.get('PILAR_VERSION', APP_VERSION)
         with _ur.urlopen('https://pilar-website.up.railway.app/api/latest', timeout=6) as r:
             d = _j.loads(r.read().decode())
         latest = (d.get('version') or '').lstrip('v')
@@ -565,6 +561,39 @@ def send_verify_email(email, token, base_url=None):
         print(f"[Pilar/auth] Verification email sent to {email}")
     except smtplib.SMTPAuthenticationError as e:
         print(f"[Pilar/auth] SMTP auth failed (vérifiez GMAIL_APP_PASSWORD): {e}")
+    except smtplib.SMTPException as e:
+        print(f"[Pilar/auth] SMTP error: {e}")
+    except Exception as e:
+        print(f"[Pilar/auth] Email error ({type(e).__name__}): {e}")
+
+
+def send_reset_email(email, token, base_url=None):
+    if not GMAIL or not GMAIL_PWD:
+        print(f"[Pilar/auth] Email non configuré — reset token pour {email}: {token}")
+        return
+    base = (base_url or os.environ.get("APP_URL", "")).rstrip('/')
+    if not base:
+        base = "https://trypilar.com"
+    link = f"{base}/reset-password/{token}"
+    html = f"""<div style="font-family:sans-serif;background:#07090f;color:#e2e8f0;padding:40px;border-radius:8px">
+<h2 style="color:#14b8a6;letter-spacing:3px">PILAR</h2>
+<p>Vous avez demandé la réinitialisation de votre mot de passe.</p>
+<a href="{link}" style="display:inline-block;margin-top:16px;padding:12px 24px;background:#0d9488;color:#fff;border-radius:6px;text-decoration:none;font-weight:700">Réinitialiser mon mot de passe</a>
+<p style="margin-top:24px;color:#64748b;font-size:12px">Lien valide 1h. Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.</p>
+<p style="color:#334155;font-size:11px">Ou copiez ce lien : {link}</p>
+</div>"""
+    msg = MIMEMultipart('alternative')
+    msg['Subject'] = "Pilar — Réinitialisation de mot de passe"
+    msg['From'] = f"Pilar <{GMAIL}>"
+    msg['To'] = email
+    msg.attach(MIMEText(html, 'html'))
+    try:
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465, timeout=15) as smtp:
+            smtp.login(GMAIL, GMAIL_PWD)
+            smtp.sendmail(GMAIL, email, msg.as_string())
+        print(f"[Pilar/auth] Reset email sent to {email}")
+    except smtplib.SMTPAuthenticationError as e:
+        print(f"[Pilar/auth] SMTP auth failed: {e}")
     except smtplib.SMTPException as e:
         print(f"[Pilar/auth] SMTP error: {e}")
     except Exception as e:
@@ -770,7 +799,35 @@ LOGIN_HTML = _AUTH_HEAD + """
       <input class="fi" type="password" id="pw" name="password" placeholder="••••••••" autocomplete="current-password" required>
       <button type="submit" class="btn-submit" data-t="btn_login">Se connecter</button>
     </form>
+    <div class="auth-link"><a href="/forgot-password" data-t="link_forgot">Mot de passe oublié ?</a></div>
     <div class="auth-link" data-t="link_reg">Pas encore de compte ? <a href="/register">Créer un compte</a></div>
+""" + _AUTH_FOOT
+
+FORGOT_HTML = _AUTH_HEAD + """
+    <div class="form-logo">Mot de passe oublié</div>
+    <div class="form-tagline">Plateforme de maintenance prédictive</div>
+    {% if msg %}<div class="auth-err" style="background:rgba(5,150,105,0.12);border-color:#059669;color:#34d399">{{ msg }}</div>{% endif %}
+    {% if error %}<div class="auth-err">{{ error }}</div>{% endif %}
+    <form method="POST" action="/forgot-password">
+      <label class="flbl" for="em">Email</label>
+      <input class="fi" type="email" id="em" name="email" placeholder="vous@entreprise.com" autocomplete="email" required>
+      <button type="submit" class="btn-submit">Envoyer le lien de réinitialisation</button>
+    </form>
+    <div class="auth-link"><a href="/login">Retour à la connexion</a></div>
+""" + _AUTH_FOOT
+
+RESET_HTML = _AUTH_HEAD + """
+    <div class="form-logo">Nouveau mot de passe</div>
+    <div class="form-tagline">Plateforme de maintenance prédictive</div>
+    {% if error %}<div class="auth-err">{{ error }}</div>{% endif %}
+    <form method="POST" action="/reset-password/{{ token }}">
+      <label class="flbl" for="pw">Nouveau mot de passe</label>
+      <input class="fi" type="password" id="pw" name="password" placeholder="8 caractères minimum" autocomplete="new-password" required minlength="8">
+      <label class="flbl" for="pw2">Confirmer</label>
+      <input class="fi" type="password" id="pw2" name="password2" placeholder="••••••••" autocomplete="new-password" required>
+      <button type="submit" class="btn-submit">Enregistrer le nouveau mot de passe</button>
+    </form>
+    <div class="auth-link"><a href="/login">Retour à la connexion</a></div>
 """ + _AUTH_FOOT
 
 
@@ -2103,11 +2160,14 @@ function render(r){
   // SHAP top-3
   var shapSection=document.getElementById('ai-shap-section');
   var shapBody=document.getElementById('ai-shap-body');
+  var _shapKeyMap={vibration:'p_vibration',temp_palier:'p_temp_palier',debit:'p_debit',pression_entree:'p_pression_e',pression_sortie:'p_pression_s',courant_moteur:'p_courant',temp_moteur:'p_temp_moteur',heure_fonctionnement:'p_heure'};
   if(r.shap_explanations&&r.shap_explanations.length){
     shapSection.style.display='block';
     shapBody.innerHTML=r.shap_explanations.map(function(s){
+      var tkey=_shapKeyMap[s.feature_key]||s.feature_key;
+      var label=T[lang][tkey]||s.feature_key;
       return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'
-        +'<span style="font-size:11px;color:var(--text2);flex:1">'+s.feature+'</span>'
+        +'<span style="font-size:11px;color:var(--text2);flex:1">'+label+'</span>'
         +'<span style="font-size:13px;font-weight:700;color:'+(s.direction==='up'?'var(--red)':'var(--green)')+'">'+s.impact+' '+(s.direction==='up'?'\u2191':'\u2193')+'</span>'
         +'</div>';
     }).join('');
@@ -5571,7 +5631,7 @@ def envoyer_alerte(email_to, probabilite, zones_risque, data, ack_token=None):
 <tr><td style="padding:0 28px 24px;"><table width="100%" cellpadding="0" cellspacing="0" style="background:#07090f;border:1px solid #1e2433;border-radius:6px;"><tr><td style="padding:8px 12px;border-bottom:1px solid #1e2433;color:#64748b;font-size:11px;">Vibration</td><td style="padding:8px 12px;border-bottom:1px solid #1e2433;text-align:right;color:#e2e8f0;font-weight:600;font-size:11px;">{data.get("vibration")} mm/s</td></tr><tr><td style="padding:8px 12px;border-bottom:1px solid #1e2433;color:#64748b;font-size:11px;">Bearing temp</td><td style="padding:8px 12px;border-bottom:1px solid #1e2433;text-align:right;color:#e2e8f0;font-weight:600;font-size:11px;">{data.get("temp_palier")} °C</td></tr><tr><td style="padding:8px 12px;border-bottom:1px solid #1e2433;color:#64748b;font-size:11px;">Flow rate</td><td style="padding:8px 12px;border-bottom:1px solid #1e2433;text-align:right;color:#e2e8f0;font-weight:600;font-size:11px;">{data.get("debit")} m³/h</td></tr><tr><td style="padding:8px 12px;color:#64748b;font-size:11px;">Motor temp</td><td style="padding:8px 12px;text-align:right;color:#e2e8f0;font-weight:600;font-size:11px;">{data.get("temp_moteur")} °C</td></tr></table></td></tr>
 <tr><td style="padding:0 28px 24px;"><div style="font-size:9px;letter-spacing:2px;color:#64748b;text-transform:uppercase;margin-bottom:10px;">Failure Zones</div><table width="100%" cellpadding="0" cellspacing="0" style="background:#07090f;border:1px solid #1e2433;border-radius:6px;">{zones_rows}</table></td></tr>
 {ack_row}
-<tr><td style="padding:16px 28px;border-top:1px solid #1e2433;background:#0a0d16;"><div style="font-size:10px;color:#64748b;">Pilar · {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC</div></td></tr>
+<tr><td style="padding:16px 28px;border-top:1px solid #1e2433;background:#0a0d16;"><div style="font-size:10px;color:#64748b;">Pilar · {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')} UTC</div></td></tr>
 </table></td></tr></table></body></html>"""
     msg = MIMEMultipart('alternative')
     msg['Subject'] = f"Pilar Alert — Risk {probabilite}% | {severity}"
@@ -5601,7 +5661,7 @@ def envoyer_escalade(email_to, probabilite, zones_risque, machine_id_str):
 <div style="font-size:52px;font-weight:800;color:#f97316;line-height:1;">{probabilite}<span style="font-size:22px;color:#64748b;">%</span></div></td></tr>
 <tr><td style="padding:0 28px 28px;"><table width="100%">{zones_rows}</table></td></tr>
 <tr><td style="padding:16px 28px;border-top:1px solid #1e2433;background:#0a0d16;">
-<div style="font-size:10px;color:#64748b;">Pilar Escalation · {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC</div></td></tr>
+<div style="font-size:10px;color:#64748b;">Pilar Escalation · {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')} UTC</div></td></tr>
 </table></td></tr></table></body></html>"""
     msg = MIMEMultipart('alternative')
     msg['Subject'] = f"Pilar ESCALATION — Risk {probabilite}% unacknowledged"
@@ -5623,7 +5683,7 @@ def _escalation_worker():
         _time.sleep(300)
         try:
             with app.app_context():
-                cutoff = datetime.utcnow() - timedelta(minutes=30)
+                cutoff = datetime.now(timezone.utc) - timedelta(minutes=30)
                 pending = AlertLog.query.filter(
                     AlertLog.acked_at == None,
                     AlertLog.escalated_at == None,
@@ -5632,7 +5692,7 @@ def _escalation_worker():
                     AlertLog.sent_at <= cutoff
                 ).all()
                 for al in pending:
-                    al.escalated_at = datetime.utcnow()
+                    al.escalated_at = datetime.now(timezone.utc)
                     db.session.commit()
                     threading.Thread(target=envoyer_escalade, args=(
                         al.escalation_email, al.probabilite, [], al.machine_id_str), daemon=True).start()
@@ -5651,7 +5711,7 @@ def _generate_fleet_pdf(uid):
         return None
     machines = Machine.query.filter_by(user_id=uid, is_active=True).all()
     analyses = Analysis.query.filter_by(user_id=uid).filter(
-        Analysis.timestamp >= datetime.utcnow() - timedelta(days=7)).all()
+        Analysis.timestamp >= datetime.now(timezone.utc) - timedelta(days=7)).all()
     pdf = FPDF()
     pdf.set_auto_page_break(True, margin=15)
     pdf.add_page()
@@ -5660,7 +5720,7 @@ def _generate_fleet_pdf(uid):
     pdf.cell(0, 10, 'PILAR — Weekly Fleet Report', ln=True)
     pdf.set_font('Helvetica', '', 10)
     pdf.set_text_color(100, 116, 139)
-    pdf.cell(0, 6, f"Period: {(datetime.utcnow()-timedelta(days=7)).strftime('%Y-%m-%d')} to {datetime.utcnow().strftime('%Y-%m-%d')}", ln=True)
+    pdf.cell(0, 6, f"Period: {(datetime.now(timezone.utc)-timedelta(days=7)).strftime('%Y-%m-%d')} to {datetime.now(timezone.utc).strftime('%Y-%m-%d')}", ln=True)
     pdf.ln(4)
     # Summary line
     total_analyses = len(analyses)
@@ -5698,7 +5758,7 @@ def _generate_fleet_pdf(uid):
     pdf.ln(6)
     pdf.set_font('Helvetica', 'I', 8)
     pdf.set_text_color(100, 116, 139)
-    pdf.cell(0, 5, f"Generated by Pilar at {datetime.utcnow().strftime('%Y-%m-%d %H:%M')} UTC", ln=True)
+    pdf.cell(0, 5, f"Generated by Pilar at {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M')} UTC", ln=True)
     return pdf.output(dest='S').encode('latin-1')
 
 def _send_weekly_reports():
@@ -5716,7 +5776,7 @@ def _send_weekly_reports():
                 from email.mime.base import MIMEBase
                 from email import encoders as _enc
                 msg = MIMEMultipart()
-                msg['Subject'] = f"Pilar — Weekly Fleet Report {datetime.utcnow().strftime('%Y-%m-%d')}"
+                msg['Subject'] = f"Pilar — Weekly Fleet Report {datetime.now(timezone.utc).strftime('%Y-%m-%d')}"
                 msg['From'] = f"Pilar <{GMAIL}>"
                 msg['To'] = email
                 body = MIMEText("Please find this week's fleet report attached.", 'plain')
@@ -5724,7 +5784,7 @@ def _send_weekly_reports():
                 part = MIMEBase('application', 'pdf')
                 part.set_payload(pdf_bytes)
                 _enc.encode_base64(part)
-                _fname = 'pilar_report_' + datetime.utcnow().strftime('%Y%m%d') + '.pdf'
+                _fname = 'pilar_report_' + datetime.now(timezone.utc).strftime('%Y%m%d') + '.pdf'
                 part.add_header('Content-Disposition', f'attachment; filename="{_fname}"')
                 msg.attach(part)
                 with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
@@ -5813,9 +5873,9 @@ def _auto_retrain():
                 # Record retrain timestamp in settings
                 try:
                     s = Settings.query.filter_by(key='last_auto_retrain', user_id=None).first()
-                    ts = datetime.utcnow().isoformat()
+                    ts = datetime.now(timezone.utc).isoformat()
                     if s: s.value = ts
-                    else: db.session.add(Setting(key='last_auto_retrain', value=ts, user_id=None))
+                    else: db.session.add(Settings(key='last_auto_retrain', value=ts, user_id=None))
                     db.session.commit()
                 except Exception: pass
             else:
@@ -5993,6 +6053,44 @@ def verify_email(token):
     session.permanent = True
     return redirect('/monitor')
 
+@app.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'GET':
+        return render_template_string(FORGOT_HTML, error=None, msg=None)
+    email = (request.form.get('email') or '').strip().lower()
+    if not email:
+        return render_template_string(FORGOT_HTML, error='Email requis.', msg=None)
+    user = User.query.filter_by(email=email).first()
+    # Always show success message to avoid user enumeration
+    if user and not user.is_banned:
+        token = _secrets.token_urlsafe(32)
+        user.reset_token = token
+        user.reset_token_expires = datetime.now(timezone.utc) + timedelta(hours=1)
+        db.session.commit()
+        threading.Thread(target=send_reset_email, args=(email, token), daemon=True).start()
+    return render_template_string(FORGOT_HTML, error=None,
+        msg='Si un compte existe pour cet email, un lien de réinitialisation a été envoyé.')
+
+@app.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    user = User.query.filter_by(reset_token=token).first()
+    now = datetime.now(timezone.utc)
+    if not user or user.reset_token_expires is None or user.reset_token_expires.replace(tzinfo=timezone.utc) < now:
+        return render_template_string(RESET_HTML, token=token, error='Lien invalide ou expiré. Recommencez la procédure.')
+    if request.method == 'GET':
+        return render_template_string(RESET_HTML, token=token, error=None)
+    pw = request.form.get('password', '')
+    pw2 = request.form.get('password2', '')
+    if len(pw) < 8:
+        return render_template_string(RESET_HTML, token=token, error='Le mot de passe doit faire au moins 8 caractères.')
+    if pw != pw2:
+        return render_template_string(RESET_HTML, token=token, error='Les mots de passe ne correspondent pas.')
+    user.password_hash = generate_password_hash(pw)
+    user.reset_token = None
+    user.reset_token_expires = None
+    db.session.commit()
+    return redirect('/login?reset=1')
+
 @app.route('/profile/api-key', methods=['GET', 'POST'])
 @login_required
 def api_key_page():
@@ -6006,7 +6104,7 @@ def api_key_page():
 @admin_required
 def admin():
     # Auto-expire plans
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     expired = User.query.filter(
         User.plan != 'free',
         User.plan_expires_at != None,
@@ -6251,7 +6349,7 @@ def alert_ack(token):
     if not al:
         return '<html><body style="font-family:-apple-system,\'SF Pro Display\',\'Helvetica Neue\',Arial,sans-serif;background:#07090f;color:#ffffff;display:flex;align-items:center;justify-content:center;min-height:100vh;"><div style="text-align:center"><div style="font-size:15px;letter-spacing:0.04em;color:#0d9488;font-weight:700;margin-bottom:16px;">PILAR</div><p style="color:rgba(235,235,245,0.6)">Alert not found or already processed.</p></div></body></html>', 404
     if not al.acked_at:
-        al.acked_at = datetime.utcnow()
+        al.acked_at = datetime.now(timezone.utc)
         db.session.commit()
     return '<html><body style="font-family:-apple-system,\'SF Pro Display\',\'Helvetica Neue\',Arial,sans-serif;background:#07090f;color:#ffffff;display:flex;align-items:center;justify-content:center;min-height:100vh;"><div style="text-align:center"><div style="font-size:15px;letter-spacing:0.04em;color:#0d9488;font-weight:700;margin-bottom:16px;">PILAR</div><h2 style="margin:0 0 12px;font-size:20px;font-weight:700;">Alert Acknowledged</h2><p style="color:rgba(235,235,245,0.6);font-size:14px;">This alert has been recorded. No escalation will be sent.</p><a href="/monitor" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#0d9488;color:#fff;text-decoration:none;border-radius:12px;font-size:15px;font-weight:600;">Go to Dashboard</a></div></body></html>'
 
@@ -6261,9 +6359,33 @@ def alert_ack(token):
 def api_machines_list():
     uid = current_uid()
     machines = Machine.query.filter_by(user_id=uid).order_by(Machine.created_at.desc()).all()
+    if not machines:
+        return jsonify([])
+    machine_names = [m.name for m in machines]
+    machine_ids   = [m.id for m in machines]
+    # Bulk-fetch latest analysis per machine (stored by machine name string)
+    from sqlalchemy import func as _func
+    subq = (db.session.query(Analysis.machine_id, _func.max(Analysis.timestamp).label('max_ts'))
+            .filter(Analysis.machine_id.in_(machine_names))
+            .group_by(Analysis.machine_id).subquery())
+    latest_rows = (db.session.query(Analysis)
+                   .join(subq, (Analysis.machine_id == subq.c.machine_id) &
+                                (Analysis.timestamp == subq.c.max_ts))
+                   .all())
+    last_by_name = {a.machine_id: a for a in latest_rows}
+    # Bulk-fetch latest saved file per machine
+    subq2 = (db.session.query(SavedFile.machine_id, _func.max(SavedFile.created_at).label('max_ca'))
+             .filter(SavedFile.machine_id.in_(machine_ids), SavedFile.user_id == uid)
+             .group_by(SavedFile.machine_id).subquery())
+    sf_rows = (db.session.query(SavedFile)
+               .join(subq2, (SavedFile.machine_id == subq2.c.machine_id) &
+                             (SavedFile.created_at == subq2.c.max_ca))
+               .all())
+    sf_by_mid = {sf.machine_id: sf for sf in sf_rows}
     result = []
     for m in machines:
-        last = Analysis.query.filter_by(machine_id=m.id).order_by(Analysis.timestamp.desc()).first()
+        last = last_by_name.get(m.name)
+        sf   = sf_by_mid.get(m.id)
         result.append({
             'id': m.id, 'name': m.name, 'description': m.description,
             'machine_type': m.machine_type, 'threshold': m.threshold,
@@ -6283,9 +6405,8 @@ def api_machines_list():
             'last_risk': last.risk if last else None,
             'last_prediction': last.prediction if last else None,
             'last_seen': last.timestamp.isoformat() + 'Z' if last else None,
-            'saved_file': (lambda sf: {'id': sf.id, 'filename': sf.filename, 'row_count': sf.row_count, 'created_at': sf.created_at.isoformat()+'Z'} if sf else None)(
-                SavedFile.query.filter_by(machine_id=m.id, user_id=uid).order_by(SavedFile.created_at.desc()).first()
-            ),
+            'saved_file': {'id': sf.id, 'filename': sf.filename, 'row_count': sf.row_count,
+                           'created_at': sf.created_at.isoformat()+'Z'} if sf else None,
         })
     return jsonify(result)
 
@@ -7184,7 +7305,7 @@ def api_twin():
         history_wear  = [a.usure for a in analyses]          # heure_fonctionnement
         history_temp  = [a.temp_air for a in analyses]       # temp_palier (bearing temp)
         future_times, future_risks, future_wear, future_temp = [], [], [], []
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         # Simulate degradation: run hours increase, bearing temp slowly rises
         chf = last.usure or FEATURE_MEDIANS['heure_fonctionnement']
         ctp = last.temp_air or FEATURE_MEDIANS['temp_palier']
@@ -7351,7 +7472,7 @@ def api_discover():
         dp.samples_json = _json.dumps(all_vals)
         dp.risks_json   = _json.dumps(all_risks)
         dp.n_samples    = len(all_vals)
-        dp.updated_at   = datetime.utcnow()
+        dp.updated_at   = datetime.now(timezone.utc)
         if len(all_vals) >= 10:
             n = min(len(all_vals), len(all_risks))
             xv = all_vals[:n]; yr = all_risks[:n]
@@ -7369,7 +7490,7 @@ def api_discover():
 # ── API v1 ────────────────────────────────────────────────────────────────────
 def _api_rate_check(api_key, plan='free'):
     """Retourne (allowed, count, limit)."""
-    today = datetime.utcnow().date().isoformat()
+    today = datetime.now(timezone.utc).date().isoformat()
     rec = _api_calls.get(api_key, {'count': 0, 'day': ''})
     if rec['day'] != today:
         rec = {'count': 0, 'day': today}
@@ -7832,7 +7953,7 @@ class SyncQueue(db.Model):
     id         = db.Column(db.Integer, primary_key=True)
     data_type  = db.Column(db.String(20), default="analysis")  # "analysis" | "note"
     data_json  = db.Column(db.Text, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     synced_at  = db.Column(db.DateTime, nullable=True)
 
     @property
@@ -7851,7 +7972,7 @@ class LocalChatMessage(db.Model):
     content     = db.Column(db.Text)
     image_data  = db.Column(db.Text)   # base64
     image_mime  = db.Column(db.String(50))
-    created_at  = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at  = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     is_local    = db.Column(db.Boolean, default=False)   # True = created offline, not yet synced
     synced_at   = db.Column(db.DateTime, nullable=True)
 
@@ -7993,7 +8114,7 @@ class SyncClient:
                 with urllib.request.urlopen(req, timeout=15) as resp:
                     result = _j.loads(resp.read())
                 if result.get("ok"):
-                    now = datetime.utcnow()
+                    now = datetime.now(timezone.utc)
                     SyncQueue.query.filter(SyncQueue.id.in_(ids)).update(
                         {SyncQueue.synced_at: now}, synchronize_session=False
                     )
@@ -8026,7 +8147,7 @@ class SyncClient:
                     try:
                         ts = datetime.fromisoformat(m["created_at"])
                     except Exception:
-                        ts = datetime.utcnow()
+                        ts = datetime.now(timezone.utc)
                     msg = LocalChatMessage(
                         remote_id   = m["id"],
                         client_id   = m.get("client_id", ""),
@@ -8037,13 +8158,13 @@ class SyncClient:
                         image_mime  = m.get("image_mime", "") or None,
                         created_at  = ts,
                         is_local    = False,
-                        synced_at   = datetime.utcnow(),
+                        synced_at   = datetime.now(timezone.utc),
                     )
                     db.session.add(msg)
                 if messages:
                     db.session.commit()
                     print(f"[SyncClient] Pulled {len(messages)} chat messages")
-                self._last_pull_ts = datetime.utcnow()
+                self._last_pull_ts = datetime.now(timezone.utc)
             except Exception as e:
                 print(f"[SyncClient] Pull failed: {e}")
 
@@ -8070,7 +8191,7 @@ class SyncClient:
                     with urllib.request.urlopen(req, timeout=10) as resp:
                         result = _j.loads(resp.read())
                     msg.remote_id = result.get("id")
-                    msg.synced_at = datetime.utcnow()
+                    msg.synced_at = datetime.now(timezone.utc)
                     msg.is_local  = False
                     db.session.commit()
                 except Exception as e:
@@ -8090,7 +8211,7 @@ class SyncClient:
                     self._push_queue()
                     self._pull_chat()
                     self._push_local_chat()
-                    self._last_sync = datetime.utcnow()
+                    self._last_sync = datetime.now(timezone.utc)
             except Exception as e:
                 print(f"[SyncClient] Loop error: {e}")
 
@@ -8235,7 +8356,7 @@ def chat_post_message():
             with urllib.request.urlopen(req, timeout=8) as resp:
                 result = _j.loads(resp.read())
             msg.remote_id = result.get('id')
-            msg.synced_at = datetime.utcnow()
+            msg.synced_at = datetime.now(timezone.utc)
             msg.is_local  = False
             db.session.commit()
         except Exception as _pe:
