@@ -276,6 +276,8 @@ with app.app_context():
             "ALTER TABLE machine ADD COLUMN nominal_current REAL",
             "ALTER TABLE machine ADD COLUMN nominal_vibration REAL",
             "ALTER TABLE saved_file ADD COLUMN machine_id INTEGER",
+            "ALTER TABLE user ADD COLUMN reset_token VARCHAR(64)",
+            "ALTER TABLE user ADD COLUMN reset_token_expires DATETIME",
         ]
     else:
         _migrations = [
@@ -305,6 +307,8 @@ with app.app_context():
             "ALTER TABLE machine ADD COLUMN IF NOT EXISTS nominal_current REAL",
             "ALTER TABLE machine ADD COLUMN IF NOT EXISTS nominal_vibration REAL",
             "ALTER TABLE saved_file ADD COLUMN IF NOT EXISTS machine_id INTEGER",
+            'ALTER TABLE "user" ADD COLUMN IF NOT EXISTS reset_token VARCHAR(64)',
+            'ALTER TABLE "user" ADD COLUMN IF NOT EXISTS reset_token_expires TIMESTAMP',
         ]
     for sql in _migrations:
         try:
@@ -686,19 +690,43 @@ en:{login_title:'Sign in',reg_title:'Create account',tagline:'Predictive mainten
   btn_login:'Sign in',btn_reg:'Create account',
   link_reg:'No account? <a href="/register">Create one</a>',
   link_login:'Already have an account? <a href="/login">Sign in</a>',
+  link_forgot_pw:'<a href="/forgot-password">Forgot password?</a>',
   verify_title:'Check your inbox',
   verify_sub:'A confirmation link was sent. Click it to activate your account.',
   verify_note:'Valid 24h \u00b7 Check spam',back_login:'Back to sign in',
-  resend:'Resend email',resent:'Email sent again!'},
+  resend:'Resend email',resent:'Email sent again!',
+  forgot_title:'Forgot password',reset_title:'New password',
+  forgot_ph:'you@company.com',
+  btn_forgot:'Send reset link',btn_reset:'Save new password',
+  lbl_new_pw:'New password',lbl_confirm_pw:'Confirm',
+  pw_ph:'8 characters minimum',
+  forgot_success:'If an account exists for this email, a reset link has been sent.',
+  forgot_err_email:'Email required.',
+  reset_err_short:'Password must be at least 8 characters.',
+  reset_err_match:'Passwords do not match.',
+  reset_err_expired:'Invalid or expired link. Please start over.',
+  link_back_login:'<a href="/login">Back to sign in</a>'},
 fr:{login_title:'Connexion',reg_title:'Cr\u00e9er un compte',tagline:'Plateforme de maintenance pr\u00e9dictive',
   lbl_email:'Email',lbl_pw:'Mot de passe',lbl_pw2:'Confirmer le mot de passe',
   btn_login:'Se connecter',btn_reg:'Cr\u00e9er mon compte',
   link_reg:'Pas encore de compte\u00a0? <a href="/register">Cr\u00e9er un compte</a>',
   link_login:'D\u00e9j\u00e0 un compte\u00a0? <a href="/login">Se connecter</a>',
+  link_forgot_pw:'<a href="/forgot-password">Mot de passe oubli\u00e9\u00a0?</a>',
   verify_title:'V\u00e9rifiez votre email',
   verify_sub:'Un lien de confirmation a \u00e9t\u00e9 envoy\u00e9. Cliquez dessus pour activer votre compte.',
   verify_note:'Valide 24h \u00b7 V\u00e9rifiez vos spams',back_login:'Retour \u00e0 la connexion',
-  resend:"Renvoyer l'email",resent:'Email renvoy\u00e9\u00a0!'}
+  resend:"Renvoyer l'email",resent:'Email renvoy\u00e9\u00a0!',
+  forgot_title:'Mot de passe oubli\u00e9',reset_title:'Nouveau mot de passe',
+  forgot_ph:'vous@entreprise.com',
+  btn_forgot:'Envoyer le lien de r\u00e9initialisation',btn_reset:'Enregistrer le nouveau mot de passe',
+  lbl_new_pw:'Nouveau mot de passe',lbl_confirm_pw:'Confirmer',
+  pw_ph:'8 caract\u00e8res minimum',
+  forgot_success:'Si un compte existe pour cet email, un lien de r\u00e9initialisation a \u00e9t\u00e9 envoy\u00e9.',
+  forgot_err_email:'Email requis.',
+  reset_err_short:'Le mot de passe doit faire au moins 8 caract\u00e8res.',
+  reset_err_match:'Les mots de passe ne correspondent pas.',
+  reset_err_expired:'Lien invalide ou expir\u00e9. Recommencez la proc\u00e9dure.',
+  link_back_login:'<a href="/login">Retour \u00e0 la connexion</a>'}
 };
 function _tA(k){return(_TA[_aLang]||_TA.fr)[k]||k;}
 function _authSetLang(l){
@@ -708,6 +736,14 @@ function _authSetLang(l){
   document.querySelectorAll('[data-t]').forEach(function(el){
     var k=el.getAttribute('data-t'),v=_tA(k);
     if(el.tagName==='INPUT'){el.placeholder=v;}else{el.innerHTML=v;}
+  });
+  document.querySelectorAll('[data-t-ph]').forEach(function(el){
+    var k=el.getAttribute('data-t-ph'),v=_tA(k);
+    if(v&&v!==k)el.placeholder=v;
+  });
+  document.querySelectorAll('[data-tkey]').forEach(function(el){
+    var k=el.getAttribute('data-tkey'),v=_tA(k);
+    if(v&&v!==k)el.textContent=v;
   });
 }
 (function(){_authSetLang(_aLang);})();
@@ -799,35 +835,35 @@ LOGIN_HTML = _AUTH_HEAD + """
       <input class="fi" type="password" id="pw" name="password" placeholder="••••••••" autocomplete="current-password" required>
       <button type="submit" class="btn-submit" data-t="btn_login">Se connecter</button>
     </form>
-    <div class="auth-link"><a href="/forgot-password" data-t="link_forgot">Mot de passe oublié ?</a></div>
+    <div class="auth-link" data-t="link_forgot_pw">Mot de passe oublié ?</div>
     <div class="auth-link" data-t="link_reg">Pas encore de compte ? <a href="/register">Créer un compte</a></div>
 """ + _AUTH_FOOT
 
 FORGOT_HTML = _AUTH_HEAD + """
-    <div class="form-logo">Mot de passe oublié</div>
-    <div class="form-tagline">Plateforme de maintenance prédictive</div>
-    {% if msg %}<div class="auth-err" style="background:rgba(5,150,105,0.12);border-color:#059669;color:#34d399">{{ msg }}</div>{% endif %}
-    {% if error %}<div class="auth-err">{{ error }}</div>{% endif %}
+    <div class="form-logo" data-t="forgot_title">Mot de passe oublié</div>
+    <div class="form-tagline" data-t="tagline">Plateforme de maintenance prédictive</div>
+    {% if msg %}<div class="auth-err" style="background:rgba(5,150,105,0.12);border-color:#059669;color:#34d399" {% if msg_key %}data-tkey="{{ msg_key }}"{% endif %}>{{ msg }}</div>{% endif %}
+    {% if error %}<div class="auth-err" {% if error_key %}data-tkey="{{ error_key }}"{% endif %}>{{ error }}</div>{% endif %}
     <form method="POST" action="/forgot-password">
-      <label class="flbl" for="em">Email</label>
-      <input class="fi" type="email" id="em" name="email" placeholder="vous@entreprise.com" autocomplete="email" required>
-      <button type="submit" class="btn-submit">Envoyer le lien de réinitialisation</button>
+      <label class="flbl" for="em" data-t="lbl_email">Email</label>
+      <input class="fi" type="email" id="em" name="email" data-t-ph="forgot_ph" placeholder="vous@entreprise.com" autocomplete="email" required>
+      <button type="submit" class="btn-submit" data-t="btn_forgot">Envoyer le lien de réinitialisation</button>
     </form>
-    <div class="auth-link"><a href="/login">Retour à la connexion</a></div>
+    <div class="auth-link" data-t="link_back_login"><a href="/login">Retour à la connexion</a></div>
 """ + _AUTH_FOOT
 
 RESET_HTML = _AUTH_HEAD + """
-    <div class="form-logo">Nouveau mot de passe</div>
-    <div class="form-tagline">Plateforme de maintenance prédictive</div>
-    {% if error %}<div class="auth-err">{{ error }}</div>{% endif %}
+    <div class="form-logo" data-t="reset_title">Nouveau mot de passe</div>
+    <div class="form-tagline" data-t="tagline">Plateforme de maintenance prédictive</div>
+    {% if error %}<div class="auth-err" {% if error_key %}data-tkey="{{ error_key }}"{% endif %}>{{ error }}</div>{% endif %}
     <form method="POST" action="/reset-password/{{ token }}">
-      <label class="flbl" for="pw">Nouveau mot de passe</label>
-      <input class="fi" type="password" id="pw" name="password" placeholder="8 caractères minimum" autocomplete="new-password" required minlength="8">
-      <label class="flbl" for="pw2">Confirmer</label>
+      <label class="flbl" for="pw" data-t="lbl_new_pw">Nouveau mot de passe</label>
+      <input class="fi" type="password" id="pw" name="password" data-t-ph="pw_ph" placeholder="8 caractères minimum" autocomplete="new-password" required minlength="8">
+      <label class="flbl" for="pw2" data-t="lbl_confirm_pw">Confirmer</label>
       <input class="fi" type="password" id="pw2" name="password2" placeholder="••••••••" autocomplete="new-password" required>
-      <button type="submit" class="btn-submit">Enregistrer le nouveau mot de passe</button>
+      <button type="submit" class="btn-submit" data-t="btn_reset">Enregistrer le nouveau mot de passe</button>
     </form>
-    <div class="auth-link"><a href="/login">Retour à la connexion</a></div>
+    <div class="auth-link" data-t="link_back_login"><a href="/login">Retour à la connexion</a></div>
 """ + _AUTH_FOOT
 
 
@@ -6056,10 +6092,10 @@ def verify_email(token):
 @app.route('/forgot-password', methods=['GET', 'POST'])
 def forgot_password():
     if request.method == 'GET':
-        return render_template_string(FORGOT_HTML, error=None, msg=None)
+        return render_template_string(FORGOT_HTML, error=None, error_key=None, msg=None, msg_key=None)
     email = (request.form.get('email') or '').strip().lower()
     if not email:
-        return render_template_string(FORGOT_HTML, error='Email requis.', msg=None)
+        return render_template_string(FORGOT_HTML, error='Email requis.', error_key='forgot_err_email', msg=None, msg_key=None)
     user = User.query.filter_by(email=email).first()
     # Always show success message to avoid user enumeration
     if user and not user.is_banned:
@@ -6068,23 +6104,27 @@ def forgot_password():
         user.reset_token_expires = datetime.now(timezone.utc) + timedelta(hours=1)
         db.session.commit()
         threading.Thread(target=send_reset_email, args=(email, token), daemon=True).start()
-    return render_template_string(FORGOT_HTML, error=None,
-        msg='Si un compte existe pour cet email, un lien de réinitialisation a été envoyé.')
+    return render_template_string(FORGOT_HTML, error=None, error_key=None,
+        msg='Si un compte existe pour cet email, un lien de réinitialisation a été envoyé.',
+        msg_key='forgot_success')
 
 @app.route('/reset-password/<token>', methods=['GET', 'POST'])
 def reset_password(token):
     user = User.query.filter_by(reset_token=token).first()
     now = datetime.now(timezone.utc)
     if not user or user.reset_token_expires is None or user.reset_token_expires.replace(tzinfo=timezone.utc) < now:
-        return render_template_string(RESET_HTML, token=token, error='Lien invalide ou expiré. Recommencez la procédure.')
+        return render_template_string(RESET_HTML, token=token,
+            error='Lien invalide ou expiré. Recommencez la procédure.', error_key='reset_err_expired')
     if request.method == 'GET':
-        return render_template_string(RESET_HTML, token=token, error=None)
+        return render_template_string(RESET_HTML, token=token, error=None, error_key=None)
     pw = request.form.get('password', '')
     pw2 = request.form.get('password2', '')
     if len(pw) < 8:
-        return render_template_string(RESET_HTML, token=token, error='Le mot de passe doit faire au moins 8 caractères.')
+        return render_template_string(RESET_HTML, token=token,
+            error='Le mot de passe doit faire au moins 8 caractères.', error_key='reset_err_short')
     if pw != pw2:
-        return render_template_string(RESET_HTML, token=token, error='Les mots de passe ne correspondent pas.')
+        return render_template_string(RESET_HTML, token=token,
+            error='Les mots de passe ne correspondent pas.', error_key='reset_err_match')
     user.password_hash = generate_password_hash(pw)
     user.reset_token = None
     user.reset_token_expires = None
