@@ -27,7 +27,7 @@ _FROZEN      = getattr(sys, "frozen", False)
 APP_HOST     = "127.0.0.1"
 APP_PORT     = 5000
 APP_URL      = f"http://{APP_HOST}:{APP_PORT}/monitor"
-APP_VERSION  = "1.2.0"   # bump this with every release
+APP_VERSION  = "1.2.1"   # bump this with every release
 GITHUB_API   = "https://api.github.com/repos/CYPHr007/PILAR/releases/latest"
 
 if _FROZEN:
@@ -152,7 +152,7 @@ def _fetch_latest_release():
 def _download_and_install(url: str, version: str, is_zip: bool = False):
     """
     - Si .exe (installer Inno Setup) : telecharge et lance directement.
-    - Si .zip : telecharge, extrait dans %LOCALAPPDATA%\PILAR_update\,
+    - Si .zip : telecharge, extrait dans %LOCALAPPDATA%\\PILAR_update\\,
       lance PILAR.exe depuis ce dossier, ferme l'app courante.
     """
     import urllib.request

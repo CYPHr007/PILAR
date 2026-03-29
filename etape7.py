@@ -343,17 +343,33 @@ with app.app_context():
         db.session.rollback()
         print(f"[Pilar] Auto-upgrade error: {_upe}")
 
+def _log_model_error(msg):
+    """Write model load error to a log file accessible even in frozen (no-console) mode."""
+    try:
+        log_path = os.path.join(os.path.expanduser("~"), "AppData", "Local", "PILAR", "model_load.log")
+        os.makedirs(os.path.dirname(log_path), exist_ok=True)
+        with open(log_path, "a", encoding="utf-8") as _lf:
+            from datetime import datetime as _dt
+            _lf.write(f"[{_dt.now().isoformat()}] {msg}\n")
+    except Exception:
+        pass
+
 try:
     with open(_pkl("modele_pannes.pkl"),"rb") as f: model = pickle.load(f)
     with open(_pkl("scaler.pkl"),"rb") as f: scaler = pickle.load(f)
     with open(_pkl("modeles_zones.pkl"),"rb") as f: modeles_zones = pickle.load(f)
     print(f"[Pilar] Modeles ML charges depuis {_APP_DIR}")
 except FileNotFoundError as _e:
-    print(f"[Pilar] FATAL: fichier modele manquant — {_e} (recherche dans: {_APP_DIR})")
+    _msg = f"FATAL: fichier modele manquant — {_e} (recherche dans: {_APP_DIR})"
+    print(f"[Pilar] {_msg}")
+    _log_model_error(_msg)
     model = scaler = None
     modeles_zones = {}
 except Exception as _e:
-    print(f"[Pilar] FATAL: erreur chargement modele — {type(_e).__name__}: {_e}")
+    import traceback as _tb
+    _msg = f"FATAL: erreur chargement modele — {type(_e).__name__}: {_e}\n{_tb.format_exc()}"
+    print(f"[Pilar] {_msg}")
+    _log_model_error(_msg)
     model = scaler = None
     modeles_zones = {}
 
@@ -5880,9 +5896,21 @@ def _auto_retrain():
             csv_path = tmp.name
             print(f'[Pilar/retrain] Temp CSV: {csv_path}')
             # Run retrain_real.py as subprocess
+            # In a frozen PyInstaller app, 'python' is not in PATH — use sys.executable
+            import sys as _sys_rt
+            _retrain_script = os.path.join(_APP_DIR, 'retrain_real.py')
+            if not os.path.exists(_retrain_script):
+                print(f'[Pilar/retrain] retrain_real.py not found at {_retrain_script} — skipped')
+                return
+            _python_exe = _sys_rt.executable if not _FROZEN else None
+            if _python_exe is None or _FROZEN:
+                # In frozen mode, find python.exe next to the exe or in PATH
+                import shutil
+                _python_exe = shutil.which('python') or shutil.which('python3') or 'python'
             result = _sp.run(
-                ['python', 'retrain_real.py', csv_path],
-                capture_output=True, text=True, timeout=300
+                [_python_exe, _retrain_script, csv_path],
+                capture_output=True, text=True, timeout=300,
+                cwd=_APP_DIR,
             )
             print('[Pilar/retrain] stdout:', result.stdout[-2000:] if result.stdout else '')
             if result.returncode == 0:

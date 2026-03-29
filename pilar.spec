@@ -15,6 +15,7 @@
 
 import os
 from pathlib import Path
+from PyInstaller.utils.hooks import collect_submodules, collect_data_files
 
 block_cipher = None
 
@@ -22,6 +23,9 @@ BASE = Path(SPECPATH)
 
 # ── Collect data files ────────────────────────────────────────────────────────
 datas = []
+
+# Include all sklearn data files (e.g. joblib compressed models, etc.)
+datas += collect_data_files('sklearn')
 
 # ML model files
 for pkl in BASE.glob("*.pkl"):
@@ -58,11 +62,8 @@ hidden_imports = [
     "sqlalchemy",
     "sqlalchemy.dialects.sqlite",
     "sqlalchemy.dialects.postgresql",
-    # ML
-    "sklearn",
-    "sklearn.ensemble",
-    "sklearn.preprocessing",
-    "sklearn.pipeline",
+    # ML — collect ALL sklearn submodules so RandomForest/IsoForest pickle loads work
+] + collect_submodules('sklearn') + [
     "xgboost",
     "numpy",
     "pandas",
