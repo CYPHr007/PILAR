@@ -27,7 +27,7 @@ _FROZEN      = getattr(sys, "frozen", False)
 APP_HOST     = "127.0.0.1"
 APP_PORT     = 5000
 APP_URL      = f"http://{APP_HOST}:{APP_PORT}/monitor"
-APP_VERSION  = "1.2.1"   # bump this with every release
+APP_VERSION  = "1.2.2"   # bump this with every release
 GITHUB_API   = "https://api.github.com/repos/CYPHr007/PILAR/releases/latest"
 
 if _FROZEN:
@@ -277,6 +277,50 @@ def action_open(icon, item):
             pass
 
 
+def action_check_update(icon, item):
+    """Manual 'Check for updates' — runs in background thread, shows dialog if found."""
+    import ctypes
+    # Show "checking…" balloon tip while we query GitHub
+    try:
+        icon.notify("Vérification des mises à jour…", "PILAR")
+    except Exception:
+        pass
+    threading.Thread(target=_check_update_manual, daemon=True, name="updater-manual").start()
+
+
+def _check_update_manual():
+    """Like _check_update() but also shows 'up to date' confirmation."""
+    import ctypes
+    print(f"[PILAR] Manual update check — version {APP_VERSION}")
+    tag, url, is_zip = _fetch_latest_release()
+    if not tag or not url:
+        ctypes.windll.user32.MessageBoxW(
+            0,
+            "Impossible de joindre le serveur de mises à jour.\nVérifiez votre connexion internet.",
+            "PILAR — Vérification des mises à jour",
+            0x40,  # MB_ICONINFO
+        )
+        return
+    try:
+        latest  = _parse_version(tag)
+        current = _parse_version(APP_VERSION)
+    except Exception as e:
+        print(f"[PILAR] Version parse error: {e}")
+        return
+
+    if latest > current:
+        print(f"[PILAR] Update available: {tag} (zip={is_zip})")
+        _show_update_dialog(tag, url, is_zip)
+    else:
+        ctypes.windll.user32.MessageBoxW(
+            0,
+            f"PILAR est à jour.\n\nVersion installée : {APP_VERSION}",
+            "PILAR — Vérification des mises à jour",
+            0x40,  # MB_ICONINFO
+        )
+        print(f"[PILAR] Up to date ({APP_VERSION}).")
+
+
 def action_quit(icon, item):
     global _window
     print("[PILAR] Quit requested")
@@ -291,6 +335,8 @@ def action_quit(icon, item):
 def _build_menu():
     return pystray.Menu(
         pystray.MenuItem("Ouvrir PILAR", action_open, default=True),
+        pystray.Menu.SEPARATOR,
+        pystray.MenuItem("Rechercher les mises à jour…", action_check_update),
         pystray.Menu.SEPARATOR,
         pystray.MenuItem("Quitter PILAR", action_quit),
     )
