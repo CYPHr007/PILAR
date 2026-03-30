@@ -13,7 +13,7 @@
 setlocal EnableDelayedExpansion
 
 set APP_NAME=PILAR
-set APP_VERSION=1.2.2
+set APP_VERSION=1.2.3
 set SCRIPT_DIR=%~dp0
 set DIST_DIR=%SCRIPT_DIR%dist
 set INNO_V7_X86=C:\Program Files (x86)\Inno Setup 7\ISCC.exe
