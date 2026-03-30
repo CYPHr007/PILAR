@@ -468,7 +468,7 @@ GMAIL     = os.environ.get("GMAIL_ADDRESS", "")
 GMAIL_PWD = os.environ.get("GMAIL_APP_PASSWORD", "")
 
 # ── In-app update banner ───────────────────────────────────────────────────────
-_UPDATE_INFO = {'available': False, 'version': None, 'download_url': None}
+_UPDATE_INFO = {'available': False, 'version': None, 'download_url': None, 'current': os.environ.get('PILAR_VERSION', APP_VERSION)}
 
 def _check_update_background():
     """Called by launcher or on first boot — checks Railway for newer version."""
@@ -1702,6 +1702,27 @@ function updateSensorUnits(){
   // Pump sensors use fixed SI units — no locale conversion needed
 }
 document.addEventListener('DOMContentLoaded',applyLang);
+
+// ── IN-APP UPDATE BANNER ───────────────────────────────────────────────────
+function showUpdateBanner(version){
+  if(document.getElementById('pilar-upd-bar'))return;
+  var bar=document.createElement('div');
+  bar.id='pilar-upd-bar';
+  bar.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9999;background:var(--teal);color:#fff;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:space-between;padding:9px 18px;gap:12px;box-shadow:0 2px 12px rgba(0,0,0,0.5)';
+  bar.innerHTML='<span>&#x2193; Mise à jour disponible : PILAR v'+version+'</span>'
+    +'<div style="display:flex;gap:8px;flex-shrink:0">'
+    +'<a href="/settings" style="background:rgba(255,255,255,0.2);color:#fff;border:1px solid rgba(255,255,255,0.3);border-radius:6px;padding:5px 14px;text-decoration:none;font-size:11px;font-weight:700">Mettre à jour</a>'
+    +'<button onclick="document.getElementById(\'pilar-upd-bar\').remove()" style="background:none;border:none;color:rgba(255,255,255,0.7);cursor:pointer;font-size:16px;line-height:1;padding:0 4px">&times;</button>'
+    +'</div>';
+  document.body.prepend(bar);
+}
+// Check for updates silently on page load (uses cached _UPDATE_INFO)
+(function(){
+  fetch('/api/update_info').then(function(r){return r.json();}).then(function(d){
+    if(d.available&&d.version)showUpdateBanner(d.version);
+  }).catch(function(){});
+})();
+
 var _tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
 function localTime(utcStr,opts){
   return new Date(utcStr).toLocaleString(undefined,Object.assign({timeZone:_tz},opts||{}));
@@ -2825,6 +2846,29 @@ SETTINGS_HTML = _HEAD.replace("{FAV}","iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC
     <div class="ctitle" data-i18n="set_session">Session</div>
     <button class="btn" onclick="window.location='/logout'" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text2)" data-i18n="set_signout">Se déconnecter</button>
   </div>
+
+  <!-- UPDATE CARD -->
+  <div class="card" id="update-card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div class="ctitle" style="margin-bottom:0">PILAR Desktop</div>
+      <span id="upd-ver-badge" style="font-size:10px;padding:3px 10px;border-radius:20px;background:var(--teal-dim);color:var(--teal-light);font-weight:600"></span>
+    </div>
+    <div id="upd-status" style="font-size:12px;color:var(--text3);margin-bottom:14px;min-height:18px"></div>
+    <div style="display:flex;gap:8px">
+      <button id="upd-check-btn" class="btn" onclick="checkForUpdates()" style="flex:1;background:var(--surface2);border:1px solid var(--border2);color:var(--text2);font-size:12px">
+        Rechercher les mises à jour
+      </button>
+      <button id="upd-install-btn" class="btn" onclick="installUpdate()" style="flex:1;display:none;background:var(--teal);font-size:12px">
+        Mettre à jour maintenant
+      </button>
+    </div>
+    <div id="upd-progress" style="display:none;margin-top:12px">
+      <div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden">
+        <div id="upd-bar" style="height:100%;width:0%;background:var(--teal);transition:width .3s;border-radius:2px"></div>
+      </div>
+      <div id="upd-progress-txt" style="font-size:10px;color:var(--text3);margin-top:6px;text-align:center">Téléchargement en cours…</div>
+    </div>
+  </div>
 </div>
 </div>
 </div>
@@ -2846,8 +2890,81 @@ async function changePassword(){
   if(d.ok){msg.style.color='var(--green)';msg.textContent=t('set_pw_ok');document.getElementById('pwOld').value='';document.getElementById('pwNew').value='';document.getElementById('pwConf').value='';}
   else{msg.style.color='var(--red)';msg.textContent=d.error||t('fl_error');}
 }
+// ── Update checker ──────────────────────────────────────────────────────────
+async function initUpdateCard(){
+  const badge=document.getElementById('upd-ver-badge');
+  const status=document.getElementById('upd-status');
+  try{
+    const r=await fetch('/api/update_info');
+    const d=await r.json();
+    if(badge)badge.textContent='v'+(d.current||'—');
+    if(d.available){
+      if(status)status.innerHTML='<span style="color:var(--teal-light)">&#x2193; Mise à jour disponible : v'+d.latest+'</span>';
+      const ib=document.getElementById('upd-install-btn');
+      if(ib)ib.style.display='block';
+    }else{
+      if(status)status.textContent='Version installée : v'+(d.current||'—');
+    }
+  }catch(e){}
+}
+async function checkForUpdates(){
+  const btn=document.getElementById('upd-check-btn');
+  const status=document.getElementById('upd-status');
+  if(btn){btn.disabled=true;btn.textContent='Vérification…';}
+  if(status)status.textContent='';
+  try{
+    const r=await fetch('/api/update/check');
+    const d=await r.json();
+    const badge=document.getElementById('upd-ver-badge');
+    if(badge)badge.textContent='v'+(d.current||'—');
+    if(d.available){
+      if(status)status.innerHTML='<span style="color:var(--teal-light)">&#x2193; Nouvelle version disponible : v'+d.latest+'</span>';
+      const ib=document.getElementById('upd-install-btn');
+      if(ib)ib.style.display='block';
+      showUpdateBanner(d.latest);
+    }else{
+      if(status)status.innerHTML='<span style="color:var(--green)">&#x2713; PILAR est à jour (v'+d.current+')</span>';
+    }
+  }catch(e){
+    if(status)status.innerHTML='<span style="color:var(--red)">Impossible de joindre le serveur</span>';
+  }
+  if(btn){btn.disabled=false;btn.textContent='Rechercher les mises à jour';}
+}
+async function installUpdate(){
+  const ib=document.getElementById('upd-install-btn');
+  const cb=document.getElementById('upd-check-btn');
+  const prog=document.getElementById('upd-progress');
+  const bar=document.getElementById('upd-bar');
+  const ptxt=document.getElementById('upd-progress-txt');
+  if(ib){ib.disabled=true;ib.textContent='Installation…';}
+  if(cb)cb.disabled=true;
+  if(prog)prog.style.display='block';
+  // Animate progress bar (indeterminate)
+  let pct=0;
+  const ticker=setInterval(function(){pct=Math.min(pct+2,90);if(bar)bar.style.width=pct+'%';},400);
+  try{
+    const r=await fetch('/api/update/install',{method:'POST'});
+    const d=await r.json();
+    if(d.ok){
+      clearInterval(ticker);
+      if(bar)bar.style.width='100%';
+      if(ptxt)ptxt.textContent='Mise à jour installée — redémarrage en cours…';
+    }else{
+      clearInterval(ticker);
+      if(ptxt)ptxt.innerHTML='<span style="color:var(--red)">Erreur : '+(d.error||'inconnue')+'</span>';
+      if(ib){ib.disabled=false;ib.textContent='Réessayer';}
+      if(cb)cb.disabled=false;
+    }
+  }catch(e){
+    clearInterval(ticker);
+    if(ptxt)ptxt.innerHTML='<span style="color:var(--red)">Erreur réseau</span>';
+    if(ib){ib.disabled=false;ib.textContent='Réessayer';}
+    if(cb)cb.disabled=false;
+  }
+}
 updN();
 applyLang();
+initUpdateCard();
 </script></body></html>"""
 
 
@@ -7455,6 +7572,78 @@ def api_twin():
 @app.route('/api/update_info')
 def api_update_info():
     return jsonify(_UPDATE_INFO)
+
+@app.route('/api/update/check', methods=['GET'])
+def api_update_check():
+    """Manual update check — re-queries GitHub and returns result."""
+    _check_update_background()
+    APP_VER = os.environ.get('PILAR_VERSION', APP_VERSION)
+    return jsonify({
+        'current': APP_VER,
+        'available': _UPDATE_INFO['available'],
+        'latest': _UPDATE_INFO.get('version'),
+        'download_url': _UPDATE_INFO.get('download_url'),
+    })
+
+@app.route('/api/update/install', methods=['POST'])
+def api_update_install():
+    """
+    Download the latest release zip, extract to %LOCALAPPDATA%\\PILAR_update,
+    launch the new PILAR.exe, then exit this process.
+    Only works in the frozen desktop app (_FROZEN=True).
+    """
+    import urllib.request as _ur, zipfile as _zf, shutil as _sh, tempfile as _tmp
+    url = _UPDATE_INFO.get('download_url', '')
+    version = _UPDATE_INFO.get('version', 'unknown')
+    if not _UPDATE_INFO.get('available') or not url:
+        return jsonify({'error': 'No update available'}), 400
+
+    def _do_install():
+        try:
+            import urllib.request, zipfile, shutil, os as _os, tempfile, sys as _sys
+            # Download to temp file
+            suffix = '.zip' if url.endswith('.zip') else '.exe'
+            tmp_path = tempfile.mktemp(suffix=suffix, prefix=f'PILAR_{version}_')
+            print(f'[Pilar/update] Downloading {url} → {tmp_path}')
+            urllib.request.urlretrieve(url, tmp_path)
+            print('[Pilar/update] Download complete')
+
+            if suffix == '.zip':
+                update_dir = _os.path.join(
+                    _os.environ.get('LOCALAPPDATA', tempfile.gettempdir()), 'PILAR_update')
+                if _os.path.exists(update_dir):
+                    shutil.rmtree(update_dir)
+                _os.makedirs(update_dir, exist_ok=True)
+                with zipfile.ZipFile(tmp_path, 'r') as z:
+                    z.extractall(update_dir)
+                _os.unlink(tmp_path)
+                # Find PILAR.exe in extracted tree
+                pilar_exe = None
+                for root, dirs, files in _os.walk(update_dir):
+                    for fname in files:
+                        if fname.lower() == 'pilar.exe':
+                            pilar_exe = _os.path.join(root, fname)
+                            break
+                    if pilar_exe:
+                        break
+                if not pilar_exe:
+                    raise FileNotFoundError('PILAR.exe not found in archive')
+                import subprocess
+                subprocess.Popen([pilar_exe], cwd=_os.path.dirname(pilar_exe), close_fds=True)
+                print(f'[Pilar/update] Launched {pilar_exe} — exiting')
+            else:
+                import subprocess
+                subprocess.Popen([tmp_path], close_fds=True)
+                print('[Pilar/update] Installer launched — exiting')
+
+            import time
+            time.sleep(1.5)
+            _os._exit(0)
+        except Exception as _e:
+            print(f'[Pilar/update] Install failed: {_e}')
+
+    threading.Thread(target=_do_install, daemon=True, name='in-app-updater').start()
+    return jsonify({'ok': True, 'message': 'Téléchargement en cours…'})
 
 @app.route('/api/health')
 def api_health():
