@@ -342,6 +342,123 @@ with app.app_context():
     except Exception as _upe:
         db.session.rollback()
         print(f"[Pilar] Auto-upgrade error: {_upe}")
+    # Seed demo account
+    try:
+        _seed_demo_account()
+    except Exception as _de:
+        db.session.rollback()
+        print(f"[Pilar] Demo seed error: {_de}")
+
+def _seed_demo_account():
+    """Create/refresh the demo@pilar.app account with rich sample data."""
+    import random, json as _json
+    from datetime import timedelta
+    DEMO_EMAIL = 'demo@pilar.app'
+    DEMO_PASS  = 'demo1234'
+
+    user = User.query.filter_by(email=DEMO_EMAIL).first()
+    if not user:
+        user = User(
+            email=DEMO_EMAIL,
+            password_hash=generate_password_hash(DEMO_PASS),
+            email_verified=True,
+            onboarded=True,
+            plan='pro',
+            plan_expires_at=None,
+        )
+        db.session.add(user)
+        db.session.flush()
+        print("[Pilar] Demo account created")
+    else:
+        # Already exists — only seed data if machines missing
+        if Machine.query.filter_by(user_id=user.id).count() > 0:
+            return
+        print("[Pilar] Demo account found — seeding machines & history")
+
+    uid = user.id
+    now = datetime.now(timezone.utc)
+
+    # ── Machines ──────────────────────────────────────────────────────────────
+    machines_def = [
+        dict(name='Pompe Principale',    pump_type='centrifuge', fluid_type='eau',   roue_material='inox_316',
+             nominal_flow=45.0, nominal_pressure=6.5, nominal_current=18.0, nominal_vibration=2.5,
+             power_kw=15.0, threshold=45.0,
+             description='Pompe centrifuge principale — circuit eau froide'),
+        dict(name='Compresseur A',        pump_type='centrifuge', fluid_type='huile', roue_material='acier_carbone',
+             nominal_flow=30.0, nominal_pressure=8.0, nominal_current=22.0, nominal_vibration=3.0,
+             power_kw=22.0, threshold=50.0,
+             description='Compresseur hydraulique circuit huile'),
+        dict(name='Pompe de Transfert',   pump_type='centrifuge', fluid_type='acide', roue_material='inox_316l',
+             nominal_flow=20.0, nominal_pressure=4.0, nominal_current=12.0, nominal_vibration=1.8,
+             power_kw=7.5, threshold=40.0,
+             description='Pompe transfert acide chlorhydrique dilué'),
+    ]
+    machine_objs = []
+    for md in machines_def:
+        m = Machine(
+            user_id=uid, is_active=True,
+            name=md['name'], description=md.get('description',''),
+            pump_type=md['pump_type'], fluid_type=md['fluid_type'], roue_material=md['roue_material'],
+            nominal_flow=md['nominal_flow'], nominal_pressure=md['nominal_pressure'],
+            nominal_current=md['nominal_current'], nominal_vibration=md['nominal_vibration'],
+            power_kw=md['power_kw'], threshold=md['threshold'],
+        )
+        db.session.add(m)
+        machine_objs.append(m)
+    db.session.flush()
+
+    # ── Analysis history (30 days, ~2 per day per machine) ────────────────────
+    rng = random.Random(42)  # deterministic seed for reproducible demo data
+    for day_offset in range(30, 0, -1):
+        base_ts = now - timedelta(days=day_offset)
+        for mi, m in enumerate(machine_objs):
+            for reading in range(2):
+                ts = base_ts + timedelta(hours=rng.randint(6, 20), minutes=rng.randint(0, 59))
+                # Degradation trend: risk increases in last 5 days
+                base_risk = 12 + mi * 5
+                if day_offset <= 5:
+                    base_risk += (5 - day_offset) * 8  # spike at end
+                elif day_offset <= 10:
+                    base_risk += (10 - day_offset) * 2
+                risk = round(min(95.0, max(5.0, base_risk + rng.uniform(-10, 15))), 1)
+                pred = 1 if risk >= float(m.threshold) else 0
+                zones_str = ''
+                if pred == 1:
+                    zone_opts = ['Cavitation', 'Roulements', 'Étanchéité', 'Moteur']
+                    zones_str = rng.choice(zone_opts)
+                # vary sensor values realistically
+                vib  = round(rng.uniform(1.5, 5.5 if risk > 50 else 3.0), 2)
+                tpal = round(rng.uniform(45, 95 if risk > 50 else 65), 1)
+                hf   = round(1000 + day_offset * 48 + reading * 12 + rng.uniform(0, 10), 0)
+                a = Analysis(
+                    machine_type='pump',
+                    temp_air=tpal,
+                    temp_process=round(rng.uniform(55, 85 if risk > 50 else 70), 1),
+                    vitesse=round(m.nominal_flow + rng.uniform(-5, 5), 1),
+                    couple=round(m.nominal_pressure + rng.uniform(-1, 1), 2),
+                    usure=hf,
+                    risk=risk, prediction=pred, zones=zones_str,
+                    confidence=rng.randint(70, 100),
+                    mail_sent=(pred == 1 and rng.random() > 0.5),
+                    user_id=uid, machine_id=m.name,
+                    extra_params=_json.dumps({'vibration': vib}),
+                )
+                a.timestamp = ts
+                db.session.add(a)
+
+    # ── Machine notes ──────────────────────────────────────────────────────────
+    notes_data = [
+        (machine_objs[0].id, 'Remplacement des joints torique effectué. Vibrations revenues à la normale.'),
+        (machine_objs[0].id, 'Inspection mensuelle OK. Graissage roulements réalisé.'),
+        (machine_objs[1].id, 'Niveau huile vérifié et complété. Filtre changé.'),
+        (machine_objs[2].id, 'Attention corrosion détectée sur le flasque — prévoir remplacement sous 3 mois.'),
+    ]
+    for mid, content in notes_data:
+        n = MachineNote(machine_id=mid, user_id=uid, user_email=DEMO_EMAIL, content=content)
+        db.session.add(n)
+
+    db.session.commit()
+    print(f"[Pilar] Demo data seeded: {len(machine_objs)} machines, 180 analyses")
 
 def _log_model_error(msg):
     """Write model load error to a log file accessible even in frozen (no-console) mode."""
@@ -357,21 +474,30 @@ def _log_model_error(msg):
 try:
     with open(_pkl("modele_pannes.pkl"),"rb") as f: model = pickle.load(f)
     with open(_pkl("scaler.pkl"),"rb") as f: scaler = pickle.load(f)
-    with open(_pkl("modeles_zones.pkl"),"rb") as f: modeles_zones = pickle.load(f)
     print(f"[Pilar] Modeles ML charges depuis {_APP_DIR}")
 except FileNotFoundError as _e:
     _msg = f"FATAL: fichier modele manquant — {_e} (recherche dans: {_APP_DIR})"
     print(f"[Pilar] {_msg}")
     _log_model_error(_msg)
     model = scaler = None
-    modeles_zones = {}
 except Exception as _e:
     import traceback as _tb
     _msg = f"FATAL: erreur chargement modele — {type(_e).__name__}: {_e}\n{_tb.format_exc()}"
     print(f"[Pilar] {_msg}")
     _log_model_error(_msg)
     model = scaler = None
-    modeles_zones = {}
+
+modeles_zones = {}
+try:
+    with open(_pkl("modeles_zones.pkl"),"rb") as f: modeles_zones = pickle.load(f)
+    print(f"[Pilar] Modeles zones charges ({len(modeles_zones)} zones)")
+except FileNotFoundError:
+    print("[Pilar] modeles_zones.pkl absent — zone analysis disabled")
+except Exception as _ez:
+    import traceback as _tb
+    _msg = f"Zones model load error — {type(_ez).__name__}: {_ez}\n{_tb.format_exc()}"
+    print(f"[Pilar] {_msg}")
+    _log_model_error(_msg)
 
 # ── RUL MODEL (NASA C-MAPSS) ──────────────────────────────────────────────────
 _rul_model  = None
@@ -466,6 +592,43 @@ def _compute_anomaly_score(x_scaled):
 
 GMAIL     = os.environ.get("GMAIL_ADDRESS", "")
 GMAIL_PWD = os.environ.get("GMAIL_APP_PASSWORD", "")
+# Railway email relay — used when GMAIL is not configured locally (desktop mode)
+_EMAIL_RELAY_URL = "https://pilarapp.up.railway.app/api/relay/email"
+_EMAIL_RELAY_KEY = os.environ.get("EMAIL_RELAY_KEY", "pilar_relay_2024_secret")
+
+def _send_via_relay(to_addr: str, subject: str, html: str) -> bool:
+    """Send email through Railway relay. Returns True on success."""
+    try:
+        import urllib.request as _ur, json as _j, urllib.error as _ue
+        payload = _j.dumps({'to': to_addr, 'subject': subject, 'html': html}).encode()
+        req = _ur.Request(_EMAIL_RELAY_URL, data=payload,
+                          headers={'Content-Type': 'application/json',
+                                   'X-Relay-Key': _EMAIL_RELAY_KEY})
+        with _ur.urlopen(req, timeout=10) as resp:
+            result = _j.loads(resp.read())
+            return bool(result.get('ok'))
+    except Exception as _re:
+        print(f"[Pilar/relay] Email relay error: {_re}")
+        return False
+
+def _send_email(to_addr: str, subject: str, html: str) -> bool:
+    """Send email: try local SMTP first, fall back to Railway relay."""
+    if GMAIL and GMAIL_PWD:
+        try:
+            from email.mime.multipart import MIMEMultipart
+            from email.mime.text import MIMEText as _MIMEText
+            msg = MIMEMultipart('alternative')
+            msg['Subject'] = subject
+            msg['From'] = f'PILAR <{GMAIL}>'
+            msg['To'] = to_addr
+            msg.attach(_MIMEText(html, 'html', 'utf-8'))
+            with smtplib.SMTP_SSL('smtp.gmail.com', 465, timeout=15) as srv:
+                srv.login(GMAIL, GMAIL_PWD)
+                srv.sendmail(GMAIL, [to_addr], msg.as_string())
+            return True
+        except Exception as _se:
+            print(f"[Pilar/smtp] Error: {_se} — trying relay")
+    return _send_via_relay(to_addr, subject, html)
 
 # ── In-app update banner ───────────────────────────────────────────────────────
 _UPDATE_INFO = {'available': False, 'version': None, 'download_url': None, 'current': os.environ.get('PILAR_VERSION', APP_VERSION)}
@@ -555,69 +718,39 @@ def admin_required(f):
     return decorated
 
 def send_verify_email(email, token, base_url=None):
-    if not GMAIL or not GMAIL_PWD:
-        print(f"[Pilar/auth] Email non configuré (GMAIL/GMAIL_APP_PASSWORD manquants) — token pour {email}: {token}")
-        return
-    base = (base_url or os.environ.get("APP_URL", "")).rstrip('/')
-    if not base:
-        base = "https://trypilar.com"
+    base = (base_url or os.environ.get("APP_URL", "http://127.0.0.1:5000")).rstrip('/')
     link = f"{base}/verify-email/{token}"
-    html = f"""<div style="font-family:sans-serif;background:#07090f;color:#e2e8f0;padding:40px;border-radius:8px">
-<h2 style="color:#14b8a6;letter-spacing:3px">PILAR</h2>
-<p>Confirmez votre adresse email pour activer votre compte.</p>
-<a href="{link}" style="display:inline-block;margin-top:16px;padding:12px 24px;background:#0d9488;color:#fff;border-radius:6px;text-decoration:none;font-weight:700">Vérifier mon email</a>
+    html = f"""<div style="font-family:sans-serif;background:#07090f;color:#e2e8f0;padding:40px;border-radius:8px;max-width:520px">
+<h2 style="color:#14b8a6;letter-spacing:3px;margin-bottom:16px">PILAR</h2>
+<p style="margin-bottom:20px">Confirmez votre adresse email pour activer votre compte PILAR.</p>
+<a href="{link}" style="display:inline-block;padding:12px 28px;background:#0d9488;color:#fff;border-radius:6px;text-decoration:none;font-weight:700;font-size:15px">Vérifier mon email</a>
 <p style="margin-top:24px;color:#64748b;font-size:12px">Lien valide 24h. Si vous n'avez pas créé de compte, ignorez cet email.</p>
-<p style="color:#334155;font-size:11px">Ou copiez ce lien : {link}</p>
+<p style="color:#334155;font-size:11px;margin-top:8px">Ou copiez ce lien : <a href="{link}" style="color:#0d9488">{link}</a></p>
+<p style="color:#1e2433;font-size:10px;margin-top:24px;border-top:1px solid #1e2433;padding-top:12px">PILAR — Predictive Maintenance Platform</p>
 </div>"""
-    msg = MIMEMultipart('alternative')
-    msg['Subject'] = "Pilar — Vérifiez votre email"
-    msg['From'] = f"Pilar <{GMAIL}>"
-    msg['To'] = email
-    msg.attach(MIMEText(html, 'html'))
-    try:
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465, timeout=15) as smtp:
-            smtp.login(GMAIL, GMAIL_PWD)
-            smtp.sendmail(GMAIL, email, msg.as_string())
+    ok = _send_email(email, "PILAR — Vérifiez votre email", html)
+    if ok:
         print(f"[Pilar/auth] Verification email sent to {email}")
-    except smtplib.SMTPAuthenticationError as e:
-        print(f"[Pilar/auth] SMTP auth failed (vérifiez GMAIL_APP_PASSWORD): {e}")
-    except smtplib.SMTPException as e:
-        print(f"[Pilar/auth] SMTP error: {e}")
-    except Exception as e:
-        print(f"[Pilar/auth] Email error ({type(e).__name__}): {e}")
+    else:
+        print(f"[Pilar/auth] Verification email FAILED for {email} — token: {token}")
 
 
 def send_reset_email(email, token, base_url=None):
-    if not GMAIL or not GMAIL_PWD:
-        print(f"[Pilar/auth] Email non configuré — reset token pour {email}: {token}")
-        return
-    base = (base_url or os.environ.get("APP_URL", "")).rstrip('/')
-    if not base:
-        base = "https://trypilar.com"
+    base = (base_url or os.environ.get("APP_URL", "http://127.0.0.1:5000")).rstrip('/')
     link = f"{base}/reset-password/{token}"
-    html = f"""<div style="font-family:sans-serif;background:#07090f;color:#e2e8f0;padding:40px;border-radius:8px">
-<h2 style="color:#14b8a6;letter-spacing:3px">PILAR</h2>
-<p>Vous avez demandé la réinitialisation de votre mot de passe.</p>
-<a href="{link}" style="display:inline-block;margin-top:16px;padding:12px 24px;background:#0d9488;color:#fff;border-radius:6px;text-decoration:none;font-weight:700">Réinitialiser mon mot de passe</a>
+    html = f"""<div style="font-family:sans-serif;background:#07090f;color:#e2e8f0;padding:40px;border-radius:8px;max-width:520px">
+<h2 style="color:#14b8a6;letter-spacing:3px;margin-bottom:16px">PILAR</h2>
+<p style="margin-bottom:20px">Vous avez demandé la réinitialisation de votre mot de passe.</p>
+<a href="{link}" style="display:inline-block;padding:12px 28px;background:#0d9488;color:#fff;border-radius:6px;text-decoration:none;font-weight:700;font-size:15px">Réinitialiser mon mot de passe</a>
 <p style="margin-top:24px;color:#64748b;font-size:12px">Lien valide 1h. Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.</p>
-<p style="color:#334155;font-size:11px">Ou copiez ce lien : {link}</p>
+<p style="color:#334155;font-size:11px;margin-top:8px">Ou copiez ce lien : <a href="{link}" style="color:#0d9488">{link}</a></p>
+<p style="color:#1e2433;font-size:10px;margin-top:24px;border-top:1px solid #1e2433;padding-top:12px">PILAR — Predictive Maintenance Platform</p>
 </div>"""
-    msg = MIMEMultipart('alternative')
-    msg['Subject'] = "Pilar — Réinitialisation de mot de passe"
-    msg['From'] = f"Pilar <{GMAIL}>"
-    msg['To'] = email
-    msg.attach(MIMEText(html, 'html'))
-    try:
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465, timeout=15) as smtp:
-            smtp.login(GMAIL, GMAIL_PWD)
-            smtp.sendmail(GMAIL, email, msg.as_string())
+    ok = _send_email(email, "PILAR — Réinitialisation de mot de passe", html)
+    if ok:
         print(f"[Pilar/auth] Reset email sent to {email}")
-    except smtplib.SMTPAuthenticationError as e:
-        print(f"[Pilar/auth] SMTP auth failed: {e}")
-    except smtplib.SMTPException as e:
-        print(f"[Pilar/auth] SMTP error: {e}")
-    except Exception as e:
-        print(f"[Pilar/auth] Email error ({type(e).__name__}): {e}")
+    else:
+        print(f"[Pilar/auth] Reset email FAILED for {email} — token: {token}")
 
 
 # ── AUTH PAGES ────────────────────────────────────────────────────────────────
@@ -640,6 +773,7 @@ _AUTH_HEAD = ("""<!DOCTYPE html><html lang="fr"><head>
   --green:#059669;
   --text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;
   --r:10px;--r-sm:7px;
+  color-scheme:dark;
 }
 html,body{height:100%;}
 body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);overflow:hidden;}
@@ -665,6 +799,11 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
   border-radius:var(--r);font-size:14px;font-weight:600;font-family:'DM Sans',sans-serif;
   cursor:pointer;margin-top:26px;transition:opacity .15s,box-shadow .15s;}
 .btn-submit:hover{opacity:.88;box-shadow:0 0 0 3px rgba(13,148,136,0.22);}
+.btn-demo{width:100%;padding:12px;background:rgba(13,148,136,0.10);color:var(--tl);
+  border:1px solid rgba(13,148,136,0.30);border-radius:var(--r);font-size:13px;font-weight:600;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;
+  text-decoration:none;transition:background .15s,box-shadow .15s;}
+.btn-demo:hover{background:rgba(13,148,136,0.18);box-shadow:0 0 0 3px rgba(13,148,136,0.15);}
 .auth-err{padding:10px 14px;background:var(--red-dim);border:1px solid rgba(220,38,38,0.3);
   border-radius:var(--r-sm);font-size:12px;color:#f87171;margin-top:14px;}
 .auth-link{text-align:center;margin-top:22px;font-size:12px;color:var(--text3);}
@@ -851,6 +990,16 @@ LOGIN_HTML = _AUTH_HEAD + """
       <input class="fi" type="password" id="pw" name="password" placeholder="••••••••" autocomplete="current-password" required>
       <button type="submit" class="btn-submit" data-t="btn_login">Se connecter</button>
     </form>
+    <div style="display:flex;align-items:center;gap:10px;margin:20px 0 12px">
+      <div style="flex:1;height:1px;background:var(--border)"></div>
+      <span style="font-size:11px;color:var(--text3);letter-spacing:.04em;white-space:nowrap">ou essayer sans compte</span>
+      <div style="flex:1;height:1px;background:var(--border)"></div>
+    </div>
+    <a href="/demo-login" class="btn-demo">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      Accès démo instantané
+    </a>
+    <div style="font-size:10px;color:var(--text3);text-align:center;margin-top:6px;line-height:1.6">3 machines · 180 analyses · toutes les fonctionnalités</div>
     <div class="auth-link" data-t="link_forgot_pw">Mot de passe oublié ?</div>
     <div class="auth-link" data-t="link_reg">Pas encore de compte ? <a href="/register">Créer un compte</a></div>
 """ + _AUTH_FOOT
@@ -1582,7 +1731,7 @@ acc_promote:'Promouvoir',acc_kick:'Retirer',
 acc_add_title:'Ajouter un membre',acc_add_ph:'email@entreprise.com',acc_add_btn:'Ajouter',acc_added:'Membre ajouté !',
 acc_members:' membre(s)',acc_leave:"Quitter l'équipe",
 nav_import:'Import CSV',nav_assistant:'Assistant IA',
-live_connect:'Connecter un fichier',live_on:'Flux actif',live_disconnect:'Déconnecter',
+live_connect:'Connecter un fichier',live_on:'Flux actif',live_disconnect:'Déconnecter',live_reconnect:'Reconnecter',
 live_rows:'Lignes lues',live_fail:'Défaillances',live_ok:'Normal',live_last:'Dernier',
 live_no_api:'Sélectionnez votre fichier CSV. Cliquez Actualiser pour relire les nouvelles lignes.',
 live_refresh:'Actualiser',
@@ -1608,7 +1757,7 @@ adp_ignore:'(Ignorer)',adp_desc:'Convertissez n\u2019importe quel CSV au format 
 page_tutorial:'Import & Analyse',tut_csv_desc:"Votre CSV doit contenir ces colonnes (l'ordre n'a pas d'importance) :",tut_click_csv:'Cliquez pour sélectionner un fichier CSV',tut_no_file_sel:'Aucun fichier sélectionné',tut_progress:'Progression',tut_check_every:'Vérifier toutes les',tut_row:'Ligne',
 set_domain:'Domaine',set_nav_title:'Navigation',set_twin_nav:'Jumeau Numérique',
 ast_you:'Vous',ast_pilar:'Pilar IA',ast_error:'Erreur\u00a0: ',ast_net_error:'Erreur réseau. Réessayez.',
-ai_warming:'se réchauffe',ai_ready:'prêt',ai_in_twin:'Jumeau Numérique',fl_title:'Vue Flotte',fl_sub:'Suivi de l’état de vos pompes centrifuges',fl_add:'+ Ajouter une machine',fl_analyze_all:'Analyser la flotte',fl_analyzing:'Analyse en cours…',fl_total:'Machines actives',fl_alerts:'Alertes actives',fl_avg:'Risque moyen flotte',fl_critical:'Critiques',fl_never:'Jamais',fl_badge_ok:'Nominal',fl_badge_warn:'Surveillance',fl_badge_crit:'Critique',fl_badge_inactive:'Hors service',fl_badge_new:'Non renseignée',fl_btn_analyze:'Analyser',fl_btn_csv:'Importer CSV',fl_btn_edit:'Modifier',fl_btn_rerun:'Réanalyser',fl_modal_add:'Ajouter une machine',fl_modal_edit:'Modifier la machine',fl_save:'Enregistrer',fl_cancel:'Annuler',fl_save_changes:'Sauvegarder les modifications',fl_name_lbl:'Nom de la machine',fl_name_ph:'ex. POMPE-01, Compresseur-A3',fl_name_hint:'Ce nom est utilisé comme machine_id dans l’API.',fl_desc_lbl:'Description',fl_desc_ph:'Optionnel — emplacement, modèle, notes',fl_class_sel:'Classe machine',fl_thresh_lbl:'Seuil d’alerte %',fl_thresh_hint:'L’alerte se déclenche au-dessus de ce seuil.',fl_pump_sel:'Type de pompe',fl_fluid_sel:'Type de fluide',fl_mat_sel:'Matériau de la roue',fl_email_lbl:'Email d’alerte principal',fl_email_ph:'tech@entreprise.com',fl_esc_lbl:'Email d’escalade',fl_esc_ph:'responsable@entreprise.com',fl_esc_hint:'Si l’alerte n’est pas acquittée sous 30 min, ce contact est notifié.',fl_upload_title:'Importer des données machine',fl_upload_desc:'CSV exporté depuis votre SCADA, API ou système capteurs. Pilar détecte les colonnes automatiquement et analyse chaque ligne. Résultats sauvegardés dans l’historique.',fl_upload_click:'Cliquez pour sélectionner un fichier CSV',fl_upload_hint:'Tout délimiteur · noms libres · conversion d’unités auto',fl_upload_run:'Lancer l’analyse',fl_upload_other:'Importer un autre fichier',fl_upload_rows:'Lignes',fl_upload_failures:'Anomalies',fl_upload_peak:'Risque maximal',fl_upload_avg:'Risque moy.',fl_upload_history:'Sauvegardé dans l’historique',fl_an_run:'Lancer l’analyse',fl_an_again:'Relancer',fl_an_close:'Fermer',fl_an_zones:'Zones de défaillance',fl_an_no_zone:'Aucune zone spécifique',fl_an_failure:'PANNE',fl_an_normal:'NORMAL',fl_an_anom:'Indice d’anomalie',fl_an_rul:'Durée résiduelle estimée',fl_del_confirm_msg:'Supprimer cette machine ? Action irréversible.',fl_del_file_msg:'Supprimer ce fichier de la machine ?',fl_ap_title:'Analyse de la flotte',fl_ap_confirm:'Lancer l’analyse sur {n} machine(s) avec fichier CSV ?',fl_ap_done:'Analyse terminée',fl_ap_rows:'lignes',fl_ap_anom:'anomalies',fl_ap_avg:'risque moyen',fl_ap_skip:'ignorée',fl_ap_close:'Fermer',fl_empty_title:'Aucune machine configurée',fl_empty_desc:'Ajoutez votre première machine pour démarrer la surveillance de la flotte.',fl_add_first:'+ Ajouter ma première machine',fl_class_lbl:'Classe',fl_pump_lbl:'Pompe',fl_fluid_lbl:'Fluide',fl_mat_lbl:'Matériau',fl_thresh_card:'Seuil',fl_last_lbl:'Dernière mesure',fl_no_file_msg:'Aucune machine avec fichier CSV. Utilisez le bouton Importer CSV sur chaque carte.',fl_full_page:'Page flotte complète →',fl_loading:'Chargement de la flotte…',fl_load_fail:'Erreur de chargement. ',fl_error:'Erreur',fl_net_error:'Erreur réseau. Réessayez.',fl_retry:'Réessayer',fl_risk_lbl:'RISQUE',fl_btn_details:'Fiche machine',fl_del_btn:'Supprimer',fl_det_title:'Fiche machine',fl_det_last:'Dernières analyses',fl_det_risk_max:'Risque maximal',fl_det_risk_min:'Risque minimal',fl_det_anomalies:'Anomalies',fl_det_trend:'Tendance',fl_det_history:'Voir historique complet →',fl_det_no_data:'Aucune analyse pour cette machine.',fl_det_zones:'Zones',fl_det_time:'Heure',fl_det_status:'Statut',hist_ai_hint:'Qualifiez chaque détection pour améliorer la fiabilité du modèle sur votre installation : <strong style="color:var(--green)">alerte justifiée</strong>, <strong style="color:var(--red)">fausse alarme</strong> ou panne non détectée.',app_subtitle:'Maintenance Prédictive',nav_section_analysis:'Diagnostic',nav_section_fleet:'Flotte',nav_section_user:'Utilisateur',set_change_pw:'Changer le mot de passe',set_pw_current:'Mot de passe actuel',set_pw_new:'Nouveau mot de passe',set_pw_confirm:'Confirmer le nouveau mot de passe',set_pw_update:'Mettre à jour',set_session:'Session',set_signout:'Se déconnecter',set_pw_required:'Tous les champs sont obligatoires.',set_pw_mismatch:'Les mots de passe ne correspondent pas.',set_pw_short:'Minimum 8 caractères.',set_pw_ok:'Mot de passe mis à jour.',acc_api_desc:'Utilisez votre clé API pour envoyer des données capteurs depuis vos automates ou scripts.',acc_api_copy:'COPIER',acc_api_regen:'Regénérer la clé',acc_api_gen:'Générer une clé API',acc_api_docs:'Documentation API',opt_class_l:'L — Basse qualité',opt_class_m:'M — Standard',opt_class_h:'H — Haute qualité',opt_pump_centrifuge:'Centrifuge',opt_pump_vis:'Pompe à vis',opt_pump_engrenage:'Pompe à engrenages',opt_pump_palettes:'Pompe à palettes',opt_pump_piston:'Pompe à piston',opt_pump_peristaltique:'Péristaltique',opt_fluid_eau:'Eau',opt_fluid_eau_c:'Eau chargée / boues',opt_fluid_huile:'Huile',opt_fluid_acide:'Acide',opt_fluid_base:'Base / alcalin',opt_fluid_autre:'Autre',opt_mat_inox:'Inox 316',opt_mat_fonte:'Fonte grise',opt_mat_titane:'Titane',opt_mat_bronze:'Bronze',opt_mat_plastique:'Plastique / PVDF',opt_mat_autre:'Autre',fl_anom_rate:'Taux anomalies',fl_rows_analyzed:'Lignes analysées'},
+ai_warming:'se réchauffe',ai_ready:'prêt',ai_in_twin:'Jumeau Numérique',fl_title:'Vue Flotte',fl_sub:'Suivi de l’état de vos pompes centrifuges',fl_add:'+ Ajouter une machine',fl_analyze_all:'Analyser la flotte',fl_analyzing:'Analyse en cours…',fl_total:'Machines actives',fl_alerts:'Alertes actives',fl_avg:'Risque moyen flotte',fl_critical:'Critiques',fl_never:'Jamais',fl_badge_ok:'Nominal',fl_badge_warn:'Surveillance',fl_badge_crit:'Critique',fl_badge_inactive:'Hors service',fl_badge_new:'Non renseignée',fl_btn_analyze:'Analyser',fl_btn_csv:'Importer CSV',fl_btn_edit:'Modifier',fl_btn_rerun:'Réanalyser',fl_btn_replace:'Remplacer',fl_modal_add:'Ajouter une machine',fl_modal_edit:'Modifier la machine',fl_save:'Enregistrer',fl_cancel:'Annuler',fl_save_changes:'Sauvegarder les modifications',fl_name_lbl:'Nom de la machine',fl_name_ph:'ex. POMPE-01, Compresseur-A3',fl_name_hint:'Ce nom est utilisé comme machine_id dans l’API.',fl_desc_lbl:'Description',fl_desc_ph:'Optionnel — emplacement, modèle, notes',fl_class_sel:'Classe machine',fl_thresh_lbl:'Seuil d’alerte %',fl_thresh_hint:'L’alerte se déclenche au-dessus de ce seuil.',fl_pump_sel:'Type de pompe',fl_fluid_sel:'Type de fluide',fl_mat_sel:'Matériau de la roue',fl_email_lbl:'Email d’alerte principal',fl_email_ph:'tech@entreprise.com',fl_esc_lbl:'Email d’escalade',fl_esc_ph:'responsable@entreprise.com',fl_esc_hint:'Si l’alerte n’est pas acquittée sous 30 min, ce contact est notifié.',fl_upload_title:'Importer des données machine',fl_upload_desc:'CSV exporté depuis votre SCADA, API ou système capteurs. Pilar détecte les colonnes automatiquement et analyse chaque ligne. Résultats sauvegardés dans l’historique.',fl_upload_click:'Cliquez pour sélectionner un fichier CSV',fl_upload_hint:'Tout délimiteur · noms libres · conversion d’unités auto',fl_upload_run:'Lancer l’analyse',fl_upload_other:'Importer un autre fichier',fl_upload_rows:'Lignes',fl_upload_failures:'Anomalies',fl_upload_peak:'Risque maximal',fl_upload_avg:'Risque moy.',fl_upload_history:'Sauvegardé dans l’historique',fl_an_run:'Lancer l’analyse',fl_an_again:'Relancer',fl_an_close:'Fermer',fl_an_zones:'Zones de défaillance',fl_an_no_zone:'Aucune zone spécifique',fl_an_failure:'PANNE',fl_an_normal:'NORMAL',fl_an_anom:'Indice d’anomalie',fl_an_rul:'Durée résiduelle estimée',fl_del_confirm_msg:'Supprimer cette machine ? Action irréversible.',fl_del_file_msg:'Supprimer ce fichier de la machine ?',fl_ap_title:'Analyse de la flotte',fl_ap_confirm:'Lancer l’analyse sur {n} machine(s) avec fichier CSV ?',fl_ap_done:'Analyse terminée',fl_ap_rows:'lignes',fl_ap_anom:'anomalies',fl_ap_avg:'risque moyen',fl_ap_skip:'ignorée',fl_ap_close:'Fermer',fl_empty_title:'Aucune machine configurée',fl_empty_desc:'Ajoutez votre première machine pour démarrer la surveillance de la flotte.',fl_add_first:'+ Ajouter ma première machine',fl_class_lbl:'Classe',fl_pump_lbl:'Pompe',fl_fluid_lbl:'Fluide',fl_mat_lbl:'Matériau',fl_thresh_card:'Seuil',fl_last_lbl:'Dernière mesure',fl_no_file_msg:'Aucune machine avec fichier CSV. Utilisez le bouton Importer CSV sur chaque carte.',fl_full_page:'Page flotte complète →',fl_loading:'Chargement de la flotte…',fl_load_fail:'Erreur de chargement. ',fl_error:'Erreur',fl_net_error:'Erreur réseau. Réessayez.',fl_retry:'Réessayer',fl_risk_lbl:'RISQUE',fl_btn_details:'Fiche machine',fl_del_btn:'Supprimer',fl_det_title:'Fiche machine',fl_det_last:'Dernières analyses',fl_det_risk_max:'Risque maximal',fl_det_risk_min:'Risque minimal',fl_det_anomalies:'Anomalies',fl_det_trend:'Tendance',fl_det_history:'Voir historique complet →',fl_det_no_data:'Aucune analyse pour cette machine.',fl_det_zones:'Zones',fl_det_time:'Heure',fl_det_status:'Statut',hist_ai_hint:'Qualifiez chaque détection pour améliorer la fiabilité du modèle sur votre installation : <strong style="color:var(--green)">alerte justifiée</strong>, <strong style="color:var(--red)">fausse alarme</strong> ou panne non détectée.',app_subtitle:'Maintenance Prédictive',nav_section_analysis:'Diagnostic',nav_section_fleet:'Flotte',nav_section_user:'Utilisateur',set_change_pw:'Changer le mot de passe',set_pw_current:'Mot de passe actuel',set_pw_new:'Nouveau mot de passe',set_pw_confirm:'Confirmer le nouveau mot de passe',set_pw_update:'Mettre à jour',set_session:'Session',set_signout:'Se déconnecter',set_pw_required:'Tous les champs sont obligatoires.',set_pw_mismatch:'Les mots de passe ne correspondent pas.',set_pw_short:'Minimum 8 caractères.',set_pw_ok:'Mot de passe mis à jour.',acc_api_desc:'Utilisez votre clé API pour envoyer des données capteurs depuis vos automates ou scripts.',acc_api_copy:'COPIER',acc_api_regen:'Regénérer la clé',acc_api_gen:'Générer une clé API',acc_api_docs:'Documentation API',opt_class_l:'L — Basse qualité',opt_class_m:'M — Standard',opt_class_h:'H — Haute qualité',opt_pump_centrifuge:'Centrifuge',opt_pump_vis:'Pompe à vis',opt_pump_engrenage:'Pompe à engrenages',opt_pump_palettes:'Pompe à palettes',opt_pump_piston:'Pompe à piston',opt_pump_peristaltique:'Péristaltique',opt_fluid_eau:'Eau',opt_fluid_eau_c:'Eau chargée / boues',opt_fluid_huile:'Huile',opt_fluid_acide:'Acide',opt_fluid_base:'Base / alcalin',opt_fluid_autre:'Autre',opt_mat_inox:'Inox 316',opt_mat_fonte:'Fonte grise',opt_mat_titane:'Titane',opt_mat_bronze:'Bronze',opt_mat_plastique:'Plastique / PVDF',opt_mat_autre:'Autre',fl_anom_rate:'Taux anomalies',fl_rows_analyzed:'Lignes analysées'},
 en:{nav_monitor:'Monitor',nav_twin:'Digital Twin',nav_history:'History',nav_account:'Account',nav_settings:'Settings',
 page_monitor:'Monitor',page_twin:'Digital Twin',page_history:'History',page_account:'Account',page_settings:'Settings',
 idle_l1:'No analysis yet',idle_l2:'Configure below and run',
@@ -1639,7 +1788,7 @@ acc_promote:'Promote',acc_kick:'Remove',
 acc_add_title:'Add Member',acc_add_ph:'email@company.com',acc_add_btn:'Add',acc_added:'Member added!',
 acc_members:' member(s)',acc_leave:'Leave Team',
 nav_import:'Manual',nav_assistant:'Assistant',
-live_connect:'Connect File',live_on:'Live ON',live_disconnect:'Disconnect',
+live_connect:'Connect File',live_on:'Live ON',live_disconnect:'Disconnect',live_reconnect:'Reconnect',
 live_rows:'Rows read',live_fail:'Failures',live_ok:'Normal',live_last:'Last',
 live_no_api:'Select your CSV file. Click Refresh to reload new rows.',
 live_refresh:'Refresh',
@@ -1665,7 +1814,7 @@ adp_ignore:'(Ignore)',adp_desc:'Convert any CSV to Pilar format',adp_save:'Save 
 page_tutorial:'Import & Run',tut_csv_desc:'Your CSV must contain these columns (order does not matter):',tut_click_csv:'Click to select a CSV file',tut_no_file_sel:'No file selected',tut_progress:'Progress',tut_check_every:'Check every',tut_row:'Row',
 set_domain:'Domain',set_nav_title:'Navigation',set_twin_nav:'Digital Twin',
 ast_you:'You',ast_pilar:'Pilar AI',ast_error:'Error: ',ast_net_error:'Network error. Please retry.',
-ai_warming:'warming up',ai_ready:'ready',ai_in_twin:'Digital Twin',fl_title:'Fleet Overview',fl_sub:'Monitor your centrifugal pumps',fl_add:'+ Add Machine',fl_analyze_all:'Analyze All',fl_analyzing:'Analyzing…',fl_total:'Active Machines',fl_alerts:'Active Alerts',fl_avg:'Avg Fleet Risk',fl_critical:'Critical',fl_never:'Never',fl_badge_ok:'Normal',fl_badge_warn:'Warning',fl_badge_crit:'Critical',fl_badge_inactive:'Inactive',fl_badge_new:'No data',fl_btn_analyze:'Analyze',fl_btn_csv:'Upload CSV',fl_btn_edit:'Edit',fl_btn_rerun:'Re-run',fl_modal_add:'Add Machine',fl_modal_edit:'Edit Machine',fl_save:'Save',fl_cancel:'Cancel',fl_save_changes:'Save Changes',fl_name_lbl:'Machine Name',fl_name_ph:'e.g. PUMP-01, Compressor-A3',fl_name_hint:'Used as machine_id when sending data via API.',fl_desc_lbl:'Description',fl_desc_ph:'Optional — location, model, notes',fl_class_sel:'Machine Class',fl_thresh_lbl:'Alert threshold %',fl_thresh_hint:'Alert fires above this threshold.',fl_pump_sel:'Pump Type',fl_fluid_sel:'Fluid Type',fl_mat_sel:'Impeller Material',fl_email_lbl:'Primary Alert Email',fl_email_ph:'tech@yourcompany.com',fl_esc_lbl:'Escalation Email',fl_esc_ph:'manager@yourcompany.com',fl_esc_hint:'If primary alert is unacknowledged after 30 min, this contact is notified.',fl_upload_title:'Upload Machine Data',fl_upload_desc:'Upload a CSV exported from your SCADA, PLC, or sensor system. Pilar auto-detects columns and runs a full analysis on every row. Results are saved to history.',fl_upload_click:'Click to select a CSV file',fl_upload_hint:'Any delimiter · any column names · auto unit conversion',fl_upload_run:'Run Analysis',fl_upload_other:'Upload another file',fl_upload_rows:'Rows',fl_upload_failures:'Failures',fl_upload_peak:'Peak risk',fl_upload_avg:'Avg risk',fl_upload_history:'Saved to history',fl_an_run:'Run Analysis',fl_an_again:'Run Again',fl_an_close:'Close',fl_an_zones:'Failure Zones',fl_an_no_zone:'No specific zone',fl_an_failure:'FAILURE',fl_an_normal:'NORMAL',fl_an_anom:'Anomaly score',fl_an_rul:'Est. time to failure',fl_del_confirm_msg:'Delete this machine? This cannot be undone.',fl_del_file_msg:'Delete this file from the machine?',fl_ap_title:'Fleet Analysis',fl_ap_confirm:'Run analysis on {n} machine(s) with CSV file?',fl_ap_done:'Analysis complete',fl_ap_rows:'rows',fl_ap_anom:'anomalies',fl_ap_avg:'avg risk',fl_ap_skip:'skipped',fl_ap_close:'Close',fl_empty_title:'No machines yet',fl_empty_desc:'Add your first machine to start monitoring your fleet.',fl_add_first:'+ Add First Machine',fl_class_lbl:'Class',fl_pump_lbl:'Pump',fl_fluid_lbl:'Fluid',fl_mat_lbl:'Material',fl_thresh_card:'Threshold',fl_last_lbl:'Last seen',fl_no_file_msg:'No machines with CSV attached. Use the Upload CSV button on each card.',fl_full_page:'Full fleet page →',fl_loading:'Loading fleet…',fl_load_fail:'Failed to load fleet. ',fl_error:'Error',fl_net_error:'Network error. Please retry.',fl_retry:'Retry',fl_risk_lbl:'RISK',fl_btn_details:'Details',fl_del_btn:'Delete',fl_det_title:'Machine Details',fl_det_last:'Recent analyses',fl_det_risk_max:'Max risk',fl_det_risk_min:'Min risk',fl_det_anomalies:'Anomalies',fl_det_trend:'Trend',fl_det_history:'View full history →',fl_det_no_data:'No analyses for this machine.',fl_det_zones:'Zones',fl_det_time:'Time',fl_det_status:'Status',hist_ai_hint:'Rate each detection to improve model accuracy on your installation: <strong style="color:var(--green)">confirmed alert</strong>, <strong style="color:var(--red)">false alarm</strong> or missed failure.',app_subtitle:'Predictive Maintenance',nav_section_analysis:'Analysis',nav_section_fleet:'Fleet',nav_section_user:'User',set_change_pw:'Change Password',set_pw_current:'Current password',set_pw_new:'New password',set_pw_confirm:'Confirm new password',set_pw_update:'Update Password',set_session:'Session',set_signout:'Sign Out',set_pw_required:'All fields required.',set_pw_mismatch:'Passwords do not match.',set_pw_short:'Minimum 8 characters.',set_pw_ok:'Password updated.',acc_api_desc:'Use your API key to send sensor data from PLCs or scripts.',acc_api_copy:'COPY',acc_api_regen:'Regenerate key',acc_api_gen:'Generate API key',acc_api_docs:'API Docs',opt_class_l:'L — Low quality',opt_class_m:'M — Standard',opt_class_h:'H — High quality',opt_pump_centrifuge:'Centrifugal',opt_pump_vis:'Screw pump',opt_pump_engrenage:'Gear pump',opt_pump_palettes:'Vane pump',opt_pump_piston:'Piston pump',opt_pump_peristaltique:'Peristaltic',opt_fluid_eau:'Water',opt_fluid_eau_c:'Slurry / sludge',opt_fluid_huile:'Oil',opt_fluid_acide:'Acid',opt_fluid_base:'Base / alkaline',opt_fluid_autre:'Other',opt_mat_inox:'Stainless 316',opt_mat_fonte:'Cast iron',opt_mat_titane:'Titanium',opt_mat_bronze:'Bronze',opt_mat_plastique:'Plastic / PVDF',opt_mat_autre:'Other',fl_anom_rate:'Anomaly rate',fl_rows_analyzed:'Rows analyzed'}
+ai_warming:'warming up',ai_ready:'ready',ai_in_twin:'Digital Twin',fl_title:'Fleet Overview',fl_sub:'Monitor your centrifugal pumps',fl_add:'+ Add Machine',fl_analyze_all:'Analyze All',fl_analyzing:'Analyzing…',fl_total:'Active Machines',fl_alerts:'Active Alerts',fl_avg:'Avg Fleet Risk',fl_critical:'Critical',fl_never:'Never',fl_badge_ok:'Normal',fl_badge_warn:'Warning',fl_badge_crit:'Critical',fl_badge_inactive:'Inactive',fl_badge_new:'No data',fl_btn_analyze:'Analyze',fl_btn_csv:'Upload CSV',fl_btn_edit:'Edit',fl_btn_rerun:'Re-run',fl_btn_replace:'Replace',fl_modal_add:'Add Machine',fl_modal_edit:'Edit Machine',fl_save:'Save',fl_cancel:'Cancel',fl_save_changes:'Save Changes',fl_name_lbl:'Machine Name',fl_name_ph:'e.g. PUMP-01, Compressor-A3',fl_name_hint:'Used as machine_id when sending data via API.',fl_desc_lbl:'Description',fl_desc_ph:'Optional — location, model, notes',fl_class_sel:'Machine Class',fl_thresh_lbl:'Alert threshold %',fl_thresh_hint:'Alert fires above this threshold.',fl_pump_sel:'Pump Type',fl_fluid_sel:'Fluid Type',fl_mat_sel:'Impeller Material',fl_email_lbl:'Primary Alert Email',fl_email_ph:'tech@yourcompany.com',fl_esc_lbl:'Escalation Email',fl_esc_ph:'manager@yourcompany.com',fl_esc_hint:'If primary alert is unacknowledged after 30 min, this contact is notified.',fl_upload_title:'Upload Machine Data',fl_upload_desc:'Upload a CSV exported from your SCADA, PLC, or sensor system. Pilar auto-detects columns and runs a full analysis on every row. Results are saved to history.',fl_upload_click:'Click to select a CSV file',fl_upload_hint:'Any delimiter · any column names · auto unit conversion',fl_upload_run:'Run Analysis',fl_upload_other:'Upload another file',fl_upload_rows:'Rows',fl_upload_failures:'Failures',fl_upload_peak:'Peak risk',fl_upload_avg:'Avg risk',fl_upload_history:'Saved to history',fl_an_run:'Run Analysis',fl_an_again:'Run Again',fl_an_close:'Close',fl_an_zones:'Failure Zones',fl_an_no_zone:'No specific zone',fl_an_failure:'FAILURE',fl_an_normal:'NORMAL',fl_an_anom:'Anomaly score',fl_an_rul:'Est. time to failure',fl_del_confirm_msg:'Delete this machine? This cannot be undone.',fl_del_file_msg:'Delete this file from the machine?',fl_ap_title:'Fleet Analysis',fl_ap_confirm:'Run analysis on {n} machine(s) with CSV file?',fl_ap_done:'Analysis complete',fl_ap_rows:'rows',fl_ap_anom:'anomalies',fl_ap_avg:'avg risk',fl_ap_skip:'skipped',fl_ap_close:'Close',fl_empty_title:'No machines yet',fl_empty_desc:'Add your first machine to start monitoring your fleet.',fl_add_first:'+ Add First Machine',fl_class_lbl:'Class',fl_pump_lbl:'Pump',fl_fluid_lbl:'Fluid',fl_mat_lbl:'Material',fl_thresh_card:'Threshold',fl_last_lbl:'Last seen',fl_no_file_msg:'No machines with CSV attached. Use the Upload CSV button on each card.',fl_full_page:'Full fleet page →',fl_loading:'Loading fleet…',fl_load_fail:'Failed to load fleet. ',fl_error:'Error',fl_net_error:'Network error. Please retry.',fl_retry:'Retry',fl_risk_lbl:'RISK',fl_btn_details:'Details',fl_del_btn:'Delete',fl_det_title:'Machine Details',fl_det_last:'Recent analyses',fl_det_risk_max:'Max risk',fl_det_risk_min:'Min risk',fl_det_anomalies:'Anomalies',fl_det_trend:'Trend',fl_det_history:'View full history →',fl_det_no_data:'No analyses for this machine.',fl_det_zones:'Zones',fl_det_time:'Time',fl_det_status:'Status',hist_ai_hint:'Rate each detection to improve model accuracy on your installation: <strong style="color:var(--green)">confirmed alert</strong>, <strong style="color:var(--red)">false alarm</strong> or missed failure.',app_subtitle:'Predictive Maintenance',nav_section_analysis:'Analysis',nav_section_fleet:'Fleet',nav_section_user:'User',set_change_pw:'Change Password',set_pw_current:'Current password',set_pw_new:'New password',set_pw_confirm:'Confirm new password',set_pw_update:'Update Password',set_session:'Session',set_signout:'Sign Out',set_pw_required:'All fields required.',set_pw_mismatch:'Passwords do not match.',set_pw_short:'Minimum 8 characters.',set_pw_ok:'Password updated.',acc_api_desc:'Use your API key to send sensor data from PLCs or scripts.',acc_api_copy:'COPY',acc_api_regen:'Regenerate key',acc_api_gen:'Generate API key',acc_api_docs:'API Docs',opt_class_l:'L — Low quality',opt_class_m:'M — Standard',opt_class_h:'H — High quality',opt_pump_centrifuge:'Centrifugal',opt_pump_vis:'Screw pump',opt_pump_engrenage:'Gear pump',opt_pump_palettes:'Vane pump',opt_pump_piston:'Piston pump',opt_pump_peristaltique:'Peristaltic',opt_fluid_eau:'Water',opt_fluid_eau_c:'Slurry / sludge',opt_fluid_huile:'Oil',opt_fluid_acide:'Acid',opt_fluid_base:'Base / alkaline',opt_fluid_autre:'Other',opt_mat_inox:'Stainless 316',opt_mat_fonte:'Cast iron',opt_mat_titane:'Titanium',opt_mat_bronze:'Bronze',opt_mat_plastique:'Plastic / PVDF',opt_mat_autre:'Other',fl_anom_rate:'Anomaly rate',fl_rows_analyzed:'Rows analyzed'}
 };
 var LANG=localStorage.getItem('pilar_lang')||'en';
 function t(k){return(T[LANG]&&T[LANG][k])||(T.en[k])||k;}
@@ -1991,7 +2140,23 @@ _BOTTOM_NAV = """<!-- Bottom nav (mobile fallback) -->
 def nav(active):
     keys = {"m":"","tut":"","h":"","fl":"","a":"","s":"","tw":""}
     keys[active] = "on"
-    return _SIDEBAR.format(**keys) + _BOTTOM_NAV.format(**keys)
+    sidebar = _SIDEBAR.format(**keys)
+    # Inject admin link for admin users only
+    uid = current_uid()
+    if uid:
+        _u = db.session.get(User, uid)
+        if _u and _u.is_admin:
+            _admin_link = (
+                '<div class="sidebar-section">Admin</div>'
+                '<a href="/admin" class="ni" style="color:var(--amber,#d97706)">'
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">'
+                '<path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>'
+                '</svg>'
+                '<span class="ni-label">Admin Panel</span>'
+                '</a>'
+            )
+            sidebar = sidebar.replace('</nav>', _admin_link + '</nav>', 1)
+    return sidebar + _BOTTOM_NAV.format(**keys)
 
 
 # ── MONITOR ───────────────────────────────────────────────────────────────────
@@ -2270,6 +2435,7 @@ function _showLzConn(fname){
   document.getElementById('liveFailCount').textContent='0';
   document.getElementById('liveOkCount').textContent='0';
   document.getElementById('liveChk').textContent='';
+  try{localStorage.setItem('pilar_live_fname',fname);}catch(e){}
 }
 
 function resetLiveTimer(){clearTimeout(_lfTimer);if(_lfHandle)_lfLoop();}
@@ -2367,7 +2533,22 @@ function stopLiveMonitor(){
   document.getElementById('lzEmpty').style.display='flex';
   document.getElementById('lzConn').style.display='none';
   document.getElementById('lfInput').value='';
+  try{localStorage.removeItem('pilar_live_fname');}catch(e){}
+  var hint=document.getElementById('lz-last-hint');if(hint)hint.style.display='none';
 }
+(function _initLiveHint(){
+  try{
+    var fname=localStorage.getItem('pilar_live_fname');
+    if(!fname)return;
+    var empty=document.getElementById('lzEmpty');
+    if(!empty)return;
+    var hint=document.createElement('div');
+    hint.id='lz-last-hint';
+    hint.style.cssText='font-size:11px;color:var(--text3);margin-top:-6px;text-align:center;';
+    hint.innerHTML='<span style="color:var(--teal2)">\u21ba '+esc(fname)+'</span> &mdash; <button onclick="openLiveFile()" style="background:none;border:none;color:var(--teal);font-size:11px;font-weight:600;cursor:pointer;padding:0">'+t('live_reconnect')+'</button>';
+    empty.appendChild(hint);
+  }catch(e){}
+})();
 </script></body></html>"""
 
 
@@ -4640,6 +4821,8 @@ DASHBOARD_HTML = _HEAD.replace("{FAV}", FAV_B64) + """
 .upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
 .upload-zone-text{font-size:12px;font-weight:600;color:var(--text2);}
 .upload-zone-sub{font-size:10px;color:var(--text3);margin-top:3px;}
+select.form-input{background:#141820;color-scheme:dark;}
+select.form-input option{background:#141820;color:#e2e8f0;}
 .ap-row{display:grid;grid-template-columns:1fr auto auto auto;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);font-size:12px;}
 .ap-row:last-child{border-bottom:none;}
 .spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--border2);border-top-color:var(--teal);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px;}
@@ -4701,8 +4884,8 @@ DASHBOARD_HTML = _HEAD.replace("{FAV}", FAV_B64) + """
             <label class="form-label" data-i18n="fl_class_sel">Classe machine</label>
             <select class="form-input" id="f-type">
               <option value="L" data-i18n="opt_class_l">L \u2014 Basse qualit\u00e9</option>
-              <option value="M" selected>M \u2014 Standard</option>
-              <option value="H">H \u2014 Haute qualit\u00e9</option>
+              <option value="M" selected data-i18n="opt_class_m">M \u2014 Standard</option>
+              <option value="H" data-i18n="opt_class_h">H \u2014 Haute qualit\u00e9</option>
             </select>
           </div>
           <div class="form-group">
@@ -4715,18 +4898,18 @@ DASHBOARD_HTML = _HEAD.replace("{FAV}", FAV_B64) + """
             <label class="form-label" data-i18n="fl_pump_sel">Type de pompe</label>
             <select class="form-input" id="f-pump-type">
               <option value="centrifuge" selected data-i18n="opt_pump_centrifuge">Centrifuge</option>
-              <option value="pompe_a_vis">Pompe \u00e0 vis</option>
-              <option value="pompe_a_engrenage">Pompe \u00e0 engrenages</option>
-              <option value="pompe_a_palettes">Pompe \u00e0 palettes</option>
-              <option value="pompe_a_piston">Pompe \u00e0 piston</option>
-              <option value="peristaltique">P\u00e9ristaltique</option>
+              <option value="pompe_a_vis" data-i18n="opt_pump_vis">Pompe \u00e0 vis</option>
+              <option value="pompe_a_engrenage" data-i18n="opt_pump_engrenage">Pompe \u00e0 engrenages</option>
+              <option value="pompe_a_palettes" data-i18n="opt_pump_palettes">Pompe \u00e0 palettes</option>
+              <option value="pompe_a_piston" data-i18n="opt_pump_piston">Pompe \u00e0 piston</option>
+              <option value="peristaltique" data-i18n="opt_pump_peristaltique">P\u00e9ristaltique</option>
             </select>
           </div>
           <div class="form-group">
             <label class="form-label" data-i18n="fl_fluid_sel">Type de fluide</label>
             <select class="form-input" id="f-fluid-type">
               <option value="eau" selected data-i18n="opt_fluid_eau">Eau</option>
-              <option value="eau_chargee">Eau charg\u00e9e / boues</option>
+              <option value="eau_chargee" data-i18n="opt_fluid_eau_c">Eau charg\u00e9e / boues</option>
               <option value="huile" data-i18n="opt_fluid_huile">Huile</option>
               <option value="acide" data-i18n="opt_fluid_acide">Acide</option>
               <option value="base" data-i18n="opt_fluid_base">Base / alcalin</option>
@@ -4947,8 +5130,9 @@ function renderFleet() {
       dropZone = '<div class="file-bar">'
         +'<svg viewBox="0 0 20 20" fill="currentColor" style="width:13px;height:13px;flex-shrink:0;color:var(--teal2)"><path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/></svg>'
         +'<span class="file-name">'+esc(m.saved_file.filename)+'</span>'
-        +'<button onclick="event.stopPropagation();rerunFile('+m.id+')" style="background:var(--teal);border:none;border-radius:5px;color:#fff;font-size:10px;font-weight:700;padding:3px 8px;cursor:pointer" id="rerun-'+m.id+'">'+t('fl_btn_rerun')+'</button>'
-        +'<button onclick="event.stopPropagation();deleteFile('+m.id+','+m.saved_file.id+')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:10px;font-weight:600;padding:2px 6px">'+t('fl_del_btn')+'</button>'
+        +'<button onclick="event.stopPropagation();rerunFile('+m.id+')" style="background:var(--teal);border:none;border-radius:5px;color:#fff;font-size:10px;font-weight:700;padding:3px 8px;cursor:pointer;flex-shrink:0" id="rerun-'+m.id+'">'+t('fl_btn_rerun')+'</button>'
+        +'<label onclick="event.stopPropagation()" style="background:rgba(120,120,128,.18);border:1px solid var(--border2);border-radius:5px;color:var(--text2);font-size:10px;font-weight:700;padding:3px 8px;cursor:pointer;display:inline-flex;align-items:center;flex-shrink:0">'+t('fl_btn_replace')+'<input type="file" accept=".csv" style="display:none" onchange="event.stopPropagation();if(this.files[0])uploadFileToMachine('+m.id+',this.files[0])"></label>'
+        +'<button onclick="event.stopPropagation();deleteFile('+m.id+','+m.saved_file.id+')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:0 4px;flex-shrink:0;line-height:1" title="'+t('fl_del_file_msg')+'">\u00d7</button>'
         +'</div>';
     }
 
@@ -5916,7 +6100,7 @@ def _generate_fleet_pdf(uid):
 def _send_weekly_reports():
     """Send PDF reports to all active users who have responsible_email set."""
     with app.app_context():
-        users = User.query.filter(User.plan.in_(['pro', 'team'])).all()
+        users = User.query.all()
         for u in users:
             email = get_setting('responsible_email', uid=u.id)
             if not email:
@@ -6098,7 +6282,7 @@ def register():
         is_admin = (email == os.environ.get('ADMIN_EMAIL', '').lower()) or (User.query.count() == 0)
         token = _secrets.token_hex(32)
         # Les admins sont auto-vérifiés ; les autres doivent confirmer leur email
-        needs_verify = not is_admin and bool(GMAIL)
+        needs_verify = not is_admin  # relay always available as fallback
         user = User(email=email, password_hash=generate_password_hash(password, method='pbkdf2:sha256:600000'),
                     email_verified=not needs_verify, verify_token=token if needs_verify else None,
                     api_key=api_key, is_admin=is_admin)
@@ -6510,6 +6694,23 @@ def index():
 def demo():
     return DEMO_HTML
 
+@app.route('/demo-login')
+def demo_login():
+    """One-click demo access — logs in as demo@pilar.app, creates account if needed."""
+    DEMO_EMAIL = 'demo@pilar.app'
+    try:
+        _seed_demo_account()
+    except Exception:
+        db.session.rollback()
+    user = User.query.filter_by(email=DEMO_EMAIL).first()
+    if not user:
+        return redirect('/login')
+    session.clear()
+    session['user_id'] = user.id
+    session.permanent = True
+    print(f"[Pilar] Demo login: uid={user.id}")
+    return redirect('/monitor')
+
 # ── ALERT ACK ─────────────────────────────────────────────────────────────────
 @app.route('/alert/ack/<token>')
 def alert_ack(token):
@@ -6541,15 +6742,15 @@ def api_machines_list():
                                 (Analysis.timestamp == subq.c.max_ts))
                    .all())
     last_by_name = {a.machine_id: a for a in latest_rows}
-    # Bulk-fetch latest saved file per machine
-    subq2 = (db.session.query(SavedFile.machine_id, _func.max(SavedFile.created_at).label('max_ca'))
-             .filter(SavedFile.machine_id.in_(machine_ids), SavedFile.user_id == uid)
-             .group_by(SavedFile.machine_id).subquery())
-    sf_rows = (db.session.query(SavedFile)
-               .join(subq2, (SavedFile.machine_id == subq2.c.machine_id) &
-                             (SavedFile.created_at == subq2.c.max_ca))
+    # Bulk-fetch latest saved file per machine (simple ordered query, most recent first)
+    sf_by_mid = {}
+    sf_rows = (SavedFile.query
+               .filter(SavedFile.machine_id.in_(machine_ids), SavedFile.user_id == uid)
+               .order_by(SavedFile.created_at.desc())
                .all())
-    sf_by_mid = {sf.machine_id: sf for sf in sf_rows}
+    for _sf in sf_rows:
+        if _sf.machine_id not in sf_by_mid:
+            sf_by_mid[_sf.machine_id] = _sf
     result = []
     for m in machines:
         last = last_by_name.get(m.name)
