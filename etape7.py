@@ -31,9 +31,12 @@ import sys as _sys
 _FROZEN  = getattr(_sys, 'frozen', False)
 # PyInstaller 6.x dir-build: data files land in _internal/ (sys._MEIPASS), not next to the exe
 if _FROZEN:
-    _APP_DIR = getattr(_sys, '_MEIPASS', os.path.dirname(_sys.executable))
+    _APP_DIR  = getattr(_sys, '_MEIPASS', os.path.dirname(_sys.executable))
+    # User data (DB, keys) must live NEXT TO the exe, not inside _internal/
+    _DATA_DIR = os.path.dirname(_sys.executable)
 else:
-    _APP_DIR = os.path.dirname(os.path.abspath(__file__))
+    _APP_DIR  = os.path.dirname(os.path.abspath(__file__))
+    _DATA_DIR = _APP_DIR
 def _pkl(name): return os.path.join(_APP_DIR, name)
 from config import (
     RATE_WINDOW, RATE_MAX, SESSION_DAYS,
@@ -43,18 +46,19 @@ from config import (
     RETRAIN_TRIGGER, CLAUDE_MODEL, CLAUDE_MAX_TOKENS, CHAT_DAILY_LIMIT,
     RUL_SCALE_FACTOR, APP_VERSION,
 )
+_db_path = os.path.join(_DATA_DIR, "pilar.db")
 db_url = (os.environ.get("DATABASE_URL")
           or os.environ.get("DATABASE_PUBLIC_URL")
-          or "sqlite:///pilar.db")
+          or "sqlite:///" + _db_path.replace("\\", "/"))
 if db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
-print(f"[Pilar] DB: {db_url[:40]}...")
+print(f"[Pilar] DB: {db_url[:80]}...")
 app.config["SQLALCHEMY_DATABASE_URI"] = db_url
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {"pool_pre_ping": True, "pool_recycle": 280}
 _secret_key = os.environ.get("SECRET_KEY")
 if not _secret_key:
-    _key_path = os.path.join(os.getcwd(), "pilar_secret.key")
+    _key_path = os.path.join(_DATA_DIR, "pilar_secret.key")
     try:
         with open(_key_path) as _f:
             _secret_key = _f.read().strip() or None
@@ -83,6 +87,11 @@ def set_security_headers(response):
     response.headers['Permissions-Policy'] = 'geolocation=(), microphone=(), camera=()'
     if any(os.environ.get(k) for k in ("RAILWAY_ENVIRONMENT", "RENDER", "DYNO")):
         response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    # Disable caching for all API responses so fleet/machine data is always fresh
+    from flask import request as _req
+    if _req.path.startswith('/api/'):
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        response.headers['Pragma'] = 'no-cache'
     return response
 
 # ── MODÈLES ───────────────────────────────────────────────────────────────────
@@ -5070,7 +5079,7 @@ function riskBadge(r) {
 // ── LOAD & RENDER ───────────────────────────────────────────────────────────
 async function loadFleet() {
   try {
-    var r = await fetch('/api/machines');
+    var r = await fetch('/api/machines', {cache:'no-store'});
     if (!r.ok) throw new Error('HTTP '+r.status);
     _machines = await r.json();
     if (!Array.isArray(_machines)) throw new Error('bad');
