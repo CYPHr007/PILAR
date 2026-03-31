@@ -2441,15 +2441,21 @@ function _showLzConn(fname){
 function resetLiveTimer(){clearTimeout(_lfTimer);if(_lfHandle)_lfLoop();}
 
 async function _readSnapshot(f){
-  try{var text=await f.text();await _lfProcess(text);}catch(e){console.error(e);}
+  try{
+    var text=await f.text();
+    await _lfProcess(text);
+    try{localStorage.setItem('pilar_mon_csv',text);localStorage.setItem('pilar_mon_fname',f.name);}catch(e){}
+  }catch(e){console.error(e);}
 }
 
+var _lfSaved=false;
 async function _lfLoop(){
   if(!_lfHandle)return;
   try{
     var file=await _lfHandle.getFile();
     var text=await file.text();
     await _lfProcess(text);
+    if(!_lfSaved){_lfSaved=true;try{localStorage.setItem('pilar_mon_csv',text);localStorage.setItem('pilar_mon_fname',file.name);}catch(e){}}
   }catch(e){console.error('live monitor error',e);}
   _schedule();
 }
@@ -2529,24 +2535,26 @@ function _schedule(){
 }
 
 function stopLiveMonitor(){
-  clearTimeout(_lfTimer);_lfHandle=null;_lfMap=null;
+  clearTimeout(_lfTimer);_lfHandle=null;_lfMap=null;_lfSaved=false;
   document.getElementById('lzEmpty').style.display='flex';
   document.getElementById('lzConn').style.display='none';
   document.getElementById('lfInput').value='';
-  try{localStorage.removeItem('pilar_live_fname');}catch(e){}
-  var hint=document.getElementById('lz-last-hint');if(hint)hint.style.display='none';
+  try{localStorage.removeItem('pilar_live_fname');localStorage.removeItem('pilar_mon_csv');localStorage.removeItem('pilar_mon_fname');}catch(e){}
 }
-(function _initLiveHint(){
+(function _initMonitorRestore(){
   try{
-    var fname=localStorage.getItem('pilar_live_fname');
-    if(!fname)return;
-    var empty=document.getElementById('lzEmpty');
-    if(!empty)return;
-    var hint=document.createElement('div');
-    hint.id='lz-last-hint';
-    hint.style.cssText='font-size:11px;color:var(--text3);margin-top:-6px;text-align:center;';
-    hint.innerHTML='<span style="color:var(--teal2)">\u21ba '+esc(fname)+'</span> &mdash; <button onclick="openLiveFile()" style="background:none;border:none;color:var(--teal);font-size:11px;font-weight:600;cursor:pointer;padding:0">'+t('live_reconnect')+'</button>';
-    empty.appendChild(hint);
+    var csv=localStorage.getItem('pilar_mon_csv');
+    var fname=localStorage.getItem('pilar_mon_fname');
+    if(!csv||!fname)return;
+    // Restore last snapshot — show connected state with previous data
+    _lfFallback=true;_lfSaved=true;
+    _showLzConn(fname);
+    _lfProcess(csv).then(function(){
+      document.getElementById('liveChk').innerHTML=
+        '<span style="color:var(--amber);font-size:9px">\u23f8 '+t('live_reconnect')+' \u2192 </span>'
+        +'<label for="lfInput" style="color:var(--teal);font-size:9px;font-weight:600;cursor:pointer">'+fname+'</label>';
+      document.getElementById('liveChk').style.fontSize='9px';
+    }).catch(function(){});
   }catch(e){}
 })();
 </script></body></html>"""
@@ -3355,34 +3363,61 @@ function dlSample(){
   a.download='pilar_pump_sample.csv';a.click();
 }
 
+function _loadCsvText(text, fname){
+  var lines=text.split('\\n').map(s=>s.trim()).filter(s=>s.length>0);
+  if(lines.length<2){return false;}
+  var delim=_csvDelim(lines[0]);
+  var rawHdr=lines[0].split(delim).map(s=>s.trim());
+  var map=detectCsvMapping(rawHdr);
+  var found=Object.keys(map).length;
+  if(found<1){return false;}
+  rows=[];
+  for(var r=1;r<lines.length;r++){
+    var vals=lines[r].split(delim);
+    var obj=buildPilarRow(vals,map);
+    if(obj)rows.push(obj);
+  }
+  var info=found+'/8 '+t('csv_detect');
+  document.getElementById('fname').textContent=fname+' — '+rows.length+' '+t('csv_rows')+' ('+info+')';
+  document.getElementById('btnStart').disabled=rows.length===0;
+  return true;
+}
+
 function onFile(inp){
   var f=inp.files[0];if(!f)return;
   document.getElementById('fname').textContent=f.name+' (loading...)';
   var rd=new FileReader();
   rd.onload=function(e){
     var text=e.target.result;
-    var lines=text.split('\\n').map(s=>s.trim()).filter(s=>s.length>0);
-    if(lines.length<2){alert(t('csv_bad'));return;}
-    var delim=_csvDelim(lines[0]);
-    var rawHdr=lines[0].split(delim).map(s=>s.trim());
-    var map=detectCsvMapping(rawHdr);
-    var found=Object.keys(map).length;
-    if(found<1){
-      var missing=_CSV_FIELDS.filter(function(field){return !map[field];}).join(', ');
-      alert(t('csv_bad')+': '+missing);return;
+    if(!_loadCsvText(text, f.name)){
+      var missing=_CSV_FIELDS.filter(function(field){return !detectCsvMapping(text.split('\\n')[0].split(_csvDelim(text.split('\\n')[0])).map(s=>s.trim()))[field];}).join(', ');
+      alert(t('csv_bad'));return;
     }
-    rows=[];
-    for(var r=1;r<lines.length;r++){
-      var vals=lines[r].split(delim);
-      var obj=buildPilarRow(vals,map);
-      if(obj)rows.push(obj);
-    }
-    var info=found+'/8 '+t('csv_detect');
-    document.getElementById('fname').textContent=f.name+' — '+rows.length+' '+t('csv_rows')+' ('+info+')';
-    document.getElementById('btnStart').disabled=rows.length===0;
+    try{localStorage.setItem('pilar_tut_csv',text);localStorage.setItem('pilar_tut_fname',f.name);}catch(e){}
   };
   rd.readAsText(f);
 }
+
+(function _restoreTutFile(){
+  try{
+    var saved=localStorage.getItem('pilar_tut_csv');
+    var fname=localStorage.getItem('pilar_tut_fname');
+    if(!saved||!fname)return;
+    if(_loadCsvText(saved,fname)){
+      var dropz=document.getElementById('dropz');
+      if(dropz){
+        dropz.style.borderColor='var(--teal)';
+        var clearBtn=document.createElement('button');
+        clearBtn.textContent='\u00d7';
+        clearBtn.title='Effacer le fichier';
+        clearBtn.style.cssText='position:absolute;top:6px;right:6px;background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;line-height:1;padding:2px 6px;';
+        clearBtn.onclick=function(e){e.stopPropagation();rows=[];document.getElementById('fname').textContent='';document.getElementById('btnStart').disabled=true;dropz.style.borderColor='';this.remove();try{localStorage.removeItem('pilar_tut_csv');localStorage.removeItem('pilar_tut_fname');}catch(ex){}};
+        dropz.style.position='relative';
+        dropz.appendChild(clearBtn);
+      }
+    }
+  }catch(e){}
+})();
 
 function startRun(){
   if(rows.length===0)return;
