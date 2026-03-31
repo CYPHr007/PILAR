@@ -27,7 +27,7 @@ _FROZEN      = getattr(sys, "frozen", False)
 APP_HOST     = "127.0.0.1"
 APP_PORT     = 5000
 APP_URL      = f"http://{APP_HOST}:{APP_PORT}/monitor"
-APP_VERSION  = "1.2.4"   # bump this with every release
+APP_VERSION  = "1.2.10"   # bump this with every release
 GITHUB_API   = "https://api.github.com/repos/CYPHr007/PILAR/releases/latest"
 
 if _FROZEN:
@@ -151,16 +151,13 @@ def _fetch_latest_release():
 
 def _download_and_install(url: str, version: str, is_zip: bool = False):
     """
-    - Si .exe (installer Inno Setup) : telecharge et lance directement.
-    - Si .zip : telecharge, extrait dans %LOCALAPPDATA%\\PILAR_update\\,
-      lance PILAR.exe depuis ce dossier, ferme l'app courante.
+    Telecharge le nouvel installeur (.exe Inno Setup) et le lance silencieusement.
+    Fallback zip: extrait dans LOCALAPPDATA et lance PILAR.exe.
     """
-    import urllib.request
-    import zipfile
-    import shutil
+    import urllib.request, zipfile, shutil
     global _window, _tray_icon
 
-    print(f"[PILAR] Downloading update from {url} (zip={is_zip})")
+    print(f"[PILAR] Downloading update v{version} from {url}")
 
     def _progress(block_count, block_size, total_size):
         if total_size > 0:
@@ -169,17 +166,22 @@ def _download_and_install(url: str, version: str, is_zip: bool = False):
 
     try:
         suffix = ".zip" if is_zip else ".exe"
-        prefix = f"PILAR_{version}_"
-        tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix, prefix=prefix)
+        tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix, prefix=f"PILAR_{version}_")
         tmp_path = tmp.name
         tmp.close()
 
         urllib.request.urlretrieve(url, tmp_path, reporthook=_progress)
-        print()
-        print(f"[PILAR] Download complete: {tmp_path}")
+        print(f"\n[PILAR] Download complete: {tmp_path}")
+
+        # Close UI before launching installer
+        if _window is not None:
+            try: _window.destroy()
+            except Exception: pass
+        if _tray_icon is not None:
+            try: _tray_icon.stop()
+            except Exception: pass
 
         if is_zip:
-            # Extrait dans un dossier dedie
             update_dir = Path(os.environ.get("LOCALAPPDATA", tempfile.gettempdir())) / "PILAR_update"
             if update_dir.exists():
                 shutil.rmtree(update_dir)
@@ -187,30 +189,18 @@ def _download_and_install(url: str, version: str, is_zip: bool = False):
             with zipfile.ZipFile(tmp_path, "r") as z:
                 z.extractall(update_dir)
             os.unlink(tmp_path)
-            # Cherche PILAR.exe dans l'arborescence extraite
-            pilar_exe = None
-            for f in update_dir.rglob("PILAR.exe"):
-                pilar_exe = f
-                break
+            pilar_exe = next(update_dir.rglob("PILAR.exe"), None)
             if pilar_exe is None:
                 raise FileNotFoundError("PILAR.exe introuvable dans l'archive.")
             subprocess.Popen([str(pilar_exe)], cwd=str(pilar_exe.parent), close_fds=True)
-            print(f"[PILAR] Launched new version from {pilar_exe}")
+            print(f"[PILAR] Launched updated version from {pilar_exe}")
         else:
-            subprocess.Popen([tmp_path], close_fds=True)
-            print("[PILAR] Installer launched")
+            # Inno Setup silent install — replaces files in-place, then relaunches
+            subprocess.Popen([tmp_path, "/VERYSILENT", "/NORESTART", "/SUPPRESSMSGBOXES"],
+                             close_fds=True)
+            print("[PILAR] Silent installer launched")
 
-        # Ferme l'app courante
-        if _window is not None:
-            try:
-                _window.destroy()
-            except Exception:
-                pass
-        if _tray_icon is not None:
-            try:
-                _tray_icon.stop()
-            except Exception:
-                pass
+        os._exit(0)
 
     except Exception as e:
         print(f"[PILAR] Download/install failed: {e}")
@@ -229,7 +219,7 @@ def _show_update_dialog(latest: str, url: str, is_zip: bool = False):
         f"Version actuelle : {APP_VERSION}\n"
         f"Nouvelle version : {latest}\n\n"
         f"Voulez-vous mettre a jour maintenant ?\n"
-        f"(L'application se fermera et l'installeur se lancera automatiquement.)"
+        f"(Telechargement automatique — l'app redemarrera une fois installe.)"
     )
     result = ctypes.windll.user32.MessageBoxW(
         0, msg, "PILAR — Mise a jour disponible", MB_YESNO | MB_ICONINFO
