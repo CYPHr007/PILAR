@@ -27,7 +27,7 @@ _FROZEN      = getattr(sys, "frozen", False)
 APP_HOST     = "127.0.0.1"
 APP_PORT     = 5000
 APP_URL      = f"http://{APP_HOST}:{APP_PORT}/monitor"
-APP_VERSION  = "1.2.11"   # bump this with every release
+APP_VERSION  = "1.2.12"   # bump this with every release
 GITHUB_API   = "https://api.github.com/repos/CYPHr007/PILAR/releases/latest"
 
 if _FROZEN:
@@ -173,14 +173,6 @@ def _download_and_install(url: str, version: str, is_zip: bool = False):
         urllib.request.urlretrieve(url, tmp_path, reporthook=_progress)
         print(f"\n[PILAR] Download complete: {tmp_path}")
 
-        # Close UI before launching installer
-        if _window is not None:
-            try: _window.destroy()
-            except Exception: pass
-        if _tray_icon is not None:
-            try: _tray_icon.stop()
-            except Exception: pass
-
         if is_zip:
             update_dir = Path(os.environ.get("LOCALAPPDATA", tempfile.gettempdir())) / "PILAR_update"
             if update_dir.exists():
@@ -195,11 +187,17 @@ def _download_and_install(url: str, version: str, is_zip: bool = False):
             subprocess.Popen([str(pilar_exe)], cwd=str(pilar_exe.parent), close_fds=True)
             print(f"[PILAR] Launched updated version from {pilar_exe}")
         else:
-            # Inno Setup silent install — replaces files in-place, then relaunches
+            # Inno Setup silent install — kills running PILAR via InitializeSetup,
+            # installs new files, then relaunches PILAR automatically.
+            # Do NOT call _window.destroy() from this background thread — pywebview
+            # requires window operations on the main thread and will crash otherwise.
+            # The installer's InitializeSetup() does taskkill /F on PILAR.exe anyway.
             subprocess.Popen([tmp_path, "/VERYSILENT", "/NORESTART", "/SUPPRESSMSGBOXES"],
                              close_fds=True)
-            print("[PILAR] Silent installer launched")
+            print("[PILAR] Silent installer launched — exiting current process")
 
+        # Give the installer process a moment to start before we vanish
+        time.sleep(1)
         os._exit(0)
 
     except Exception as e:

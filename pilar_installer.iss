@@ -4,7 +4,7 @@
 ; Requires Inno Setup 6.x or 7.x
 
 #define AppName       "PILAR"
-#define AppVersion    "1.2.11"
+#define AppVersion    "1.2.12"
 #define AppPublisher  "PILAR Predictive Maintenance"
 #define AppURL        "https://pilarapp.up.railway.app"
 #define AppExeName    "PILAR.exe"
@@ -66,7 +66,7 @@ Root: HKCU; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Run"; ValueType: 
 
 [Run]
 ; Launch after install (skipped in silent/update mode)
-Filename: "{app}\{#AppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(AppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\{#AppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(AppName, '&', '&&')}}"; Flags: nowait postinstall
 
 [UninstallRun]
 ; Kill PILAR before uninstall
