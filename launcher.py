@@ -27,7 +27,7 @@ _FROZEN      = getattr(sys, "frozen", False)
 APP_HOST     = "127.0.0.1"
 APP_PORT     = 5000
 APP_URL      = f"http://{APP_HOST}:{APP_PORT}/monitor"
-APP_VERSION  = "1.2.12"   # bump this with every release
+APP_VERSION  = "1.2.13"   # bump this with every release
 GITHUB_API   = "https://api.github.com/repos/CYPHr007/PILAR/releases/latest"
 
 if _FROZEN:
@@ -382,6 +382,81 @@ def main():
     print("[PILAR] Done")
 
 
+def main_cli():
+    """
+    CLI / server mode  —  PILAR runs as a local web server in the terminal.
+
+    Usage:
+        PILAR.exe --cli [--port 5000] [--no-browser]
+        pilar            (via pilar.bat wrapper on PATH)
+
+    The Flask server starts on 127.0.0.1:<port>, the URL is printed to
+    stdout, and the default browser is opened automatically unless
+    --no-browser is given.  Press Ctrl-C to stop.
+    """
+    global APP_PORT, APP_URL
+    import argparse, webbrowser, signal
+
+    # PILAR.exe is a GUI (windowless) binary — attach/allocate a console so
+    # terminal output is visible when the user runs it from cmd/PowerShell.
+    if _FROZEN and sys.platform == "win32":
+        import ctypes
+        ctypes.windll.kernel32.AttachConsole(-1)  # attach to parent console
+        # If there is no parent console (e.g. double-clicked), create one
+        if ctypes.windll.kernel32.GetConsoleWindow() == 0:
+            ctypes.windll.kernel32.AllocConsole()
+        # Re-open standard streams so print() works
+        import io
+        try:
+            sys.stdout = io.TextIOWrapper(open("CONOUT$", "wb", buffering=0), encoding="utf-8", line_buffering=True)
+            sys.stderr = sys.stdout
+        except Exception:
+            pass
+
+    parser = argparse.ArgumentParser(prog="PILAR", description="PILAR Predictive Maintenance — server mode")
+    parser.add_argument("--port",       type=int, default=APP_PORT, help="Port to listen on (default: 5000)")
+    parser.add_argument("--no-browser", action="store_true",        help="Do not open the browser automatically")
+    args, _ = parser.parse_known_args()
+
+    port = args.port
+    url  = f"http://127.0.0.1:{port}"
+
+    # Patch the global so Flask binds on the right port
+    APP_PORT = port
+    APP_URL  = f"{url}/monitor"
+
+    print("=" * 52)
+    print("  PILAR — Predictive Maintenance  (server mode)")
+    print(f"  Version : {APP_VERSION}")
+    print(f"  URL     : {url}")
+    print("  Press Ctrl-C to stop.")
+    print("=" * 52)
+
+    flask_thread = threading.Thread(target=_run_flask, daemon=True, name="flask")
+    flask_thread.start()
+
+    if not _wait_for_flask(60):
+        print("[PILAR] ERROR: Flask failed to start.")
+        sys.exit(1)
+
+    print(f"[PILAR] Server ready → {url}")
+
+    if not args.no_browser:
+        webbrowser.open(APP_URL)
+
+    # Keep the main thread alive; daemon Flask thread lives as long as we do
+    try:
+        signal.pause()          # Unix
+    except AttributeError:
+        # Windows has no signal.pause() — just sleep forever
+        import time as _t
+        while True:
+            _t.sleep(3600)
+
+
 if __name__ == "__main__":
     multiprocessing.freeze_support()
-    main()
+    if "--cli" in sys.argv or "--server" in sys.argv:
+        main_cli()
+    else:
+        main()
