@@ -851,6 +851,7 @@ var _aLang=localStorage.getItem('pilar_lang')||'fr';
 var _TA={
 en:{login_title:'Sign in',reg_title:'Create account',tagline:'Predictive maintenance platform',
   lbl_email:'Email',lbl_pw:'Password',lbl_pw2:'Confirm password',
+  stay_connected:'Stay connected',
   btn_login:'Sign in',btn_reg:'Create account',
   link_reg:'No account? <a href="/register">Create one</a>',
   link_login:'Already have an account? <a href="/login">Sign in</a>',
@@ -872,6 +873,7 @@ en:{login_title:'Sign in',reg_title:'Create account',tagline:'Predictive mainten
   link_back_login:'<a href="/login">Back to sign in</a>'},
 fr:{login_title:'Connexion',reg_title:'Cr\u00e9er un compte',tagline:'Plateforme de maintenance pr\u00e9dictive',
   lbl_email:'Email',lbl_pw:'Mot de passe',lbl_pw2:'Confirmer le mot de passe',
+  stay_connected:'Rester connect\u00e9',
   btn_login:'Se connecter',btn_reg:'Cr\u00e9er mon compte',
   link_reg:'Pas encore de compte\u00a0? <a href="/register">Cr\u00e9er un compte</a>',
   link_login:'D\u00e9j\u00e0 un compte\u00a0? <a href="/login">Se connecter</a>',
@@ -997,6 +999,10 @@ LOGIN_HTML = _AUTH_HEAD + """
       <input class="fi" type="email" id="em" name="email" placeholder="vous@entreprise.com" autocomplete="email" required>
       <label class="flbl" for="pw" data-t="lbl_pw">Mot de passe</label>
       <input class="fi" type="password" id="pw" name="password" placeholder="••••••••" autocomplete="current-password" required>
+      <label style="display:flex;align-items:center;gap:8px;margin:10px 0 4px;cursor:pointer;user-select:none">
+        <input type="checkbox" name="remember" id="remember" value="1" checked style="accent-color:var(--teal);width:14px;height:14px;cursor:pointer">
+        <span style="font-size:12px;color:var(--text2)" data-t="stay_connected">Rester connecté</span>
+      </label>
       <button type="submit" class="btn-submit" data-t="btn_login">Se connecter</button>
     </form>
     <div style="display:flex;align-items:center;gap:10px;margin:20px 0 12px">
@@ -6415,8 +6421,8 @@ def login():
             else:
                 return render_template_string(LOGIN_HTML, error='Confirmez votre email avant de vous connecter. Vérifiez vos spams.')
         session['user_id'] = user.id
-        session.permanent = True
-        print(f"[Pilar/auth] Login OK: {email} IP={ip}")
+        session.permanent = (request.form.get('remember') == '1')
+        print(f"[Pilar/auth] Login OK: {email} IP={ip} remember={session.permanent}")
         return redirect('/monitor' if user.onboarded else '/onboarding')
     except Exception as e:
         db.session.rollback()

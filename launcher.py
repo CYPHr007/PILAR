@@ -372,7 +372,8 @@ def main():
         resizable=True,
         text_select=False,
     )
-    webview.start()
+    _browser_data = str(BASE_DIR / "pilar_browser_data")
+    webview.start(private_mode=False, storage_path=_browser_data)
 
     # 6. Fenetre fermee — arreter le tray
     print("[PILAR] Window closed, stopping tray")
