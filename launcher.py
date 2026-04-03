@@ -27,7 +27,7 @@ _FROZEN      = getattr(sys, "frozen", False)
 APP_HOST     = "127.0.0.1"
 APP_PORT     = 5000
 APP_URL      = f"http://{APP_HOST}:{APP_PORT}/monitor"
-APP_VERSION  = "1.2.16"   # bump this with every release
+APP_VERSION  = "1.2.17"   # bump this with every release
 GITHUB_API   = "https://api.github.com/repos/CYPHr007/PILAR/releases/latest"
 
 if _FROZEN:
@@ -39,6 +39,58 @@ else:
 _flask_started = False
 _window        = None
 _tray_icon     = None
+
+# ── Single-instance lock ───────────────────────────────────────────────────────
+_FOCUS_PORT = 19847   # local-only socket used to signal the running instance
+
+def _is_already_running() -> bool:
+    """
+    Try to connect to the focus-listener of an existing instance.
+    If successful → send 'focus' and return True (caller should exit).
+    If no listener → return False (we are the first instance).
+    """
+    import socket
+    try:
+        s = socket.create_connection(("127.0.0.1", _FOCUS_PORT), timeout=1)
+        s.sendall(b"focus")
+        s.close()
+        return True
+    except OSError:
+        return False
+
+def _start_focus_listener():
+    """
+    Listen on _FOCUS_PORT. When another instance sends 'focus',
+    show and restore the main window.
+    Runs in a daemon thread — never blocks shutdown.
+    """
+    import socket
+    def _serve():
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as srv:
+            srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            try:
+                srv.bind(("127.0.0.1", _FOCUS_PORT))
+            except OSError:
+                return   # port already taken — another instance is primary
+            srv.listen(5)
+            srv.settimeout(1)
+            while True:
+                try:
+                    conn, _ = srv.accept()
+                    with conn:
+                        conn.recv(16)
+                    # Bring window to front
+                    if _window is not None:
+                        try:
+                            _window.show()
+                            _window.restore()
+                        except Exception:
+                            pass
+                except socket.timeout:
+                    continue
+                except Exception:
+                    break
+    threading.Thread(target=_serve, daemon=True, name="focus-listener").start()
 
 
 # ── Icone tray ─────────────────────────────────────────────────────────────────
@@ -361,6 +413,12 @@ def _build_menu():
 # ── Main ───────────────────────────────────────────────────────────────────────
 def main():
     global _window, _tray_icon
+
+    # Single-instance check — if another PILAR is running, focus it and exit
+    if _is_already_running():
+        print("[PILAR] Already running — focused existing window, exiting.")
+        sys.exit(0)
+    _start_focus_listener()
 
     print(f"[PILAR] Launcher starting (frozen={_FROZEN}, base={BASE_DIR})")
 
