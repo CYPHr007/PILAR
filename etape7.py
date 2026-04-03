@@ -549,6 +549,128 @@ def _init_shap_explainer():
     except Exception as _e:
         print(f"[Pilar] SHAP init error: {_e}")
 
+# ── BACKGROUND MONITOR ────────────────────────────────────────────────────────
+import re as _re
+
+_bg_monitors: dict = {}          # path → {stop, thread, rows, alerts, fname}
+_notify_callback = None          # set by launcher.py to forward tray notifications
+
+_BG_CSV_PATS = {
+    'vibration':            ['vibration','vib','vibration_mm','vib_mms','vibration_mmps','accel','acceleration','vibr'],
+    'temp_palier':          ['temp_palier','bearing_temp','palier_temp','t_palier','tpalier','bearing_temperature','temp_roulement'],
+    'debit':                ['debit','flow','flow_rate','flowrate','debit_m3h','flow_m3h','caudal','durchfluss'],
+    'pression_entree':      ['pression_entree','inlet_pressure','pressure_in','p_in','pe','suction_pressure','pression_aspiration'],
+    'pression_sortie':      ['pression_sortie','outlet_pressure','discharge_pressure','pressure_out','p_out','ps','pression_refoulement'],
+    'courant_moteur':       ['courant_moteur','motor_current','current_motor','im','courant_a','current_a','ampere_moteur','motor_amp'],
+    'temp_moteur':          ['temp_moteur','motor_temp','motor_temperature','tm','temperature_moteur','t_moteur'],
+    'heure_fonctionnement': ['heure_fonctionnement','run_hours','operating_hours','runtime','heures','hours','hf','total_hours'],
+}
+
+def _bg_csvnorm(s):
+    s = s.lower().strip()
+    s = _re.sub(r'[^a-z0-9]', '_', s)
+    s = _re.sub(r'_+', '_', s)
+    return s.strip('_')
+
+def _bg_detect_mapping(headers):
+    norm = [_bg_csvnorm(h) for h in headers]
+    used = set()
+    col_map = {}
+    for field, pats in _BG_CSV_PATS.items():
+        best_idx, best_score = -1, 0
+        for j, h in enumerate(norm):
+            if j in used:
+                continue
+            score = 0
+            for pi, p in enumerate(pats):
+                if h == p:
+                    score = 100 - pi; break
+                elif p in h and score < 70 - pi:
+                    score = 70 - pi
+            if score > best_score:
+                best_score, best_idx = score, j
+        if best_idx >= 0:
+            col_map[field] = best_idx
+            used.add(best_idx)
+    return col_map
+
+def _bg_build_row(vals, col_map):
+    row = {}
+    for field, idx in col_map.items():
+        if idx < len(vals):
+            try:
+                row[field] = round(float(vals[idx].strip().replace(',', '.')), 2)
+            except (ValueError, TypeError):
+                row[field] = None
+        else:
+            row[field] = None
+    return row if any(v is not None for v in row.values()) else None
+
+def _bg_notify(title, msg):
+    """Send desktop notification via launcher callback, else print."""
+    try:
+        if _notify_callback:
+            _notify_callback(title, msg)
+        else:
+            print(f"[PILAR/alert] {title}: {msg}")
+    except Exception as _e:
+        print(f"[PILAR/bgmon] notify error: {_e}")
+
+def _bg_monitor_loop(path, interval, stop_ev, machine_id=None):
+    known_rows = 0
+    col_map = None
+    delim = ','
+    entry = _bg_monitors.get(path, {})
+    print(f"[PILAR/bgmon] Watching: {path}")
+    while not stop_ev.is_set():
+        try:
+            with open(path, 'r', encoding='utf-8', errors='replace') as _f:
+                content = _f.read()
+            lines = [l for l in content.split('\n') if l.strip()]
+            if len(lines) < 2:
+                stop_ev.wait(interval); continue
+            if col_map is None:
+                header = lines[0]
+                delim = ';' if header.count(';') > header.count(',') else ','
+                headers = [h.strip() for h in header.split(delim)]
+                col_map = _bg_detect_mapping(headers)
+                known_rows = len(lines) - 1
+                print(f"[PILAR/bgmon] Mapped {len(col_map)}/8 columns — waiting for new rows")
+                stop_ev.wait(interval); continue
+            total = len(lines) - 1
+            if total > known_rows:
+                new_lines = lines[known_rows + 1:]
+                known_rows = total
+                entry['rows'] = known_rows
+                for line in new_lines:
+                    vals = [v.strip() for v in line.split(delim)]
+                    row = _bg_build_row(vals, col_map)
+                    if not row:
+                        continue
+                    if machine_id:
+                        row['machine_id'] = machine_id
+                    try:
+                        result = predict_risk(row)
+                        prob, pred = result[0], result[1]
+                        zones = result[2] if len(result) > 2 else []
+                        if pred == 1 and prob >= 45:
+                            entry['alerts'] = entry.get('alerts', 0) + 1
+                            fname = os.path.basename(path)
+                            zone_str = ', '.join(zones) if zones else 'Anomaly detected'
+                            _bg_notify(f"PILAR Alert — {fname}", f"Risk: {prob:.0f}%  {zone_str}")
+                    except Exception as _pe:
+                        print(f"[PILAR/bgmon] predict error: {_pe}")
+        except FileNotFoundError:
+            print(f"[PILAR/bgmon] File not found — stopping: {path}")
+            break
+        except Exception as _e:
+            print(f"[PILAR/bgmon] read error: {_e}")
+        stop_ev.wait(interval)
+    _bg_monitors.pop(path, None)
+    print(f"[PILAR/bgmon] Stopped: {path}")
+
+# ── END BACKGROUND MONITOR ────────────────────────────────────────────────────
+
 def _compute_shap(x_scaled):
     """Return top-3 SHAP feature impacts list, or [] on failure."""
     global _shap_explainer
@@ -1759,7 +1881,7 @@ tut_connect:'Connecter fichier',tut_no_file:'Aucun fichier connecté',tut_discon
 ast_placeholder:'Posez votre question sur la machine...',ast_send:'Envoyer',
 ast_hello:"Bonjour. Je suis votre assistant maintenance prédictive. Partagez vos relevés capteurs ou posez-moi vos questions.",
 csv_detect:'Colonnes détectées',csv_bad:'Colonnes non reconnues',csv_rows:'lignes',
-live_hint:'CSV · noms de colonnes libres · conversion auto',manual_title:'Analyse manuelle',
+live_hint:'CSV · noms de colonnes libres · conversion auto',manual_title:'Analyse manuelle',bg_mon_title:'Surveillance Fond',bg_mon_desc:"Continuer l'analyse même fenêtre fermée",bg_mon_start:'Démarrer',bg_mon_stop:'Arrêter',bg_mon_active:'Actif',
 select_machine:'Choisissez votre machine',adv_params:'Paramètres avancés',not_listed:'Ma machine n\u2019est pas listée',
 idle_l2b:'Sélectionnez une machine ci-dessous et lancez l\u2019analyse',
 custom_machine_title:'Machine personnalisée',custom_machine_desc:'Décrivez votre machine ci-dessous. Nous l\u2019intégrerons à Pilar sous 48h.',
@@ -1817,7 +1939,7 @@ tut_connect:'Connect File',tut_no_file:'No file connected',tut_disconnected:'Dis
 ast_placeholder:'Ask about your machine...',ast_send:'Send',
 ast_hello:'Hello. I am your predictive maintenance assistant. Share your sensor readings or ask me anything about your machine health.',
 csv_detect:'Columns detected',csv_bad:'Columns not recognized',csv_rows:'rows',
-live_hint:'CSV · any column names · auto unit conversion',manual_title:'Manual Analysis',
+live_hint:'CSV · any column names · auto unit conversion',manual_title:'Manual Analysis',bg_mon_title:'Background Monitor',bg_mon_desc:'Keep analysing even when window is closed',bg_mon_start:'Start',bg_mon_stop:'Stop',bg_mon_active:'Active',
 select_machine:'Select your machine',adv_params:'Advanced parameters',not_listed:'My machine is not listed',
 idle_l2b:'Select a machine below and run analysis',
 custom_machine_title:'Custom Machine',custom_machine_desc:'Describe your machine below. We will integrate it into Pilar within 48 hours.',
@@ -2226,6 +2348,27 @@ HTML = _HEAD.replace("{FAV}","iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAHxU
     </div>
   </div>
 
+  <!-- BACKGROUND MONITOR (desktop only) -->
+  <div id="bgMonZone" style="display:none;margin-top:10px;padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <svg style="width:16px;height:16px;flex-shrink:0;fill:none;stroke:var(--teal);stroke-width:1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+      <span style="font-size:12px;font-weight:600;color:var(--text)" data-i18n="bg_mon_title">Background Monitor</span>
+      <span style="font-size:11px;color:var(--text3);flex:1" data-i18n="bg_mon_desc">Keep analysing even when window is closed</span>
+      <button id="bgStartBtn" onclick="startBgMonitor()" style="padding:5px 12px;background:var(--teal);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer" data-i18n="bg_mon_start">Start</button>
+      <button id="bgStopBtn" onclick="stopBgMonitor()" style="display:none;padding:5px 12px;background:var(--red,#dc2626);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer" data-i18n="bg_mon_stop">Stop</button>
+    </div>
+    <div id="bgMonStatus" style="margin-top:8px;display:none;">
+      <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2)">
+        <span style="width:7px;height:7px;border-radius:50%;background:var(--teal);flex-shrink:0;animation:bgpulse 1.5s infinite"></span>
+        <span id="bgMonFname" style="font-weight:600;color:var(--teal)"></span>
+        <span style="color:var(--text3)">—</span>
+        <span id="bgMonRows" style="color:var(--text2)">0 rows</span>
+        <span style="color:var(--red);font-weight:600" id="bgMonAlerts"></span>
+      </div>
+    </div>
+  </div>
+  <style>@keyframes bgpulse{0%,100%{opacity:1}50%{opacity:.4}}</style>
+
   <!-- AI STACK — always visible -->
   <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
     <div class="ai-chip" id="ai-isoforest">
@@ -2578,6 +2721,61 @@ function stopLiveMonitor(){
     }
   }catch(e){}
 })();
+
+// ── BACKGROUND MONITOR (desktop only) ─────────────────────────────────────
+var _bgMonPath=null;
+var _bgStatusTimer=null;
+(function _initBgMonZone(){
+  if(typeof window.pywebview==='undefined')return;
+  document.getElementById('bgMonZone').style.display='block';
+  // Restore any active monitor on page load
+  fetch('/api/bgmonitor/status').then(function(r){return r.json();}).then(function(d){
+    if(d.monitors&&d.monitors.length>0){
+      var m=d.monitors[0];
+      _bgMonPath=m.path;
+      _bgShowActive(m);
+    }
+  }).catch(function(){});
+})();
+function _bgShowActive(m){
+  document.getElementById('bgStartBtn').style.display='none';
+  document.getElementById('bgStopBtn').style.display='';
+  document.getElementById('bgMonStatus').style.display='block';
+  document.getElementById('bgMonFname').textContent=m.fname||m.path;
+  _updateBgStatus();
+  if(!_bgStatusTimer)_bgStatusTimer=setInterval(_updateBgStatus,3000);
+}
+function _updateBgStatus(){
+  fetch('/api/bgmonitor/status').then(function(r){return r.json();}).then(function(d){
+    if(!d.monitors||d.monitors.length===0){
+      clearInterval(_bgStatusTimer);_bgStatusTimer=null;
+      document.getElementById('bgStartBtn').style.display='';
+      document.getElementById('bgStopBtn').style.display='none';
+      document.getElementById('bgMonStatus').style.display='none';
+      return;
+    }
+    var m=d.monitors[0];
+    document.getElementById('bgMonRows').textContent=m.rows+' '+t('csv_rows');
+    var al=document.getElementById('bgMonAlerts');
+    al.textContent=m.alerts>0?'\u26a0 '+m.alerts+' alert'+(m.alerts>1?'s':''):'';
+  }).catch(function(){});
+}
+async function startBgMonitor(){
+  var path=await window.pywebview.api.pick_file();
+  if(!path)return;
+  _bgMonPath=path;
+  var r=await fetch('/api/bgmonitor/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:path,interval:5})});
+  var d=await r.json();
+  if(d.ok)_bgShowActive({path:path,fname:d.fname,rows:0,alerts:0});
+}
+async function stopBgMonitor(){
+  if(!_bgMonPath)return;
+  await fetch('/api/bgmonitor/stop',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:_bgMonPath})});
+  clearInterval(_bgStatusTimer);_bgStatusTimer=null;_bgMonPath=null;
+  document.getElementById('bgStartBtn').style.display='';
+  document.getElementById('bgStopBtn').style.display='none';
+  document.getElementById('bgMonStatus').style.display='none';
+}
 </script></body></html>"""
 
 
@@ -7938,6 +8136,50 @@ def api_health():
         'trained_at': meta.get('trained_at'),
         'source': meta.get('source'),
     })
+
+@app.route('/api/bgmonitor/start', methods=['POST'])
+@login_required
+def api_bgmonitor_start():
+    data = request.json or {}
+    path = (data.get('path') or '').strip()
+    if not path or not os.path.isfile(path):
+        return jsonify(error='File not found'), 400
+    interval = max(1, int(data.get('interval', 5)))
+    machine_id = data.get('machine_id') or None
+    # Stop any existing monitor for this path
+    if path in _bg_monitors:
+        _bg_monitors[path]['stop'].set()
+    stop_ev = threading.Event()
+    entry = {'stop': stop_ev, 'path': path, 'fname': os.path.basename(path), 'rows': 0, 'alerts': 0}
+    _bg_monitors[path] = entry
+    t = threading.Thread(target=_bg_monitor_loop, args=(path, interval, stop_ev, machine_id), daemon=True, name=f"bgmon-{os.path.basename(path)}")
+    entry['thread'] = t
+    t.start()
+    return jsonify(ok=True, path=path, fname=os.path.basename(path))
+
+@app.route('/api/bgmonitor/stop', methods=['POST'])
+@login_required
+def api_bgmonitor_stop():
+    data = request.json or {}
+    path = (data.get('path') or '').strip()
+    if data.get('all'):
+        for m in list(_bg_monitors.values()):
+            m['stop'].set()
+        _bg_monitors.clear()
+        return jsonify(ok=True, stopped='all')
+    if path and path in _bg_monitors:
+        _bg_monitors[path]['stop'].set()
+        return jsonify(ok=True, stopped=path)
+    return jsonify(ok=False, error='Monitor not found'), 404
+
+@app.route('/api/bgmonitor/status')
+@login_required
+def api_bgmonitor_status():
+    monitors = [
+        {'path': m['path'], 'fname': m['fname'], 'rows': m.get('rows', 0), 'alerts': m.get('alerts', 0)}
+        for m in _bg_monitors.values() if not m['stop'].is_set()
+    ]
+    return jsonify(monitors=monitors, count=len(monitors))
 
 @app.route('/api/discover', methods=['POST'])
 @login_required

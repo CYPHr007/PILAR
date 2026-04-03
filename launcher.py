@@ -27,7 +27,7 @@ _FROZEN      = getattr(sys, "frozen", False)
 APP_HOST     = "127.0.0.1"
 APP_PORT     = 5000
 APP_URL      = f"http://{APP_HOST}:{APP_PORT}/monitor"
-APP_VERSION  = "1.2.15"   # bump this with every release
+APP_VERSION  = "1.2.16"   # bump this with every release
 GITHUB_API   = "https://api.github.com/repos/CYPHr007/PILAR/releases/latest"
 
 if _FROZEN:
@@ -255,6 +255,27 @@ def _check_update():
 
 
 # ── Tray actions ───────────────────────────────────────────────────────────────
+# ── pywebview API ──────────────────────────────────────────────────────────────
+class PilarAPI:
+    """Python methods exposed to JS via window.pywebview.api.*"""
+    def pick_file(self):
+        """Open native file dialog and return chosen path (or None)."""
+        import webview as _wv
+        if _window is None:
+            return None
+        try:
+            result = _window.create_file_dialog(
+                _wv.OPEN_DIALOG,
+                allow_multiple=False,
+                file_types=('CSV files (*.csv)', 'All files (*.*)')
+            )
+            if result and len(result) > 0:
+                return result[0]
+        except Exception as e:
+            print(f"[PILAR] pick_file error: {e}")
+        return None
+
+
 def action_open(icon, item):
     global _window
     if _window is not None:
@@ -311,7 +332,14 @@ def _check_update_manual():
 
 def action_quit(icon, item):
     global _window
-    print("[PILAR] Quit requested")
+    print("[PILAR] Quit requested — stopping all background monitors")
+    try:
+        import etape7 as _et
+        for m in list(_et._bg_monitors.values()):
+            m['stop'].set()
+        _et._bg_monitors.clear()
+    except Exception:
+        pass
     if _window is not None:
         try:
             _window.destroy()
@@ -326,7 +354,7 @@ def _build_menu():
         pystray.Menu.SEPARATOR,
         pystray.MenuItem("Rechercher les mises à jour…", action_check_update),
         pystray.Menu.SEPARATOR,
-        pystray.MenuItem("Quitter PILAR", action_quit),
+        pystray.MenuItem("Quitter PILAR (arrêter la surveillance)", action_quit),
     )
 
 
@@ -361,8 +389,24 @@ def main():
     _tray_icon.run_detached()
     print("[PILAR] Tray icon running")
 
-    # 5. Fenetre native pywebview — main thread
+    # 5. Wire notification callback into etape7 so background monitor
+    #    can send tray notifications
+    try:
+        import etape7 as _et
+        def _on_alert(title, msg):
+            if _tray_icon:
+                try:
+                    _tray_icon.notify(msg, title)
+                except Exception:
+                    pass
+        _et._notify_callback = _on_alert
+        print("[PILAR] Notification callback wired")
+    except Exception as e:
+        print(f"[PILAR] Could not wire notify callback: {e}")
+
+    # 6. Fenetre native pywebview — main thread
     import webview
+    _api = PilarAPI()
     _window = webview.create_window(
         title="PILAR",
         url=APP_URL,
@@ -371,12 +415,38 @@ def main():
         min_size=(900, 600),
         resizable=True,
         text_select=False,
+        js_api=_api,
     )
+
+    # Intercept close — hide to tray instead of quitting
+    def _on_closing():
+        _window.hide()
+        if _tray_icon:
+            try:
+                # Check if any background monitor is active
+                import etape7 as _et2
+                active = len([m for m in _et2._bg_monitors.values() if not m['stop'].is_set()])
+                if active:
+                    _tray_icon.notify(
+                        f"PILAR surveille {active} fichier(s) en arrière-plan",
+                        "PILAR"
+                    )
+                else:
+                    _tray_icon.notify(
+                        "PILAR tourne en arrière-plan — double-clic pour rouvrir",
+                        "PILAR"
+                    )
+            except Exception:
+                pass
+        return False   # prevent default close
+
+    _window.events.closing += _on_closing
+
     _browser_data = str(BASE_DIR / "pilar_browser_data")
     webview.start(private_mode=False, storage_path=_browser_data)
 
-    # 6. Fenetre fermee — arreter le tray
-    print("[PILAR] Window closed, stopping tray")
+    # webview.start() returns only after action_quit calls _window.destroy()
+    print("[PILAR] Window destroyed, stopping tray")
     if _tray_icon:
         _tray_icon.stop()
 
