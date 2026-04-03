@@ -2440,6 +2440,23 @@ HTML = _HEAD.replace("{FAV}","iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAHxU
 </style>
 <script>
 let lastR=null,lastD=null;
+var _savedResult={{ last_result }};
+if(_savedResult){
+  try{lastR=_savedResult;render(_savedResult);}catch(e){}
+  try{
+    var _p=_savedResult.last_params||{};
+    var _fm={vibration:['nvib','svib'],temp_palier:['ntp','stp'],debit:['nd','sd'],
+             pression_entree:['npe','spe'],pression_sortie:['nps','sps'],
+             courant_moteur:['nim','sim'],temp_moteur:['ntm','stm'],heure_fonctionnement:['nhf','shf']};
+    Object.keys(_fm).forEach(function(f){
+      if(_p[f]==null)return;
+      var ids=_fm[f];
+      var ni=document.getElementById(ids[0]),si=document.getElementById(ids[1]);
+      if(ni)ni.value=_p[f];
+      if(si)si.value=_p[f];
+    });
+  }catch(e){}
+}
 
 function toggleAdv(){
   var p=document.getElementById('advParams'),c=document.getElementById('advChv');
@@ -2604,7 +2621,7 @@ async function _readSnapshot(f){
   try{
     var text=await f.text();
     await _lfProcess(text);
-    try{localStorage.setItem('pilar_mon_csv',text);localStorage.setItem('pilar_mon_fname',f.name);}catch(e){try{localStorage.setItem('pilar_mon_fname',f.name);}catch(e2){}}
+    fetch('/api/session_file/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({slot:'monitor',fname:f.name,csv:text})}).catch(function(){});
   }catch(e){console.error(e);}
 }
 
@@ -2615,7 +2632,7 @@ async function _lfLoop(){
     var file=await _lfHandle.getFile();
     var text=await file.text();
     await _lfProcess(text);
-    if(!_lfSaved){_lfSaved=true;try{localStorage.setItem('pilar_mon_csv',text);localStorage.setItem('pilar_mon_fname',file.name);}catch(e){try{localStorage.setItem('pilar_mon_fname',file.name);}catch(e2){}}}
+    if(!_lfSaved){_lfSaved=true;fetch('/api/session_file/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({slot:'monitor',fname:file.name,csv:text})}).catch(function(){});}
   }catch(e){console.error('live monitor error',e);}
   _schedule();
 }
@@ -2699,28 +2716,24 @@ function stopLiveMonitor(){
   document.getElementById('lzEmpty').style.display='flex';
   document.getElementById('lzConn').style.display='none';
   document.getElementById('lfInput').value='';
-  try{localStorage.removeItem('pilar_live_fname');localStorage.removeItem('pilar_mon_csv');localStorage.removeItem('pilar_mon_fname');}catch(e){}
+  fetch('/api/session_file/clear',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({slot:'monitor'})}).catch(function(){});
 }
-(function _initMonitorRestore(){
-  try{
-    var csv=localStorage.getItem('pilar_mon_csv');
-    var fname=localStorage.getItem('pilar_mon_fname');
-    if(!fname)return;
-    _lfFallback=true;_lfSaved=true;
-    _showLzConn(fname);
-    var reconnectHtml='<span style="color:var(--amber);font-size:9px">\u23f8 '+t('live_reconnect')+' \u2192 </span>'
-      +'<label for="lfInput" style="color:var(--teal);font-size:9px;font-weight:600;cursor:pointer">'+fname+'</label>';
-    if(csv){
-      _lfProcess(csv).then(function(){
-        document.getElementById('liveChk').innerHTML=reconnectHtml;
-        document.getElementById('liveChk').style.fontSize='9px';
-      }).catch(function(){});
-    }else{
+fetch('/api/session_file/load?slot=monitor').then(function(r){return r.json();}).then(function(d){
+  if(!d.ok||!d.fname)return;
+  _lfFallback=true;_lfSaved=true;
+  _showLzConn(d.fname);
+  var reconnectHtml='<span style="color:var(--amber);font-size:9px">\u23f8 '+t('live_reconnect')+' \u2192 </span>'
+    +'<label for="lfInput" style="color:var(--teal);font-size:9px;font-weight:600;cursor:pointer">'+d.fname+'</label>';
+  if(d.csv){
+    _lfProcess(d.csv).then(function(){
       document.getElementById('liveChk').innerHTML=reconnectHtml;
       document.getElementById('liveChk').style.fontSize='9px';
-    }
-  }catch(e){}
-})();
+    }).catch(function(){});
+  }else{
+    document.getElementById('liveChk').innerHTML=reconnectHtml;
+    document.getElementById('liveChk').style.fontSize='9px';
+  }
+}).catch(function(){});
 
 // ── BACKGROUND MONITOR (desktop only) ─────────────────────────────────────
 var _bgMonPath=null;
@@ -3407,7 +3420,8 @@ ASSISTANT_HTML = _HEAD.replace("{FAV}", FAV_B64) + """
 </div>
 <script>
 var hist=[],lastCtx=null;
-try{var s=localStorage.getItem('pilar_last_result');if(s)lastCtx=JSON.parse(s);}catch(e){}
+try{lastCtx={{ last_result }};}catch(e){}
+if(!lastCtx){try{var s=localStorage.getItem('pilar_last_result');if(s)lastCtx=JSON.parse(s);}catch(e){}}
 document.getElementById('ast-hello').textContent=t('ast_hello');
 var _astPilarLbl=document.getElementById('ast-pilar-lbl');
 if(_astPilarLbl)_astPilarLbl.textContent=t('ast_pilar');
@@ -3621,31 +3635,45 @@ function onFile(inp){
       var missing=_CSV_FIELDS.filter(function(field){return !detectCsvMapping(text.split('\\n')[0].split(_csvDelim(text.split('\\n')[0])).map(s=>s.trim()))[field];}).join(', ');
       alert(t('csv_bad'));return;
     }
-    try{localStorage.setItem('pilar_tut_csv',text);localStorage.setItem('pilar_tut_fname',f.name);}catch(e){try{localStorage.setItem('pilar_tut_fname',f.name);}catch(e2){}}
+    // Save to server (no size limit, survives navigation + app restart)
+    fetch('/api/session_file/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({slot:'tutorial',fname:f.name,csv:text})}).catch(function(){});
   };
   rd.readAsText(f);
 }
 
+function _addTutClearBtn(fname){
+  var dropz=document.getElementById('dropz');
+  if(!dropz)return;
+  dropz.style.borderColor='var(--teal)';
+  var existing=dropz.querySelector('.tut-clear-btn');
+  if(existing)existing.remove();
+  var clearBtn=document.createElement('button');
+  clearBtn.className='tut-clear-btn';
+  clearBtn.textContent='\u00d7';
+  clearBtn.title='Clear file';
+  clearBtn.style.cssText='position:absolute;top:6px;right:6px;background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;line-height:1;padding:2px 6px;';
+  clearBtn.onclick=function(e){
+    e.stopPropagation();
+    rows=[];
+    document.getElementById('fname').textContent=t('tut_no_file_sel');
+    document.getElementById('btnStart').disabled=true;
+    dropz.style.borderColor='';
+    this.remove();
+    fetch('/api/session_file/clear',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({slot:'tutorial'})}).catch(function(){});
+  };
+  dropz.style.position='relative';
+  dropz.appendChild(clearBtn);
+}
+
 function _restoreTutFile(){
-  try{
-    var saved=localStorage.getItem('pilar_tut_csv');
-    var fname=localStorage.getItem('pilar_tut_fname');
-    if(!fname)return;
-    if(!saved){document.getElementById('fname').textContent=fname;return;}
-    if(_loadCsvText(saved,fname)){
-      var dropz=document.getElementById('dropz');
-      if(dropz){
-        dropz.style.borderColor='var(--teal)';
-        var clearBtn=document.createElement('button');
-        clearBtn.textContent='\u00d7';
-        clearBtn.title='Effacer le fichier';
-        clearBtn.style.cssText='position:absolute;top:6px;right:6px;background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;line-height:1;padding:2px 6px;';
-        clearBtn.onclick=function(e){e.stopPropagation();rows=[];document.getElementById('fname').textContent=t('tut_no_file_sel');document.getElementById('btnStart').disabled=true;dropz.style.borderColor='';this.remove();try{localStorage.removeItem('pilar_tut_csv');localStorage.removeItem('pilar_tut_fname');}catch(ex){}};
-        dropz.style.position='relative';
-        dropz.appendChild(clearBtn);
-      }
+  fetch('/api/session_file/load?slot=tutorial').then(function(r){return r.json();}).then(function(d){
+    if(!d.ok||!d.fname)return;
+    if(d.csv&&_loadCsvText(d.csv,d.fname)){
+      _addTutClearBtn(d.fname);
+    }else{
+      document.getElementById('fname').textContent=d.fname;
     }
-  }catch(e){}
+  }).catch(function(){});
 }
 
 function startRun(){
@@ -7560,7 +7588,10 @@ def onboarding_skip():
 def monitor():
     r = _paid_required()
     if r: return r
-    return render_template_string(HTML)
+    import json as _json
+    _last = session.get('last_result')
+    _last_json = _json.dumps(_last) if _last else 'null'
+    return render_template_string(HTML, last_result=_last_json)
 
 @app.route('/account')
 def account():
@@ -7750,7 +7781,10 @@ def admin_download_file(fid):
 def twin():
     r = _paid_required()
     if r: return r
-    return render_template_string(TWIN_HTML)
+    import json as _json
+    _last = session.get('last_result')
+    _last_json = _json.dumps(_last) if _last else 'null'
+    return render_template_string(TWIN_HTML, last_result=_last_json)
 
 @app.route('/history')
 def history():
@@ -7914,13 +7948,20 @@ def predire():
         _new_analyses_since_retrain += 1
         if _new_analyses_since_retrain >= RETRAIN_TRIGGER:
             threading.Thread(target=_auto_retrain, daemon=True).start()
-        return jsonify({'prediction': prediction, 'probabilite': probabilite,
-                        'zones': zones_risque, 'mail_envoye': mail_envoye,
-                        'confidence': confidence, 'imputed': imputed,
-                        'anomaly_score': anomaly_score,
-                        'shap_explanations': shap_explanations,
-                        'rul_hours': rul_hours,
-                        'domain_warnings': _domain_warnings})
+        _result = {'prediction': prediction, 'probabilite': probabilite,
+                   'zones': zones_risque, 'mail_envoye': mail_envoye,
+                   'confidence': confidence, 'imputed': imputed,
+                   'anomaly_score': anomaly_score,
+                   'shap_explanations': shap_explanations,
+                   'rul_hours': rul_hours,
+                   'domain_warnings': _domain_warnings,
+                   'last_params': {k: data.get(k) for k in CORE_FEATURES}}
+        try:
+            session['last_result'] = _result
+            session.modified = True
+        except Exception:
+            pass
+        return jsonify(_result)
     except Exception as e:
         db.session.rollback()
         import traceback
@@ -8111,6 +8152,64 @@ def api_update_install():
 
     threading.Thread(target=_do_install, daemon=True, name='in-app-updater').start()
     return jsonify({'ok': True, 'message': 'Téléchargement en cours…'})
+
+# ── SERVER-SIDE FILE PERSISTENCE ─────────────────────────────────────────────
+# Saves uploaded CSVs to disk so they survive page navigation and app restarts.
+# No localStorage size limit — works for any CSV size.
+_SESSION_FILE_DIR = os.path.join(_DATA_DIR, 'session_files')
+try:
+    os.makedirs(_SESSION_FILE_DIR, exist_ok=True)
+except Exception:
+    pass
+
+def _session_slot_paths(slot):
+    safe = ''.join(c for c in slot if c.isalnum() or c == '_')[:20] or 'default'
+    uid = str(current_uid() or 'guest')
+    d = os.path.join(_SESSION_FILE_DIR, uid)
+    os.makedirs(d, exist_ok=True)
+    return os.path.join(d, f'{safe}.csv'), os.path.join(d, f'{safe}.fname')
+
+@app.route('/api/session_file/save', methods=['POST'])
+def session_file_save():
+    import json as _j
+    data = request.json or {}
+    slot  = data.get('slot', 'default')
+    fname = data.get('fname', '')
+    csv   = data.get('csv', '')
+    try:
+        csv_path, fname_path = _session_slot_paths(slot)
+        with open(csv_path,   'w', encoding='utf-8') as f: f.write(csv)
+        with open(fname_path, 'w', encoding='utf-8') as f: f.write(fname)
+        return jsonify(ok=True)
+    except Exception as e:
+        return jsonify(ok=False, error=str(e))
+
+@app.route('/api/session_file/load')
+def session_file_load():
+    slot = request.args.get('slot', 'default')
+    try:
+        csv_path, fname_path = _session_slot_paths(slot)
+        with open(csv_path,   encoding='utf-8') as f: csv   = f.read()
+        with open(fname_path, encoding='utf-8') as f: fname = f.read()
+        return jsonify(ok=True, csv=csv, fname=fname)
+    except FileNotFoundError:
+        return jsonify(ok=False)
+    except Exception as e:
+        return jsonify(ok=False, error=str(e))
+
+@app.route('/api/session_file/clear', methods=['POST'])
+def session_file_clear():
+    slot = (request.json or {}).get('slot', 'default')
+    try:
+        csv_path, fname_path = _session_slot_paths(slot)
+        for p in (csv_path, fname_path):
+            try: os.remove(p)
+            except FileNotFoundError: pass
+        return jsonify(ok=True)
+    except Exception as e:
+        return jsonify(ok=False, error=str(e))
+
+# ── END SERVER-SIDE FILE PERSISTENCE ─────────────────────────────────────────
 
 @app.route('/api/health')
 def api_health():
