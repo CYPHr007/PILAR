@@ -2461,7 +2461,7 @@ async function _readSnapshot(f){
   try{
     var text=await f.text();
     await _lfProcess(text);
-    try{localStorage.setItem('pilar_mon_csv',text);localStorage.setItem('pilar_mon_fname',f.name);}catch(e){}
+    try{localStorage.setItem('pilar_mon_csv',text);localStorage.setItem('pilar_mon_fname',f.name);}catch(e){try{localStorage.setItem('pilar_mon_fname',f.name);}catch(e2){}}
   }catch(e){console.error(e);}
 }
 
@@ -2472,7 +2472,7 @@ async function _lfLoop(){
     var file=await _lfHandle.getFile();
     var text=await file.text();
     await _lfProcess(text);
-    if(!_lfSaved){_lfSaved=true;try{localStorage.setItem('pilar_mon_csv',text);localStorage.setItem('pilar_mon_fname',file.name);}catch(e){}}
+    if(!_lfSaved){_lfSaved=true;try{localStorage.setItem('pilar_mon_csv',text);localStorage.setItem('pilar_mon_fname',file.name);}catch(e){try{localStorage.setItem('pilar_mon_fname',file.name);}catch(e2){}}}
   }catch(e){console.error('live monitor error',e);}
   _schedule();
 }
@@ -2562,16 +2562,20 @@ function stopLiveMonitor(){
   try{
     var csv=localStorage.getItem('pilar_mon_csv');
     var fname=localStorage.getItem('pilar_mon_fname');
-    if(!csv||!fname)return;
-    // Restore last snapshot — show connected state with previous data
+    if(!fname)return;
     _lfFallback=true;_lfSaved=true;
     _showLzConn(fname);
-    _lfProcess(csv).then(function(){
-      document.getElementById('liveChk').innerHTML=
-        '<span style="color:var(--amber);font-size:9px">\u23f8 '+t('live_reconnect')+' \u2192 </span>'
-        +'<label for="lfInput" style="color:var(--teal);font-size:9px;font-weight:600;cursor:pointer">'+fname+'</label>';
+    var reconnectHtml='<span style="color:var(--amber);font-size:9px">\u23f8 '+t('live_reconnect')+' \u2192 </span>'
+      +'<label for="lfInput" style="color:var(--teal);font-size:9px;font-weight:600;cursor:pointer">'+fname+'</label>';
+    if(csv){
+      _lfProcess(csv).then(function(){
+        document.getElementById('liveChk').innerHTML=reconnectHtml;
+        document.getElementById('liveChk').style.fontSize='9px';
+      }).catch(function(){});
+    }else{
+      document.getElementById('liveChk').innerHTML=reconnectHtml;
       document.getElementById('liveChk').style.fontSize='9px';
-    }).catch(function(){});
+    }
   }catch(e){}
 })();
 </script></body></html>"""
@@ -3419,7 +3423,7 @@ function onFile(inp){
       var missing=_CSV_FIELDS.filter(function(field){return !detectCsvMapping(text.split('\\n')[0].split(_csvDelim(text.split('\\n')[0])).map(s=>s.trim()))[field];}).join(', ');
       alert(t('csv_bad'));return;
     }
-    try{localStorage.setItem('pilar_tut_csv',text);localStorage.setItem('pilar_tut_fname',f.name);}catch(e){}
+    try{localStorage.setItem('pilar_tut_csv',text);localStorage.setItem('pilar_tut_fname',f.name);}catch(e){try{localStorage.setItem('pilar_tut_fname',f.name);}catch(e2){}}
   };
   rd.readAsText(f);
 }
@@ -3428,7 +3432,8 @@ function _restoreTutFile(){
   try{
     var saved=localStorage.getItem('pilar_tut_csv');
     var fname=localStorage.getItem('pilar_tut_fname');
-    if(!saved||!fname)return;
+    if(!fname)return;
+    if(!saved){document.getElementById('fname').textContent=fname;return;}
     if(_loadCsvText(saved,fname)){
       var dropz=document.getElementById('dropz');
       if(dropz){
@@ -4884,7 +4889,7 @@ DASHBOARD_HTML = _HEAD.replace("{FAV}", FAV_B64) + """
 .upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
 .upload-zone-text{font-size:12px;font-weight:600;color:var(--text2);}
 .upload-zone-sub{font-size:10px;color:var(--text3);margin-top:3px;}
-select.form-input{background:#141820;color-scheme:dark;}
+select.form-input{background:#141820;color:#e2e8f0;color-scheme:dark;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2394a3b8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;}
 select.form-input option{background:#141820;color:#e2e8f0;}
 .ap-row{display:grid;grid-template-columns:1fr auto auto auto;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);font-size:12px;}
 .ap-row:last-child{border-bottom:none;}
