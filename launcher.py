@@ -27,8 +27,9 @@ _FROZEN      = getattr(sys, "frozen", False)
 APP_HOST     = "127.0.0.1"
 APP_PORT     = 5000
 APP_URL      = f"http://{APP_HOST}:{APP_PORT}/monitor"
-APP_VERSION  = "1.2.18"   # bump this with every release
+APP_VERSION  = "1.2.19"   # bump this with every release
 GITHUB_API   = "https://api.github.com/repos/CYPHr007/PILAR/releases/latest"
+PILAR_API    = "https://pilarapp.up.railway.app/api/latest"
 
 if _FROZEN:
     BASE_DIR = Path(sys.executable).parent.resolve()
@@ -166,18 +167,39 @@ def _parse_version(tag: str) -> Version:
 
 def _fetch_latest_release():
     """
-    Interroge l'API GitHub Releases.
-    Retourne (latest_version_str, download_url, is_zip) ou (None, None, False).
-    Priorite : Setup.exe > .zip > zipball_url
+    Check PILAR website first, then fall back to GitHub API.
+    Returns (version_str, download_url, is_zip) or (None, None, False).
     """
     import urllib.request
+    import ssl
     import json
+
+    def _open(url, timeout=10):
+        req = urllib.request.Request(url, headers={"User-Agent": f"PILAR-Desktop/{APP_VERSION}"})
+        try:
+            ctx = ssl.create_default_context()
+            return urllib.request.urlopen(req, timeout=timeout, context=ctx)
+        except Exception:
+            ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+            return urllib.request.urlopen(req, timeout=timeout, context=ctx)
+
+    # --- Primary: PILAR website ---
     try:
-        req = urllib.request.Request(
-            GITHUB_API,
-            headers={"User-Agent": f"PILAR-Desktop/{APP_VERSION}"},
-        )
-        with urllib.request.urlopen(req, timeout=8) as resp:
+        with _open(PILAR_API, timeout=8) as resp:
+            data = json.loads(resp.read())
+        tag = data.get("version", "")
+        url = data.get("download_url", "")
+        if tag and url:
+            print(f"[PILAR] Update info from website: {tag}")
+            return tag, url, url.endswith(".zip")
+    except Exception as e:
+        print(f"[PILAR] Website check failed: {e} — trying GitHub API")
+
+    # --- Fallback: GitHub API ---
+    try:
+        with _open(GITHUB_API, timeout=8) as resp:
             data = json.loads(resp.read())
         tag = data.get("tag_name", "")
         assets = data.get("assets", [])
@@ -194,27 +216,54 @@ def _fetch_latest_release():
             return tag, exe_url, False
         if zip_url:
             return tag, zip_url, True
-        # Dernier recours : archive source GitHub
         return tag, data.get("zipball_url", ""), True
     except Exception as e:
-        print(f"[PILAR] Update check failed: {e}")
+        print(f"[PILAR] GitHub API check failed: {e}")
         return None, None, False
 
 
 def _download_and_install(url: str, version: str, is_zip: bool = False):
     """
-    Telecharge le nouvel installeur (.exe Inno Setup) et le lance silencieusement.
-    Fallback zip: extrait dans LOCALAPPDATA et lance PILAR.exe.
+    Download the new installer (.exe) and launch it silently.
+    Uses chunked download with SSL context to handle certificate errors on Windows.
     """
-    import urllib.request, zipfile, shutil
+    import urllib.request, ssl, zipfile, shutil
     global _window, _tray_icon
 
     print(f"[PILAR] Downloading update v{version} from {url}")
 
-    def _progress(block_count, block_size, total_size):
-        if total_size > 0:
-            pct = min(100, block_count * block_size * 100 // total_size)
-            print(f"\r[PILAR] Download: {pct}%", end="", flush=True)
+    def _chunked_download(src_url, dest_path):
+        """Download with SSL context, redirect following, progress output."""
+        req = urllib.request.Request(src_url, headers={"User-Agent": f"PILAR-Desktop/{APP_VERSION}"})
+        resp = None
+        for verify in (True, False):
+            try:
+                ctx = ssl.create_default_context()
+                if not verify:
+                    ctx.check_hostname = False
+                    ctx.verify_mode = ssl.CERT_NONE
+                resp = urllib.request.urlopen(req, timeout=120, context=ctx)
+                break
+            except ssl.SSLError:
+                if not verify:
+                    raise
+                continue
+        if resp is None:
+            raise RuntimeError("Could not open URL")
+        total = int(resp.getheader("Content-Length") or 0)
+        downloaded = 0
+        with open(dest_path, "wb") as out:
+            while True:
+                chunk = resp.read(65536)
+                if not chunk:
+                    break
+                out.write(chunk)
+                downloaded += len(chunk)
+                if total > 0:
+                    pct = min(100, downloaded * 100 // total)
+                    print(f"[PILAR] Download: {pct}%  ({downloaded//(1024*1024)}MB/{total//(1024*1024)}MB)", end="\r", flush=True)
+        print()
+        resp.close()
 
     try:
         suffix = ".zip" if is_zip else ".exe"
@@ -222,8 +271,8 @@ def _download_and_install(url: str, version: str, is_zip: bool = False):
         tmp_path = tmp.name
         tmp.close()
 
-        urllib.request.urlretrieve(url, tmp_path, reporthook=_progress)
-        print(f"\n[PILAR] Download complete: {tmp_path}")
+        _chunked_download(url, tmp_path)
+        print(f"[PILAR] Download complete: {tmp_path}")
 
         if is_zip:
             update_dir = Path(os.environ.get("LOCALAPPDATA", tempfile.gettempdir())) / "PILAR_update"
@@ -239,23 +288,17 @@ def _download_and_install(url: str, version: str, is_zip: bool = False):
             subprocess.Popen([str(pilar_exe)], cwd=str(pilar_exe.parent), close_fds=True)
             print(f"[PILAR] Launched updated version from {pilar_exe}")
         else:
-            # Inno Setup silent install — kills running PILAR via InitializeSetup,
-            # installs new files, then relaunches PILAR automatically.
-            # Do NOT call _window.destroy() from this background thread — pywebview
-            # requires window operations on the main thread and will crash otherwise.
-            # The installer's InitializeSetup() does taskkill /F on PILAR.exe anyway.
+            # Inno Setup silent install — InitializeSetup() does taskkill /F on PILAR.exe
             subprocess.Popen([tmp_path, "/VERYSILENT", "/NORESTART", "/SUPPRESSMSGBOXES"],
                              close_fds=True)
             print("[PILAR] Silent installer launched — exiting current process")
 
-        # Give the installer process a moment to start before we vanish
         time.sleep(1)
         os._exit(0)
 
     except Exception as e:
         print(f"[PILAR] Download/install failed: {e}")
-        _show_error_dialog(f"Echec de la mise a jour :\n{e}")
-
+        _show_error_dialog(f"Echec de la mise a jour : {e}")
 
 def _show_update_dialog(latest: str, url: str, is_zip: bool = False):
     """Affiche une boite de dialogue native Windows pour proposer la mise a jour."""
