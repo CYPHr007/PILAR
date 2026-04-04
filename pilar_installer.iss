@@ -28,7 +28,12 @@ OutputBaseFilename=PILAR_Setup_{#AppVersion}
 SetupIconFile=pilar.ico
 Compression=lzma2/ultra64
 SolidCompression=yes
-WizardStyle=modern
+; Classic style to enable the full-height side image
+WizardStyle=classic
+WizardImageFile=wizard_image.bmp
+WizardSmallImageFile=wizard_small.bmp
+WizardImageStretch=no
+WizardImageBackColor=$180e11
 MinVersion=10.0.17763
 ArchitecturesInstallIn64BitMode=x64compatible
 ; No admin required — installs silently for current user
@@ -83,6 +88,34 @@ Filename: "{app}\{#AppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(
 Filename: "taskkill"; Parameters: "/F /IM {#AppExeName}"; Flags: runhidden; RunOnceId: "KillPILAR"
 
 [Code]
+// ── PILAR theme: dark navy + teal ────────────────────────────────────────────
+procedure ApplyTheme;
+begin
+  // Main wizard background
+  WizardForm.Color                           := $110E18;
+  WizardForm.MainPanel.Color                 := $110E18;
+  WizardForm.InnerPage.Color                 := $110E18;
+  // Page title and description
+  WizardForm.PageNameLabel.Font.Color        := $ECF0A6;  // light teal  ($A6F0EC in RGB)
+  WizardForm.PageDescriptionLabel.Font.Color := $AE9B8A;  // muted
+  // Lists / memo boxes
+  WizardForm.TasksList.Color                 := $110E18;
+  WizardForm.ReadyMemo.Color                 := $110E18;
+  // Status labels on progress page
+  WizardForm.FilenameLabel.Font.Color        := $AE9B8A;
+  WizardForm.StatusLabel.Font.Color          := $AE9B8A;
+end;
+
+procedure InitializeWizard;
+begin
+  ApplyTheme;
+end;
+
+procedure CurPageChanged(CurPageID: Integer);
+begin
+  ApplyTheme;
+end;
+
 // Kill any running PILAR instance before installing (supports silent update)
 function InitializeSetup(): Boolean;
 var
