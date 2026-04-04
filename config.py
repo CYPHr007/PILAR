@@ -31,13 +31,13 @@ COLONNES = [
 # Medians from UCI hydraulic test rig + 3-phase motor formula (400 V / 0.92 / 0.85).
 # Used to impute missing sensor values during partial analyses.
 FEATURE_MEDIANS = {
-    'vibration':            0.61,
+    'vibration':            8.974,
     'temp_palier':          44.837,
     'debit':                0.395,
     'pression_entree':      1.987,
     'pression_sortie':      107.73,
-    'courant_moteur':       4.579,   # I = P / (sqrt(3) x 400 x 0.92 x 0.85)
-    'temp_moteur':          58.043,
+    'courant_moteur':       8.639,
+    'temp_moteur':          68.117,
     'heure_fonctionnement': 1103.0,
 }
 
