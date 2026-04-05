@@ -330,27 +330,42 @@ with app.app_context():
     # SuperUser persistant
     try:
         _su = User.query.filter_by(email='aliguenbou07r@gmail.com').first()
-        if _su and (not _su.is_admin or _su.plan != 'pro'):
-            _su.is_admin = True
-            _su.plan = 'pro'
-            _su.plan_expires_at = None
-            db.session.commit()
-            print("[Pilar] SuperUser: aliguenbou07r@gmail.com → admin+pro lifetime")
+        if _su:
+            _changed = False
+            if not _su.is_admin or _su.plan != 'pro':
+                _su.is_admin = True; _su.plan = 'pro'; _su.plan_expires_at = None; _changed = True
+            if not _su.onboarded:
+                _su.onboarded = True; _changed = True
+            if _changed:
+                db.session.commit()
+                print("[Pilar] SuperUser: aliguenbou07r@gmail.com → admin+pro lifetime")
     except Exception as _sue:
         db.session.rollback()
         print(f"[Pilar] SuperUser setup: {_sue}")
-    # Upgrade all existing free users to pro — everyone who installed PILAR has a subscription
+    # Upgrade all existing free users to pro + mark onboarded
     try:
         _free_users = User.query.filter_by(plan='free').all()
         for _u in _free_users:
             _u.plan = 'pro'
             _u.plan_expires_at = None
+            _u.onboarded = True
         if _free_users:
             db.session.commit()
             print(f"[Pilar] Auto-upgraded {len(_free_users)} free user(s) to pro")
     except Exception as _upe:
         db.session.rollback()
         print(f"[Pilar] Auto-upgrade error: {_upe}")
+    # Mark all existing users as onboarded (onboarding added post-launch)
+    try:
+        _not_onboarded = User.query.filter_by(onboarded=False).all()
+        for _u in _not_onboarded:
+            _u.onboarded = True
+        if _not_onboarded:
+            db.session.commit()
+            print(f"[Pilar] Marked {len(_not_onboarded)} existing user(s) as onboarded")
+    except Exception as _oue:
+        db.session.rollback()
+        print(f"[Pilar] Onboard migration error: {_oue}")
     # Seed demo account
     try:
         _seed_demo_account()
@@ -1124,10 +1139,23 @@ LOGIN_HTML = _AUTH_HEAD + """
       <input class="fi" type="email" id="em" name="email" placeholder="vous@entreprise.com" autocomplete="email" required>
       <label class="flbl" for="pw" data-t="lbl_pw">Mot de passe</label>
       <input class="fi" type="password" id="pw" name="password" placeholder="••••••••" autocomplete="current-password" required>
-      <label style="display:flex;align-items:center;gap:8px;margin:10px 0 4px;cursor:pointer;user-select:none">
-        <input type="checkbox" name="remember" id="remember" value="1" checked style="accent-color:var(--teal);width:14px;height:14px;cursor:pointer">
+      <label style="display:flex;align-items:center;gap:10px;margin:12px 0 6px;cursor:pointer;user-select:none">
+        <input type="checkbox" name="remember" id="remember" value="1" checked style="display:none">
+        <span id="rememberToggle" onclick="toggleRemember()" style="width:36px;height:20px;background:var(--teal);border-radius:10px;flex-shrink:0;position:relative;transition:background .2s;cursor:pointer">
+          <span style="position:absolute;top:3px;left:17px;width:14px;height:14px;background:#fff;border-radius:50%;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.4)" id="rememberThumb"></span>
+        </span>
         <span style="font-size:12px;color:var(--text2)" data-t="stay_connected">Rester connecté</span>
       </label>
+      <script>
+      function toggleRemember(){
+        var cb=document.getElementById('remember');
+        var tog=document.getElementById('rememberToggle');
+        var th=document.getElementById('rememberThumb');
+        cb.checked=!cb.checked;
+        tog.style.background=cb.checked?'var(--teal)':'rgba(120,120,128,0.3)';
+        th.style.left=cb.checked?'17px':'3px';
+      }
+      </script>
       <button type="submit" class="btn-submit" data-t="btn_login">Se connecter</button>
     </form>
     <div style="display:flex;align-items:center;gap:10px;margin:20px 0 12px">
