@@ -2514,64 +2514,121 @@ async function analyse(){
 }
 function render(r){
   const al=r.prediction===1,cls=al?'alert':'ok',st=al?t('status_alert'):t('status_ok');
+  const _fr=LANG==='fr';
+
+  // ── SVG icons (no emoji) ──
+  const icoWarn='<svg style="width:12px;height:12px;fill:none;stroke:currentColor;flex-shrink:0;stroke-width:2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke-linecap="round" stroke-linejoin="round"/><line x1="12" y1="9" x2="12" y2="13" stroke-linecap="round"/><circle cx="12" cy="17" r=".5" fill="currentColor" stroke="none"/></svg>';
+  const icoSearch='<svg style="width:12px;height:12px;fill:none;stroke:var(--text3);flex-shrink:0;stroke-width:2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35" stroke-linecap="round"/></svg>';
+  const icoClock='<svg style="width:12px;height:12px;fill:none;stroke:var(--text3);flex-shrink:0;stroke-width:2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14" stroke-linecap="round"/></svg>';
+
+  // ── Domain warnings ──
+  let warnH='';
+  if(r.domain_warnings&&r.domain_warnings.length){
+    warnH='<div style="padding:10px 14px;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.25);border-radius:8px;font-size:10px;color:#fbbf24;margin-bottom:12px;display:flex;flex-direction:column;gap:5px">'+r.domain_warnings.map(w=>'<div style="display:flex;align-items:flex-start;gap:6px">'+icoWarn+w+'</div>').join('')+'</div>';
+  }
+
+  // ── Confidence note ──
   let confH='';
   if(r.confidence!==undefined&&r.confidence<100){
     var imp=r.imputed&&r.imputed.length?r.imputed.join(', '):'';
-    confH='<div style="margin-top:8px;padding:6px 10px;background:rgba(234,179,8,0.08);border:1px solid rgba(234,179,8,0.25);border-radius:6px;font-size:10px;color:#ca8a04;display:flex;align-items:center;gap:6px"><svg style="width:12px;height:12px;fill:none;stroke:currentColor;flex-shrink:0" viewBox="0 0 24 24"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'+t('partial_analysis')+' — '+r.confidence+'%'+(imp?' ('+t('imputed')+': '+imp+')':'')+'</div>';
+    confH='<div style="margin-top:8px;padding:6px 10px;background:rgba(234,179,8,0.08);border:1px solid rgba(234,179,8,0.25);border-radius:6px;font-size:10px;color:#ca8a04;display:flex;align-items:center;gap:6px">'+icoWarn+t('partial_analysis')+' — '+r.confidence+'%'+(imp?' ('+t('imputed')+': '+imp+')':'')+'</div>';
   }
+
+  // ── SHAP causes with progress bars ──
+  var _sk={vibration:'p_vibration',temp_palier:'p_temp_palier',debit:'p_debit',pression_entree:'p_pression_e',pression_sortie:'p_pression_s',courant_moteur:'p_courant',temp_moteur:'p_temp_moteur',heure_fonctionnement:'p_heure'};
+  let shapH='';
+  if(r.shap_explanations&&r.shap_explanations.length){
+    var bars=r.shap_explanations.map(function(s){
+      var label=t(_sk[s.feature_key]||s.feature_key)||s.feature_key;
+      var pct=Math.min(100,Math.abs(parseInt(s.impact)||0));
+      var isUp=s.direction==='up';
+      var col=isUp?'var(--red)':'var(--teal)';
+      return '<div style="margin-bottom:9px">'
+        +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">'
+        +'<span style="font-size:11px;color:var(--text2)">'+label+'</span>'
+        +'<span style="font-size:11px;font-weight:700;color:'+col+'">'+s.impact+(isUp?' \u2191':' \u2193')+'</span>'
+        +'</div>'
+        +'<div style="height:3px;background:var(--surface2);border-radius:2px;overflow:hidden">'
+        +'<div style="height:100%;width:'+pct+'%;background:'+col+';border-radius:2px;transition:width .5s ease"></div>'
+        +'</div>'
+        +'</div>';
+    }).join('');
+    shapH='<div style="padding:12px 16px;border-top:1px solid var(--border)">'
+      +'<div style="display:flex;align-items:center;gap:7px;margin-bottom:10px">'+icoSearch
+      +'<span style="font-size:9px;letter-spacing:1.5px;color:var(--text3);text-transform:uppercase">'+(_fr?'Causes identifiées':'Identified causes')+'</span></div>'
+      +bars+'</div>';
+  }
+
+  // ── Zone breakdown ──
   let zH='';
-  if(al&&r.zones&&r.zones.length>0){zH='<div class="card"><div class="ctitle">'+t('zone_title')+'</div>'+r.zones.map(z=>'<div class="zrow"><span class="zname">'+z.nom+'</span><div class="zbw"><div class="zbf" style="width:'+z.proba+'%"></div></div><span class="zp">'+z.proba+'%</span></div>').join('')+'</div>';}
+  if(al&&r.zones&&r.zones.length>0){
+    zH='<div style="padding:12px 16px;border-top:1px solid var(--border)">'
+      +'<div style="font-size:9px;letter-spacing:1.5px;color:var(--text3);text-transform:uppercase;margin-bottom:10px">'+t('zone_title')+'</div>'
+      +r.zones.map(z=>'<div class="zrow"><span class="zname">'+z.nom+'</span><div class="zbw"><div class="zbf" style="width:'+z.proba+'%"></div></div><span class="zp">'+z.proba+'%</span></div>').join('')
+      +'</div>';
+  }
+
+  // ── RUL row ──
   let rulH='';
   if(r.rul_hours!=null){
-    var rulCol=r.rul_hours<500?'var(--red)':r.rul_hours<1500?'var(--amber)':'var(--green)';
-    rulH='<div class="card" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px"><div><div style="font-size:9px;letter-spacing:1.5px;color:var(--text3);text-transform:uppercase">Est. Remaining Life</div><div style="font-size:9px;color:var(--text3);margin-top:2px">RUL · NASA C-MAPSS model</div></div><div style="text-align:right"><div style="font-size:26px;font-weight:800;color:'+rulCol+'">'+r.rul_hours+'<span style="font-size:12px;color:var(--text3)"> h</span></div></div></div>';
+    var rulCol=r.rul_hours<500?'var(--red)':r.rul_hours<1500?'var(--amber)':'var(--teal)';
+    var rulConf=r.rul_hours<500?(_fr?'Critique':'Critical'):r.rul_hours<1500?(_fr?'Modérée':'Moderate'):(_fr?'Stable':'Stable');
+    rulH='<div style="padding:12px 16px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">'
+      +'<div style="display:flex;align-items:center;gap:7px">'+icoClock
+      +'<div style="font-size:9px;letter-spacing:1.5px;color:var(--text3);text-transform:uppercase">'+(_fr?'Durée de vie restante':'Remaining useful life')+'</div></div>'
+      +'<div style="text-align:right"><div style="font-size:22px;font-weight:800;color:'+rulCol+'">'+r.rul_hours+'<span style="font-size:11px;color:var(--text3)"> h</span></div>'
+      +'<div style="font-size:9px;color:var(--text3);margin-top:1px">RUL · '+rulConf+'</div></div>'
+      +'</div>';
   }
-  let warnH='';
-  if(r.domain_warnings&&r.domain_warnings.length){
-    warnH='<div style="padding:10px 14px;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.25);border-radius:8px;font-size:10px;color:#fbbf24;margin-bottom:12px">'+r.domain_warnings.map(w=>'&#9888; '+w).join('<br>')+'</div>';
-  }
-  document.getElementById('res').innerHTML=warnH+'<div class="rh '+cls+'"><div><div class="sb '+cls+'"><span class="dot '+cls+'"></span>'+st+'</div><div style="font-size:10px;color:var(--text3);margin-top:4px">'+localTimeNow()+'</div>'+confH+'</div><div><div class="rnum '+cls+'">'+r.probabilite+'<span class="runit">%</span></div><div class="rlbl">'+t('failure_prob')+'</div></div></div>'+zH+rulH;
 
-  // ── AI PANEL ──
-  var aiPanel=document.getElementById('ai-panel');
-  var hasAI=(r.anomaly_score!=null)||(r.shap_explanations&&r.shap_explanations.length);
-  aiPanel.style.display=hasAI?'block':'none';
+  // ── Recommended action ──
+  var actMsg,actCol;
+  if(r.probabilite>=70){actMsg=_fr?'Arrêt machine — maintenance immédiate':'Stop machine — immediate maintenance';actCol='var(--red)';}
+  else if(r.probabilite>=50){actMsg=_fr?'Inspection sous 24h — prévoir les pièces':'Inspect within 24h — prepare spare parts';actCol='#f97316';}
+  else if(r.probabilite>=22){actMsg=_fr?'Surveillance renforcée — programmer une inspection':'Enhanced monitoring — schedule inspection';actCol='var(--amber)';}
+  else{actMsg=_fr?'Fonctionnement nominal':'Normal operation';actCol='var(--teal)';}
+  var icoAct='<svg style="width:12px;height:12px;fill:none;stroke:'+actCol+';flex-shrink:0;stroke-width:2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  var actionH='<div style="padding:11px 16px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px">'+icoAct
+    +'<span style="font-size:11px;color:'+actCol+';font-weight:600">'+actMsg+'</span></div>';
 
-  // Anomaly score
-  var anomRow=document.getElementById('ai-anomaly-row');
-  var anomVal=document.getElementById('ai-anomaly-val');
+  // ── Assemble result card ──
+  document.getElementById('res').innerHTML=warnH
+    +'<div class="card" style="padding:0;overflow:hidden">'
+    +'<div class="rh '+cls+'" style="padding:14px 16px">'
+    +'<div><div class="sb '+cls+'"><span class="dot '+cls+'"></span>'+st+'</div>'
+    +'<div style="font-size:10px;color:var(--text3);margin-top:4px">'+localTimeNow()+'</div>'+confH+'</div>'
+    +'<div><div class="rnum '+cls+'">'+r.probabilite+'<span class="runit">%</span></div>'
+    +'<div class="rlbl">'+t('failure_prob')+'</div></div>'
+    +'</div>'
+    +shapH+zH+rulH+actionH
+    +'</div>';
+
+  // ── AI chips (Isolation Forest badge) ──
   var isoChipDot=document.getElementById('ai-isoforest-dot');
   var isoChipVal=document.getElementById('ai-isoforest-val');
   if(r.anomaly_score!=null){
-    var aCl=r.anomaly_score>=70?'var(--red)':r.anomaly_score>=35?'var(--amber)':'var(--green)';
-    anomRow.style.display='flex';
-    anomVal.textContent=r.anomaly_score+'/100';
-    anomVal.style.color=aCl;
+    var aCl=r.anomaly_score>=70?'var(--red)':r.anomaly_score>=35?'var(--amber)':'var(--teal)';
     if(isoChipDot)isoChipDot.style.background=aCl;
     if(isoChipVal)isoChipVal.textContent=r.anomaly_score+'/100';
   }else{
-    anomRow.style.display='none';
     if(isoChipDot)isoChipDot.style.background='var(--text3)';
     if(isoChipVal)isoChipVal.textContent=t('ai_warming')||'warming up';
   }
 
-  // SHAP top-3
-  var shapSection=document.getElementById('ai-shap-section');
-  var shapBody=document.getElementById('ai-shap-body');
-  var _shapKeyMap={vibration:'p_vibration',temp_palier:'p_temp_palier',debit:'p_debit',pression_entree:'p_pression_e',pression_sortie:'p_pression_s',courant_moteur:'p_courant',temp_moteur:'p_temp_moteur',heure_fonctionnement:'p_heure'};
-  if(r.shap_explanations&&r.shap_explanations.length){
-    shapSection.style.display='block';
-    shapBody.innerHTML=r.shap_explanations.map(function(s){
-      var tkey=_shapKeyMap[s.feature_key]||s.feature_key;
-      var label=T[lang][tkey]||s.feature_key;
-      return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'
-        +'<span style="font-size:11px;color:var(--text2);flex:1">'+label+'</span>'
-        +'<span style="font-size:13px;font-weight:700;color:'+(s.direction==='up'?'var(--red)':'var(--green)')+'">'+s.impact+' '+(s.direction==='up'?'\u2191':'\u2193')+'</span>'
-        +'</div>';
-    }).join('');
+  // ── AI panel: anomaly score only (SHAP now in main card) ──
+  var aiPanel=document.getElementById('ai-panel');
+  var anomRow=document.getElementById('ai-anomaly-row');
+  var anomVal=document.getElementById('ai-anomaly-val');
+  if(r.anomaly_score!=null){
+    aiPanel.style.display='block';
+    anomRow.style.display='flex';
+    anomVal.textContent=r.anomaly_score+'/100';
+    anomVal.style.color=r.anomaly_score>=70?'var(--red)':r.anomaly_score>=35?'var(--amber)':'var(--teal)';
   }else{
-    shapSection.style.display='none';
+    aiPanel.style.display='none';
   }
+  var shapSection=document.getElementById('ai-shap-section');
+  if(shapSection)shapSection.style.display='none';
 }
 
 // ── LIVE FILE MONITOR ─────────────────────────────────────────────────────
