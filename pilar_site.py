@@ -1211,6 +1211,13 @@ document.getElementById('invite-form').addEventListener('submit', async function
                  nav_user=user.email)
 
 
+@app.route('/api/latest')
+def api_latest():
+    """Auto-updater endpoint — returns latest version + download URL."""
+    version = APP_VERSION.lstrip('v')
+    return jsonify(version=version, download_url=DOWNLOAD_URL)
+
+
 @app.route('/api/invite', methods=['POST'])
 @login_required
 def api_invite():
