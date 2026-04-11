@@ -339,11 +339,11 @@ for zone, y_z in ZONE_RULES.items():
 
 # ── 7. SAUVEGARDE ────────────────────────────────────────────────────────────
 print('\n[7/7] Sauvegarde...')
-with open('modele_pannes.pkl', 'wb') as f:
+with open('failure_model.pkl', 'wb') as f:
     pickle.dump(best_model, f)
 with open('scaler.pkl', 'wb') as f:
     pickle.dump(scaler_new, f)
-with open('modeles_zones.pkl', 'wb') as f:
+with open('zone_models.pkl', 'wb') as f:
     pickle.dump(modeles_zones_new, f)
 
 meta = {
@@ -363,13 +363,13 @@ meta = {
 with open('model_meta.json', 'w') as f:
     json.dump(meta, f, indent=2, ensure_ascii=False)
 
-print(f'  modele_pannes.pkl  OK  ({best_name})')
+print(f'  failure_model.pkl  OK  ({best_name})')
 print(f'  scaler.pkl         OK')
-print(f'  modeles_zones.pkl  OK  ({list(modeles_zones_new.keys())})')
+print(f'  zone_models.pkl  OK  ({list(modeles_zones_new.keys())})')
 print(f'  model_meta.json    OK')
 
 print('\n' + '=' * 65)
-print('MÉDIANES À COPIER DANS etape7.py -> FEATURE_MEDIANS :')
+print('MÉDIANES À COPIER DANS app.py -> FEATURE_MEDIANS :')
 print(f"FEATURE_MEDIANS = {json.dumps(medians, ensure_ascii=False)}")
 print('=' * 65)
 

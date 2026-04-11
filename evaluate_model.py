@@ -12,9 +12,9 @@ from sklearn.metrics import (classification_report, confusion_matrix,
     recall_score, precision_score, f1_score)
 
 # ── Load models ────────────────────────────────────────────────────────────────
-with open('modele_pannes.pkl','rb') as f: model = pickle.load(f)
+with open('failure_model.pkl','rb') as f: model = pickle.load(f)
 with open('scaler.pkl','rb') as f: scaler = pickle.load(f)
-with open('modeles_zones.pkl','rb') as f: zones_models = pickle.load(f)
+with open('zone_models.pkl','rb') as f: zones_models = pickle.load(f)
 with open('model_meta.json') as f: meta = json.load(f)
 
 FEATURES = meta['colonnes']

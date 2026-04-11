@@ -4,9 +4,9 @@
 ; Requires Inno Setup 6.x or 7.x
 
 #define AppName       "PILAR"
-#define AppVersion    "1.2.20"
+#define AppVersion    "1.3.0"
 #define AppPublisher  "PILAR Predictive Maintenance"
-#define AppURL        "https://pilarapp.up.railway.app"
+#define AppURL        "https://github.com/CYPHR007/PILAR"
 #define AppExeName    "PILAR.exe"
 #define AppId         "{{6A1F7E2C-3B4D-4E5F-8A9B-0C1D2E3F4A5B}"
 

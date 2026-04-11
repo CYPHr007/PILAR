@@ -27,9 +27,12 @@ _FROZEN      = getattr(sys, "frozen", False)
 APP_HOST     = "127.0.0.1"
 APP_PORT     = 5000
 APP_URL      = f"http://{APP_HOST}:{APP_PORT}/monitor"
-APP_VERSION  = "1.2.20"   # bump this with every release
-GITHUB_API   = "https://api.github.com/repos/CYPHr007/PILAR/releases/latest"
-PILAR_API    = "https://pilarapp.up.railway.app/api/latest"
+try:
+    from config import APP_VERSION   # single source of truth
+except ImportError:
+    APP_VERSION = "4.0"              # fallback when frozen
+GITHUB_API   = "https://api.github.com/repos/CYPHR007/PILAR/releases/latest"
+PILAR_API    = os.environ.get("PILAR_UPDATE_URL", GITHUB_API)
 
 if _FROZEN:
     BASE_DIR = Path(sys.executable).parent.resolve()
@@ -133,11 +136,12 @@ def _run_flask():
     print(f"[PILAR] Starting Flask on {APP_URL}")
     os.chdir(str(BASE_DIR))
     os.environ["PILAR_LAUNCHER"] = "1"
+    os.environ["PILAR_DESKTOP"] = "1"
     os.environ.setdefault("PILAR_VERSION", APP_VERSION)
     if str(BASE_DIR) not in sys.path:
         sys.path.insert(0, str(BASE_DIR))
-    import etape7
-    etape7.app.run(
+    import app
+    app.app.run(
         host=APP_HOST, port=APP_PORT,
         debug=False, use_reloader=False, threaded=True,
     )
@@ -429,7 +433,7 @@ def action_quit(icon, item):
     global _window
     print("[PILAR] Quit requested — stopping all background monitors")
     try:
-        import etape7 as _et
+        import app as _et
         for m in list(_et._bg_monitors.values()):
             m['stop'].set()
         _et._bg_monitors.clear()
@@ -490,10 +494,10 @@ def main():
     _tray_icon.run_detached()
     print("[PILAR] Tray icon running")
 
-    # 5. Wire notification callback into etape7 so background monitor
+    # 5. Wire notification callback into app so background monitor
     #    can send tray notifications
     try:
-        import etape7 as _et
+        import app as _et
         def _on_alert(title, msg):
             if _tray_icon:
                 try:
@@ -525,7 +529,7 @@ def main():
         if _tray_icon:
             try:
                 # Check if any background monitor is active
-                import etape7 as _et2
+                import app as _et2
                 active = len([m for m in _et2._bg_monitors.values() if not m['stop'].is_set()])
                 if active:
                     _tray_icon.notify(

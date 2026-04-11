@@ -22,7 +22,7 @@ from sklearn.metrics import classification_report
 warnings.filterwarnings('ignore')
 
 FEATURES_CSV = sys.argv[1] if len(sys.argv) > 1 else 'nln_emp_features.csv'
-ZONES_PKL    = sys.argv[2] if len(sys.argv) > 2 else 'modeles_zones.pkl'
+ZONES_PKL    = sys.argv[2] if len(sys.argv) > 2 else 'zone_models.pkl'
 SCALER_PKL   = 'scaler.pkl'
 
 COLONNES = [

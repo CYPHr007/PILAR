@@ -1,12 +1,39 @@
 {
-  "model_name": "RandomForest",
-  "recall": 100.0,
-  "precision": 100.0,
-  "f1": 100.0,
-  "n_train": 1517,
-  "n_failures": 917,
-  "failure_rate": 60.4,
-  "colonnes": [
+  "model_name": "XGBoost_calibrated",
+  "recall": 90.3,
+  "precision": 66.9,
+  "f1": 76.9,
+  "n_train": 350400,
+  "n_total": 236520,
+  "n_failures": 17520,
+  "failure_rate": 7.4,
+  "source": "universal_synthetic_23_machine_profiles",
+  "profiles": [
+    "centrifugal_pump_small",
+    "centrifugal_pump_large",
+    "axial_pump",
+    "screw_pump",
+    "gear_pump",
+    "piston_pump",
+    "rotary_compressor",
+    "piston_compressor",
+    "industrial_fan",
+    "exhaust_fan",
+    "hydraulic_power_unit",
+    "steam_turbine_small",
+    "slurry_pump",
+    "submersible_pump",
+    "booster_pump",
+    "cooling_water_pump",
+    "agitator_mixer",
+    "pilar_ventilateur",
+    "pilar_hydraulique",
+    "pilar_agitateur",
+    "gearbox_driven_machine",
+    "pipeline_pump",
+    "fire_pump"
+  ],
+  "features": [
     "vibration",
     "temp_palier",
     "debit",
@@ -14,29 +41,68 @@
     "pression_sortie",
     "courant_moteur",
     "temp_moteur",
-    "heure_fonctionnement"
+    "heure_fonctionnement",
+    "dp",
+    "eta_proxy",
+    "thermal_load",
+    "wear_index"
   ],
   "zones": [
     "CAV",
     "ROL",
     "ETN",
+    "IMP",
     "MOT"
   ],
-  "feature_medians": {
-    "vibration": 8.974,
-    "temp_palier": 44.837,
-    "debit": 0.395,
-    "pression_entree": 1.987,
-    "pression_sortie": 107.73,
-    "courant_moteur": 8.639,
-    "temp_moteur": 68.117,
-    "heure_fonctionnement": 1103.0
-  },
-  "source": "training_balanced.csv",
-  "trained_at": "2026-04-04T20:24:27",
-  "rul_model": "GradientBoostingRegressor",
-  "rul_mae_cycles": 25.3,
-  "rul_rmse_cycles": 33.9,
-  "rul_source": "nasa_cmapss_fd001_status_cv.csv",
-  "rul_scale_factor": 13.8504
+  "trained_at": "2026-04-11T19:23:56",
+  "feature_ranges": {
+    "vibration": [
+      0.1,
+      103.8233
+    ],
+    "temp_palier": [
+      22.0,
+      209.9735
+    ],
+    "debit": [
+      0.0757,
+      5942.1959
+    ],
+    "pression_entree": [
+      0.01,
+      60.0
+    ],
+    "pression_sortie": [
+      0.101,
+      400.0
+    ],
+    "courant_moteur": [
+      1.2334,
+      551.202
+    ],
+    "temp_moteur": [
+      25.0,
+      245.0699
+    ],
+    "heure_fonctionnement": [
+      0.0,
+      53938.5474
+    ],
+    "dp": [
+      -58.4876,
+      399.2949
+    ],
+    "eta_proxy": [
+      0.0,
+      3239.6813
+    ],
+    "thermal_load": [
+      -110.7847,
+      166.1262
+    ],
+    "wear_index": [
+      0.0,
+      1.8553
+    ]
+  }
 }

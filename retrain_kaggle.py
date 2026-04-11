@@ -47,11 +47,11 @@ for col in ['TWF', 'HDF', 'PWF', 'OSF', 'RNF']:
     modeles_zones[col] = m
     print(f"✅ Zone {col} entraînée ({y_zone.sum()} pannes)")
 
-with open("modele_pannes.pkl", "wb") as f:
+with open("failure_model.pkl", "wb") as f:
     pickle.dump(model, f)
 with open("scaler.pkl", "wb") as f:
     pickle.dump(scaler, f)
-with open("modeles_zones.pkl", "wb") as f:
+with open("zone_models.pkl", "wb") as f:
     pickle.dump(modeles_zones, f)
 
 print("\n✅ Tous les modèles sauvegardés !")

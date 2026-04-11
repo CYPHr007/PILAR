@@ -6,8 +6,9 @@ BROKER = "broker.hivemq.com"
 PORT = 1883
 TOPIC = "pilar/capteurs"
 
-# Change avec ton URL Railway ou localhost
-PILAR_URL = "https://pilar-production-a05f.up.railway.app/predire"
+# Set PILAR_URL env var or edit directly for your deployment
+import os as _os
+PILAR_URL = _os.environ.get("PILAR_URL", "http://127.0.0.1:5000/predire")
 
 def on_connect(client, userdata, flags, rc):
     print(f"✅ Connecté au broker MQTT")

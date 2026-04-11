@@ -7,7 +7,7 @@
 #
 # Bundles:
 #   - launcher.py        (system tray entry point)
-#   - etape7.py          (Flask web app)
+#   - app.py          (Flask web app)
 #   - config.py          (configuration constants)
 #   - All .pkl model files
 #   - static/ directory
@@ -27,6 +27,9 @@ datas = []
 # Include all sklearn data files (e.g. joblib compressed models, etc.)
 datas += collect_data_files('sklearn')
 
+# xgboost data files: VERSION (required at import time), xgboost.dll, py.typed
+datas += collect_data_files('xgboost')
+
 # ML model files
 for pkl in BASE.glob("*.pkl"):
     datas.append((str(pkl), "."))
@@ -40,9 +43,20 @@ static_dir = BASE / "static"
 if static_dir.exists():
     datas.append((str(static_dir), "static"))
 
-# Config
-datas.append((str(BASE / "config.py"),   "."))
-datas.append((str(BASE / "etape7.py"),   "."))
+# Config + calibrator
+datas.append((str(BASE / "config.py"),        "."))
+datas.append((str(BASE / "app.py"),           "."))
+datas.append((str(BASE / "pilar_calibrator.py"), "."))
+
+# Agents package
+agents_dir = BASE / "agents"
+if agents_dir.exists():
+    datas.append((str(agents_dir), "agents"))
+
+# Modelfiles (Ollama few-shot definitions)
+modelfiles_dir = BASE / "modelfiles"
+if modelfiles_dir.exists():
+    datas.append((str(modelfiles_dir), "modelfiles"))
 
 # ── Hidden imports ────────────────────────────────────────────────────────────
 # Flask and its ecosystem are not always auto-detected
@@ -108,6 +122,22 @@ hidden_imports = [
     "urllib.request",
     "urllib.error",
     "threading",
+    # Agents + Ollama
+    "pilar_calibrator",
+    "agents",
+    "agents.orchestrator",
+    "agents.config",
+    "agents.sla_tracker",
+    "agents.diagnostic_agent",
+    "agents.maintenance_agent",
+    "agents.alert_agent",
+    "requests",
+    "autogen_agentchat",
+    "autogen_agentchat.agents",
+    "autogen_agentchat.teams",
+    "autogen_agentchat.conditions",
+    "autogen_ext",
+    "autogen_ext.models.openai",
 ]
 
 # ── Main launcher analysis ─────────────────────────────────────────────────────

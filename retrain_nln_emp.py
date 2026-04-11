@@ -14,7 +14,7 @@ Workflow:
   3. Run this script:
        python retrain_nln_emp.py ./nln_sample
 
-The script replaces the MOT entry in modeles_zones.pkl with a classifier
+The script replaces the MOT entry in zone_models.pkl with a classifier
 trained on real pump motor-current data, then updates model_meta.json.
 """
 import sys, os, pickle, json, warnings, datetime
@@ -30,7 +30,7 @@ warnings.filterwarnings('ignore')
 
 # ── CONFIG ────────────────────────────────────────────────────────────────────
 SAMPLE_DIR = Path(sys.argv[1]) if len(sys.argv) > 1 else Path('./nln_sample')
-ZONES_PKL  = sys.argv[2] if len(sys.argv) > 2 else 'modeles_zones.pkl'
+ZONES_PKL  = sys.argv[2] if len(sys.argv) > 2 else 'zone_models.pkl'
 SCALER_PKL = 'scaler.pkl'
 
 # Max rows to read per CSV window (20 kHz × 15 s = 300 000 rows; 50 k is plenty for RMS)
@@ -290,8 +290,8 @@ print(f'  CV recall ({n_splits}-fold): {cv_scores.mean()*100:.1f}% ± {cv_scores
 print(classification_report(y_mot, mot_clf.predict(X_sc),
                              target_names=['Normal/Other', 'MOT Fault'], zero_division=0))
 
-# ── 5. UPDATE modeles_zones.pkl ───────────────────────────────────────────────
-print('\n[5/5] Updating modeles_zones.pkl...')
+# ── 5. UPDATE zone_models.pkl ───────────────────────────────────────────────
+print('\n[5/5] Updating zone_models.pkl...')
 try:
     with open(ZONES_PKL, 'rb') as f:
         modeles_zones = pickle.load(f)

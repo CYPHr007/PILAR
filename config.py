@@ -1,3 +1,8 @@
+# PILAR — Predictive Maintenance for Industrial Pumps
+# Author  : CYPHR007
+# License : MIT — see LICENSE
+# Source  : https://github.com/CYPHR007/PILAR
+
 """
 Pilar — Central Configuration
 ==============================
@@ -6,7 +11,7 @@ through 7 000 lines of app code. Grouped by concern.
 """
 
 # ── APP ───────────────────────────────────────────────────────────────────────
-APP_VERSION  = '4.0'
+APP_VERSION  = '1.3.0'
 SESSION_DAYS = 3650      # session cookie lifetime (10 years — accounts persist indefinitely)
 
 # ── SECURITY / RATE LIMITING ──────────────────────────────────────────────────
@@ -99,7 +104,7 @@ NON_CENTRIFUGE_TYPES = {
 RUL_SCALE_FACTOR = 5000.0 / 361.0   # ~13.85 h/cycle
 
 # ── AUTO-RETRAIN ──────────────────────────────────────────────────────────────
-RETRAIN_TRIGGER = 150   # fire auto-retrain after this many new analyses
+RETRAIN_TRIGGER = 5000  # fire auto-retrain after this many new analyses (high: avoid corrupting universal model)
 MIN_TRAIN_ROWS  = 50    # minimum DB rows required to attempt a retrain
 
 # ── AI CHAT ───────────────────────────────────────────────────────────────────

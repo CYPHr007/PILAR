@@ -3,7 +3,7 @@ services:
     name: pilar
     runtime: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn -w 2 -b 0.0.0.0:$PORT --timeout 120 etape7:app
+    startCommand: gunicorn -w 2 -b 0.0.0.0:$PORT --timeout 120 app:app
     envVars:
       - key: SECRET_KEY
         generateValue: true

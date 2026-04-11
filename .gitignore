@@ -7,3 +7,23 @@ instance/
 .env
 *.log
 .DS_Store
+
+# Compiled models — regenerate with retrain scripts
+*.pkl
+
+# Flask secret key (auto-generated on first run)
+pilar_secret.key
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# Desktop browser profile (Edge sessions)
+edge_data/
+
+# Derived training data
+nln_emp_features.csv
+
+# Inno Setup output
+*.exe

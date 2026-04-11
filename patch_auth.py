@@ -1,13 +1,13 @@
-# patch_auth.py — replace auth pages in etape7.py
+# patch_auth.py — replace auth pages in app.py
 # Uses q3='"""' trick to avoid triple-quote conflicts
 
-with open(r'C:\Users\info\prediction_pannes\prediction_pannes\etape7.py', 'r', encoding='utf-8') as f:
+with open(r'C:\Users\info\prediction_pannes\prediction_pannes\app.py', 'r', encoding='utf-8') as f:
     src = f.read()
 
 Q = '"""'  # triple double-quote — used to build strings that contain """
 QS = "'''" # triple single-quote
 
-# ── HTML for _AUTH_HEAD (content between the triple-quotes in etape7.py) ─────
+# ── HTML for _AUTH_HEAD (content between the triple-quotes in app.py) ─────
 AUTH_HEAD_HTML = r"""<!DOCTYPE html><html lang="fr"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#08090c"><title>PILAR</title>
@@ -288,6 +288,6 @@ src = src.replace(
 print("Step 5 done: / route redirects to /monitor")
 
 # ── Write ──────────────────────────────────────────────────────────────────────
-with open(r'C:\Users\info\prediction_pannes\prediction_pannes\etape7.py', 'w', encoding='utf-8') as f:
+with open(r'C:\Users\info\prediction_pannes\prediction_pannes\app.py', 'w', encoding='utf-8') as f:
     f.write(src)
 print(f"Done. File size: {len(src):,} chars")
