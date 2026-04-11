@@ -4,7 +4,7 @@
 ; Requires Inno Setup 6.x or 7.x
 
 #define AppName       "PILAR"
-#define AppVersion    "1.3.0"
+#define AppVersion    "1.3.1"
 #define AppPublisher  "PILAR Predictive Maintenance"
 #define AppURL        "https://github.com/CYPHR007/PILAR"
 #define AppExeName    "PILAR.exe"
@@ -54,6 +54,7 @@ Name: "french";  MessagesFile: "compiler:Languages\French.isl"
 Name: "desktopicon";  Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: checkedonce
 Name: "startupentry"; Description: "Lancer PILAR au démarrage de Windows"; GroupDescription: "Démarrage"; Flags: unchecked
 Name: "addtopath";    Description: "Ajouter 'pilar' au PATH (utilisation en terminal)"; GroupDescription: "Terminal"; Flags: unchecked
+Name: "installollama"; Description: "Télécharger Ollama (requis pour les agents IA - diagnostic et maintenance)"; GroupDescription: "Agents IA (recommandé)"; Flags: checkedonce
 
 [Files]
 ; The entire PyInstaller output (PILAR.exe + _internal/)
@@ -80,6 +81,8 @@ Root: HKCU; Subkey: "Environment"; ValueType: expandsz; ValueName: "Path"; \
   Tasks: addtopath
 
 [Run]
+; Open Ollama download page if user opted in (auto-detected: skipped if already installed)
+Filename: "https://ollama.com/download/windows"; Description: "Télécharger Ollama (site officiel)"; Flags: shellexec nowait postinstall skipifsilent; Tasks: installollama; Check: NeedsOllama
 ; Launch after install
 Filename: "{app}\{#AppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(AppName, '&', '&&')}}"; Flags: nowait postinstall
 
@@ -124,6 +127,16 @@ begin
   Exec('taskkill', '/IM {#AppExeName} /F', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
   Sleep(1200);
   Result := True;
+end;
+
+// Check if Ollama is already installed — skip the download prompt if so
+function NeedsOllama(): Boolean;
+var
+  LocalOllama, ProgOllama: string;
+begin
+  LocalOllama := ExpandConstant('{localappdata}\Programs\Ollama\ollama.exe');
+  ProgOllama  := ExpandConstant('{pf}\Ollama\ollama.exe');
+  Result := not (FileExists(LocalOllama) or FileExists(ProgOllama));
 end;
 
 // Check that the app dir is not already in PATH (avoids duplicates)

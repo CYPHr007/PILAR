@@ -483,6 +483,21 @@ def main():
     # 3. Check for updates in background (non-blocking)
     threading.Thread(target=_check_update, daemon=True, name="updater").start()
 
+    # 3b. Bootstrap PILAR AI agents (Ollama + pilar-diag/-maintenance/-alert)
+    #     First run only: auto-pulls llama3.2 and creates the 3 custom models
+    #     from bundled Modelfiles. Shows install dialog if Ollama is missing.
+    def _bootstrap_notify(title, msg):
+        if _tray_icon:
+            try:
+                _tray_icon.notify(msg, title)
+            except Exception:
+                pass
+    try:
+        import pilar_bootstrap
+        pilar_bootstrap.bootstrap_async(notify=_bootstrap_notify)
+    except Exception as e:
+        print(f"[PILAR] Bootstrap init failed: {e}")
+
     # 4. Tray icon en thread detache (pywebview doit etre dans le main thread)
     icon_image = _make_icon(64)
     _tray_icon = pystray.Icon(

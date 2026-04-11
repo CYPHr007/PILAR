@@ -47,6 +47,7 @@ if static_dir.exists():
 datas.append((str(BASE / "config.py"),        "."))
 datas.append((str(BASE / "app.py"),           "."))
 datas.append((str(BASE / "pilar_calibrator.py"), "."))
+datas.append((str(BASE / "pilar_bootstrap.py"),  "."))
 
 # Agents package
 agents_dir = BASE / "agents"
@@ -124,6 +125,7 @@ hidden_imports = [
     "threading",
     # Agents + Ollama
     "pilar_calibrator",
+    "pilar_bootstrap",
     "agents",
     "agents.orchestrator",
     "agents.config",
