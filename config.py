@@ -11,7 +11,7 @@ through 7 000 lines of app code. Grouped by concern.
 """
 
 # ── APP ───────────────────────────────────────────────────────────────────────
-APP_VERSION  = '1.3.1'
+APP_VERSION  = '1.3.2'
 SESSION_DAYS = 3650      # session cookie lifetime (10 years — accounts persist indefinitely)
 
 # ── SECURITY / RATE LIMITING ──────────────────────────────────────────────────

@@ -70,6 +70,25 @@ Open `http://localhost:5000`.
 | `SMTP_PASS` | No | Email password |
 | `ANTHROPIC_API_KEY` | No | Enables AI chat assistant |
 | `RAILWAY_ENVIRONMENT` | Auto | Set by Railway — enables HTTPS cookie |
+| `PILAR_ENABLE_SCHEDULER` | No | `1` by default; set to `0` to disable scheduled jobs in this process |
+
+---
+
+## Scheduler Leadership
+
+Weekly PDF reports and weekly auto-retrain now use a single-leader scheduler lock, so
+multi-worker Gunicorn deployments do not run the same cron job twice.
+
+- PostgreSQL deployments use a database advisory lock
+- SQLite and desktop deployments use a local file lock
+- `/api/health` now exposes scheduler state
+
+To run scheduled jobs in a dedicated process instead of the web workers:
+
+```bash
+PILAR_ENABLE_SCHEDULER=0 gunicorn etape7:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120
+python pilar_scheduler.py
+```
 
 ---
 

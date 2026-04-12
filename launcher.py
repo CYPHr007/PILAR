@@ -447,11 +447,30 @@ def action_quit(icon, item):
     icon.stop()
 
 
+def action_reset_agents(icon, item):
+    """Delete bootstrap markers so AI agent setup runs again on next launch."""
+    import ctypes
+    try:
+        import pilar_bootstrap
+        pilar_bootstrap.reset_bootstrap()
+        ctypes.windll.user32.MessageBoxW(
+            0,
+            "Configuration des agents IA réinitialisée.\n\n"
+            "Redémarrez PILAR pour relancer la configuration automatique.",
+            "PILAR — Agents IA",
+            0x40,  # MB_ICONINFO
+        )
+    except Exception as e:
+        ctypes.windll.user32.MessageBoxW(
+            0, f"Erreur : {e}", "PILAR — Agents IA", 0x10)
+
+
 def _build_menu():
     return pystray.Menu(
         pystray.MenuItem("Ouvrir PILAR", action_open, default=True),
         pystray.Menu.SEPARATOR,
         pystray.MenuItem("Rechercher les mises à jour…", action_check_update),
+        pystray.MenuItem("Réinitialiser les agents IA…", action_reset_agents),
         pystray.Menu.SEPARATOR,
         pystray.MenuItem("Quitter PILAR (arrêter la surveillance)", action_quit),
     )
@@ -483,7 +502,19 @@ def main():
     # 3. Check for updates in background (non-blocking)
     threading.Thread(target=_check_update, daemon=True, name="updater").start()
 
-    # 3b. Bootstrap PILAR AI agents (Ollama + pilar-diag/-maintenance/-alert)
+    # 4. Tray icon en thread detache (pywebview doit etre dans le main thread)
+    #    Must be created BEFORE bootstrap so tray notifications work.
+    icon_image = _make_icon(64)
+    _tray_icon = pystray.Icon(
+        name="pilar",
+        icon=icon_image,
+        title="PILAR",
+        menu=_build_menu(),
+    )
+    _tray_icon.run_detached()
+    print("[PILAR] Tray icon running")
+
+    # 4b. Bootstrap PILAR AI agents (Ollama + pilar-diag/-maintenance/-alert)
     #     First run only: auto-pulls llama3.2 and creates the 3 custom models
     #     from bundled Modelfiles. Shows install dialog if Ollama is missing.
     def _bootstrap_notify(title, msg):
@@ -497,17 +528,6 @@ def main():
         pilar_bootstrap.bootstrap_async(notify=_bootstrap_notify)
     except Exception as e:
         print(f"[PILAR] Bootstrap init failed: {e}")
-
-    # 4. Tray icon en thread detache (pywebview doit etre dans le main thread)
-    icon_image = _make_icon(64)
-    _tray_icon = pystray.Icon(
-        name="pilar",
-        icon=icon_image,
-        title="PILAR",
-        menu=_build_menu(),
-    )
-    _tray_icon.run_detached()
-    print("[PILAR] Tray icon running")
 
     # 5. Wire notification callback into app so background monitor
     #    can send tray notifications

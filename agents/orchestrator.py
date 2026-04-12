@@ -13,6 +13,7 @@ Falls back to rule-based logic if Ollama is not running.
 """
 
 import asyncio
+import re
 import time
 import requests
 import warnings
@@ -32,6 +33,12 @@ from agents.config import MODELS, MODELS_FALLBACK, SLA, ZONE_LABELS
 from agents import sla_tracker
 
 OLLAMA_URL = "http://localhost:11434"
+
+# Number of LLM agents in the pipeline (used for SLA budget).
+PIPELINE_AGENTS = 3
+
+# Hard ceiling per agent turn before we bail out and fall back to rules.
+# Derived from SLA[agent_response_seconds] at call time.
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -54,10 +61,11 @@ def _available_models() -> set:
     return set()
 
 
-def _resolve_model(model_key: str) -> str:
+def _resolve_model(model_key: str, available: set = None) -> str:
     """Use custom pilar-* model if available, else fall back to base model."""
     preferred = MODELS[model_key]
-    available = _available_models()
+    if available is None:
+        available = _available_models()
     if preferred.split(":")[0] in available:
         return preferred
     fallback = MODELS_FALLBACK.get(model_key, "llama3.2")
@@ -65,9 +73,9 @@ def _resolve_model(model_key: str) -> str:
     return fallback
 
 
-def _make_client(model_key: str):
+def _make_client(model_key: str, available: set = None):
     return OpenAIChatCompletionClient(
-        model=_resolve_model(model_key),
+        model=_resolve_model(model_key, available),
         base_url=f"{OLLAMA_URL}/v1",
         api_key="ollama",
         model_capabilities={
@@ -125,6 +133,51 @@ def _rule_alert(machine_name: str, data: dict, diagnosis: str) -> str:
             f"Connectez-vous sur PILAR pour le detail complet.")
 
 
+# Matches "1.", "1)", "1:", "10.", "  2) ", etc.
+_STEP_RE = re.compile(r"^\s*(\d{1,2})[.)\]:]\s*(.+)$")
+
+
+def _parse_steps(plan_text: str) -> list:
+    """Robust step parser — handles 1-99 numbering, unicode, empty lines."""
+    steps = []
+    for line in (plan_text or "").splitlines():
+        m = _STEP_RE.match(line)
+        if m:
+            body = m.group(2).strip()
+            if body:
+                steps.append(body)
+    return steps
+
+
+async def _run_agent_turn(client, agent_name: str, system_message: str,
+                          task: str, timeout: float):
+    """
+    Run one agent turn with a hard timeout and guaranteed client cleanup.
+    Returns the assistant's reply text, or raises on timeout/error.
+    Caller is responsible for *not* reusing the client on failure.
+    """
+    try:
+        agent = AssistantAgent(
+            name=agent_name,
+            model_client=client,
+            system_message=system_message,
+        )
+        team = RoundRobinGroupChat(
+            [agent],
+            termination_condition=MaxMessageTermination(2),
+        )
+        result = await asyncio.wait_for(team.run(task=task), timeout=timeout)
+        return next(
+            (m.content for m in result.messages if m.source != "user"),
+            "",
+        )
+    finally:
+        try:
+            await client.close()
+        except Exception:
+            pass
+
+
 # ── AutoGen async pipeline ────────────────────────────────────────────────────
 
 async def _autogen_pipeline(machine_name: str, data: dict) -> dict:
@@ -143,88 +196,74 @@ async def _autogen_pipeline(machine_name: str, data: dict) -> dict:
         f"Heures: {data.get('heure_fonctionnement',0):.0f}h"
     )
 
-    # ── Step 1: Diagnostic (llama3.2 -- fast) ────────────────────────────
-    diag_client = _make_client("diagnostic")
-    diag_agent  = AssistantAgent(
-        name="DiagnosticAgent",
-        model_client=diag_client,
-        system_message=(
-            "Tu es expert en maintenance industrielle de machines tournantes. "
-            "Quand tu recois des donnees capteurs, reponds EXACTEMENT en 3 lignes:\n"
-            "DIAGNOSTIC: (1 phrase)\n"
-            "CAUSE: (1 phrase)\n"
-            "URGENCE: Immediate / 48h / Planifie\n"
-            "Reponds en francais. Sois concis."
-        ),
-    )
-    diag_team   = RoundRobinGroupChat(
-        [diag_agent],
-        termination_condition=MaxMessageTermination(2)
-    )
-    diag_result = await diag_team.run(task=f"Analyse ces donnees:\n{sensor_text}")
-    diag_text   = next(
-        (m.content for m in diag_result.messages if m.source != "user"),
-        _rule_diagnosis(data)
-    )
-    await diag_client.close()
+    per_agent_timeout = float(SLA["agent_response_seconds"])
 
-    # ── Step 2: Maintenance plan (mistral -- quality) ─────────────────────
-    maint_client = _make_client("maintenance")
-    maint_agent  = AssistantAgent(
-        name="MaintenanceAgent",
-        model_client=maint_client,
-        system_message=(
-            "Tu es planificateur de maintenance industrielle. "
-            "Propose un plan en 5 etapes ordonnees. Format EXACT:\n"
-            "DELAI: Immediate / 48h / Planifie\n"
-            "PIECES: piece1, piece2, piece3\n"
-            "1. etape\n2. etape\n3. etape\n4. etape\n5. etape\n"
-            "Reponds en francais. Sois precis et court."
-        ),
-    )
-    maint_team   = RoundRobinGroupChat(
-        [maint_agent],
-        termination_condition=MaxMessageTermination(2)
-    )
-    maint_result = await maint_team.run(
-        task=f"Diagnostic: {diag_text}\nZone: {zone_fr} | Risque: {risk:.0f}%"
-    )
-    plan_text    = next(
-        (m.content for m in maint_result.messages if m.source != "user"), ""
-    )
-    await maint_client.close()
+    # Resolve models once (avoids 3 separate /api/tags round-trips)
+    available = _available_models()
+
+    # ── Step 1: Diagnostic (llama3.2 -- fast) ────────────────────────────
+    try:
+        diag_text = await _run_agent_turn(
+            _make_client("diagnostic", available),
+            "DiagnosticAgent",
+            (
+                "Tu es expert en maintenance industrielle de machines tournantes. "
+                "Quand tu recois des donnees capteurs, reponds EXACTEMENT en 3 lignes:\n"
+                "DIAGNOSTIC: (1 phrase)\n"
+                "CAUSE: (1 phrase)\n"
+                "URGENCE: Immediate / 48h / Planifie\n"
+                "Reponds en francais. Sois concis."
+            ),
+            f"Analyse ces donnees:\n{sensor_text}",
+            per_agent_timeout,
+        )
+    except asyncio.TimeoutError:
+        print("[Orchestrator] DiagnosticAgent timeout -- rule-based fallback")
+        diag_text = _rule_diagnosis(data)
+    if not diag_text:
+        diag_text = _rule_diagnosis(data)
+
+    # ── Step 2: Maintenance plan ─────────────────────────────────────────
+    try:
+        plan_text = await _run_agent_turn(
+            _make_client("maintenance", available),
+            "MaintenanceAgent",
+            (
+                "Tu es planificateur de maintenance industrielle. "
+                "Propose un plan en 5 etapes ordonnees. Format EXACT:\n"
+                "DELAI: Immediate / 48h / Planifie\n"
+                "PIECES: piece1, piece2, piece3\n"
+                "1. etape\n2. etape\n3. etape\n4. etape\n5. etape\n"
+                "Reponds en francais. Sois precis et court."
+            ),
+            f"Diagnostic: {diag_text}\nZone: {zone_fr} | Risque: {risk:.0f}%",
+            per_agent_timeout,
+        )
+    except asyncio.TimeoutError:
+        print("[Orchestrator] MaintenanceAgent timeout -- rule-based fallback")
+        plan_text = ""
 
     # ── Step 3: Alert message (llama3.2 -- fast) ─────────────────────────
-    alert_client = _make_client("alert")
-    alert_agent  = AssistantAgent(
-        name="AlertAgent",
-        model_client=alert_client,
-        system_message=(
-            "Tu rediges des alertes de maintenance industrielle professionnelles. "
-            "4 lignes max. Commence par CRITIQUE: ou ATTENTION: "
-            "Reponds en francais. Pas de markdown."
-        ),
-    )
-    alert_team   = RoundRobinGroupChat(
-        [alert_agent],
-        termination_condition=MaxMessageTermination(2)
-    )
-    alert_result = await alert_team.run(
-        task=(f"Machine: {machine_name} | Risque: {risk:.0f}%\n"
-              f"Diagnostic: {diag_text}")
-    )
-    alert_text   = next(
-        (m.content for m in alert_result.messages if m.source != "user"),
-        _rule_alert(machine_name, data, diag_text)
-    )
-    await alert_client.close()
+    try:
+        alert_text = await _run_agent_turn(
+            _make_client("alert", available),
+            "AlertAgent",
+            (
+                "Tu rediges des alertes de maintenance industrielle professionnelles. "
+                "4 lignes max. Commence par CRITIQUE: ou ATTENTION: "
+                "Reponds en francais. Pas de markdown."
+            ),
+            f"Machine: {machine_name} | Risque: {risk:.0f}%\nDiagnostic: {diag_text}",
+            per_agent_timeout,
+        )
+    except asyncio.TimeoutError:
+        print("[Orchestrator] AlertAgent timeout -- rule-based fallback")
+        alert_text = _rule_alert(machine_name, data, diag_text)
+    if not alert_text:
+        alert_text = _rule_alert(machine_name, data, diag_text)
 
-    # Parse steps from plan
-    steps = []
-    for line in plan_text.split("\n"):
-        line = line.strip()
-        if line and line[0].isdigit() and len(line) > 2 and line[1] in ".):":
-            steps.append(line[2:].strip())
+    # Parse steps from plan (robust 1-99 numbering)
+    steps = _parse_steps(plan_text)
     if not steps:
         steps = ZONE_PLANS.get(data.get("zone", ""), ["Inspection generale"])
 
@@ -252,8 +291,14 @@ def run_agents(machine_name: str, sensor_data: dict,
     risk = data.get("risk_score", 0)
 
     if HAS_AUTOGEN and _ollama_available():
+        overall_timeout = float(SLA["agent_response_seconds"]) * PIPELINE_AGENTS
         try:
-            ag = asyncio.run(_autogen_pipeline(machine_name, data))
+            ag = asyncio.run(
+                asyncio.wait_for(
+                    _autogen_pipeline(machine_name, data),
+                    timeout=overall_timeout,
+                )
+            )
             diagnosis_text = ag["diagnosis"]
             alert_msg      = ag["alert_msg"]
             steps          = ag["steps"]
@@ -279,7 +324,7 @@ def run_agents(machine_name: str, sensor_data: dict,
 
     sla_tracker.record(
         "Orchestrator", "pipeline_ms", total_ms,
-        SLA["agent_response_seconds"] * 3 * 1000,
+        SLA["agent_response_seconds"] * PIPELINE_AGENTS * 1000,
         f"machine={machine_name} source={source}"
     )
 
@@ -311,7 +356,7 @@ def run_agents(machine_name: str, sensor_data: dict,
             "steps":     steps,
             "source":    source,
         },
-        "sla_ok":   total_ms <= SLA["agent_response_seconds"] * 3 * 1000,
+        "sla_ok":   total_ms <= SLA["agent_response_seconds"] * PIPELINE_AGENTS * 1000,
         "total_ms": round(total_ms),
     }
 

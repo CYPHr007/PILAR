@@ -756,13 +756,18 @@ def _trim_to_n(x_scaled, n):
         return x_scaled[:, :n]
     return x_scaled
 
-def _compute_rul(x_scaled):
-    """Return estimated remaining useful life in hours, or None."""
+def _compute_rul(donnees_raw):
+    """Return estimated remaining useful life in hours, or None.
+    donnees_raw: unscaled DataFrame (from _build_model_input) — rul_scaler
+    expects raw sensor values, NOT data already scaled by the main scaler.
+    """
     if _rul_model is None or _rul_scaler is None:
         return None
     try:
         n = getattr(_rul_scaler, 'n_features_in_', 8)
-        x_rul = _rul_scaler.transform(_trim_to_n(x_scaled, n))
+        # Take the first n raw features (the 8 core sensor columns)
+        raw = donnees_raw.iloc[:, :n].values if hasattr(donnees_raw, 'iloc') else donnees_raw[:, :n]
+        x_rul = _rul_scaler.transform(raw)
         cycles = float(np.clip(_rul_model.predict(x_rul)[0], 0, None))
         return round(cycles * _RUL_SCALE, 1)
     except Exception as _e:
@@ -775,9 +780,10 @@ def _compute_anomaly_score(x_scaled):
         return None
     try:
         n = getattr(_iso_forest, 'n_features_in_', 8)
-        raw = float(_iso_forest.score_samples(_trim_to_n(x_scaled, n))[0])
-        # score_samples: ~0.15 = very normal, ~-0.5 = very anomalous
-        return round(min(100.0, max(0.0, (0.15 - raw) / 0.65 * 100)), 1)
+        # decision_function: positive = inlier (normal), negative = outlier (anomalous)
+        decision = float(_iso_forest.decision_function(_trim_to_n(x_scaled, n))[0])
+        # Map to 0–100: decision ~0 = borderline, ~-0.15 = very anomalous
+        return round(min(100.0, max(0.0, -decision / 0.15 * 100)), 1)
     except Exception as _e:
         print(f"[Pilar] IsoForest score error: {_e}")
         return None
@@ -4408,31 +4414,46 @@ var _ADP_LBL_FR={vibration:'Vibration (mm/s)',temp_palier:'Temp. palier (°C)',d
 var _ADP_LBL_EN={vibration:'Vibration (mm/s)',temp_palier:'Bearing temp (°C)',debit:'Flow rate (m³/h)',pression_entree:'Inlet pressure (bar)',pression_sortie:'Outlet pressure (bar)',courant_moteur:'Motor current (A)',temp_moteur:'Motor temp (°C)',heure_fonctionnement:'Run hours (h)',temperature_ambiante:'Ambient temp (°C)',niveau_huile:'Oil level (%)',tension_reseau:'Supply voltage (V)'};
 var _ADP_OUT={vibration:'vibration_mms',temp_palier:'bearing_temp_c',debit:'flow_rate_m3h',pression_entree:'inlet_pressure_bar',pression_sortie:'outlet_pressure_bar',courant_moteur:'motor_current_a',temp_moteur:'motor_temp_c',heure_fonctionnement:'run_hours_h',temperature_ambiante:'ambient_temp_c',niveau_huile:'oil_level_pct',tension_reseau:'supply_voltage_v'};
 
+function _adpApplyCsv(text, fname, nrOverride){
+  _adpRaw=text;
+  var lines=_adpRaw.split('\\n').map(function(s){return s.trim();}).filter(function(s){return s.length>0;});
+  if(lines.length<2)return false;
+  _adpDelim=_csvDelim(lines[0]);
+  _adpHdr=lines[0].split(_adpDelim).map(function(s){return s.trim();});
+  var autoMap=detectCsvMapping(_adpHdr);
+  _adpMap=_adpHdr.map(function(col,idx){
+    var pf=null,unit=null;
+    _ADP_KEYS.forEach(function(k){if(autoMap[k]&&autoMap[k].idx===idx){pf=k;unit=autoMap[k].unit||null;}});
+    var samples=[];
+    for(var r=1;r<Math.min(4,lines.length);r++){var vs=lines[r].split(_adpDelim);if(idx<vs.length)samples.push(vs[idx].trim());}
+    return {col:col,idx:idx,pf:pf,unit:unit,samples:samples};
+  });
+  var nr=(nrOverride!==undefined?nrOverride:lines.length-1);
+  document.getElementById('adpFileName').textContent=fname+' — '+_adpHdr.length+' col · '+nr+' rows';
+  document.getElementById('adpEmpty').style.display='none';
+  document.getElementById('adpMain').style.display='block';
+  adpRenderTable();
+  adpRenderPreview(lines.slice(1,6));
+  return true;
+}
+
 function adpLoad(inp){
   var f=inp.files[0];if(!f)return;
   var rd=new FileReader();
   rd.onload=function(e){
-    _adpRaw=e.target.result;
-    var lines=_adpRaw.split('\\n').map(function(s){return s.trim();}).filter(function(s){return s.length>0;});
-    if(lines.length<2)return;
-    _adpDelim=_csvDelim(lines[0]);
-    _adpHdr=lines[0].split(_adpDelim).map(function(s){return s.trim();});
-    var autoMap=detectCsvMapping(_adpHdr);
-    _adpMap=_adpHdr.map(function(col,idx){
-      var pf=null,unit=null;
-      _ADP_KEYS.forEach(function(k){if(autoMap[k]&&autoMap[k].idx===idx){pf=k;unit=autoMap[k].unit||null;}});
-      var samples=[];
-      for(var r=1;r<Math.min(4,lines.length);r++){var vs=lines[r].split(_adpDelim);if(idx<vs.length)samples.push(vs[idx].trim());}
-      return {col:col,idx:idx,pf:pf,unit:unit,samples:samples};
-    });
-    var nr=lines.length-1;
-    document.getElementById('adpFileName').textContent=f.name+' — '+_adpHdr.length+' col · '+nr+' rows';
-    document.getElementById('adpEmpty').style.display='none';
-    document.getElementById('adpMain').style.display='block';
-    adpRenderTable();
-    adpRenderPreview(lines.slice(1,6));
+    var text=e.target.result;
+    if(!_adpApplyCsv(text, f.name))return;
+    // Save to server (no size limit, survives navigation + app restart)
+    fetch('/api/session_file/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({slot:'adapter',fname:f.name,csv:text})}).catch(function(){});
   };
   rd.readAsText(f);
+}
+
+function _restoreAdpFile(){
+  fetch('/api/session_file/load?slot=adapter').then(function(r){return r.json();}).then(function(d){
+    if(!d.ok||!d.csv)return;
+    _adpApplyCsv(d.csv, d.fname||'restored.csv');
+  }).catch(function(){});
 }
 
 function adpRenderTable(){
@@ -4513,6 +4534,7 @@ function adpReset(){
   document.getElementById('adpInput').value='';
   document.getElementById('adpEmpty').style.display='block';
   document.getElementById('adpMain').style.display='none';
+  fetch('/api/session_file/clear',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({slot:'adapter'})}).catch(function(){});
 }
 
 function adpGetCSV(){
@@ -4603,7 +4625,7 @@ function adpDelFile(id,btn){
   fetch('/api/saved_files/'+id+'/delete',{method:'POST'}).then(function(){adpLoadSaved();});
 }
 
-document.addEventListener('DOMContentLoaded',adpLoadSaved);
+document.addEventListener('DOMContentLoaded',function(){adpLoadSaved();_restoreAdpFile();});
 applyLang();
 </script></body></html>"""
 
@@ -6724,7 +6746,7 @@ def predict_risk(params, threshold=45, return_extra=False, machine_context=None)
     # ── Extra: SHAP explanations ───────────────────────────────────────────────
     shap_explanations = _compute_shap(donnees_scaled)
     # ── Extra: RUL model (NASA C-MAPSS GBT) ───────────────────────────────────
-    rul_hours = _compute_rul(donnees_scaled)
+    rul_hours = _compute_rul(donnees)
     return probabilite, prediction, zones_risque, confidence, missing_keys, anomaly_score, shap_explanations, rul_hours
 
 def envoyer_alerte(email_to, probabilite, zones_risque, data, ack_token=None):

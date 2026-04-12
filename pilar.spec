@@ -30,24 +30,38 @@ datas += collect_data_files('sklearn')
 # xgboost data files: VERSION (required at import time), xgboost.dll, py.typed
 datas += collect_data_files('xgboost')
 
-# ML model files
-for pkl in BASE.glob("*.pkl"):
-    datas.append((str(pkl), "."))
+# ML model files — explicit whitelist avoids shipping test/dev pickles
+ML_PICKLES = [
+    "failure_model.pkl",
+    "isolation_forest.pkl",
+    "rul_model.pkl",
+    "rul_scaler.pkl",
+    "scaler.pkl",
+    "zone_models.pkl",
+]
+for name in ML_PICKLES:
+    p = BASE / name
+    if p.exists():
+        datas.append((str(p), "."))
 
-# JSON metadata
-for json_f in BASE.glob("*.json"):
-    datas.append((str(json_f), "."))
+# JSON metadata — explicit whitelist (avoid package.json, tsconfig.json, etc.)
+JSON_FILES = ["model_meta.json"]
+for name in JSON_FILES:
+    p = BASE / name
+    if p.exists():
+        datas.append((str(p), "."))
 
 # Static assets (templates, CSS, JS, icons)
 static_dir = BASE / "static"
 if static_dir.exists():
     datas.append((str(static_dir), "static"))
 
-# Config + calibrator
-datas.append((str(BASE / "config.py"),        "."))
-datas.append((str(BASE / "app.py"),           "."))
-datas.append((str(BASE / "pilar_calibrator.py"), "."))
-datas.append((str(BASE / "pilar_bootstrap.py"),  "."))
+# Config
+# NOTE: pilar_calibrator and pilar_bootstrap are real Python modules
+# (see hiddenimports below). Do NOT bundle them as data files — that
+# causes two copies and breaks isinstance() checks across modules.
+datas.append((str(BASE / "config.py"), "."))
+datas.append((str(BASE / "app.py"),    "."))
 
 # Agents package
 agents_dir = BASE / "agents"
@@ -192,6 +206,18 @@ coll = COLLECT(
     launcher_a.datas,
     strip=False,
     upx=True,
-    upx_exclude=[],
+    # UPX corrupts several MSVC and xgboost DLLs — exclude them.
+    upx_exclude=[
+        "vcruntime140.dll",
+        "vcruntime140_1.dll",
+        "msvcp140.dll",
+        "msvcp140_1.dll",
+        "msvcp140_2.dll",
+        "concrt140.dll",
+        "python3*.dll",
+        "xgboost.dll",
+        "api-ms-win-*.dll",
+        "ucrtbase.dll",
+    ],
     name="pilar",
 )

@@ -4,7 +4,7 @@
 ; Requires Inno Setup 6.x or 7.x
 
 #define AppName       "PILAR"
-#define AppVersion    "1.3.1"
+#define AppVersion    "1.3.2"
 #define AppPublisher  "PILAR Predictive Maintenance"
 #define AppURL        "https://github.com/CYPHR007/PILAR"
 #define AppExeName    "PILAR.exe"
@@ -73,11 +73,17 @@ Name: "{autodesktop}\{#AppName}";     Filename: "{app}\{#AppExeName}"; IconFilen
 [Registry]
 ; Optional: launch on Windows startup
 Root: HKCU; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "{#AppName}"; ValueData: """{app}\{#AppExeName}"""; Flags: uninsdeletevalue; Tasks: startupentry
-; Add app dir to user PATH so 'pilar' works from any terminal
+; Add app dir to user PATH so 'pilar' works from any terminal.
+; Two variants: preserve olddata if present, else set directly (avoids leading ';').
 Root: HKCU; Subkey: "Environment"; ValueType: expandsz; ValueName: "Path"; \
   ValueData: "{olddata};{app}"; \
   Flags: uninsdeletevalue preservestringtype; \
-  Check: PathNotAdded; \
+  Check: PathNotAdded and HasExistingPath; \
+  Tasks: addtopath
+Root: HKCU; Subkey: "Environment"; ValueType: expandsz; ValueName: "Path"; \
+  ValueData: "{app}"; \
+  Flags: uninsdeletevalue preservestringtype; \
+  Check: PathNotAdded and (not HasExistingPath); \
   Tasks: addtopath
 
 [Run]
@@ -132,22 +138,72 @@ end;
 // Check if Ollama is already installed — skip the download prompt if so
 function NeedsOllama(): Boolean;
 var
-  LocalOllama, ProgOllama: string;
+  Paths: array[0..4] of string;
+  I: Integer;
 begin
-  LocalOllama := ExpandConstant('{localappdata}\Programs\Ollama\ollama.exe');
-  ProgOllama  := ExpandConstant('{pf}\Ollama\ollama.exe');
-  Result := not (FileExists(LocalOllama) or FileExists(ProgOllama));
+  Paths[0] := ExpandConstant('{localappdata}\Programs\Ollama\ollama.exe');
+  Paths[1] := ExpandConstant('{pf}\Ollama\ollama.exe');
+  Paths[2] := ExpandConstant('{pf32}\Ollama\ollama.exe');
+  Paths[3] := ExpandConstant('{userpf}\Ollama\ollama.exe');
+  // winget default install location
+  Paths[4] := ExpandConstant('{localappdata}\Microsoft\WinGet\Links\ollama.exe');
+  Result := True;
+  for I := 0 to 4 do
+    if FileExists(Paths[I]) then
+    begin
+      Result := False;
+      Exit;
+    end;
 end;
 
-// Check that the app dir is not already in PATH (avoids duplicates)
-function PathNotAdded(): Boolean;
+// True if HKCU Environment\Path is set and non-empty.
+function HasExistingPath(): Boolean;
 var
   CurrentPath: string;
-  AppDir: string;
+begin
+  if RegQueryStringValue(HKCU, 'Environment', 'Path', CurrentPath) then
+    Result := Trim(CurrentPath) <> ''
+  else
+    Result := False;
+end;
+
+// Check that the app dir is not already in PATH (avoids duplicates).
+// Splits on ';' and does full-entry compare so "C:\PILAR" does not
+// falsely match "C:\PILARdev".
+function PathNotAdded(): Boolean;
+var
+  CurrentPath, AppDir, Needle, Entry: string;
+  StartPos, SemiPos: Integer;
 begin
   AppDir := ExpandConstant('{app}');
-  if RegQueryStringValue(HKCU, 'Environment', 'Path', CurrentPath) then
-    Result := Pos(Lowercase(AppDir), Lowercase(CurrentPath)) = 0
-  else
+  if not RegQueryStringValue(HKCU, 'Environment', 'Path', CurrentPath) then
+  begin
     Result := True;
+    Exit;
+  end;
+  Needle := Lowercase(Trim(AppDir));
+  CurrentPath := Lowercase(CurrentPath);
+  StartPos := 1;
+  while StartPos <= Length(CurrentPath) do
+  begin
+    SemiPos := Pos(';', Copy(CurrentPath, StartPos, Length(CurrentPath)));
+    if SemiPos = 0 then
+    begin
+      Entry := Trim(Copy(CurrentPath, StartPos, Length(CurrentPath)));
+      if Entry = Needle then
+      begin
+        Result := False;
+        Exit;
+      end;
+      Break;
+    end;
+    Entry := Trim(Copy(CurrentPath, StartPos, SemiPos - 1));
+    if Entry = Needle then
+    begin
+      Result := False;
+      Exit;
+    end;
+    StartPos := StartPos + SemiPos;
+  end;
+  Result := True;
 end;

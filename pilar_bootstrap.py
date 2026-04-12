@@ -19,12 +19,14 @@ import webbrowser
 import subprocess
 import urllib.request
 from pathlib import Path
+from typing import Optional
 
 OLLAMA_URL          = "http://localhost:11434"
 OLLAMA_DOWNLOAD_URL = "https://ollama.com/download/windows"
 BASE_MODEL          = "llama3.2"
 REQUIRED_MODELS     = ["pilar-diag", "pilar-maintenance", "pilar-alert"]
 MARKER_FILENAME     = "pilar_agents_ready.marker"
+DECLINED_FILENAME   = "pilar_ollama_declined.marker"
 
 
 # ── Paths ────────────────────────────────────────────────────────────────────
@@ -43,14 +45,32 @@ def _modelfiles_dir() -> Path:
     return base / "modelfiles"
 
 
-def _marker_path() -> Path:
-    """Writable marker file (local appdata, not install dir)."""
+def _state_dir() -> Path:
     root = Path(os.environ.get("LOCALAPPDATA", _base_dir())) / "PILAR"
     try:
         root.mkdir(parents=True, exist_ok=True)
     except Exception:
         pass
-    return root / MARKER_FILENAME
+    return root
+
+
+def _marker_path() -> Path:
+    """Writable marker file (local appdata, not install dir)."""
+    return _state_dir() / MARKER_FILENAME
+
+
+def _declined_path() -> Path:
+    return _state_dir() / DECLINED_FILENAME
+
+
+def reset_bootstrap() -> None:
+    """Delete markers so bootstrap runs again on next launch."""
+    for p in (_marker_path(), _declined_path()):
+        try:
+            if p.exists():
+                p.unlink()
+        except Exception:
+            pass
 
 
 # ── Ollama detection ─────────────────────────────────────────────────────────
@@ -63,7 +83,7 @@ def _ollama_running() -> bool:
         return False
 
 
-def _ollama_binary() -> Path | None:
+def _ollama_binary() -> Optional[Path]:
     candidates = [
         Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "Ollama" / "ollama.exe",
         Path(os.environ.get("PROGRAMFILES", "C:\\Program Files")) / "Ollama" / "ollama.exe",
@@ -172,7 +192,8 @@ def bootstrap(notify=None) -> None:
     Run once on first launch. Safe to call repeatedly: skips if marker exists.
     `notify(title, msg)` — optional callback for tray notifications.
     """
-    marker = _marker_path()
+    marker   = _marker_path()
+    declined = _declined_path()
     if marker.exists():
         return
 
@@ -186,14 +207,30 @@ def bootstrap(notify=None) -> None:
             _start_ollama_server()
 
     if not _ollama_running():
-        # Ollama not installed — show dialog, open download page, exit
+        # Ollama not installed. Respect prior decline: don't re-prompt.
+        if declined.exists():
+            print("[bootstrap] ollama not running, user previously declined — skipping")
+            return
         if _dialog_install_ollama():
             try:
                 webbrowser.open(OLLAMA_DOWNLOAD_URL)
             except Exception:
                 pass
-        # Do NOT write marker — retry next launch
+            # Not yet ready; retry on next launch after user installs.
+            return
+        # User clicked No — remember that choice.
+        try:
+            declined.write_text("declined\n", encoding="utf-8")
+        except Exception:
+            pass
         return
+
+    # Ollama is up now — if user had previously declined, clear the flag.
+    if declined.exists():
+        try:
+            declined.unlink()
+        except Exception:
+            pass
 
     # 2) Pull base llama3.2 if missing
     available = _available_models()
@@ -205,7 +242,10 @@ def bootstrap(notify=None) -> None:
     # 3) Create pilar-* models from bundled modelfiles
     mfiles_dir = _modelfiles_dir()
     if not mfiles_dir.exists():
-        print(f"[bootstrap] modelfiles dir missing: {mfiles_dir}")
+        msg = f"Fichiers modeles introuvables: {mfiles_dir}"
+        print(f"[bootstrap] {msg}")
+        if notify:
+            notify("PILAR", f"Agents IA indisponibles — {msg}")
         return
 
     available = _available_models()
