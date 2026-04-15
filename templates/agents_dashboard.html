@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PILAR — Agents & SLA</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0d0d0d;color:#e0e0e0;font-family:'Segoe UI',sans-serif;font-size:14px}
+  a{color:#4fc3f7;text-decoration:none}
+  .topbar{background:#111;border-bottom:1px solid #222;padding:12px 24px;display:flex;align-items:center;gap:16px}
+  .topbar h1{font-size:16px;font-weight:600;color:#fff}
+  .topbar .back{color:#888;font-size:13px}
+  .container{max-width:1400px;margin:0 auto;padding:24px}
+
+  /* Status bar */
+  .status-bar{display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap}
+  .status-card{background:#161616;border:1px solid #222;border-radius:8px;padding:14px 20px;flex:1;min-width:140px}
+  .status-card .label{font-size:11px;color:#666;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+  .status-card .value{font-size:24px;font-weight:700}
+  .status-card.ok .value{color:#4caf50}
+  .status-card.warn .value{color:#ff9800}
+  .status-card.breach .value{color:#f44336}
+  .status-card.info .value{color:#4fc3f7}
+
+  /* Agent cards */
+  .section-title{font-size:13px;color:#666;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;margin-top:24px}
+  .agents-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-bottom:24px}
+  .agent-card{background:#161616;border:1px solid #222;border-radius:10px;padding:16px;position:relative;overflow:hidden}
+  .agent-card::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:#333}
+  .agent-card.ok::before{background:#4caf50}
+  .agent-card.warn::before{background:#ff9800}
+  .agent-card.breach::before{background:#f44336}
+  .agent-card.idle::before{background:#555}
+  .agent-name{font-size:13px;font-weight:600;color:#fff;margin-bottom:4px}
+  .agent-model{font-size:11px;color:#555;margin-bottom:10px}
+  .agent-metric{display:flex;justify-content:space-between;font-size:12px;color:#888;margin-top:4px}
+  .agent-metric .val{color:#ccc;font-weight:500}
+  .badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600}
+  .badge.ok{background:#1b3a1e;color:#4caf50}
+  .badge.warn{background:#3a2a0a;color:#ff9800}
+  .badge.breach{background:#3a0e0e;color:#f44336}
+  .badge.idle{background:#1e1e1e;color:#555}
+
+  /* Conversation feed */
+  .conv-feed{display:flex;flex-direction:column;gap:12px}
+  .conv-card{background:#161616;border:1px solid #222;border-radius:10px;overflow:hidden}
+  .conv-header{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #1e1e1e;cursor:pointer;user-select:none}
+  .conv-header:hover{background:#1a1a1a}
+  .conv-machine{font-weight:600;color:#fff;font-size:13px}
+  .conv-meta{font-size:11px;color:#555;margin-left:auto}
+  .conv-risk{font-size:12px;font-weight:700;padding:2px 10px;border-radius:12px}
+  .conv-risk.high{background:#3a0e0e;color:#f44336}
+  .conv-risk.med{background:#3a2a0a;color:#ff9800}
+  .conv-risk.low{background:#1b3a1e;color:#4caf50}
+  .conv-body{display:none;padding:16px}
+  .conv-body.open{display:block}
+  .agent-bubble{margin-bottom:14px}
+  .agent-bubble .who{font-size:11px;font-weight:600;margin-bottom:5px;display:flex;align-items:center;gap:6px}
+  .agent-bubble .who .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+  .dot-diag{background:#4fc3f7}
+  .dot-maint{background:#ab47bc}
+  .dot-alert{background:#ff9800}
+  .agent-bubble .msg{background:#1a1a1a;border-radius:8px;padding:10px 14px;font-size:13px;color:#ccc;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+  .steps-list{list-style:none;counter-reset:steps}
+  .steps-list li{counter-increment:steps;display:flex;gap:8px;align-items:flex-start;padding:5px 0;font-size:13px;color:#ccc}
+  .steps-list li::before{content:counter(steps);background:#1e3a5f;color:#4fc3f7;min-width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+  .source-tag{font-size:10px;color:#444;margin-top:8px}
+
+  /* SLA chart */
+  .sla-table{width:100%;border-collapse:collapse}
+  .sla-table th{text-align:left;padding:8px 12px;font-size:11px;color:#555;text-transform:uppercase;border-bottom:1px solid #1e1e1e}
+  .sla-table td{padding:10px 12px;border-bottom:1px solid #141414;font-size:12px}
+  .sla-table tr:last-child td{border-bottom:none}
+  .bar-wrap{background:#1a1a1a;border-radius:4px;height:6px;width:120px;overflow:hidden}
+  .bar-fill{height:100%;border-radius:4px;transition:width .3s}
+  .bar-fill.ok{background:#4caf50}
+  .bar-fill.warn{background:#ff9800}
+  .bar-fill.breach{background:#f44336}
+
+  .refresh-btn{background:#1e3a5f;color:#4fc3f7;border:1px solid #2a5a8f;border-radius:6px;padding:6px 16px;cursor:pointer;font-size:12px}
+  .refresh-btn:hover{background:#2a4a6f}
+  .empty{color:#444;font-size:13px;text-align:center;padding:40px}
+  .ollama-status{display:flex;align-items:center;gap:8px;font-size:12px}
+  .pulse{width:8px;height:8px;border-radius:50%;animation:pulse 2s infinite}
+  .pulse.green{background:#4caf50;box-shadow:0 0 0 0 rgba(76,175,80,.4)}
+  .pulse.red{background:#f44336}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(76,175,80,.4)}50%{box-shadow:0 0 0 6px rgba(76,175,80,0)}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a class="back" href="/">&#8592; PILAR</a>
+  <h1>Agents &amp; SLA Monitor</h1>
+  <div style="margin-left:auto;display:flex;align-items:center;gap:16px">
+    <div class="ollama-status">
+      <div id="ollamaDot" class="pulse red"></div>
+      <span id="ollamaLabel">Ollama...</span>
+    </div>
+    <button class="refresh-btn" onclick="loadAll()">&#8635; Rafraichir</button>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- Summary cards -->
+  <div class="status-bar" id="summaryCards">
+    <div class="status-card info"><div class="label">Analyses agents</div><div class="value" id="totalConv">—</div></div>
+    <div class="status-card info"><div class="label">Composants SLA</div><div class="value" id="totalComp">—</div></div>
+    <div class="status-card ok" id="cardOk"><div class="label">OK</div><div class="value" id="slaOk">—</div></div>
+    <div class="status-card warn" id="cardWarn"><div class="label">Avertissement</div><div class="value" id="slaWarn">—</div></div>
+    <div class="status-card breach" id="cardBreach"><div class="label">Breach SLA</div><div class="value" id="slaBreach">—</div></div>
+  </div>
+
+  <!-- Agent status cards -->
+  <div class="section-title">Statut des agents</div>
+  <div class="agents-grid" id="agentCards">
+    <div class="agent-card idle">
+      <div class="agent-name">DiagnosticAgent</div>
+      <div class="agent-model">llama3.2 — diagnostic rapide</div>
+      <div class="agent-metric"><span>Statut</span><span class="val"><span class="badge idle">En attente</span></span></div>
+    </div>
+    <div class="agent-card idle">
+      <div class="agent-name">MaintenanceAgent</div>
+      <div class="agent-model">mistral — plan qualite</div>
+      <div class="agent-metric"><span>Statut</span><span class="val"><span class="badge idle">En attente</span></span></div>
+    </div>
+    <div class="agent-card idle">
+      <div class="agent-name">AlertAgent</div>
+      <div class="agent-model">llama3.2 — alertes rapides</div>
+      <div class="agent-metric"><span>Statut</span><span class="val"><span class="badge idle">En attente</span></span></div>
+    </div>
+    <div class="agent-card idle">
+      <div class="agent-name">Orchestrator</div>
+      <div class="agent-model">pipeline complet</div>
+      <div class="agent-metric"><span>Statut</span><span class="val"><span class="badge idle">En attente</span></span></div>
+    </div>
+  </div>
+
+  <!-- SLA table -->
+  <div class="section-title">SLA des composants (24h)</div>
+  <div style="background:#161616;border:1px solid #222;border-radius:10px;overflow:hidden;margin-bottom:24px">
+    <table class="sla-table">
+      <thead><tr>
+        <th>Composant</th><th>Metrique</th>
+        <th>Derniere valeur</th><th>Seuil</th>
+        <th>Performance</th><th>Statut</th><th>Mis a jour</th>
+      </tr></thead>
+      <tbody id="slaTableBody"><tr><td colspan="7" class="empty">Chargement...</td></tr></tbody>
+    </table>
+  </div>
+
+  <!-- Conversation feed -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <div class="section-title" style="margin:0">Conversations agents (dernieres 20)</div>
+    <span style="font-size:11px;color:#444">Cliquez sur une carte pour voir le detail</span>
+  </div>
+  <div class="conv-feed" id="convFeed">
+    <div class="empty">Aucune conversation enregistree. Lancez une analyse dans PILAR.</div>
+  </div>
+
+</div>
+
+<script>
+const AGENT_MODELS = {
+  'DiagnosticAgent': 'llama3.2',
+  'AlertAgent':      'llama3.2',
+  'MaintenanceAgent':'mistral',
+  'Orchestrator':    'pipeline',
+};
+
+async function checkOllama() {
+  try {
+    const r = await fetch('http://localhost:11434/api/tags');
+    if (r.ok) {
+      document.getElementById('ollamaDot').className = 'pulse green';
+      const d = await r.json();
+      const names = (d.models||[]).map(m => m.name.split(':')[0]).join(', ');
+      document.getElementById('ollamaLabel').textContent = 'Ollama: ' + names;
+    }
+  } catch(e) {
+    document.getElementById('ollamaLabel').textContent = 'Ollama hors ligne';
+  }
+}
+
+async function loadSLA() {
+  const r = await fetch('/api/sla');
+  if (!r.ok) return;
+  const d = await r.json();
+  const s = d.summary || {};
+  document.getElementById('totalComp').textContent  = s.total  || 0;
+  document.getElementById('slaOk').textContent      = s.ok     || 0;
+  document.getElementById('slaWarn').textContent    = s.warn   || 0;
+  document.getElementById('slaBreach').textContent  = s.breach || 0;
+
+  // Update agent cards
+  const comps = d.components || [];
+  const agentDiv = document.getElementById('agentCards');
+  agentDiv.innerHTML = '';
+  const agentNames = ['DiagnosticAgent','MaintenanceAgent','AlertAgent','Orchestrator'];
+  agentNames.forEach(name => {
+    const comp = comps.find(c => c.component === name || c.component.startsWith(name));
+    const st   = comp ? comp.status : 'idle';
+    const val  = comp ? Math.round(comp.last_value) : null;
+    const thr  = comp ? Math.round(comp.threshold)  : null;
+    const ts   = comp ? comp.last_ts : null;
+    const model= AGENT_MODELS[name] || '';
+    agentDiv.innerHTML += `
+      <div class="agent-card ${st}">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <div class="agent-name">${name}</div>
+            <div class="agent-model">${model}</div>
+          </div>
+          <span class="badge ${st}">${st === 'idle' ? 'En attente' : st.toUpperCase()}</span>
+        </div>
+        ${val !== null ? `
+        <div class="agent-metric"><span>Temps reponse</span><span class="val">${val >= 1000 ? (val/1000).toFixed(1)+'s' : val+'ms'}</span></div>
+        <div class="agent-metric"><span>Seuil SLA</span><span class="val">${thr >= 1000 ? (thr/1000).toFixed(0)+'s' : thr+'ms'}</span></div>
+        ` : '<div class="agent-metric" style="margin-top:8px"><span>Aucune donnee</span></div>'}
+        ${ts ? `<div style="font-size:10px;color:#444;margin-top:8px">${ts.replace('T',' ').slice(0,16)}</div>` : ''}
+      </div>`;
+  });
+
+  // SLA table
+  const tbody = document.getElementById('slaTableBody');
+  if (!comps.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty">Aucune donnee SLA</td></tr>';
+    return;
+  }
+  tbody.innerHTML = comps.map(c => {
+    const pct = Math.min(100, Math.round((c.last_value / c.threshold) * 100));
+    const barClass = c.status === 'ok' ? 'ok' : c.status === 'warn' ? 'warn' : 'breach';
+    const valFmt = c.last_value >= 1000 ? (c.last_value/1000).toFixed(1)+'s' : Math.round(c.last_value)+'ms';
+    const thrFmt = c.threshold >= 1000 ? (c.threshold/1000).toFixed(0)+'s'  : Math.round(c.threshold)+'ms';
+    const ts = (c.last_ts||'').replace('T',' ').slice(0,16);
+    return `<tr>
+      <td style="color:#ccc;font-weight:500">${c.component}</td>
+      <td style="color:#888">${c.metric}</td>
+      <td style="color:#fff;font-weight:600">${valFmt}</td>
+      <td style="color:#555">${thrFmt}</td>
+      <td><div class="bar-wrap"><div class="bar-fill ${barClass}" style="width:${pct}%"></div></div></td>
+      <td><span class="badge ${c.status}">${c.status.toUpperCase()}</span></td>
+      <td style="color:#444">${ts}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function loadConversations() {
+  const r = await fetch('/api/agents/conversations?limit=20');
+  if (!r.ok) return;
+  const d = await r.json();
+  const convs = d.conversations || [];
+  document.getElementById('totalConv').textContent = convs.length;
+
+  const feed = document.getElementById('convFeed');
+  if (!convs.length) {
+    feed.innerHTML = '<div class="empty">Aucune conversation. Lancez une analyse dans PILAR pour voir les agents en action.</div>';
+    return;
+  }
+
+  feed.innerHTML = convs.map((c, i) => {
+    const risk    = Math.round(c.risk_score || 0);
+    const riskCls = risk >= 75 ? 'high' : risk >= 50 ? 'med' : 'low';
+    const ts      = (c.ts||'').replace('T',' ').slice(0,16);
+    const steps   = Array.isArray(c.steps) ? c.steps : [];
+    const src     = c.source || 'rule_based';
+    const srcIcon = src.includes('ollama') ? '🤖 AutoGen + Ollama' : '⚙️ Regles metier';
+
+    return `
+    <div class="conv-card">
+      <div class="conv-header" onclick="toggleConv(${i})">
+        <div>
+          <div class="conv-machine">${c.machine || 'Machine inconnue'}</div>
+          <div style="font-size:11px;color:#555;margin-top:2px">${ts} &nbsp;|&nbsp; Zone: <b style="color:#888">${c.zone||'—'}</b></div>
+        </div>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:10px">
+          <span class="conv-risk ${riskCls}">Risque ${risk}%</span>
+          <span style="color:#444;font-size:16px" id="chevron-${i}">&#9660;</span>
+        </div>
+      </div>
+      <div class="conv-body" id="conv-body-${i}">
+
+        <div class="agent-bubble">
+          <div class="who"><span class="dot dot-diag"></span><b style="color:#4fc3f7">DiagnosticAgent</b> <span style="color:#444">llama3.2</span></div>
+          <div class="msg">${escHtml(c.diag_text || '—')}</div>
+        </div>
+
+        ${steps.length ? `
+        <div class="agent-bubble">
+          <div class="who"><span class="dot dot-maint"></span><b style="color:#ab47bc">MaintenanceAgent</b> <span style="color:#444">mistral</span></div>
+          <div class="msg">
+            <ul class="steps-list">
+              ${steps.map(s => `<li>${escHtml(s)}</li>`).join('')}
+            </ul>
+          </div>
+        </div>` : ''}
+
+        ${c.alert_text ? `
+        <div class="agent-bubble">
+          <div class="who"><span class="dot dot-alert"></span><b style="color:#ff9800">AlertAgent</b> <span style="color:#444">llama3.2</span></div>
+          <div class="msg">${escHtml(c.alert_text)}</div>
+        </div>` : ''}
+
+        <div class="source-tag">${srcIcon} &nbsp;|&nbsp; ${c.total_ms >= 1000 ? (c.total_ms/1000).toFixed(1)+'s' : c.total_ms+'ms'}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleConv(i) {
+  const body = document.getElementById('conv-body-' + i);
+  const chev = document.getElementById('chevron-' + i);
+  const open = body.classList.toggle('open');
+  chev.innerHTML = open ? '&#9650;' : '&#9660;';
+}
+
+function escHtml(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+
+async function loadAll() {
+  await Promise.all([checkOllama(), loadSLA(), loadConversations()]);
+}
+
+loadAll();
+setInterval(loadAll, 15000);  // auto-refresh every 15s
+</script>
+</body>
+</html>

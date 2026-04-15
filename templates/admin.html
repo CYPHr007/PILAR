@@ -1,0 +1,417 @@
+<!DOCTYPE html><html lang="fr"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pilar Admin</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07090f;--surface:#0e1118;--surface2:#141820;--surface3:#1e2433;
+  --border:#1e2433;--border2:#252d3d;
+  --teal:#0d9488;--teal2:#14b8a6;--teal-dim:rgba(13,148,136,0.08);
+  --red:#dc2626;--red-dim:rgba(220,38,38,0.08);
+  --green:#059669;--green-dim:rgba(5,150,105,0.08);
+  --amber:#d97706;--purple:#bf5af2;
+  --text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;
+  --r:12px;--r-sm:8px;--r-xs:6px;
+}
+body{font-family:-apple-system,'SF Pro Text','Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:0 0 60px}
+nav{background:rgba(14,17,24,0.96);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.logo{font-size:13px;font-weight:700;letter-spacing:0.1em;color:var(--teal2);text-transform:uppercase}
+.nav-right{display:flex;gap:8px;align-items:center}
+.wrap{max-width:1200px;margin:0 auto;padding:24px 16px}
+.kgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:20px}
+.kc{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px}
+.kv{font-size:26px;font-weight:800;letter-spacing:-0.02em;font-variant-numeric:tabular-nums}
+.kl{font-size:10px;font-weight:600;color:var(--text3);letter-spacing:0.06em;text-transform:uppercase;margin-top:4px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:14px}
+.ctitle{font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--text3);margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
+.toolbar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+.toolbar input,.toolbar select{background:rgba(120,120,128,0.15);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:var(--r-sm);font-size:12px;outline:none;transition:border-color .15s}
+.toolbar input{flex:1;min-width:180px}
+.toolbar input:focus,.toolbar select:focus{border-color:var(--teal)}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;padding:8px 12px;color:var(--text3);font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle;color:var(--text2)}
+tr:last-child td{border:none}
+tr:hover td{background:rgba(255,255,255,.015)}
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;white-space:nowrap}
+.b-free{background:rgba(235,235,245,0.07);color:var(--text3);border:1px solid var(--border)}
+.b-starter{background:var(--teal-dim);color:var(--teal2);border:1px solid rgba(13,148,136,0.25)}
+.b-pro{background:rgba(191,90,242,0.1);color:var(--purple);border:1px solid rgba(191,90,242,0.25)}
+.b-admin{background:rgba(217,119,6,0.1);color:var(--amber);border:1px solid rgba(217,119,6,0.25)}
+.b-ok{background:var(--green-dim);color:var(--green);border:1px solid rgba(5,150,105,0.25)}
+.b-warn{background:rgba(217,119,6,0.1);color:var(--amber);border:1px solid rgba(217,119,6,0.25)}
+.b-exp{background:var(--red-dim);color:var(--red);border:1px solid rgba(220,38,38,0.25)}
+.b-ban{background:var(--red-dim);color:var(--red);border:1px solid rgba(220,38,38,0.25)}
+.btn{padding:6px 11px;border:none;border-radius:var(--r-sm);font-size:11px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:4px;transition:opacity .15s,border-color .15s;white-space:nowrap}
+.btn-teal{background:var(--teal);color:#fff}.btn-teal:hover{opacity:.85}
+.btn-ghost{background:var(--surface2);border:1px solid var(--border2);color:var(--text2)}.btn-ghost:hover{border-color:var(--teal);color:var(--teal2)}
+.btn-red{background:var(--red-dim);border:1px solid rgba(220,38,38,0.3);color:var(--red)}.btn-red:hover{background:rgba(220,38,38,0.16)}
+.btn-amber{background:rgba(217,119,6,0.08);border:1px solid rgba(217,119,6,0.25);color:var(--amber)}.btn-amber:hover{opacity:.8}
+.actions{display:flex;gap:4px;flex-wrap:wrap}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:100;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(14px)}
+.overlay.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);padding:28px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.65)}
+.modal-h{font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px}
+.modal-sub{font-size:12px;color:var(--text3);margin-bottom:20px;word-break:break-all}
+label{font-size:10px;font-weight:700;color:var(--text3);display:block;margin-bottom:5px;letter-spacing:0.04em;text-transform:uppercase}
+.fi{width:100%;background:rgba(120,120,128,0.15);border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:var(--r-sm);font-size:13px;margin-bottom:14px;outline:none;transition:border-color .15s}
+.fi:focus{border-color:var(--teal)}
+.plan-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px}
+.plan-opt{padding:12px 6px;border:2px solid var(--border);border-radius:var(--r-sm);text-align:center;cursor:pointer;font-size:12px;font-weight:700;transition:all .15s;background:var(--surface2);color:var(--text3)}.plan-opt:hover{border-color:var(--teal2)}
+.sel-free{border-color:var(--text3)!important;background:rgba(100,116,139,0.08)!important;color:var(--text2)!important}
+.sel-starter{border-color:var(--teal)!important;background:var(--teal-dim)!important;color:var(--teal2)!important}
+.sel-pro{border-color:var(--purple)!important;background:rgba(191,90,242,0.1)!important;color:var(--purple)!important}
+.date-row{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+.date-row input{flex:1;min-width:120px;margin:0}
+.msg{font-size:11px;padding:8px 12px;border-radius:var(--r-sm);margin-bottom:12px;display:none}
+.msg.ok{background:var(--green-dim);border:1px solid rgba(48,209,88,0.25);color:var(--green);display:block}
+.msg.err{background:var(--red-dim);border:1px solid rgba(255,69,58,0.25);color:var(--red);display:block}
+.mfooter{display:flex;gap:10px;margin-top:4px}
+.mfooter .btn{flex:1;justify-content:center;padding:12px}
+.block-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.block-row input{background:rgba(120,120,128,0.15);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:var(--r-sm);font-size:12px;outline:none;flex:1;min-width:160px;transition:border-color .15s}
+.block-row input:focus{border-color:var(--teal)}
+.empty{color:var(--text3);font-size:12px;text-align:center;padding:14px;background:rgba(255,255,255,.02);border-radius:var(--r-sm)}
+.term-wrap{background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden}
+.term-hdr{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;background:var(--surface2);border-bottom:1px solid var(--border)}
+.term-dots{display:flex;gap:5px}.term-dots span{width:9px;height:9px;border-radius:50%}
+.term-out{font-family:'SF Mono','Menlo','Consolas',monospace;font-size:11px;line-height:1.7;padding:12px 14px;min-height:160px;max-height:340px;overflow-y:auto;color:var(--text2);white-space:pre-wrap;word-break:break-all}
+.term-out::-webkit-scrollbar{width:4px}.term-out::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:2px}
+.l-ok{color:var(--green)}.l-err{color:var(--red)}.l-cmd{color:var(--teal2);font-weight:600}
+.term-row{display:flex;align-items:center;gap:8px;padding:8px 14px;border-top:1px solid var(--border)}
+.term-prompt{color:var(--teal2);font-family:'SF Mono','Menlo','Consolas',monospace;font-size:11px;white-space:nowrap}
+.term-inp{flex:1;background:transparent;border:none;color:var(--text);font-family:'SF Mono','Menlo','Consolas',monospace;font-size:11px;outline:none}
+.term-btn{padding:5px 12px;background:var(--teal);border:none;border-radius:var(--r-xs);color:#fff;font-size:11px;font-weight:700;cursor:pointer}.term-btn:hover{opacity:.85}.term-btn:disabled{opacity:.4;cursor:not-allowed}
+.shortcuts{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}
+@media(max-width:640px){.kv{font-size:22px}.toolbar{flex-direction:column}table{display:block;overflow-x:auto}.modal{padding:18px}.plan-grid{grid-template-columns:1fr 1fr 1fr}}
+</style>
+</head>
+<body>
+<nav>
+  <span class="logo">Pilar Admin</span>
+  <div class="nav-right">
+    <a href="/" class="btn btn-ghost">Application</a>
+    <a href="/logout" class="btn btn-ghost">Deconnexion</a>
+  </div>
+</nav>
+<div class="wrap">
+
+<div class="kgrid">
+  <div class="kc"><div class="kv" style="color:var(--teal2)">{{ total_users }}</div><div class="kl">Utilisateurs</div></div>
+  <div class="kc"><div class="kv" style="color:var(--purple)">{{ paid_users }}</div><div class="kl">Payants</div></div>
+  <div class="kc"><div class="kv" style="color:var(--green)">${{ mrr }}</div><div class="kl">MRR</div></div>
+  <div class="kc"><div class="kv">{{ total_analyses }}</div><div class="kl">Analyses</div></div>
+  <div class="kc"><div class="kv" style="color:var(--amber)">{{ expiring_soon }}</div><div class="kl">Expirent &lt;7j</div></div>
+</div>
+
+<div class="card">
+  <div class="ctitle"><span>Gestion utilisateurs</span><span style="font-weight:400;font-size:11px;text-transform:none;letter-spacing:0;color:var(--text3)">{{ total_users }} compte{% if total_users != 1 %}s{% endif %}</span></div>
+  <div class="toolbar">
+    <input type="text" id="searchInput" placeholder="Rechercher par email..." oninput="filterTable()">
+    <select id="planFilter" onchange="filterTable()">
+      <option value="">Tous les plans</option>
+      <option value="free">Free</option>
+      <option value="starter">Starter</option>
+      <option value="pro">Pro</option>
+    </select>
+  </div>
+  <div class="tbl-wrap">
+  <table id="usersTable">
+    <thead><tr><th>Email</th><th>Plan</th><th>Expiration</th><th>Note</th><th>Quota</th><th>Analyses</th><th>Inscrit</th><th>Actions</th></tr></thead>
+    <tbody>
+    {% for u in users %}
+    <tr data-email="{{ u.email|lower }}" data-plan="{{ u.plan }}">
+      <td>
+        <div style="font-weight:600;color:{% if u.is_banned %}var(--red){% else %}var(--text){% endif %};font-size:13px">{{ u.email }}</div>
+        <div style="display:flex;gap:4px;margin-top:3px;flex-wrap:wrap">
+          {% if u.is_admin %}<span class="badge b-admin">admin</span>{% endif %}
+          {% if u.is_banned %}<span class="badge b-ban">banni</span>{% endif %}
+        </div>
+      </td>
+      <td><span class="badge b-{{ u.plan }}">{{ u.plan }}</span></td>
+      <td>{% if u.plan_expires_at %}{% if u.plan_expires_at < now %}<span class="badge b-exp">Expire {{ u.plan_expires_at.strftime('%d/%m/%y') }}</span>{% elif (u.plan_expires_at - now).days < 7 %}<span class="badge b-warn">{{ u.plan_expires_at.strftime('%d/%m/%y') }}</span>{% else %}<span style="font-size:11px">{{ u.plan_expires_at.strftime('%d/%m/%Y') }}</span>{% endif %}{% else %}<span style="color:var(--text3);font-size:11px">—</span>{% endif %}</td>
+      <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;color:var(--text3)">{{ u.plan_note or '—' }}</td>
+      <td style="text-align:center;font-size:12px">{{ u.machine_quota }}</td>
+      <td style="text-align:center;font-size:12px">{{ u.analysis_count }}</td>
+      <td style="font-size:11px;color:var(--text3);white-space:nowrap">{{ u.created_at.strftime('%d/%m/%Y') }}</td>
+      <td>
+        <div class="actions">
+          <button class="btn btn-teal manage-btn"
+            data-uid="{{ u.id }}"
+            data-email="{{ u.email|e }}"
+            data-plan="{{ u.plan }}"
+            data-expires="{{ u.plan_expires_at.strftime('%Y-%m-%d') if u.plan_expires_at else '' }}"
+            data-note="{{ u.plan_note|e if u.plan_note else '' }}"
+            data-quota="{{ u.machine_quota }}">Gerer</button>
+          <a href="/admin/impersonate/{{ u.id }}" class="btn btn-ghost">Voir</a>
+          <button onclick="toggleAdmin({{ u.id }}, '{{ u.email|e }}')" class="btn {% if u.is_admin %}btn-red{% else %}btn-amber{% endif %}">{% if u.is_admin %}Admin -{% else %}Admin +{% endif %}</button>
+          <button onclick="toggleBan({{ u.id }}, '{{ u.email|e }}', {{ 'true' if u.is_banned else 'false' }})" class="btn {% if u.is_banned %}btn-teal{% else %}btn-red{% endif %}">{% if u.is_banned %}Debannir{% else %}Bannir{% endif %}</button>
+          <button onclick="deleteUser({{ u.id }}, '{{ u.email|e }}')" class="btn btn-red">Suppr.</button>
+        </div>
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="ctitle">Emails bloques</div>
+  <div class="block-row">
+    <input id="blockEmailInput" placeholder="email@domaine.com" type="email">
+    <input id="blockReasonInput" placeholder="Raison (optionnel)">
+    <button onclick="blockEmail()" class="btn btn-red">Bloquer</button>
+  </div>
+  {% if banned_emails %}
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Email</th><th>Raison</th><th>Date</th><th></th></tr></thead>
+    <tbody>{% for b in banned_emails %}
+    <tr>
+      <td style="color:var(--red);font-weight:600">{{ b.email }}</td>
+      <td style="color:var(--text3);font-size:11px">{{ b.reason or '—' }}</td>
+      <td style="color:var(--text3);font-size:11px;white-space:nowrap">{{ b.banned_at.strftime('%d/%m/%Y') }}</td>
+      <td><button onclick="unblockEmail({{ b.id }}, '{{ b.email|e }}')" class="btn btn-ghost">Debloquer</button></td>
+    </tr>{% endfor %}</tbody>
+  </table></div>
+  {% else %}<div class="empty">Aucun email bloque.</div>{% endif %}
+</div>
+
+<div class="card">
+  <div class="ctitle">Fichiers utilisateurs</div>
+  <div id="filesMsg" style="font-size:12px;color:var(--text3)">Chargement...</div>
+  <div class="tbl-wrap"><table id="filesTable" style="display:none">
+    <thead><tr><th>Fichier</th><th>Utilisateur</th><th>Lignes</th><th>Date</th><th></th></tr></thead>
+    <tbody id="filesTbody"></tbody>
+  </table></div>
+</div>
+
+<div class="card">
+  <div class="ctitle">Informations systeme</div>
+  <div class="shortcuts">
+    <button class="btn btn-ghost" id="termBtn" onclick="termRun()">Charger les infos systeme</button>
+  </div>
+  <div class="term-wrap">
+    <div class="term-hdr">
+      <div class="term-dots"><span style="background:var(--red)"></span><span style="background:var(--amber)"></span><span style="background:var(--green)"></span></div>
+      <span style="font-size:10px;font-weight:600;color:var(--text3);letter-spacing:0.04em;text-transform:uppercase">PILAR SYSTEM INFO</span>
+    </div>
+    <div class="term-out" id="termOut"><span style="color:var(--text3)">Cliquez sur le bouton pour charger.</span>
+</div>
+  </div>
+</div>
+
+</div>
+
+<div class="overlay" id="overlay" onclick="closeIfOut(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-h" id="modalTitle">Gerer l’abonnement</div>
+    <div class="modal-sub" id="modalSub"></div>
+    <div class="msg" id="modalMsg"></div>
+    <label>Plan</label>
+    <div class="plan-grid">
+      <div class="plan-opt" id="opt-free"    onclick="selectPlan('free')">Free<br><span style="font-size:9px;font-weight:400;opacity:.6">Limite</span></div>
+      <div class="plan-opt" id="opt-starter" onclick="selectPlan('starter')">Starter<br><span style="font-size:9px;font-weight:400">$99/mo</span></div>
+      <div class="plan-opt" id="opt-pro"     onclick="selectPlan('pro')">Pro<br><span style="font-size:9px;font-weight:400">$299/mo</span></div>
+    </div>
+    <label>Expiration</label>
+    <div class="date-row">
+      <input type="date" class="fi" id="expiresInput" style="margin:0">
+      <button onclick="addMonths(1)" class="btn btn-ghost">+1 mois</button>
+      <button onclick="addMonths(3)" class="btn btn-ghost">+3 mois</button>
+      <button onclick="addMonths(12)" class="btn btn-ghost">+1 an</button>
+      <button onclick="document.getElementById('expiresInput').value=''" class="btn btn-ghost">Vider</button>
+    </div>
+    <label>Quota machines</label>
+    <input type="number" class="fi" id="quotaInput" min="0" max="999" style="width:100px">
+    <label>Note paiement</label>
+    <input type="text" class="fi" id="noteInput" placeholder="ex: Virement BNP ref 2026-031">
+    <div class="mfooter">
+      <button onclick="savePlan()" class="btn btn-teal" id="saveBtn">Enregistrer</button>
+      <button onclick="closeModal()" class="btn btn-ghost">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var _uid = null, _plan = 'free';
+
+document.addEventListener('click', function(e) {
+  var btn = e.target.closest('.manage-btn');
+  if (btn) openModal(btn.dataset.uid, btn.dataset.email, btn.dataset.plan, btn.dataset.expires, btn.dataset.note, btn.dataset.quota);
+});
+
+function openModal(uid, email, plan, expires, note, quota) {
+  _uid  = uid;
+  _plan = plan;
+  document.getElementById('modalTitle').textContent = 'Gerer l’abonnement';
+  document.getElementById('modalSub').textContent   = email;
+  document.getElementById('expiresInput').value     = expires || '';
+  document.getElementById('noteInput').value        = note    || '';
+  document.getElementById('quotaInput').value       = quota   || '3';
+  var msg = document.getElementById('modalMsg');
+  msg.className   = 'msg';
+  msg.textContent = '';
+  selectPlan(plan);
+  document.getElementById('overlay').classList.add('open');
+}
+
+function closeModal() { document.getElementById('overlay').classList.remove('open'); }
+function closeIfOut(e) { if (e.target === document.getElementById('overlay')) closeModal(); }
+
+function selectPlan(p) {
+  _plan = p;
+  ['free','starter','pro'].forEach(function(x) {
+    var el = document.getElementById('opt-' + x);
+    el.className = 'plan-opt' + (x === p ? ' sel-' + p : '');
+  });
+}
+
+function addMonths(n) {
+  var inp  = document.getElementById('expiresInput');
+  var base = inp.value ? new Date(inp.value + 'T12:00:00') : new Date();
+  base.setMonth(base.getMonth() + n);
+  inp.value = base.toISOString().slice(0, 10);
+}
+
+async function savePlan() {
+  var btn     = document.getElementById('saveBtn');
+  var msg     = document.getElementById('modalMsg');
+  var expires = document.getElementById('expiresInput').value;
+  var note    = document.getElementById('noteInput').value;
+  var quota   = parseInt(document.getElementById('quotaInput').value, 10);
+  if (isNaN(quota) || quota < 0) quota = 3;
+  btn.disabled    = true;
+  msg.className   = 'msg';
+  msg.textContent = '';
+  try {
+    var r = await fetch('/admin/set_plan/' + _uid, {
+      method:  'POST',
+      headers: {'Content-Type': 'application/json'},
+      body:    JSON.stringify({plan: _plan, expires_at: expires, note: note})
+    });
+    var d = await r.json();
+    if (!d.ok) {
+      msg.className   = 'msg err';
+      msg.textContent = d.error || 'Erreur serveur';
+      btn.disabled    = false;
+      return;
+    }
+    await fetch('/admin/set_quota/' + _uid, {
+      method:  'POST',
+      headers: {'Content-Type': 'application/json'},
+      body:    JSON.stringify({quota: quota})
+    });
+    msg.className   = 'msg ok';
+    msg.textContent = 'Enregistre avec succes.';
+    setTimeout(function() { location.reload(); }, 900);
+  } catch(err) {
+    msg.className   = 'msg err';
+    msg.textContent = 'Erreur reseau. Verifiez votre connexion et rechargez la page.';
+    btn.disabled    = false;
+  }
+}
+
+function filterTable() {
+  var q  = document.getElementById('searchInput').value.toLowerCase();
+  var pf = document.getElementById('planFilter').value;
+  document.querySelectorAll('#usersTable tbody tr').forEach(function(row) {
+    var email = (row.dataset.email || '').toLowerCase();
+    var plan  = row.dataset.plan  || '';
+    row.style.display = (!q || email.includes(q)) && (!pf || plan === pf) ? '' : 'none';
+  });
+}
+
+async function toggleAdmin(uid, email) {
+  if (!confirm('Modifier les droits admin de ' + email + ' ?')) return;
+  try {
+    var r = await fetch('/admin/toggle_admin/' + uid, {method:'POST',headers:{'Content-Type':'application/json'}});
+    var d = await r.json();
+    if (d.ok) location.reload(); else alert(d.error || 'Erreur');
+  } catch(e) { alert('Erreur reseau'); }
+}
+
+async function toggleBan(uid, email, isBanned) {
+  if (!confirm((isBanned ? 'Debannir' : 'Bannir') + ' le compte de ' + email + ' ?')) return;
+  try {
+    var r = await fetch('/admin/toggle_ban/' + uid, {method:'POST',headers:{'Content-Type':'application/json'}});
+    var d = await r.json();
+    if (d.ok) location.reload(); else alert(d.error || 'Erreur');
+  } catch(e) { alert('Erreur reseau'); }
+}
+
+async function deleteUser(uid, email) {
+  if (!confirm('Supprimer le compte de ' + email + ' ? Cette action est irreversible.')) return;
+  try {
+    var r = await fetch('/admin/delete_user/' + uid, {method:'POST',headers:{'Content-Type':'application/json'}});
+    var d = await r.json();
+    if (d.ok) location.reload(); else alert(d.error || 'Erreur');
+  } catch(e) { alert('Erreur reseau'); }
+}
+
+async function blockEmail() {
+  var email  = document.getElementById('blockEmailInput').value.trim();
+  var reason = document.getElementById('blockReasonInput').value.trim();
+  if (!email) { alert('Email requis'); return; }
+  if (!confirm('Bloquer ' + email + ' ?')) return;
+  try {
+    var r = await fetch('/admin/block_email', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({email: email, reason: reason})
+    });
+    var d = await r.json();
+    if (d.ok) location.reload(); else alert(d.error || 'Erreur');
+  } catch(e) { alert('Erreur reseau'); }
+}
+
+async function unblockEmail(bid, email) {
+  if (!confirm('Debloquer ' + email + ' ?')) return;
+  try {
+    var r = await fetch('/admin/unblock_email/' + bid, {method:'POST',headers:{'Content-Type':'application/json'}});
+    var d = await r.json();
+    if (d.ok) location.reload(); else alert(d.error || 'Erreur');
+  } catch(e) { alert('Erreur reseau'); }
+}
+
+async function termRun() {
+  var out = document.getElementById('termOut');
+  var btn = document.getElementById('termBtn');
+  btn.disabled = true;
+  out.innerHTML = '<span style="color:var(--text3)">Chargement...</span>\n';
+  try {
+    var r = await fetch('/admin/terminal', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({})
+    });
+    var d   = await r.json();
+    var txt = (d.output || '(aucune sortie)').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    out.innerHTML = '<span class="' + (d.code===0?'l-ok':'l-err') + '">' + txt + '</span>\n';
+  } catch(e) { out.innerHTML = '<span class="l-err">Erreur reseau</span>\n'; }
+  btn.disabled  = false;
+  out.scrollTop = out.scrollHeight;
+}
+
+async function loadFiles() {
+  try {
+    var r = await fetch('/admin/files');
+    var files = await r.json();
+    var msg   = document.getElementById('filesMsg');
+    var table = document.getElementById('filesTable');
+    var tbody = document.getElementById('filesTbody');
+    if (!files.length) { msg.textContent = 'Aucun fichier.'; return; }
+    msg.style.display   = 'none';
+    table.style.display = '';
+    tbody.innerHTML = files.map(function(f) {
+      return '<tr>'
+        + '<td style="font-weight:600;color:var(--text)">'     + f.filename   + '</td>'
+        + '<td style="color:var(--text3);font-size:11px">'     + f.user_email + '</td>'
+        + '<td style="color:var(--text2)">'                    + f.rows       + '</td>'
+        + '<td style="color:var(--text3);font-size:11px">'     + new Date(f.created_at).toLocaleDateString('fr') + '</td>'
+        + '<td><a href="/admin/files/' + f.id + '/download" class="btn btn-ghost">Telecharger</a></td>'
+        + '</tr>';
+    }).join('');
+  } catch(e) { document.getElementById('filesMsg').textContent = 'Erreur de chargement.'; }
+}
+loadFiles();
+</script>
+</body></html>

@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pilar — Interactive Demo</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07090f;--surface:#0e1118;--surface2:#141820;--surface3:#1e2433;
+  --border:#1e2433;--border2:#252d3d;
+  --teal:#0d9488;--teal2:#14b8a6;--teal-dim:rgba(13,148,136,0.08);
+  --red:#dc2626;--red-dim:rgba(220,38,38,0.08);
+  --green:#059669;--green-dim:rgba(5,150,105,0.08);
+  --amber:#d97706;--purple:#bf5af2;
+  --text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;
+  --r:12px;--r-sm:8px;--r-xs:6px;
+  --shadow:0 4px 24px rgba(0,0,0,0.5);--shadow-sm:0 2px 8px rgba(0,0,0,0.4);
+}
+html{scroll-behavior:smooth}
+body{font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:0 32px;height:60px;display:flex;align-items:center;justify-content:space-between;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);background:rgba(28,28,30,0.92);border-bottom:1px solid var(--border)}
+.nav-logo{font-size:16px;font-weight:700;letter-spacing:0.04em;color:var(--text);text-decoration:none}
+.nav-right{display:flex;align-items:center;gap:8px}
+.nav-tag{font-size:10px;font-weight:600;letter-spacing:0.04em;color:var(--teal2);text-transform:uppercase;border:1px solid rgba(13,148,136,0.3);padding:4px 10px;border-radius:20px}
+.nav-right a{font-size:13px;font-weight:500;text-decoration:none;padding:8px 16px;border-radius:var(--r)}
+.nav-login{color:var(--text2);border:1px solid var(--border2)}
+.nav-login:hover{border-color:var(--teal);color:var(--teal2)}
+.nav-register{background:var(--teal);color:#fff}
+.nav-register:hover{opacity:0.85}
+
+/* LAYOUT */
+.wrap{max-width:1100px;margin:0 auto;padding:90px 32px 80px}
+.page-eyebrow{font-size:11px;font-weight:600;letter-spacing:0.04em;color:var(--teal2);text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:10px}
+.page-eyebrow::before{content:'';display:inline-block;width:20px;height:1px;background:var(--teal2)}
+h1{font-size:clamp(40px,5vw,70px);font-weight:700;line-height:1.05;letter-spacing:-0.025em;color:var(--text);margin-bottom:16px}
+h1 span{color:var(--teal2)}
+.page-sub{font-size:16px;color:var(--text2);line-height:1.8;max-width:600px;margin-bottom:56px}
+
+/* AUDIO SECTION — hidden, no audio element */
+.audio-section{display:none}
+.lang-toggle{display:flex;gap:2px;background:var(--surface2);border:1px solid var(--border);padding:3px;border-radius:var(--r-sm)}
+.lang-btn{padding:5px 14px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;background:transparent;color:var(--text3);transition:all .15s}
+.lang-btn.active{background:var(--teal);color:#fff}
+
+/* DEMO GRID */
+.demo-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+
+/* SCENARIO PICKER */
+.scenarios{background:var(--surface);border:1px solid var(--border);padding:24px;border-radius:var(--r);box-shadow:var(--shadow-sm)}
+.block-label{font-size:11px;font-weight:600;letter-spacing:0.04em;color:var(--teal2);text-transform:uppercase;margin-bottom:20px}
+.scenario-list{display:grid;gap:8px}
+.scenario-btn{width:100%;text-align:left;padding:14px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);cursor:pointer;transition:all .18s}
+.scenario-btn:hover{border-color:var(--teal2);background:var(--teal-dim)}
+.scenario-btn.active{border-color:var(--teal2);background:var(--teal-dim)}
+.sc-name{font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px}
+.sc-desc{font-size:12px;color:var(--text3)}
+.scenario-btn.active .sc-name{color:var(--teal2)}
+
+/* RESULT PANEL */
+.result-panel{background:var(--surface);border:1px solid var(--border);padding:24px;border-radius:var(--r);box-shadow:var(--shadow-sm)}
+.sensor-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+.sensor-card{background:var(--surface2);border:1px solid var(--border);padding:14px 16px;border-radius:var(--r-sm)}
+.sensor-label{font-size:10px;font-weight:600;letter-spacing:0.04em;color:var(--text3);text-transform:uppercase;margin-bottom:6px}
+.sensor-val{font-size:20px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}
+.sensor-val.warn{color:var(--amber)}
+.sensor-val.danger{color:var(--red)}
+.sensor-val.ok{color:var(--green)}
+.sensor-unit{font-size:11px;font-weight:400;color:var(--text3);margin-left:3px}
+
+/* RISK RESULT */
+.risk-block{border:1px solid var(--border);padding:20px 24px;margin-bottom:14px;border-radius:var(--r)}
+.risk-block.danger{border-color:rgba(255,69,58,0.4);background:var(--red-dim)}
+.risk-block.warn{border-color:rgba(255,159,10,0.4);background:rgba(255,159,10,0.08)}
+.risk-block.ok{border-color:rgba(48,209,88,0.3);background:var(--green-dim)}
+.risk-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.risk-label{font-size:11px;font-weight:600;letter-spacing:0.04em;color:var(--text3);text-transform:uppercase}
+.risk-pct{font-size:36px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.risk-block.danger .risk-pct{color:var(--red)}
+.risk-block.warn .risk-pct{color:var(--amber)}
+.risk-block.ok .risk-pct{color:var(--green)}
+.risk-bar-bg{height:6px;background:var(--surface3);border-radius:6px;overflow:hidden;margin-bottom:8px}
+.risk-bar-fill{height:100%;border-radius:6px;transition:width .6s ease}
+.risk-verdict{font-size:13px;color:var(--text2);line-height:1.6}
+
+/* ZONES */
+.zones{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:14px}
+.zone{padding:8px;text-align:center;border:1px solid var(--border);border-radius:var(--r-xs);background:var(--surface2)}
+.zone-name{font-size:10px;font-weight:700;letter-spacing:0.04em}
+.zone-status{font-size:9px;margin-top:4px;font-weight:600}
+.zone.high{border-color:rgba(255,69,58,0.4);background:var(--red-dim)}
+.zone.high .zone-name{color:var(--red)}
+.zone.high .zone-status{color:var(--red)}
+.zone.med{border-color:rgba(255,159,10,0.3);background:rgba(255,159,10,0.08)}
+.zone.med .zone-name{color:var(--amber)}
+.zone.med .zone-status{color:var(--amber)}
+.zone.low .zone-name{color:var(--text3)}
+.zone.low .zone-status{color:var(--text3)}
+
+/* CTA */
+.demo-cta{margin-top:40px;border:1px solid var(--border);padding:32px;background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow-sm);display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap}
+.demo-cta-text h3{font-size:28px;font-weight:700;letter-spacing:-0.02em;color:var(--text);margin-bottom:6px}
+.demo-cta-text p{font-size:14px;color:var(--text2);line-height:1.7}
+.btn-register{display:inline-block;padding:14px 28px;background:var(--teal);color:#fff;text-decoration:none;font-size:14px;font-weight:600;border-radius:12px;transition:opacity .18s;white-space:nowrap}
+.btn-register:hover{opacity:0.85}
+
+@media(max-width:800px){
+  .demo-grid{grid-template-columns:1fr}
+  .zones{grid-template-columns:repeat(5,1fr)}
+  .sensor-grid{grid-template-columns:1fr 1fr}
+  .demo-cta{flex-direction:column}
+}
+@media(max-width:480px){
+  .zones{grid-template-columns:repeat(3,1fr)}
+  .wrap{padding:80px 20px 60px}
+  nav{padding:0 20px}
+}
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" class="nav-logo">PILAR</a>
+  <div class="nav-right">
+    <div class="nav-tag">Interactive Demo</div>
+    <a href="/login" class="nav-login">Sign In</a>
+    <a href="/register" class="nav-register">Get Started Free</a>
+  </div>
+</nav>
+
+<div class="wrap">
+  <div class="page-eyebrow">Live Demo</div>
+  <h1>See Pilar<br><span>in action</span></h1>
+  <p class="page-sub">Explore live failure scenarios below to see the model in action.</p>
+
+  <!-- WALKTHROUGH STEPS -->
+  <div style="margin-bottom:48px">
+    <div style="font-size:11px;font-weight:600;letter-spacing:0.04em;color:var(--teal2);text-transform:uppercase;margin-bottom:24px;display:flex;align-items:center;gap:10px"><span style="display:inline-block;width:20px;height:1px;background:var(--teal2)"></span>How it works</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));border:1px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow-sm)">
+      <div style="padding:20px 22px;border-right:1px solid var(--border);background:var(--surface)">
+        <div style="font-size:10px;font-weight:600;color:var(--teal2);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:10px">01 / 06</div>
+        <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px">Enter sensor readings</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.7">Vibration, bearing temp, flow rate, pressures, motor current, run hours — manually or via API/CSV.</div>
+      </div>
+      <div style="padding:20px 22px;border-right:1px solid var(--border);background:var(--surface)">
+        <div style="font-size:10px;font-weight:600;color:var(--teal2);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:10px">02 / 06</div>
+        <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px">Or upload a CSV file</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.7">Columns: vibration, temp_palier, debit, pression_entree, pression_sortie, courant_moteur, temp_moteur, heure_fonctionnement.</div>
+      </div>
+      <div style="padding:20px 22px;border-right:1px solid var(--border);background:var(--surface)">
+        <div style="font-size:10px;font-weight:600;color:var(--teal2);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:10px">03 / 06</div>
+        <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px">Auto-detect &amp; map columns</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.7">Pilar auto-detects your column names and maps them — confirm or correct before analysis.</div>
+      </div>
+      <div style="padding:20px 22px;border-right:1px solid var(--border);background:var(--surface)">
+        <div style="font-size:10px;font-weight:600;color:var(--teal2);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:10px">04 / 06</div>
+        <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px">Three AI layers run in parallel</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.7">RandomForest failure probability + Isolation Forest anomaly score + SHAP explanations + RUL forecast — all in one request.</div>
+      </div>
+      <div style="padding:20px 22px;border-right:1px solid var(--border);background:var(--surface)">
+        <div style="font-size:10px;font-weight:600;color:var(--teal2);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:10px">05 / 06</div>
+        <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px">Full AI result instantly</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.7">Risk %, anomaly score, top contributing sensors, failure zones — and estimated remaining life.</div>
+      </div>
+      <div style="padding:20px 22px;background:var(--surface)">
+        <div style="font-size:10px;font-weight:600;color:var(--teal2);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:10px">06 / 06</div>
+        <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px">History, Twin &amp; alerts</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.7">Full analysis history in History. Digital Twin shows RUL trend. Email alerts auto-escalate.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEMO SCENARIOS + RESULT -->
+  <div class="demo-grid">
+    <!-- SCENARIO PICKER -->
+    <div class="scenarios">
+      <div class="block-label">Choose a scenario</div>
+      <div class="scenario-list">
+        <button class="scenario-btn active" onclick="loadScenario(0)">
+          <div class="sc-name">Normal operation</div>
+          <div class="sc-desc">All parameters within safe range</div>
+        </button>
+        <button class="scenario-btn" onclick="loadScenario(1)">
+          <div class="sc-name">Bearing wear developing</div>
+          <div class="sc-desc">Progressive wear, risk building up</div>
+        </button>
+        <button class="scenario-btn" onclick="loadScenario(2)">
+          <div class="sc-name">Cavitation + seal failure</div>
+          <div class="sc-desc">Low flow, pressure drop, impeller at risk</div>
+        </button>
+        <button class="scenario-btn" onclick="loadScenario(3)">
+          <div class="sc-name">Critical — imminent failure</div>
+          <div class="sc-desc">Multiple zones in alert, action required</div>
+        </button>
+      </div>
+    </div>
+
+    <!-- RESULT PANEL -->
+    <div class="result-panel">
+      <div class="block-label">Live sensor reading</div>
+      <div class="sensor-grid">
+        <div class="sensor-card">
+          <div class="sensor-label">Vibration</div>
+          <div class="sensor-val ok" id="v-vib">2.1<span class="sensor-unit">mm/s</span></div>
+        </div>
+        <div class="sensor-card">
+          <div class="sensor-label">Bearing temperature</div>
+          <div class="sensor-val ok" id="v-tbear">52.4<span class="sensor-unit">°C</span></div>
+        </div>
+        <div class="sensor-card">
+          <div class="sensor-label">Flow rate</div>
+          <div class="sensor-val ok" id="v-debit">42.0<span class="sensor-unit">m³/h</span></div>
+        </div>
+        <div class="sensor-card">
+          <div class="sensor-label">Outlet pressure</div>
+          <div class="sensor-val ok" id="v-pout">3.8<span class="sensor-unit">bar</span></div>
+        </div>
+        <div class="sensor-card">
+          <div class="sensor-label">Operating hours</div>
+          <div class="sensor-val ok" id="v-hrun">1240<span class="sensor-unit">h</span></div>
+        </div>
+        <div class="sensor-card">
+          <div class="sensor-label">Status</div>
+          <div class="sensor-val ok" id="v-status" style="font-size:16px">Normal</div>
+        </div>
+      </div>
+
+      <div class="block-label">Failure zones</div>
+      <div class="zones" id="zones-row">
+        <div class="zone low"><div class="zone-name">CAV</div><div class="zone-status">LOW</div></div>
+        <div class="zone low"><div class="zone-name">ROL</div><div class="zone-status">LOW</div></div>
+        <div class="zone low"><div class="zone-name">ETN</div><div class="zone-status">LOW</div></div>
+        <div class="zone low"><div class="zone-name">IMP</div><div class="zone-status">LOW</div></div>
+        <div class="zone low"><div class="zone-name">MOT</div><div class="zone-status">LOW</div></div>
+      </div>
+
+      <div class="risk-block ok" id="risk-block">
+        <div class="risk-row">
+          <div class="risk-label">Failure risk</div>
+          <div class="risk-pct" id="risk-pct">3%</div>
+        </div>
+        <div class="risk-bar-bg"><div class="risk-bar-fill" id="risk-bar" style="width:3%;background:var(--green)"></div></div>
+        <div class="risk-verdict" id="risk-verdict">All systems nominal. No intervention required.</div>
+      </div>
+
+      <div id="ai-insights" style="margin-top:16px;display:flex;flex-direction:column;gap:10px">
+        <div style="padding:10px 14px;background:rgba(255,255,255,.025);border:1px solid var(--border);border-radius:5px;display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div style="font-size:9px;letter-spacing:1.5px;color:var(--text3);text-transform:uppercase;margin-bottom:2px">Anomaly score</div>
+            <div style="font-size:9px;color:var(--text3)">Isolation Forest · unsupervised</div>
+          </div>
+          <span id="demo-anomaly" style="font-size:18px;font-weight:800;color:#059669">12/100</span>
+        </div>
+        <div style="padding:10px 14px;background:rgba(255,255,255,.025);border:1px solid var(--border);border-radius:5px">
+          <div style="font-size:9px;letter-spacing:1.5px;color:var(--text3);text-transform:uppercase;margin-bottom:10px">AI Explanation · SHAP top-3</div>
+          <div id="demo-shap"></div>
+        </div>
+        <div id="demo-rul-wrap" style="display:none;padding:10px 14px;background:rgba(255,255,255,.025);border:1px solid var(--border);border-radius:5px;font-size:11px;color:var(--text2)">
+          &#x23F1; Est. remaining life: <strong id="demo-rul-val" style="color:var(--green)"></strong>
+          <span id="demo-rul-conf" style="font-size:9px;color:var(--text3);margin-left:4px"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div class="demo-cta">
+    <div class="demo-cta-text">
+      <h3>Ready to connect your machines?</h3>
+      <p>Free account — upload your first CSV in under 2 minutes. No credit card required.</p>
+    </div>
+    <a href="/register" class="btn-register">Create free account</a>
+  </div>
+</div>
+
+<script>
+var SCENARIOS=[
+  {
+    name:'Normal operation',
+    vib:1.8,tbear:44.8,debit:42.0,pout:108,hrun:1240,status:'Normal',
+    risk:3,bar_color:'var(--green)',block_class:'ok',
+    verdict:'All systems nominal. No intervention required.',
+    zones:['low','low','low','low','low'],
+    zone_labels:['LOW','LOW','LOW','LOW','LOW'],
+    anomaly:10,anomaly_color:'#059669',
+    shap:[{f:'Vibration',v:'18%',d:'down'},{f:'Operating hours',v:'12%',d:'down'},{f:'Flow rate',v:'8%',d:'up'}],
+    rul:null
+  },
+  {
+    name:'Bearing wear developing',
+    vib:5.8,tbear:74.2,debit:38.5,pout:102,hrun:3820,status:'Warning',
+    risk:38,bar_color:'var(--amber)',block_class:'warn',
+    verdict:'Bearing temperature elevated. Schedule inspection within 48h.',
+    zones:['low','med','low','low','low'],
+    zone_labels:['LOW','MED','LOW','LOW','LOW'],
+    anomaly:44,anomaly_color:'#d97706',
+    shap:[{f:'Bearing temperature',v:'41%',d:'up'},{f:'Vibration',v:'28%',d:'up'},{f:'Operating hours',v:'15%',d:'up'}],
+    rul:312,rul_conf:'medium'
+  },
+  {
+    name:'Cavitation + seal failure',
+    vib:9.3,tbear:81.6,debit:22.1,pout:88,hrun:5600,status:'Critical',
+    risk:67,bar_color:'var(--amber)',block_class:'warn',
+    verdict:'Low flow and pressure drop detected. Inspect inlet and impeller for cavitation.',
+    zones:['high','med','low','med','low'],
+    zone_labels:['HIGH','MED','LOW','MED','LOW'],
+    anomaly:71,anomaly_color:'#dc2626',
+    shap:[{f:'Flow rate',v:'38%',d:'down'},{f:'Outlet pressure',v:'29%',d:'down'},{f:'Vibration',v:'21%',d:'up'}],
+    rul:74,rul_conf:'high'
+  },
+  {
+    name:'Critical — imminent failure',
+    vib:15.7,tbear:96.4,debit:14.8,pout:71,hrun:7200,status:'STOP',
+    risk:91,bar_color:'var(--red)',block_class:'danger',
+    verdict:'CRITICAL — Multiple failure zones active. Stop pump and inspect immediately.',
+    zones:['high','high','low','high','med'],
+    zone_labels:['HIGH','HIGH','LOW','HIGH','MED'],
+    anomaly:88,anomaly_color:'#dc2626',
+    shap:[{f:'Vibration',v:'35%',d:'up'},{f:'Bearing temperature',v:'31%',d:'up'},{f:'Flow rate',v:'22%',d:'down'}],
+    rul:8,rul_conf:'high'
+  }
+];
+
+function loadScenario(i){
+  document.querySelectorAll('.scenario-btn').forEach(function(b,j){b.classList.toggle('active',j===i)});
+  var s=SCENARIOS[i];
+
+  function setSensor(id,v,cls){var el=document.getElementById(id);if(!el)return;el.childNodes[0].textContent=v;el.className='sensor-val'+(cls?' '+cls:'');}
+  setSensor('v-vib',s.vib,s.vib>10?' danger':s.vib>6?' warn':' ok');
+  setSensor('v-tbear',s.tbear,s.tbear>85?' danger':s.tbear>70?' warn':' ok');
+  setSensor('v-debit',s.debit,s.debit<20?' danger':s.debit<30?' warn':' ok');
+  setSensor('v-pout',s.pout,s.pout<80?' danger':s.pout<95?' warn':' ok');
+  setSensor('v-hrun',s.hrun,s.hrun>6000?' warn':' ok');
+  var stEl=document.getElementById('v-status');if(stEl){stEl.textContent=s.status;stEl.className='sensor-val'+(s.status==='STOP'?' danger':s.status==='Critical'?' warn':' ok');}
+
+  var zones=['CAV','ROL','ETN','IMP','MOT'];
+  var zRow=document.getElementById('zones-row');
+  zRow.innerHTML='';
+  for(var z=0;z<5;z++){
+    var d=document.createElement('div');
+    d.className='zone '+s.zones[z];
+    d.innerHTML='<div class="zone-name">'+zones[z]+'</div><div class="zone-status">'+s.zone_labels[z]+'</div>';
+    zRow.appendChild(d);
+  }
+
+  var block=document.getElementById('risk-block');
+  block.className='risk-block '+s.block_class;
+  document.getElementById('risk-pct').textContent=s.risk+'%';
+  var bar=document.getElementById('risk-bar');
+  bar.style.width=s.risk+'%';
+  bar.style.background=s.bar_color;
+  document.getElementById('risk-verdict').textContent=s.verdict;
+
+  // Anomaly score
+  var aEl=document.getElementById('demo-anomaly');
+  if(aEl){aEl.textContent=s.anomaly+'/100';aEl.style.color=s.anomaly_color;}
+
+  // SHAP top-3
+  var shapEl=document.getElementById('demo-shap');
+  if(shapEl&&s.shap){
+    shapEl.innerHTML=s.shap.map(function(x){
+      return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="font-size:11px;color:var(--text2);flex:1">'+x.f+'</span><span style="font-size:12px;font-weight:700;color:'+(x.d==='up'?'var(--red)':'var(--green)')+'">'+x.v+' '+(x.d==='up'?'↑':'↓')+'</span></div>';
+    }).join('');
+  }
+
+  // RUL
+  var rulWrap=document.getElementById('demo-rul-wrap');
+  if(rulWrap){
+    if(s.rul!=null){
+      rulWrap.style.display='block';
+      var rulColor=s.rul<24?'var(--red)':s.rul<72?'var(--amber)':'var(--green)';
+      document.getElementById('demo-rul-val').textContent='~'+s.rul+'h';
+      document.getElementById('demo-rul-val').style.color=rulColor;
+      document.getElementById('demo-rul-conf').textContent=s.rul_conf?'('+s.rul_conf+')':'';
+    } else {
+      rulWrap.style.display='none';
+    }
+  }
+}
+applyLang();
+</script>
+</body>
+</html>

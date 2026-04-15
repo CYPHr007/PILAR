@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{ machine.name }} — Pilar</title>
+<style>
+:root{
+  --bg:#07090f;--surface:#0e1118;--surface2:#141820;--surface3:#1e2433;
+  --border:#1e2433;--border2:#252d3d;
+  --teal:#0d9488;--teal2:#14b8a6;--teal-dim:rgba(13,148,136,0.08);
+  --red:#dc2626;--red-dim:rgba(220,38,38,0.08);
+  --green:#059669;--green-dim:rgba(5,150,105,0.08);
+  --amber:#d97706;--amber-dim:rgba(255,159,10,0.12);
+  --text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;
+  --r:12px;--r-sm:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;}
+body{font-family:'Inter','Segoe UI',system-ui,Arial,sans-serif;background:var(--bg);color:var(--text);}
+.desktop-layout{display:flex;height:100vh;overflow:hidden;}
+.sidebar{width:200px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden;}
+.main-content{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+header{height:48px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;padding:0 20px;background:var(--surface);flex-shrink:0;}
+.logo{font-size:13px;font-weight:700;letter-spacing:4px;color:#14b8a6;text-transform:uppercase;}
+.hd{width:1px;height:18px;background:var(--border2);}
+.hsub{font-size:10px;letter-spacing:1.2px;color:var(--text3);text-transform:uppercase;}
+.sidebar-logo{padding:16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.logo-mark{width:28px;height:28px;border-radius:7px;background:#0d9488;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.logo-text{font-size:13px;font-weight:700;letter-spacing:3px;color:#14b8a6;text-transform:uppercase;}
+.logo-sub{font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-top:1px;}
+.sidebar-nav{flex:1;padding:8px 0;overflow-y:auto;}
+.sidebar-section{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);padding:12px 16px 4px;}
+.ni{display:flex;align-items:center;gap:10px;padding:9px 16px;color:var(--text3);text-decoration:none;font-size:13px;transition:color .15s,background .15s;cursor:pointer;border:none;background:none;width:100%;text-align:left;}
+.ni:hover{color:var(--text2);background:var(--surface2);}
+.ni.on{color:#14b8a6;background:rgba(13,148,136,0.08);}
+.ni svg{width:16px;height:16px;flex-shrink:0;}
+.ni-label{font-size:13px;}
+.sidebar-footer{border-top:1px solid var(--border);padding:10px 12px;}
+.sync-status-bar{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text3);padding:4px 0;}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:var(--text3);}
+.sync-dot.online{background:#059669;}
+.sync-dot.offline{background:var(--amber);}
+.bottom-nav{display:none;}
+.page{flex:1;overflow-y:auto;overflow-x:hidden;}
+.page::-webkit-scrollbar{width:4px;}
+.page::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+.pad{padding:20px;max-width:1100px;}
+.machine-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:28px;}
+.machine-title{font-size:26px;font-weight:700;letter-spacing:-0.03em;}
+.machine-sub{font-size:13px;color:var(--text3);margin-top:5px;}
+.status-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;}
+.status-ok{background:var(--green-dim);color:var(--green);border:1px solid rgba(48,209,88,.3);}
+.status-warn{background:var(--amber-dim);color:var(--amber);border:1px solid rgba(255,159,10,.3);}
+.status-crit{background:var(--red-dim);color:var(--red);border:1px solid rgba(255,69,58,.3);}
+.status-none{background:rgba(84,84,88,.12);color:var(--text3);border:1px solid var(--border);}
+/* Tabs */
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:28px;}
+.tab{padding:10px 18px;font-size:13px;font-weight:500;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;transition:color .15s;}
+.tab.active{color:var(--teal2);border-bottom-color:var(--teal);}
+.tab:hover:not(.active){color:var(--text2);}
+.tab-pane{display:none;}
+.tab-pane.active{display:block;}
+/* Forms */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.form-group{display:flex;flex-direction:column;gap:6px;}
+.form-group.full{grid-column:1/-1;}
+.form-label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;}
+.form-input,.form-select{background:rgba(120,120,128,0.18);border:1px solid var(--border2);border-radius:var(--r-sm);padding:10px 12px;font-size:13px;color:var(--text);outline:none;transition:border-color .15s;width:100%;}
+.form-input:focus,.form-select:focus{border-color:var(--teal);}
+.form-select option{background:#0e1118;}
+.form-hint{font-size:11px;color:var(--text3);}
+.section-title{font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin:24px 0 14px;}
+.section-title:first-child{margin-top:0;}
+/* Cards */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:24px;margin-bottom:16px;}
+/* Monitor */
+.monitor-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px;}
+.stat-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;}
+.stat-label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;}
+.stat-val{font-size:28px;font-weight:700;line-height:1;}
+.stat-sub{font-size:11px;color:var(--text3);margin-top:4px;}
+.zones-list{display:flex;flex-direction:column;gap:8px;}
+.zone-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);}
+.zone-name{font-size:13px;font-weight:600;}
+.zone-bar-wrap{flex:1;margin:0 16px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
+.zone-bar-fill{height:100%;border-radius:2px;background:var(--amber);}
+.zone-pct{font-size:12px;font-weight:700;color:var(--amber);min-width:36px;text-align:right;}
+/* CSV upload */
+.upload-area{border:2px dashed var(--border2);border-radius:var(--r);padding:48px;text-align:center;cursor:pointer;transition:border-color .2s;}
+.upload-area:hover,.upload-area.drag{border-color:var(--teal);}
+.upload-area input{display:none;}
+.upload-icon{font-size:32px;margin-bottom:12px;}
+.upload-label{font-size:14px;font-weight:600;color:var(--text2);margin-bottom:6px;}
+.upload-hint{font-size:12px;color:var(--text3);}
+/* Notes */
+.note-input{width:100%;background:rgba(120,120,128,0.18);border:1px solid var(--border2);border-radius:var(--r-sm);padding:12px;font-size:13px;color:var(--text);outline:none;resize:vertical;min-height:80px;font-family:inherit;}
+.note-input:focus{border-color:var(--teal);}
+.notes-list{display:flex;flex-direction:column;gap:10px;margin-top:16px;}
+.note-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px 16px;}
+.note-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.note-author{font-size:11px;font-weight:600;color:var(--teal2);}
+.note-time{font-size:11px;color:var(--text3);}
+.note-content{font-size:13px;color:var(--text2);line-height:1.6;}
+.note-del{background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:2px 6px;}
+.note-del:hover{color:var(--red);}
+/* History table */
+.history-table{width:100%;border-collapse:collapse;font-size:13px;}
+.history-table th{text-align:left;padding:10px 14px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);border-bottom:1px solid var(--border);}
+.history-table td{padding:10px 14px;border-bottom:1px solid var(--border);color:var(--text2);}
+.history-table tr:last-child td{border-bottom:none;}
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;font-size:13px;font-weight:600;border:none;border-radius:var(--r-sm);cursor:pointer;transition:opacity .15s;text-decoration:none;}
+.btn-primary{background:var(--teal);color:#fff;}
+.btn-primary:hover{opacity:.85;}
+.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border2);}
+.btn-ghost:hover{border-color:var(--teal);color:var(--teal2);}
+.btn-sm{padding:6px 12px;font-size:12px;}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r-sm);padding:12px 18px;font-size:13px;color:var(--text2);box-shadow:0 4px 24px rgba(0,0,0,.5);z-index:999;opacity:0;transform:translateY(8px);transition:all .25s;}
+.toast.show{opacity:1;transform:translateY(0);}
+.result-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-top:16px;display:none;}
+@media(max-width:700px){.form-grid{grid-template-columns:1fr;}.monitor-grid{grid-template-columns:1fr 1fr;}.pad{padding:16px;}}
+</style>
+</head>
+<body>
+<div class="desktop-layout">
+{{ sidebar_html | safe }}
+<div class="main-content">
+<header>
+  <span class="logo">PILAR</span>
+  <div class="hd"></div>
+  <span class="hsub" style="display:flex;align-items:center;gap:6px;text-transform:none;font-size:12px;letter-spacing:0;">
+    <a href="/dashboard" style="color:var(--text3);text-decoration:none">Fleet</a>
+    <span style="color:var(--border2)">›</span>
+    <span style="color:var(--text)">{{ machine.name }}</span>
+  </span>
+</header>
+<div class="page pad">
+<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;">
+  <div>
+    <div class="machine-title">{{ machine.name }}</div>
+    <div class="machine-sub" id="machine-sub">{{ machine.description or (machine.pump_type or 'Pump') + ' · ' + (machine.location or 'No location set') }}</div>
+  </div>
+  <div id="status-pill" class="status-pill status-none">No data yet</div>
+</div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('info')">Info</div>
+    <div class="tab" onclick="switchTab('data')">Data</div>
+    <div class="tab" onclick="switchTab('monitor')">Monitor</div>
+    <div class="tab" onclick="switchTab('notes')">Notes</div>
+    <div class="tab" onclick="switchTab('history')">History</div>
+  </div>
+
+  <!-- INFO TAB -->
+  <div id="tab-info" class="tab-pane active">
+    <p style="font-size:13px;color:var(--text3);margin-bottom:20px;">Machine profile — the model uses these values to adapt its thresholds and imputation to this specific machine.</p>
+    <div class="section-title">Identity</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Machine name</label>
+        <input class="form-input" id="f-name" value="{{ machine.name }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Serial number</label>
+        <input class="form-input" id="f-serial" placeholder="e.g. SN-20240315" value="{{ machine.serial_number or '' }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Location</label>
+        <input class="form-input" id="f-location" placeholder="e.g. Building A, Line 3" value="{{ machine.location or '' }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Install date</label>
+        <input class="form-input" id="f-install" type="date" value="{{ machine.install_date.isoformat() if machine.install_date else '' }}">
+      </div>
+      <div class="form-group full">
+        <label class="form-label">Description / notes on machine type</label>
+        <input class="form-input" id="f-desc" placeholder="Optional description" value="{{ machine.description or '' }}">
+      </div>
+    </div>
+
+    <div class="section-title">Pump specs</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Pump type</label>
+        <select class="form-select" id="f-pump-type">
+          <option value="centrifuge" {% if machine.pump_type=='centrifuge' %}selected{% endif %}>Centrifugal</option>
+          <option value="axiale" {% if machine.pump_type=='axiale' %}selected{% endif %}>Axial</option>
+          <option value="volumetrique" {% if machine.pump_type=='volumetrique' %}selected{% endif %}>Positive displacement</option>
+          <option value="engrenages" {% if machine.pump_type=='engrenages' %}selected{% endif %}>Gear pump</option>
+          <option value="peristaltique" {% if machine.pump_type=='peristaltique' %}selected{% endif %}>Peristaltic</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Fluid type</label>
+        <select class="form-select" id="f-fluid-type">
+          <option value="eau" {% if machine.fluid_type=='eau' %}selected{% endif %}>Water</option>
+          <option value="huile" {% if machine.fluid_type=='huile' %}selected{% endif %}>Oil</option>
+          <option value="acide" {% if machine.fluid_type=='acide' %}selected{% endif %}>Acid</option>
+          <option value="boue" {% if machine.fluid_type=='boue' %}selected{% endif %}>Slurry</option>
+          <option value="solvant" {% if machine.fluid_type=='solvant' %}selected{% endif %}>Solvent</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Impeller material</label>
+        <select class="form-select" id="f-roue-mat">
+          <option value="inox_316" {% if machine.roue_material=='inox_316' %}selected{% endif %}>Stainless 316</option>
+          <option value="inox_304" {% if machine.roue_material=='inox_304' %}selected{% endif %}>Stainless 304</option>
+          <option value="fonte" {% if machine.roue_material=='fonte' %}selected{% endif %}>Cast iron</option>
+          <option value="bronze" {% if machine.roue_material=='bronze' %}selected{% endif %}>Bronze</option>
+          <option value="plastique" {% if machine.roue_material=='plastique' %}selected{% endif %}>Plastic</option>
+          <option value="duplex" {% if machine.roue_material=='duplex' %}selected{% endif %}>Duplex</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Risk alert threshold (%)</label>
+        <input class="form-input" id="f-threshold" type="number" min="10" max="90" value="{{ machine.threshold or 30 }}">
+        <span class="form-hint">Anomaly alert fires above this value</span>
+      </div>
+    </div>
+
+    <div class="section-title">Nominal operating values <span style="font-size:10px;font-weight:400;text-transform:none;"> — used by the model as per-machine baselines</span></div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Nominal flow (m³/h)</label>
+        <input class="form-input" id="f-nominal-flow" type="number" step="0.1" placeholder="e.g. 12.5" value="{{ machine.nominal_flow or '' }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Nominal outlet pressure (bar)</label>
+        <input class="form-input" id="f-nominal-pressure" type="number" step="0.1" placeholder="e.g. 6.0" value="{{ machine.nominal_pressure or '' }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Rated motor power (kW)</label>
+        <input class="form-input" id="f-power-kw" type="number" step="0.1" placeholder="e.g. 7.5" value="{{ machine.power_kw or '' }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Nominal motor current (A)</label>
+        <input class="form-input" id="f-nominal-current" type="number" step="0.1" placeholder="e.g. 15.0" value="{{ machine.nominal_current or '' }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Normal vibration level (mm/s)</label>
+        <input class="form-input" id="f-nominal-vibration" type="number" step="0.01" placeholder="e.g. 0.6" value="{{ machine.nominal_vibration or '' }}">
+      </div>
+    </div>
+
+    <div class="section-title">Alerts</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Alert email</label>
+        <input class="form-input" id="f-alert-email" type="email" placeholder="maintenance@company.com" value="{{ machine.alert_email or '' }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Escalation email</label>
+        <input class="form-input" id="f-esc-email" type="email" placeholder="manager@company.com" value="{{ machine.escalation_email or '' }}">
+        <span class="form-hint">Notified if alert is not acknowledged within 30 min</span>
+      </div>
+    </div>
+
+    <div style="margin-top:24px;">
+      <button class="btn btn-primary" onclick="saveInfo()">Save machine profile</button>
+    </div>
+  </div>
+
+  <!-- DATA TAB -->
+  <div id="tab-data" class="tab-pane">
+    <div class="card">
+      <div style="font-size:14px;font-weight:600;margin-bottom:8px;">Upload sensor data (CSV)</div>
+      <p style="font-size:13px;color:var(--text3);margin-bottom:20px;">Upload a CSV file with sensor readings. Columns are auto-detected. Each row is one reading — all rows will be analysed and saved.</p>
+      <div class="upload-area" id="upload-area" onclick="document.getElementById('csv-file').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="handleDrop(event)">
+        <input type="file" id="csv-file" accept=".csv" onchange="handleFileSelect(event)">
+        <div class="upload-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:32px;height:32px;color:var(--teal2)"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="upload-label" id="upload-label">Drop CSV here or click to browse</div>
+        <div class="upload-hint">vibration · temp_palier · debit · pression_entree/sortie · courant_moteur · temp_moteur · heure_fonctionnement</div>
+      </div>
+      <div id="upload-result" class="result-box"></div>
+    </div>
+  </div>
+
+  <!-- MONITOR TAB -->
+  <div id="tab-monitor" class="tab-pane">
+    <p style="font-size:13px;color:var(--text3);margin-bottom:20px;">Latest analysis for this machine. Updates automatically when new data is uploaded.</p>
+    <div class="monitor-grid">
+      <div class="stat-box">
+        <div class="stat-label">Risk score</div>
+        <div class="stat-val" id="mon-risk" style="color:var(--text3);">—</div>
+        <div class="stat-sub" id="mon-status">No data yet</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">RUL estimate</div>
+        <div class="stat-val" id="mon-rul" style="color:var(--text3);">—</div>
+        <div class="stat-sub">hours remaining</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Last seen</div>
+        <div class="stat-val" style="font-size:15px;color:var(--text2);" id="mon-last">—</div>
+        <div class="stat-sub" id="mon-confidence"></div>
+      </div>
+    </div>
+    <div id="mon-zones-section" style="display:none;">
+      <div class="section-title">Active failure zones</div>
+      <div class="zones-list" id="mon-zones"></div>
+    </div>
+    <div id="mon-shap-section" style="display:none;margin-top:20px;">
+      <div class="section-title">Top contributing factors (SHAP)</div>
+      <div class="zones-list" id="mon-shap"></div>
+    </div>
+  </div>
+
+  <!-- NOTES TAB -->
+  <div id="tab-notes" class="tab-pane">
+    <div class="card">
+      <div style="font-size:14px;font-weight:600;margin-bottom:12px;">Add a note</div>
+      <textarea class="note-input" id="note-input" placeholder="Observation, maintenance action, anomaly detail…"></textarea>
+      <div style="margin-top:10px;">
+        <button class="btn btn-primary btn-sm" onclick="addNote()">Post note</button>
+      </div>
+    </div>
+    <div class="notes-list" id="notes-list">
+      <div style="font-size:13px;color:var(--text3);text-align:center;padding:32px;">Loading notes…</div>
+    </div>
+  </div>
+
+  <!-- HISTORY TAB -->
+  <div id="tab-history" class="tab-pane">
+    <p style="font-size:13px;color:var(--text3);margin-bottom:16px;">All analyses recorded for this machine.</p>
+    <div style="overflow-x:auto;">
+      <table class="history-table">
+        <thead>
+          <tr>
+            <th>Date</th><th>Risk</th><th>Status</th><th>Zones</th><th>Confidence</th>
+          </tr>
+        </thead>
+        <tbody id="history-body">
+          <tr><td colspan="5" style="text-align:center;color:var(--text3);padding:32px;">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const MID = {{ machine.id }};
+const MACHINE = {{ machine_json | safe }};
+let activeTab = 'info';
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    const tabs = ['info','data','monitor','notes','history'];
+    t.classList.toggle('active', tabs[i] === name);
+  });
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  activeTab = name;
+  if (name === 'monitor') loadMonitor();
+  if (name === 'notes') loadNotes();
+  if (name === 'history') loadHistory();
+}
+
+function toast(msg, ok) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.borderColor = ok ? 'rgba(48,209,88,.4)' : 'rgba(255,69,58,.4)';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function saveInfo() {
+  const payload = {
+    name: document.getElementById('f-name').value.trim(),
+    serial_number: document.getElementById('f-serial').value.trim(),
+    location: document.getElementById('f-location').value.trim(),
+    install_date: document.getElementById('f-install').value || null,
+    description: document.getElementById('f-desc').value.trim(),
+    pump_type: document.getElementById('f-pump-type').value,
+    fluid_type: document.getElementById('f-fluid-type').value,
+    roue_material: document.getElementById('f-roue-mat').value,
+    threshold: parseFloat(document.getElementById('f-threshold').value) || 30,
+    nominal_flow: parseFloat(document.getElementById('f-nominal-flow').value) || null,
+    nominal_pressure: parseFloat(document.getElementById('f-nominal-pressure').value) || null,
+    power_kw: parseFloat(document.getElementById('f-power-kw').value) || null,
+    nominal_current: parseFloat(document.getElementById('f-nominal-current').value) || null,
+    nominal_vibration: parseFloat(document.getElementById('f-nominal-vibration').value) || null,
+    alert_email: document.getElementById('f-alert-email').value.trim(),
+    escalation_email: document.getElementById('f-esc-email').value.trim(),
+  };
+  fetch('/api/machines/' + MID, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)})
+    .then(r => r.json()).then(d => {
+      if (d.ok) { toast('Profile saved', true); document.querySelector('.machine-title').textContent = payload.name; }
+      else toast(d.error || 'Error saving', false);
+    }).catch(() => toast('Network error', false));
+}
+
+function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if (file) uploadCSV(file);
+}
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('upload-area').classList.remove('drag');
+  const file = e.dataTransfer.files[0];
+  if (file) uploadCSV(file);
+}
+function uploadCSV(file) {
+  document.getElementById('upload-label').textContent = 'Uploading ' + file.name + '…';
+  const fd = new FormData();
+  fd.append('file', file);
+  fetch('/api/machines/' + MID + '/analyze-csv', {method:'POST', body:fd})
+    .then(r => r.json()).then(d => {
+      const box = document.getElementById('upload-result');
+      box.style.display = 'block';
+      if (d.ok) {
+        box.style.borderColor = 'rgba(48,209,88,.3)';
+        box.innerHTML = '<span style="color:var(--green);font-weight:700;">✓ Done</span> &nbsp;'
+          + d.total + ' rows analysed &nbsp;·&nbsp; '
+          + '<span style="color:var(--amber);">' + d.failures + ' anomalies</span> &nbsp;·&nbsp; '
+          + 'Avg risk: <b>' + d.avg_risk + '%</b> &nbsp;·&nbsp; Max risk: <b>' + d.max_risk + '%</b>';
+        document.getElementById('upload-label').textContent = file.name + ' — done';
+        if (d.saved_file) MACHINE.saved_file = d.saved_file;
+        toast('Analysis complete', true);
+      } else {
+        box.style.borderColor = 'rgba(255,69,58,.3)';
+        box.innerHTML = '<span style="color:var(--red);">Error: ' + (d.error || 'Unknown') + '</span>';
+        document.getElementById('upload-label').textContent = 'Drop CSV here or click to browse';
+        toast(d.error || 'Upload failed', false);
+      }
+    }).catch(() => {
+      toast('Network error', false);
+      document.getElementById('upload-label').textContent = 'Drop CSV here or click to browse';
+    });
+}
+
+function loadMonitor() {
+  fetch('/api/machine_monitor/' + MID)
+    .then(r => r.json()).then(d => {
+      if (!d.has_data) return;
+      const risk = d.risk;
+      const el = document.getElementById('mon-risk');
+      el.textContent = risk.toFixed(1) + '%';
+      el.style.color = risk >= 75 ? 'var(--red)' : risk >= 45 ? 'var(--amber)' : 'var(--green)';
+      document.getElementById('mon-status').textContent = d.prediction ? 'Anomaly detected' : 'Normal';
+      const pill = document.getElementById('status-pill');
+      pill.className = 'status-pill ' + (d.prediction ? (risk >= 75 ? 'status-crit' : 'status-warn') : 'status-ok');
+      pill.textContent = d.prediction ? (risk >= 75 ? 'Critical' : 'Warning') : 'Healthy';
+      if (d.timestamp) document.getElementById('mon-last').textContent = new Date(d.timestamp).toLocaleString();
+      if (d.zones && d.zones.length) {
+        document.getElementById('mon-zones-section').style.display = 'block';
+        document.getElementById('mon-zones').innerHTML = d.zones.map(z =>
+          '<div class="zone-row"><span class="zone-name">' + z.nom + '</span><div class="zone-bar-wrap"><div class="zone-bar-fill" style="width:' + z.proba + '%"></div></div><span class="zone-pct">' + z.proba + '%</span></div>'
+        ).join('');
+      }
+    }).catch(() => {});
+}
+
+function loadNotes() {
+  fetch('/api/machines/' + MID + '/notes')
+    .then(r => r.json()).then(notes => {
+      const el = document.getElementById('notes-list');
+      if (!notes.length) { el.innerHTML = '<div style="font-size:13px;color:var(--text3);text-align:center;padding:32px;">No notes yet. Be the first to add one.</div>'; return; }
+      el.innerHTML = notes.map(n => `
+        <div class="note-card" id="note-${n.id}">
+          <div class="note-meta">
+            <span class="note-author">${n.user_email || 'Team'}</span>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span class="note-time">${new Date(n.created_at).toLocaleString()}</span>
+              <button class="note-del" onclick="deleteNote(${n.id})" title="Delete">✕</button>
+            </div>
+          </div>
+          <div class="note-content">${n.content.replace(/</g,'&lt;')}</div>
+        </div>`).join('');
+    });
+}
+
+function addNote() {
+  const input = document.getElementById('note-input');
+  const content = input.value.trim();
+  if (!content) return;
+  fetch('/api/machines/' + MID + '/notes', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({content})})
+    .then(r => r.json()).then(d => {
+      if (d.ok) { input.value = ''; loadNotes(); toast('Note added', true); }
+      else toast(d.error || 'Error', false);
+    });
+}
+
+function deleteNote(nid) {
+  fetch('/api/machines/' + MID + '/notes/' + nid, {method:'DELETE'})
+    .then(r => r.json()).then(d => {
+      if (d.ok) { document.getElementById('note-' + nid).remove(); toast('Note deleted', true); }
+      else toast(d.error || 'Error', false);
+    });
+}
+
+function loadHistory() {
+  fetch('/api/machine_history/' + MID + '?limit=50')
+    .then(r => r.json()).then(d => {
+      const tbody = document.getElementById('history-body');
+      const analyses = d.analyses || [];
+      if (!analyses.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:32px;">No analyses yet for this machine.</td></tr>'; return; }
+      tbody.innerHTML = analyses.map(a => {
+        const riskCol = a.risk >= 75 ? 'var(--red)' : a.risk >= 45 ? 'var(--amber)' : 'var(--green)';
+        const status = a.prediction ? '<span style="color:var(--red);font-weight:600;">Anomaly</span>' : '<span style="color:var(--green);">Normal</span>';
+        return `<tr>
+          <td>${new Date(a.timestamp).toLocaleString()}</td>
+          <td><span style="font-weight:700;color:${riskCol}">${a.risk}%</span></td>
+          <td>${status}</td>
+          <td style="color:var(--amber);font-size:12px;">${a.zones || '—'}</td>
+          <td>${a.confidence !== undefined ? a.confidence + '%' : '—'}</td>
+        </tr>`;
+      }).join('');
+    }).catch(() => {
+      document.getElementById('history-body').innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text3);">Could not load history.</td></tr>';
+    });
+}
+
+function hydrateSavedFile() {
+  const sf = MACHINE && MACHINE.saved_file;
+  if (!sf) return;
+  const lbl = document.getElementById('upload-label');
+  if (lbl) lbl.textContent = sf.filename + ' — saved';
+  const box = document.getElementById('upload-result');
+  if (!box) return;
+  fetch('/api/machine_monitor/' + MID).then(r => r.json()).then(d => {
+    box.style.display = 'block';
+    box.style.borderColor = 'rgba(48,209,88,.3)';
+    const risk = (d && d.has_data && typeof d.risk === 'number') ? d.risk.toFixed(1) : '—';
+    box.innerHTML = '<span style="color:var(--green);font-weight:700;">✓ Saved</span> &nbsp;'
+      + sf.row_count + ' rows &nbsp;·&nbsp; '
+      + 'Last risk: <b>' + risk + '%</b> &nbsp;·&nbsp; '
+      + '<span style="color:var(--text3)">' + new Date(sf.created_at).toLocaleString() + '</span>';
+  }).catch(() => {
+    box.style.display = 'block';
+    box.style.borderColor = 'rgba(48,209,88,.3)';
+    box.innerHTML = '<span style="color:var(--green);font-weight:700;">✓ Saved</span> &nbsp;'
+      + sf.filename + ' &nbsp;·&nbsp; ' + sf.row_count + ' rows';
+  });
+}
+
+// Auto-load monitor on page open
+loadMonitor();
+setInterval(loadMonitor, 30000);
+hydrateSavedFile();
+applyLang();
+</script>
+</body></html>

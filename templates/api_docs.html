@@ -1,0 +1,482 @@
+<!DOCTYPE html><html lang="fr"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#08090c">
+<link rel="icon" type="image/png" href="data:image/png;base64,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">
+<title>PILAR</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(function(r){r.forEach(function(x){x.unregister();});});}</script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#050810;--surface:#0a0d18;--surface2:#0f1220;
+  --border:#1c2438;--border2:#252d42;
+  --teal:#0d9488;--tl:#14b8a6;--teal-dim:rgba(13,148,136,0.08);
+  --red:#dc2626;--red-dim:rgba(220,38,38,0.08);
+  --green:#059669;
+  --text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;
+  --r:10px;--r-sm:7px;
+  color-scheme:dark;
+}
+html,body{height:100%;overflow:hidden;}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);}
+.auth-layout{position:relative;height:100vh;display:flex;align-items:center;justify-content:center;}
+.canvas-side{position:fixed;inset:0;z-index:0;overflow:hidden;}
+#pillar-canvas{position:absolute;inset:0;display:block;width:100%;height:100%;}
+.sig-chip{position:absolute;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:500;
+  letter-spacing:.05em;color:rgba(13,148,136,0.55);background:rgba(5,8,16,0.72);
+  border:1px solid rgba(13,148,136,0.10);border-radius:5px;padding:5px 9px;
+  pointer-events:none;animation:chippulse 5s ease-in-out infinite;}
+.sig-chip::before{content:'';display:inline-block;width:4px;height:4px;border-radius:50%;
+  background:rgba(13,148,136,0.65);margin-right:6px;vertical-align:middle;}
+.sc-tl{top:64px;left:20px;animation-delay:0s;}
+.sc-bl{bottom:64px;left:20px;animation-delay:2.1s;}
+.sc-tr{top:104px;right:20px;animation-delay:1.0s;}
+.sc-br{bottom:104px;right:20px;animation-delay:3.2s;}
+.sc-bm{bottom:20px;left:50%;transform:translateX(-50%);animation-delay:4.0s;
+  font-family:'DM Sans',sans-serif;font-size:9px;letter-spacing:.09em;
+  color:rgba(13,148,136,0.35);border:none;background:transparent;padding:0;}
+.sc-bm::before{display:none;}
+@keyframes chippulse{0%,100%{opacity:0.38;}50%{opacity:0.82;}}
+.form-side{position:relative;z-index:10;width:420px;min-width:320px;max-height:94vh;overflow-y:auto;
+  background:rgba(6,8,18,0.90);border:1px solid rgba(13,148,136,0.17);border-radius:20px;
+  padding:44px 40px 36px;backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);
+  box-shadow:0 0 0 1px rgba(13,148,136,0.04) inset,0 32px 80px rgba(0,0,0,0.65),0 0 60px rgba(13,148,136,0.05);}
+.form-side::-webkit-scrollbar{width:4px;}
+.form-side::-webkit-scrollbar-track{background:transparent;}
+.form-side::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+.form-topbar{display:flex;align-items:center;gap:8px;margin-bottom:22px;
+  padding-bottom:18px;border-bottom:1px solid rgba(28,36,56,0.8);}
+.ftb-dot{width:6px;height:6px;border-radius:50%;background:#059669;flex-shrink:0;
+  box-shadow:0 0 6px rgba(5,150,105,0.8);animation:dotpulse 2.2s ease-in-out infinite;}
+@keyframes dotpulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+.ftb-txt{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.14em;
+  color:var(--text3);text-transform:uppercase;}
+.form-logo{font-family:'DM Serif Display',serif;font-size:28px;color:var(--text);
+  margin-bottom:4px;letter-spacing:-.01em;}
+.form-tagline{font-size:12px;color:var(--text3);margin-bottom:28px;letter-spacing:.01em;}
+.flbl{font-size:10px;font-weight:600;letter-spacing:.08em;color:var(--text3);
+  text-transform:uppercase;margin-bottom:6px;display:block;margin-top:16px;}
+.fi{width:100%;padding:11px 14px;background:rgba(255,255,255,0.030);
+  border:1px solid rgba(28,36,56,0.95);border-radius:var(--r);color:var(--text);
+  font-size:13px;font-family:'DM Sans',sans-serif;outline:none;
+  transition:border-color .2s,background .2s,box-shadow .2s;}
+.fi:focus{border-color:rgba(13,148,136,0.45);background:rgba(13,148,136,0.04);
+  box-shadow:0 0 0 3px rgba(13,148,136,0.07);}
+.fi::placeholder{color:var(--text3);}
+.btn-submit{width:100%;padding:13px;background:var(--teal);color:#fff;border:none;
+  border-radius:var(--r);font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;
+  cursor:pointer;margin-top:22px;position:relative;overflow:hidden;letter-spacing:.03em;
+  transition:opacity .15s,box-shadow .2s;}
+.btn-submit::after{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.16),transparent);
+  transition:left .45s ease;}
+.btn-submit:hover::after{left:100%;}
+.btn-submit:hover{opacity:.92;box-shadow:0 0 0 3px rgba(13,148,136,0.28),0 0 22px rgba(13,148,136,0.13);}
+.btn-demo{width:100%;padding:11px;background:rgba(13,148,136,0.07);color:var(--tl);
+  border:1px solid rgba(13,148,136,0.18);border-radius:var(--r);font-size:12px;font-weight:600;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;
+  text-decoration:none;transition:background .15s,border-color .15s,box-shadow .15s;}
+.btn-demo:hover{background:rgba(13,148,136,0.13);border-color:rgba(13,148,136,0.32);
+  box-shadow:0 0 16px rgba(13,148,136,0.09);}
+.auth-divider{display:flex;align-items:center;gap:10px;margin:18px 0 14px;}
+.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:rgba(28,36,56,0.9);}
+.auth-divider span{font-size:10px;color:var(--text3);white-space:nowrap;letter-spacing:.04em;}
+.demo-hint{font-size:10px;color:var(--text3);text-align:center;margin-top:5px;line-height:1.6;}
+.auth-err{padding:10px 14px;background:rgba(220,38,38,0.08);border:1px solid rgba(220,38,38,0.25);
+  border-radius:var(--r-sm);font-size:12px;color:#f87171;margin-top:14px;}
+.auth-link{text-align:center;margin-top:16px;font-size:11px;color:var(--text3);}
+.auth-link a{color:var(--tl);text-decoration:none;}
+.auth-link a:hover{text-decoration:underline;}
+.verify-box{text-align:center;padding:12px 0;}
+.verify-icon{width:46px;height:46px;border-radius:12px;background:var(--teal-dim);
+  border:1px solid rgba(13,148,136,0.18);display:flex;align-items:center;
+  justify-content:center;margin:0 auto 18px;}
+.verify-title{font-family:'DM Serif Display',serif;font-size:20px;color:var(--text);margin-bottom:8px;}
+.verify-sub{font-size:13px;color:var(--text2);line-height:1.65;}
+.verify-note{font-size:11px;color:var(--text3);margin-top:16px;}
+.btn-resend{width:100%;padding:11px;margin-top:20px;background:transparent;
+  border:1px solid var(--border2);border-radius:var(--r);color:var(--text3);
+  font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;
+  transition:border-color .15s,color .15s;}
+.btn-resend:hover{border-color:var(--teal);color:var(--tl);}
+.lang-sw{position:fixed;top:14px;right:14px;display:flex;gap:2px;
+  background:rgba(6,8,18,0.85);border:1px solid var(--border);
+  border-radius:var(--r-sm);padding:3px;z-index:99;backdrop-filter:blur(8px);}
+.lang-sw button{padding:4px 10px;border:none;border-radius:5px;font-size:10px;
+  font-weight:600;cursor:pointer;background:transparent;color:var(--text3);transition:all .15s;}
+.lang-sw button.active{background:var(--teal);color:#fff;}
+@media(max-width:640px){
+  .form-side{width:calc(100vw - 28px);min-width:0;padding:32px 22px 28px;border-radius:14px;}
+  .sig-chip:not(.sc-bm){display:none;}
+}
+/* ── Desktop app mode (pywebview detected) ── */
+body.desktop .form-side{width:480px;padding:52px 48px 44px;}
+body.desktop .form-logo{font-size:32px;}
+body.desktop .form-tagline{font-size:13px;margin-bottom:30px;}
+body.desktop .sig-chip{font-size:10px;padding:6px 12px;}
+body.desktop .sc-tl{top:80px;left:32px;}
+body.desktop .sc-bl{bottom:80px;left:32px;}
+body.desktop .sc-tr{top:120px;right:32px;}
+body.desktop .sc-br{bottom:120px;right:32px;}
+body.desktop .fi{padding:12px 16px 12px 40px;font-size:14px;}
+body.desktop .fi-wrap .fi{padding-left:40px;padding-right:40px;}
+body.desktop .btn-submit{padding:14px;font-size:15px;}
+body.desktop .btn-demo{padding:13px;font-size:14px;}
+body.desktop .form-topbar{margin-bottom:28px;}
+/* ── Input with icon ── */
+.fi-wrap{position:relative;margin-bottom:2px;}
+.fi-wrap .fi{padding-left:38px;padding-right:38px;}
+.fi-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);
+  color:var(--text3);pointer-events:none;transition:color .2s;}
+.fi-wrap:focus-within .fi-icon{color:rgba(13,148,136,0.7);}
+.fi-wrap .fi:focus{border-color:rgba(13,148,136,0.5);background:rgba(13,148,136,0.04);
+  box-shadow:0 0 0 3px rgba(13,148,136,0.08);}
+/* ── Password toggle ── */
+.pw-eye{position:absolute;right:10px;top:50%;transform:translateY(-50%);
+  background:none;border:none;cursor:pointer;color:var(--text3);padding:4px;
+  display:flex;align-items:center;transition:color .15s;line-height:1;}
+.pw-eye:hover{color:var(--tl);}
+/* ── Password strength ── */
+.pw-strength{margin-top:7px;margin-bottom:2px;}
+.pw-bars{display:flex;gap:3px;margin-bottom:4px;}
+.pw-bar{flex:1;height:3px;border-radius:2px;background:var(--border2);transition:background .3s;}
+.pw-label{font-size:9px;letter-spacing:.06em;color:var(--text3);transition:color .3s;height:12px;}
+/* ── Form section ── */
+.form-fields{display:flex;flex-direction:column;gap:14px;margin-bottom:4px;}
+.field-group{display:flex;flex-direction:column;gap:0;}
+.flbl{margin-bottom:5px;}
+/* ── Input hint ── */
+.fi-hint{font-size:10px;color:var(--text3);margin-top:4px;line-height:1.4;}
+</style></head><body>
+<div class="lang-sw" id="_authLang">
+  <button id="_authEN" onclick="_authSetLang('en')">EN</button>
+  <button id="_authFR" onclick="_authSetLang('fr')">FR</button>
+</div>
+<script>
+var _aLang=localStorage.getItem('pilar_lang')||'fr';
+var _TA={
+en:{login_title:'Sign in',reg_title:'Create account',tagline:'Predictive maintenance platform',
+  lbl_email:'Email',lbl_pw:'Password',lbl_pw2:'Confirm password',
+  stay_connected:'Stay connected',
+  btn_login:'Sign in',btn_reg:'Create account',
+  link_reg:'No account? <a href="/register">Create one</a>',
+  link_login:'Already have an account? <a href="/login">Sign in</a>',
+  link_forgot_pw:'<a href="/forgot-password">Forgot password?</a>',
+  verify_title:'Check your inbox',
+  verify_sub:'A confirmation link was sent. Click it to activate your account.',
+  verify_note:'Valid 24h · Check spam',back_login:'Back to sign in',
+  resend:'Resend email',resent:'Email sent again!',
+  forgot_title:'Forgot password',reset_title:'New password',
+  forgot_ph:'you@company.com',
+  btn_forgot:'Send reset link',btn_reset:'Save new password',
+  lbl_new_pw:'New password',lbl_confirm_pw:'Confirm',
+  pw_ph:'8 characters minimum',
+  forgot_success:'If an account exists for this email, a reset link has been sent.',
+  forgot_err_email:'Email required.',
+  reset_err_short:'Password must be at least 8 characters.',
+  reset_err_match:'Passwords do not match.',
+  reset_err_expired:'Invalid or expired link. Please start over.',
+  link_back_login:'<a href="/login">Back to sign in</a>',
+  or_demo:'or try without an account',
+  demo_access:'Instant demo access',
+  demo_hint:'3 machines · 180 analyses · all features',
+  lbl_forgot_inline:'Forgot?'},
+fr:{login_title:'Connexion',reg_title:'Créer un compte',tagline:'Plateforme de maintenance prédictive',
+  lbl_email:'Email',lbl_pw:'Mot de passe',lbl_pw2:'Confirmer le mot de passe',
+  stay_connected:'Rester connecté',
+  btn_login:'Se connecter',btn_reg:'Créer mon compte',
+  link_reg:'Pas encore de compte ? <a href="/register">Créer un compte</a>',
+  link_login:'Déjà un compte ? <a href="/login">Se connecter</a>',
+  link_forgot_pw:'<a href="/forgot-password">Mot de passe oublié ?</a>',
+  verify_title:'Vérifiez votre email',
+  verify_sub:'Un lien de confirmation a été envoyé. Cliquez dessus pour activer votre compte.',
+  verify_note:'Valide 24h · Vérifiez vos spams',back_login:'Retour à la connexion',
+  resend:"Renvoyer l'email",resent:'Email renvoyé !',
+  forgot_title:'Mot de passe oublié',reset_title:'Nouveau mot de passe',
+  forgot_ph:'vous@entreprise.com',
+  btn_forgot:'Envoyer le lien de réinitialisation',btn_reset:'Enregistrer le nouveau mot de passe',
+  lbl_new_pw:'Nouveau mot de passe',lbl_confirm_pw:'Confirmer',
+  pw_ph:'8 caractères minimum',
+  forgot_success:'Si un compte existe pour cet email, un lien de réinitialisation a été envoyé.',
+  forgot_err_email:'Email requis.',
+  reset_err_short:'Le mot de passe doit faire au moins 8 caractères.',
+  reset_err_match:'Les mots de passe ne correspondent pas.',
+  reset_err_expired:'Lien invalide ou expiré. Recommencez la procédure.',
+  link_back_login:'<a href="/login">Retour à la connexion</a>',
+  or_demo:'ou essayer sans compte',
+  demo_access:'Accès démo instantané',
+  demo_hint:'3 machines · 180 analyses · toutes les fonctionnalités',
+  lbl_forgot_inline:'Oublié ?'}
+};
+function _tA(k){return(_TA[_aLang]||_TA.fr)[k]||k;}
+function _authSetLang(l){
+  _aLang=l;localStorage.setItem('pilar_lang',l);
+  document.getElementById('_authEN').className=l==='en'?'active':'';
+  document.getElementById('_authFR').className=l==='fr'?'active':'';
+  document.querySelectorAll('[data-t]').forEach(function(el){
+    var k=el.getAttribute('data-t'),v=_tA(k);
+    if(el.tagName==='INPUT'){el.placeholder=v;}else{el.innerHTML=v;}
+  });
+  document.querySelectorAll('[data-t-ph]').forEach(function(el){
+    var k=el.getAttribute('data-t-ph'),v=_tA(k);
+    if(v&&v!==k)el.placeholder=v;
+  });
+  document.querySelectorAll('[data-tkey]').forEach(function(el){
+    var k=el.getAttribute('data-tkey'),v=_tA(k);
+    if(v&&v!==k)el.textContent=v;
+  });
+}
+(function(){_authSetLang(_aLang);})();
+document.addEventListener('DOMContentLoaded',function(){
+  _authSetLang(_aLang);
+  /* Detect pywebview desktop context */
+  function _checkDesktop(){
+    if(typeof window.pywebview!=='undefined'||navigator.userAgent.indexOf('pywebview')!==-1){
+      document.body.classList.add('desktop');
+    }
+  }
+  _checkDesktop();
+  setTimeout(_checkDesktop,300);
+});
+</script>
+<div class="auth-layout">
+  <div class="canvas-side" id="canvas-wrap">
+    <canvas id="pillar-canvas"></canvas>
+    <div class="sig-chip sc-tl">VIB &middot; 0.61 mm/s</div>
+    <div class="sig-chip sc-bl">T.PAL &middot; 44.8 &deg;C</div>
+    <div class="sig-chip sc-tr">P.SORT &middot; 107.7 bar</div>
+    <div class="sig-chip sc-br">DEBIT &middot; 0.395 m&sup3;/h</div>
+    <div class="sig-chip sc-bm">PILAR &nbsp;&bull;&nbsp; MAINTENANCE PR&Eacute;DICTIVE</div>
+  </div>
+  <div class="form-side">
+<div style="width:100%;max-width:860px;margin:0 auto;padding:0 0 60px">
+  <div style="padding:32px 0 24px;border-bottom:1px solid var(--border);margin-bottom:32px;display:flex;align-items:center;justify-content:space-between">
+    <div>
+      <div style="font-size:11px;font-weight:700;letter-spacing:0.04em;color:var(--teal-light);text-transform:uppercase">PILAR</div>
+      <div style="font-size:22px;font-weight:800;color:var(--text);margin-top:6px">API Reference</div>
+      <div style="font-size:12px;color:var(--text3);margin-top:4px">REST API · JSON · Authentication via API key</div>
+    </div>
+    <div style="text-align:right">
+      <a href="/" style="font-size:12px;font-weight:500;color:var(--teal-light);text-decoration:none">App</a>
+      <span style="color:var(--border2);margin:0 8px">|</span>
+      <a href="/account" style="font-size:12px;font-weight:500;color:var(--teal-light);text-decoration:none">Account</a>
+    </div>
+  </div>
+
+  <!-- AUTH -->
+  <div style="margin-bottom:32px">
+    <div style="font-size:11px;font-weight:600;letter-spacing:0.04em;color:var(--text2);text-transform:uppercase;margin-bottom:12px">Authentication</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;box-shadow:var(--shadow-sm)">
+      <p style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:14px">Every request must include your API key in the <code style="color:var(--teal-light);background:var(--surface2);padding:2px 6px;border-radius:6px">X-Api-Key</code> header.</p>
+      {% if api_key %}
+      <div style="background:var(--surface2);border:1px solid rgba(13,148,136,0.3);border-radius:var(--r-sm);padding:12px 16px;display:flex;align-items:center;justify-content:space-between">
+        <code style="font-size:12px;color:var(--teal-light)">{{ api_key }}</code>
+        <button onclick="navigator.clipboard.writeText('{{ api_key }}')" style="background:var(--teal-dim);border:1px solid var(--border2);border-radius:8px;padding:5px 12px;color:var(--teal-light);font-size:11px;font-weight:600;cursor:pointer">COPY</button>
+      </div>
+      {% else %}
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px 16px">
+        <code style="font-size:12px;color:var(--text3)">pk_your_api_key_here</code>
+        <span style="font-size:11px;color:var(--text3);margin-left:12px">→ <a href="/account" style="color:var(--teal-light)">Get your key in Account</a></span>
+      </div>
+      {% endif %}
+      <div style="margin-top:14px;font-size:11px;color:var(--text3)">Base URL: <code style="color:var(--text2)">https://trypilar.com</code></div>
+    </div>
+  </div>
+
+  <!-- ENDPOINTS -->
+  {% set ak = api_key if api_key else 'pk_your_api_key_here' %}
+
+  <!-- POST /api/v1/analyze -->
+  <div style="margin-bottom:28px">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+      <span style="background:var(--teal-dim);border:1px solid rgba(13,148,136,0.4);border-radius:20px;padding:3px 12px;font-size:11px;font-weight:700;color:var(--teal-light)">POST</span>
+      <code style="font-size:14px;color:var(--text);font-weight:700">/api/v1/analyze</code>
+      <span style="font-size:11px;color:var(--text3)">— Single sensor reading</span>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow-sm)">
+      <div style="display:grid;grid-template-columns:1fr 1fr">
+        <div style="padding:16px;border-right:1px solid var(--border)">
+          <div style="font-size:11px;font-weight:600;letter-spacing:0.04em;color:var(--text3);text-transform:uppercase;margin-bottom:10px">Request body</div>
+          <pre style="font-size:11px;color:var(--text2);line-height:1.7;margin:0;overflow-x:auto">{
+  "machine_id": "PUMP-01",
+  "vibration": 2.5,
+  "temp_palier": 65.0,
+  "debit": 45,
+  "pression_entree": 2.0,
+  "pression_sortie": 115,
+  "courant_moteur": 4.8,
+  "temp_moteur": 70,
+  "heure_fonctionnement": 5000
+}</pre>
+        </div>
+        <div style="padding:16px">
+          <div style="font-size:11px;font-weight:600;letter-spacing:0.04em;color:var(--text3);text-transform:uppercase;margin-bottom:10px">Response</div>
+          <pre style="font-size:11px;color:var(--text2);line-height:1.7;margin:0;overflow-x:auto">{
+  "ok": true,
+  "analysis_id": 142,
+  "timestamp": "2026-03-14T10:30:00Z",
+  "machine_id": "PUMP-01",
+  "prediction": 0,
+  "risk": 12.4,
+  "alert": false,
+  "confidence": 100,
+  "imputed": [],
+  "zones": []
+}</pre>
+        </div>
+      </div>
+      <div style="padding:14px 16px;border-top:1px solid var(--border);background:var(--surface2)">
+        <div style="font-size:11px;font-weight:600;letter-spacing:0.04em;color:var(--text3);text-transform:uppercase;margin-bottom:8px">cURL</div>
+        <pre style="font-size:11px;color:var(--teal-light);margin:0;overflow-x:auto;white-space:pre-wrap">curl -X POST https://trypilar.com/api/v1/analyze   -H "X-Api-Key: {{ ak }}"   -H "Content-Type: application/json"   -d '{"machine_id":"PUMP-01","vibration":2.5,"temp_palier":65,"debit":45,"pression_entree":2.0,"pression_sortie":115,"courant_moteur":4.8}'</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- POST /api/v1/analyze/batch -->
+  <div style="margin-bottom:28px">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+      <span style="background:var(--teal-dim);border:1px solid rgba(13,148,136,0.4);border-radius:20px;padding:3px 12px;font-size:11px;font-weight:700;color:var(--teal-light)">POST</span>
+      <code style="font-size:14px;color:var(--text);font-weight:700">/api/v1/analyze/batch</code>
+      <span style="font-size:11px;color:var(--text3)">— Up to 100 readings</span>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow-sm)">
+      <div style="display:grid;grid-template-columns:1fr 1fr">
+        <div style="padding:16px;border-right:1px solid var(--border)">
+          <div style="font-size:11px;font-weight:600;letter-spacing:0.04em;color:var(--text3);text-transform:uppercase;margin-bottom:10px">Request body</div>
+          <pre style="font-size:11px;color:var(--text2);line-height:1.7;margin:0;overflow-x:auto">{
+  "readings": [
+    {"machine_id":"P1","vibration":2.5,
+     "temp_palier":65,"debit":45},
+    {"machine_id":"P2","vibration":8.1,
+     "temp_palier":92,"debit":28}
+  ]
+}</pre>
+        </div>
+        <div style="padding:16px">
+          <div style="font-size:11px;font-weight:600;letter-spacing:0.04em;color:var(--text3);text-transform:uppercase;margin-bottom:10px">Response</div>
+          <pre style="font-size:11px;color:var(--text2);line-height:1.7;margin:0;overflow-x:auto">{
+  "ok": true,
+  "count": 2,
+  "results": [
+    {"index":0,"ok":true,
+     "risk":8.1,"alert":false},
+    {"index":1,"ok":true,
+     "risk":67.3,"alert":true}
+  ]
+}</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GET /api/v1/history -->
+  <div style="margin-bottom:28px">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+      <span style="background:rgba(191,90,242,0.15);border:1px solid rgba(191,90,242,0.4);border-radius:20px;padding:3px 12px;font-size:11px;font-weight:700;color:var(--purple)">GET</span>
+      <code style="font-size:14px;color:var(--text);font-weight:700">/api/v1/history</code>
+      <span style="font-size:11px;color:var(--text3)">— Recent analyses</span>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;box-shadow:var(--shadow-sm)">
+      <div style="font-size:11px;color:var(--text2);line-height:2">
+        <code style="color:var(--teal-light)">?limit=50</code> — Number of results (max 500)<br>
+        <code style="color:var(--teal-light)">?machine_id=PUMP-01</code> — Filter by machine
+      </div>
+      <div style="margin-top:12px;padding:10px 14px;background:var(--surface2);border-radius:var(--r-sm)">
+        <pre style="font-size:11px;color:var(--teal-light);margin:0">curl "https://trypilar.com/api/v1/history?limit=10&machine_id=PUMP-01"   -H "X-Api-Key: {{ ak }}"</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- GET /api/v1/status -->
+  <div style="margin-bottom:32px">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+      <span style="background:rgba(191,90,242,0.15);border:1px solid rgba(191,90,242,0.4);border-radius:20px;padding:3px 12px;font-size:11px;font-weight:700;color:var(--purple)">GET</span>
+      <code style="font-size:14px;color:var(--text);font-weight:700">/api/v1/status</code>
+      <span style="font-size:11px;color:var(--text3)">— Model info &amp; health</span>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;box-shadow:var(--shadow-sm)">
+      <pre style="font-size:11px;color:var(--text2);line-height:1.7;margin:0">{"ok":true,"model_name":"GradientBoosting","recall":98.1,"precision":89.8,"f1":93.8,"n_train":20902,"trained_at":"2026-03-14T06:29:50","plan":"free"}</pre>
+    </div>
+  </div>
+
+  <!-- PARAMETERS TABLE -->
+  <div style="margin-bottom:32px">
+    <div style="font-size:11px;font-weight:600;letter-spacing:0.04em;color:var(--text2);text-transform:uppercase;margin-bottom:14px">Parameters reference</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow-sm)">
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr style="border-bottom:1px solid var(--border)">
+          <th style="padding:10px 14px;text-align:left;color:var(--text2);font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase">Field</th>
+          <th style="padding:10px 14px;text-align:left;color:var(--text2);font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase">Unit</th>
+          <th style="padding:10px 14px;text-align:left;color:var(--text2);font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase">Example</th>
+          <th style="padding:10px 14px;text-align:left;color:var(--text2);font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase">Required</th>
+        </tr></thead>
+        <tbody>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 14px;color:var(--teal-light)"><code>vibration</code></td><td style="padding:9px 14px;color:var(--text2)">mm/s</td><td style="padding:9px 14px;color:var(--text3)">2.5</td><td style="padding:9px 14px;color:var(--text3)">optional</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 14px;color:var(--teal-light)"><code>temp_palier</code></td><td style="padding:9px 14px;color:var(--text2)">°C</td><td style="padding:9px 14px;color:var(--text3)">65.0</td><td style="padding:9px 14px;color:var(--text3)">optional</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 14px;color:var(--teal-light)"><code>debit</code></td><td style="padding:9px 14px;color:var(--text2)">m³/h</td><td style="padding:9px 14px;color:var(--text3)">45.0</td><td style="padding:9px 14px;color:var(--text3)">optional</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 14px;color:var(--teal-light)"><code>pression_entree</code></td><td style="padding:9px 14px;color:var(--text2)">bar</td><td style="padding:9px 14px;color:var(--text3)">2.0</td><td style="padding:9px 14px;color:var(--text3)">optional</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 14px;color:var(--teal-light)"><code>pression_sortie</code></td><td style="padding:9px 14px;color:var(--text2)">bar</td><td style="padding:9px 14px;color:var(--text3)">115.0</td><td style="padding:9px 14px;color:var(--text3)">optional</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 14px;color:var(--teal-light)"><code>courant_moteur</code></td><td style="padding:9px 14px;color:var(--text2)">A</td><td style="padding:9px 14px;color:var(--text3)">4.8</td><td style="padding:9px 14px;color:var(--text3)">optional</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 14px;color:var(--teal-light)"><code>temp_moteur</code></td><td style="padding:9px 14px;color:var(--text2)">°C</td><td style="padding:9px 14px;color:var(--text3)">75.0</td><td style="padding:9px 14px;color:var(--text3)">optional</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 14px;color:var(--teal-light)"><code>heure_fonctionnement</code></td><td style="padding:9px 14px;color:var(--text2)">h</td><td style="padding:9px 14px;color:var(--text3)">5000</td><td style="padding:9px 14px;color:var(--text3)">optional</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 14px;color:var(--teal-light)"><code>machine_id</code></td><td style="padding:9px 14px;color:var(--text2)">string</td><td style="padding:9px 14px;color:var(--text3)">"PUMP-01"</td><td style="padding:9px 14px;color:var(--text3)">optional</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 14px;color:var(--teal-light)"><code>temperature_ambiante</code></td><td style="padding:9px 14px;color:var(--text2)">°C</td><td style="padding:9px 14px;color:var(--text3)">25</td><td style="padding:9px 14px;color:var(--text2)">optional+</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 14px;color:var(--teal-light)"><code>niveau_huile</code></td><td style="padding:9px 14px;color:var(--text2)">%</td><td style="padding:9px 14px;color:var(--text3)">85</td><td style="padding:9px 14px;color:var(--text2)">optional+</td></tr>
+          <tr><td style="padding:9px 14px;color:var(--teal-light)"><code>tension_reseau</code></td><td style="padding:9px 14px;color:var(--text2)">V</td><td style="padding:9px 14px;color:var(--text3)">400</td><td style="padding:9px 14px;color:var(--text2)">optional+</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="margin-top:10px;font-size:11px;color:var(--text3)">At least one sensor field required. Missing core fields are imputed with dataset medians.</div>
+  </div>
+
+  <!-- PYTHON EXAMPLE -->
+  <div style="margin-bottom:32px">
+    <div style="font-size:11px;font-weight:600;letter-spacing:0.04em;color:var(--text2);text-transform:uppercase;margin-bottom:14px">Python example</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;position:relative;box-shadow:var(--shadow-sm)">
+      <button onclick="navigator.clipboard.writeText(document.getElementById('pyex').innerText)" style="position:absolute;top:12px;right:12px;background:var(--teal-dim);border:1px solid var(--border2);border-radius:8px;padding:5px 12px;color:var(--teal-light);font-size:11px;font-weight:600;cursor:pointer">COPY</button>
+      <pre id="pyex" style="font-size:11px;color:var(--text2);line-height:1.8;margin:0;overflow-x:auto">import requests
+
+API_KEY = "{{ ak }}"
+BASE    = "https://trypilar.com"
+
+# Single reading — centrifugal pump
+resp = requests.post(f"{BASE}/api/v1/analyze",
+    headers={"X-Api-Key": API_KEY},
+    json={"machine_id": "PUMP-01", "vibration": 2.5, "temp_palier": 65,
+          "debit": 45, "pression_entree": 2.0, "pression_sortie": 115,
+          "courant_moteur": 4.8, "temp_moteur": 70, "heure_fonctionnement": 5000}
+)
+print(resp.json())
+
+# Batch (PLC loop)
+readings = [{"machine_id": f"P{i}", "vibration": 2.0+i*0.5, "temp_palier": 65+i*3}
+            for i in range(5)]
+resp = requests.post(f"{BASE}/api/v1/analyze/batch",
+    headers={"X-Api-Key": API_KEY},
+    json={"readings": readings}
+)
+for r in resp.json()["results"]:
+    print(f"M{r['index']+1} — risk {r['risk']}% alert={r['alert']}")</pre>
+    </div>
+  </div>
+
+  <!-- RATE LIMITS -->
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;box-shadow:var(--shadow-sm)">
+    <div style="font-size:11px;font-weight:600;letter-spacing:0.04em;color:var(--text2);text-transform:uppercase;margin-bottom:12px">Rate limits</div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:8px 0;color:var(--text2)">Free plan</td>
+        <td style="padding:8px 0;color:var(--text);text-align:right;font-weight:700">1 000 requests / day</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;color:var(--text2)">Paid plan</td>
+        <td style="padding:8px 0;color:var(--teal-light);text-align:right;font-weight:700">50 000 requests / day</td>
+      </tr>
+    </table>
+    <div style="margin-top:10px;font-size:11px;color:var(--text3)">Resets at midnight UTC. HTTP 429 returned when exceeded.</div>
+  </div>
+
+</div>
+</body></html>
