@@ -1,20 +1,16 @@
 {
-  "model_name": "RandomForest_calibrated",
-  "recall": 99.4,
-  "precision": 98.2,
-  "f1": 98.8,
-  "n_total": 289301,
-  "n_failures": 40484,
-  "failure_rate": 14.0,
-  "source": "kaggle_pump_sensor_real_data",
-  "sensor_mapping": {
-    "vibration": "sensor_06",
-    "temp_palier": "sensor_02",
-    "debit": "sensor_00",
-    "pression_entree": "sensor_01",
-    "pression_sortie": "sensor_04",
-    "courant_moteur": "sensor_18",
-    "temp_moteur": "sensor_10"
+  "model_name": "GradientBoosting_calibrated",
+  "recall": 92.9,
+  "precision": 79.2,
+  "f1": 85.5,
+  "n_total": 789301,
+  "n_failures": 70516,
+  "failure_rate": 8.9,
+  "source": "combined_kaggle_factory_synthetic",
+  "source_counts": {
+    "factory": 500000,
+    "kaggle": 220320,
+    "synthetic": 69000
   },
   "features": [
     "vibration",
@@ -30,22 +26,15 @@
     "thermal_load",
     "wear_index"
   ],
-  "zones": [
-    "CAV",
-    "ROL",
-    "ETN",
-    "IMP",
-    "MOT"
-  ],
-  "trained_at": "2026-04-20T18:42:01",
+  "trained_at": "2026-04-27T17:22:51",
   "feature_ranges": {
     "vibration": [
-      0.0145,
-      22.2512
+      0.0,
+      32.47
     ],
     "temp_palier": [
-      33.1597,
-      60.1136
+      -15.73,
+      127.33
     ],
     "debit": [
       0.0,
@@ -80,8 +69,8 @@
       15217.3211
     ],
     "thermal_load": [
-      -53.559,
-      35.3083
+      -83.039,
+      60.021
     ],
     "wear_index": [
       -4.9587,
