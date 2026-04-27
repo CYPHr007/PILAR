@@ -4,102 +4,135 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{{ machine.name }} — Pilar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#07090f;--surface:#0e1118;--surface2:#141820;--surface3:#1e2433;
-  --border:#1e2433;--border2:#252d3d;
-  --teal:#0d9488;--teal2:#14b8a6;--teal-dim:rgba(13,148,136,0.08);
-  --red:#dc2626;--red-dim:rgba(220,38,38,0.08);
-  --green:#059669;--green-dim:rgba(5,150,105,0.08);
-  --amber:#d97706;--amber-dim:rgba(255,159,10,0.12);
-  --text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;
-  --r:12px;--r-sm:8px;
+  --black:#0a0a0a;--white:#ffffff;
+  --g1:#f4f4f2;--g2:#e8e8e6;--g3:#999;--g4:#666;--g5:#333;
+  --sans:'DM Sans',system-ui,sans-serif;
+  --mono:'IBM Plex Mono',monospace;
+  --bg:var(--g1);--surface:var(--white);--surface2:var(--g1);--surface3:var(--g2);
+  --border:var(--g2);--border2:#ccc;
+  --teal:var(--black);--teal2:var(--g5);--teal-dim:rgba(10,10,10,0.05);
+  --teal-light:var(--g5);
+  --red:#b91c1c;--red-dim:rgba(185,28,28,0.06);
+  --green:#166534;--green-dim:rgba(22,101,52,0.06);
+  --amber:#92400e;--amber-dim:rgba(146,64,14,0.07);
+  --text:var(--black);--text2:var(--g5);--text3:var(--g3);
+  --r:0px;--r-sm:0px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden;}
-body{font-family:'Inter','Segoe UI',system-ui,Arial,sans-serif;background:var(--bg);color:var(--text);}
+body{font-family:var(--sans);background:var(--g1);color:var(--black);}
 .desktop-layout{display:flex;height:100vh;overflow:hidden;}
-.sidebar{width:200px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden;}
+.sidebar{width:200px;background:var(--white);border-right:1px solid var(--g2);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden;}
 .main-content{flex:1;display:flex;flex-direction:column;overflow:hidden;}
-header{height:48px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;padding:0 20px;background:var(--surface);flex-shrink:0;}
-.logo{font-size:13px;font-weight:700;letter-spacing:4px;color:#14b8a6;text-transform:uppercase;}
-.hd{width:1px;height:18px;background:var(--border2);}
-.hsub{font-size:10px;letter-spacing:1.2px;color:var(--text3);text-transform:uppercase;}
-.sidebar-logo{padding:16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
-.logo-mark{width:28px;height:28px;border-radius:7px;background:#0d9488;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.logo-text{font-size:13px;font-weight:700;letter-spacing:3px;color:#14b8a6;text-transform:uppercase;}
-.logo-sub{font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-top:1px;}
-.sidebar-nav{flex:1;padding:8px 0;overflow-y:auto;}
-.sidebar-section{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);padding:12px 16px 4px;}
-.ni{display:flex;align-items:center;gap:10px;padding:9px 16px;color:var(--text3);text-decoration:none;font-size:13px;transition:color .15s,background .15s;cursor:pointer;border:none;background:none;width:100%;text-align:left;}
-.ni:hover{color:var(--text2);background:var(--surface2);}
-.ni.on{color:#14b8a6;background:rgba(13,148,136,0.08);}
-.ni svg{width:16px;height:16px;flex-shrink:0;}
-.ni-label{font-size:13px;}
-.sidebar-footer{border-top:1px solid var(--border);padding:10px 12px;}
-.sync-status-bar{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text3);padding:4px 0;}
-.sync-dot{width:6px;height:6px;border-radius:50%;background:var(--text3);}
-.sync-dot.online{background:#059669;}
+header{height:48px;border-bottom:1px solid var(--g2);display:flex;align-items:center;gap:14px;padding:0 20px;background:var(--white);flex-shrink:0;}
+.logo{font-family:var(--sans);font-size:13px;font-weight:600;letter-spacing:.16em;color:var(--black);text-transform:uppercase;}
+.hd{width:1px;height:18px;background:var(--g2);}
+.hsub{font-family:var(--mono);font-size:9px;font-weight:300;letter-spacing:.12em;color:var(--g3);text-transform:uppercase;}
+.sidebar-logo{padding:16px;border-bottom:1px solid var(--g2);display:flex;align-items:center;gap:10px;}
+.logo-mark{width:28px;height:28px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--black);}
+.logo-text{font-family:var(--sans);font-size:13px;font-weight:600;letter-spacing:.16em;color:var(--black);text-transform:uppercase;}
+.logo-sub{font-family:var(--mono);font-size:8px;font-weight:300;color:var(--g3);letter-spacing:.10em;text-transform:uppercase;margin-top:2px;}
+.sidebar-nav{flex:1;padding:6px 0;overflow-y:auto;}
+.sidebar-section{font-family:var(--mono);font-size:9px;font-weight:300;letter-spacing:.14em;text-transform:uppercase;color:var(--g3);padding:12px 16px 4px;display:flex;align-items:center;gap:8px;}
+.sidebar-section::before{content:'';display:inline-block;width:14px;height:1px;background:var(--g2);}
+.ni{display:flex;align-items:center;gap:10px;padding:8px 14px;color:var(--g4);font-size:12px;font-weight:400;text-decoration:none;transition:color .15s,background .15s;cursor:pointer;border:none;background:none;width:100%;text-align:left;}
+.ni:hover{color:var(--black);background:var(--g1);}
+.ni.on{background:var(--black);color:var(--white);font-weight:500;}
+.ni svg{width:15px;height:15px;stroke-width:1.6;flex-shrink:0;}
+.ni-label{font-size:12px;}
+.sidebar-footer{border-top:1px solid var(--g2);padding:10px 12px;}
+.sync-status-bar{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:9px;font-weight:300;color:var(--g3);padding:4px 0;letter-spacing:.06em;}
+.sync-dot{width:5px;height:5px;background:var(--g3);}
+.sync-dot.online{background:var(--green);}
 .sync-dot.offline{background:var(--amber);}
 .bottom-nav{display:none;}
 .page{flex:1;overflow-y:auto;overflow-x:hidden;}
 .page::-webkit-scrollbar{width:4px;}
-.page::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+.page::-webkit-scrollbar-thumb{background:var(--g2);}
 .pad{padding:20px;max-width:1100px;}
 .machine-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:28px;}
-.machine-title{font-size:26px;font-weight:700;letter-spacing:-0.03em;}
-.machine-sub{font-size:13px;color:var(--text3);margin-top:5px;}
-.status-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;}
-.status-ok{background:var(--green-dim);color:var(--green);border:1px solid rgba(48,209,88,.3);}
-.status-warn{background:var(--amber-dim);color:var(--amber);border:1px solid rgba(255,159,10,.3);}
-.status-crit{background:var(--red-dim);color:var(--red);border:1px solid rgba(255,69,58,.3);}
-.status-none{background:rgba(84,84,88,.12);color:var(--text3);border:1px solid var(--border);}
+.machine-title{font-size:24px;font-weight:600;letter-spacing:-.02em;}
+.machine-sub{font-family:var(--mono);font-size:10px;font-weight:300;color:var(--g3);margin-top:6px;letter-spacing:.08em;}
+.status-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;font-family:var(--mono);font-size:10px;font-weight:300;letter-spacing:.08em;}
+.status-ok{background:var(--green-dim);color:var(--green);border:1px solid rgba(22,101,52,.2);}
+.status-warn{background:var(--amber-dim);color:var(--amber);border:1px solid rgba(146,64,14,.2);}
+.status-crit{background:var(--red-dim);color:var(--red);border:1px solid rgba(185,28,28,.2);}
+.status-none{background:var(--g1);color:var(--g3);border:1px solid var(--g2);}
 /* Tabs */
-.tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:28px;}
-.tab{padding:10px 18px;font-size:13px;font-weight:500;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;transition:color .15s;}
-.tab.active{color:var(--teal2);border-bottom-color:var(--teal);}
-.tab:hover:not(.active){color:var(--text2);}
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--g2);margin-bottom:28px;}
+.tab{padding:10px 18px;font-size:12px;font-weight:400;color:var(--g3);cursor:pointer;border-bottom:2px solid transparent;transition:color .15s;}
+.tab.active{color:var(--black);border-bottom-color:var(--black);}
+.tab:hover:not(.active){color:var(--g5);}
 .tab-pane{display:none;}
 .tab-pane.active{display:block;}
 /* Forms */
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
 .form-group{display:flex;flex-direction:column;gap:6px;}
 .form-group.full{grid-column:1/-1;}
-.form-label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;}
-.form-input,.form-select{background:rgba(120,120,128,0.18);border:1px solid var(--border2);border-radius:var(--r-sm);padding:10px 12px;font-size:13px;color:var(--text);outline:none;transition:border-color .15s;width:100%;}
-.form-input:focus,.form-select:focus{border-color:var(--teal);}
-.form-select option{background:#0e1118;}
-.form-hint{font-size:11px;color:var(--text3);}
-.section-title{font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin:24px 0 14px;}
+.form-label{font-family:var(--mono);font-size:9px;font-weight:300;color:var(--g4);text-transform:uppercase;letter-spacing:.10em;}
+.form-input,.form-select{background:transparent;border:none;border-bottom:1px solid var(--g2);padding:9px 4px;font-size:13px;font-family:var(--sans);color:var(--black);outline:none;transition:border-color .15s;width:100%;}
+.form-input:focus,.form-select:focus{border-bottom-color:var(--black);}
+.form-select option{background:var(--white);color:var(--black);}
+.form-hint{font-family:var(--mono);font-size:9px;font-weight:300;color:var(--g3);}
+.section-title{font-family:var(--mono);font-size:9px;font-weight:300;color:var(--g3);text-transform:uppercase;letter-spacing:.14em;margin:24px 0 14px;display:flex;align-items:center;gap:8px;}
+.section-title::before{content:'';display:inline-block;width:14px;height:1px;background:var(--g2);}
 .section-title:first-child{margin-top:0;}
 /* Cards */
-.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:24px;margin-bottom:16px;}
+.card{background:var(--white);border:1px solid var(--g2);padding:24px;margin-bottom:16px;}
 /* Monitor */
-.monitor-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px;}
-.stat-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;}
-.stat-label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;}
-.stat-val{font-size:28px;font-weight:700;line-height:1;}
+.mon-status-banner{display:flex;align-items:center;gap:16px;padding:16px 20px;border:1px solid var(--g2);margin-bottom:20px;background:var(--white);}
+.mon-risk-big{font-size:52px;font-weight:800;line-height:1;letter-spacing:-0.03em;}
+.mon-risk-label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px;}
+.mon-stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+.stat-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;}
+.stat-label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;}
+.stat-val{font-size:24px;font-weight:700;line-height:1;}
 .stat-sub{font-size:11px;color:var(--text3);margin-top:4px;}
+/* risk distribution bar */
+.dist-bar{display:flex;height:8px;border-radius:4px;overflow:hidden;margin:12px 0 6px;gap:2px;}
+.dist-seg{height:100%;border-radius:2px;transition:width .6s ease;}
+.dist-labels{display:flex;justify-content:space-between;font-size:9px;color:var(--text3);letter-spacing:.5px;}
 .zones-list{display:flex;flex-direction:column;gap:8px;}
 .zone-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);}
 .zone-name{font-size:13px;font-weight:600;}
 .zone-bar-wrap{flex:1;margin:0 16px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
 .zone-bar-fill{height:100%;border-radius:2px;background:var(--amber);}
 .zone-pct{font-size:12px;font-weight:700;color:var(--amber);min-width:36px;text-align:right;}
+/* history summary */
+.hist-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;}
+.hist-stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px 14px;}
+.hist-stat-val{font-size:20px;font-weight:700;}
+.hist-stat-lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-top:2px;}
 /* CSV upload */
-.upload-area{border:2px dashed var(--border2);border-radius:var(--r);padding:48px;text-align:center;cursor:pointer;transition:border-color .2s;}
+.upload-area{position:relative;border:2px dashed var(--border2);border-radius:var(--r);padding:48px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;overflow:hidden;}
 .upload-area:hover,.upload-area.drag{border-color:var(--teal);}
+.upload-area.analysing{border-color:var(--teal);border-style:solid;cursor:default;pointer-events:none;}
 .upload-area input{display:none;}
 .upload-icon{font-size:32px;margin-bottom:12px;}
 .upload-label{font-size:14px;font-weight:600;color:var(--text2);margin-bottom:6px;}
 .upload-hint{font-size:12px;color:var(--text3);}
+/* scan beam */
+@keyframes scan-beam{0%{top:-10%}100%{top:110%}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.scan-beam{display:none;position:absolute;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--black),transparent);animation:scan-beam 1.4s linear infinite;}
+.upload-area.analysing .scan-beam{display:block;}
+/* row counter */
+.scan-counter{display:none;font-family:var(--mono);font-size:10px;font-weight:300;letter-spacing:.10em;color:var(--g3);margin-top:8px;transition:opacity .4s;}
+.upload-area.analysing .scan-counter{display:block;}
+/* icon pulse during analysis */
+@keyframes pulse-icon{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.55;transform:scale(.93)}}
+.upload-area.analysing .upload-icon svg{animation:pulse-icon 1.4s ease-in-out infinite;}
 /* Notes */
 .note-input{width:100%;background:rgba(120,120,128,0.18);border:1px solid var(--border2);border-radius:var(--r-sm);padding:12px;font-size:13px;color:var(--text);outline:none;resize:vertical;min-height:80px;font-family:inherit;}
 .note-input:focus{border-color:var(--teal);}
 .notes-list{display:flex;flex-direction:column;gap:10px;margin-top:16px;}
 .note-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px 16px;}
 .note-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
-.note-author{font-size:11px;font-weight:600;color:var(--teal2);}
+.note-author{font-family:var(--mono);font-size:10px;font-weight:300;color:var(--g4);letter-spacing:.06em;}
 .note-time{font-size:11px;color:var(--text3);}
 .note-content{font-size:13px;color:var(--text2);line-height:1.6;}
 .note-del{background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:2px 6px;}
@@ -110,13 +143,13 @@ header{height:48px;border-bottom:1px solid var(--border);display:flex;align-item
 .history-table td{padding:10px 14px;border-bottom:1px solid var(--border);color:var(--text2);}
 .history-table tr:last-child td{border-bottom:none;}
 /* Buttons */
-.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;font-size:13px;font-weight:600;border:none;border-radius:var(--r-sm);cursor:pointer;transition:opacity .15s;text-decoration:none;}
-.btn-primary{background:var(--teal);color:#fff;}
-.btn-primary:hover{opacity:.85;}
-.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border2);}
-.btn-ghost:hover{border-color:var(--teal);color:var(--teal2);}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;font-size:13px;font-weight:500;border:none;cursor:pointer;transition:opacity .15s;text-decoration:none;}
+.btn-primary{background:var(--black);color:var(--white);}
+.btn-primary:hover{opacity:.80;}
+.btn-ghost{background:transparent;color:var(--g5);border:1px solid var(--g2);}
+.btn-ghost:hover{border-color:var(--black);color:var(--black);}
 .btn-sm{padding:6px 12px;font-size:12px;}
-.toast{position:fixed;bottom:24px;right:24px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r-sm);padding:12px 18px;font-size:13px;color:var(--text2);box-shadow:0 4px 24px rgba(0,0,0,.5);z-index:999;opacity:0;transform:translateY(8px);transition:all .25s;}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r-sm);padding:12px 18px;font-size:13px;color:var(--text2);box-shadow:0 4px 24px rgba(26,23,16,.18);z-index:999;opacity:0;transform:translateY(8px);transition:all .25s;}
 .toast.show{opacity:1;transform:translateY(0);}
 .result-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-top:16px;display:none;}
 @media(max-width:700px){.form-grid{grid-template-columns:1fr;}.monitor-grid{grid-template-columns:1fr 1fr;}.pad{padding:16px;}}
@@ -136,24 +169,68 @@ header{height:48px;border-bottom:1px solid var(--border);display:flex;align-item
   </span>
 </header>
 <div class="page pad">
-<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;">
-  <div>
+<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;gap:20px;">
+  <div style="flex:1;">
     <div class="machine-title">{{ machine.name }}</div>
-    <div class="machine-sub" id="machine-sub">{{ machine.description or (machine.pump_type or 'Pump') + ' · ' + (machine.location or 'No location set') }}</div>
+    <div class="machine-sub" id="machine-sub">{% set parts = [] %}{% if machine.description %}{% set _ = parts.append(machine.description) %}{% elif machine.asset_type and machine.asset_type != 'pump' %}{% set _ = parts.append(machine.asset_type|capitalize) %}{% elif machine.pump_type %}{% set _ = parts.append(machine.pump_type|replace('_',' ')|title) %}{% endif %}{% if machine.location %}{% set _ = parts.append(machine.location) %}{% endif %}{% if machine.serial_number %}{% set _ = parts.append('SN-' + machine.serial_number) %}{% endif %}{{ parts|join(' · ') or 'No description set' }}</div>
+    <div id="status-pill" class="status-pill status-none" style="margin-top:10px;display:inline-flex;">No data yet</div>
   </div>
-  <div id="status-pill" class="status-pill status-none">No data yet</div>
+
+  <!-- Machine Portrait -->
+  <div id="machine-portrait" style="flex-shrink:0;width:110px;height:110px;position:relative;display:flex;align-items:center;justify-content:center;">
+    <div id="portrait-aura" style="position:absolute;inset:-8px;border-radius:50%;transition:all .8s ease;pointer-events:none;"></div>
+    <svg id="portrait-svg" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:90px;height:90px;position:relative;z-index:1;transition:all .6s ease;">
+      <!-- Construction circle (faint, Da Vinci style) -->
+      <circle cx="40" cy="40" r="37" id="pt-construct" stroke="#1A1710" stroke-width=".4" stroke-dasharray="3,4" opacity=".15"/>
+      <!-- Casing cross-section -->
+      <circle cx="40" cy="40" r="22" id="pt-body" fill="none" stroke="#3C3830" stroke-width="1.5"/>
+      <!-- Volute spiral hint -->
+      <path d="M40 18 Q58 18 62 40 Q62 58 40 62" id="pt-volute" stroke="#7A7268" stroke-width=".8" fill="none" stroke-dasharray="2,3" opacity=".5"/>
+      <!-- Impeller (technical drawing style) -->
+      <g id="pt-impeller" style="transform-origin:40px 40px;animation:impeller-spin 5s linear infinite;">
+        <path d="M40 25 Q47 32 40 37" stroke="#3C3830" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+        <path d="M40 25 Q33 32 40 37" stroke="#3C3830" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+        <path d="M55 40 Q48 47 43 40" stroke="#3C3830" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+        <path d="M55 40 Q48 33 43 40" stroke="#3C3830" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+        <path d="M40 55 Q33 48 40 43" stroke="#3C3830" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+        <path d="M40 55 Q47 48 40 43" stroke="#3C3830" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+        <path d="M25 40 Q32 33 37 40" stroke="#3C3830" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+        <path d="M25 40 Q32 47 37 40" stroke="#3C3830" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+      </g>
+      <!-- Hub (centre circle) -->
+      <circle cx="40" cy="40" r="4" id="pt-hub" fill="none" stroke="#3C3830" stroke-width="1.5"/>
+      <circle cx="40" cy="40" r="1.5" fill="#3C3830" id="pt-hub-dot"/>
+      <!-- Inlet pipe (left) — dimension lines -->
+      <rect x="1" y="35" width="15" height="10" rx="1" id="pt-inlet" fill="none" stroke="#7A7268" stroke-width="1"/>
+      <line x1="1" y1="33" x2="16" y2="33" stroke="#BFB099" stroke-width=".5"/>
+      <line x1="1" y1="47" x2="16" y2="47" stroke="#BFB099" stroke-width=".5"/>
+      <!-- Outlet pipe (top) -->
+      <rect x="35" y="1" width="10" height="15" rx="1" id="pt-outlet" fill="none" stroke="#7A7268" stroke-width="1"/>
+      <line x1="33" y1="1" x2="33" y2="16" stroke="#BFB099" stroke-width=".5"/>
+      <line x1="47" y1="1" x2="47" y2="16" stroke="#BFB099" stroke-width=".5"/>
+      <!-- Health dot — the only filled element, color-coded -->
+      <circle cx="64" cy="16" r="4.5" id="pt-dot" fill="#0a0a0a" stroke="#ffffff" stroke-width="1"/>
+    </svg>
+  </div>
 </div>
 
+<style>
+@keyframes impeller-spin{to{transform:rotate(360deg)}}
+@keyframes portrait-pulse-ok{0%,100%{opacity:.5}50%{opacity:.9}}
+@keyframes portrait-pulse-crit{0%,100%{opacity:.6}50%{opacity:1}}
+#portrait-aura{background:radial-gradient(circle,rgba(0,0,0,.04) 0%,transparent 70%);}
+</style>
+
   <div class="tabs">
-    <div class="tab active" onclick="switchTab('info')">Info</div>
-    <div class="tab" onclick="switchTab('data')">Data</div>
-    <div class="tab" onclick="switchTab('monitor')">Monitor</div>
+    <div class="tab {% if default_tab=='info' %}active{% endif %}" onclick="switchTab('info')">Info</div>
+    <div class="tab {% if default_tab=='data' %}active{% endif %}" onclick="switchTab('data')">Data</div>
+    <div class="tab {% if default_tab=='monitor' %}active{% endif %}" onclick="switchTab('monitor')">Monitor</div>
     <div class="tab" onclick="switchTab('notes')">Notes</div>
     <div class="tab" onclick="switchTab('history')">History</div>
   </div>
 
   <!-- INFO TAB -->
-  <div id="tab-info" class="tab-pane active">
+  <div id="tab-info" class="tab-pane {% if default_tab=='info' %}active{% endif %}">
     <p style="font-size:13px;color:var(--text3);margin-bottom:20px;">Machine profile — the model uses these values to adapt its thresholds and imputation to this specific machine.</p>
     <div class="section-title">Identity</div>
     <div class="form-grid">
@@ -179,37 +256,58 @@ header{height:48px;border-bottom:1px solid var(--border);display:flex;align-item
       </div>
     </div>
 
-    <div class="section-title">Pump specs</div>
+    <!-- Model awareness notice — shown for non-pump machines -->
+    <div id="model-bias-notice" style="display:none;margin-bottom:18px;padding:12px 14px;background:rgba(217,119,6,0.07);border:1px solid rgba(217,119,6,0.25);border-radius:8px;font-size:12px;line-height:1.6;color:var(--text2)">
+      <div style="font-weight:700;color:var(--amber);margin-bottom:4px;font-size:11px;letter-spacing:.05em;text-transform:uppercase">Global model — rotating machinery</div>
+      The detection model was trained on real pump sensor data but operates on universal rotating machinery features (vibration, temperature, current, flow, pressure). It will give meaningful anomaly scores for <strong>any machine with similar sensors</strong>.<br>
+      <span style="color:var(--teal);font-weight:600">Upload your own CSV data → the model auto-specializes to this machine within ~100 rows.</span>
+    </div>
+
+    <div class="section-title" id="specs-title">Machine specs</div>
     <div class="form-grid">
       <div class="form-group">
-        <label class="form-label">Pump type</label>
-        <select class="form-select" id="f-pump-type">
-          <option value="centrifuge" {% if machine.pump_type=='centrifuge' %}selected{% endif %}>Centrifugal</option>
-          <option value="axiale" {% if machine.pump_type=='axiale' %}selected{% endif %}>Axial</option>
-          <option value="volumetrique" {% if machine.pump_type=='volumetrique' %}selected{% endif %}>Positive displacement</option>
-          <option value="engrenages" {% if machine.pump_type=='engrenages' %}selected{% endif %}>Gear pump</option>
-          <option value="peristaltique" {% if machine.pump_type=='peristaltique' %}selected{% endif %}>Peristaltic</option>
+        <label class="form-label">Equipment type</label>
+        <select class="form-select" id="f-asset-type" onchange="onAssetTypeInfo(this.value)">
+          <option value="pump" {% if machine.asset_type in (None,'pump') %}selected{% endif %}>Pump</option>
+          <option value="compressor" {% if machine.asset_type=='compressor' %}selected{% endif %}>Compressor</option>
+          <option value="fan" {% if machine.asset_type=='fan' %}selected{% endif %}>Fan / Blower</option>
+          <option value="turbine" {% if machine.asset_type=='turbine' %}selected{% endif %}>Turbine</option>
+          <option value="agitator" {% if machine.asset_type=='agitator' %}selected{% endif %}>Agitator / Mixer</option>
+          <option value="motor" {% if machine.asset_type=='motor' %}selected{% endif %}>Electric Motor</option>
+          <option value="conveyor" {% if machine.asset_type=='conveyor' %}selected{% endif %}>Conveyor</option>
+          <option value="gearbox" {% if machine.asset_type=='gearbox' %}selected{% endif %}>Gearbox</option>
+          <option value="other" {% if machine.asset_type=='other' %}selected{% endif %}>Other</option>
         </select>
       </div>
       <div class="form-group">
-        <label class="form-label">Fluid type</label>
+        <label class="form-label" id="lbl-subtype">Subtype</label>
+        <select class="form-select" id="f-pump-type"></select>
+      </div>
+      <div class="form-group" id="grp-medium">
+        <label class="form-label" id="lbl-medium">Working medium / fluid</label>
         <select class="form-select" id="f-fluid-type">
           <option value="eau" {% if machine.fluid_type=='eau' %}selected{% endif %}>Water</option>
-          <option value="huile" {% if machine.fluid_type=='huile' %}selected{% endif %}>Oil</option>
+          <option value="huile" {% if machine.fluid_type=='huile' %}selected{% endif %}>Oil / Lubricant</option>
           <option value="acide" {% if machine.fluid_type=='acide' %}selected{% endif %}>Acid</option>
-          <option value="boue" {% if machine.fluid_type=='boue' %}selected{% endif %}>Slurry</option>
+          <option value="boue" {% if machine.fluid_type in ('boue','eau_chargee') %}selected{% endif %}>Slurry / Sludge</option>
           <option value="solvant" {% if machine.fluid_type=='solvant' %}selected{% endif %}>Solvent</option>
+          <option value="air" {% if machine.fluid_type=='air' %}selected{% endif %}>Air</option>
+          <option value="gaz" {% if machine.fluid_type=='gaz' %}selected{% endif %}>Gas / Natural gas</option>
+          <option value="vapeur" {% if machine.fluid_type=='vapeur' %}selected{% endif %}>Steam</option>
+          <option value="autre" {% if machine.fluid_type=='autre' %}selected{% endif %}>Other / N/A</option>
         </select>
       </div>
-      <div class="form-group">
-        <label class="form-label">Impeller material</label>
+      <div class="form-group" id="grp-material">
+        <label class="form-label" id="lbl-material">Key component material</label>
         <select class="form-select" id="f-roue-mat">
           <option value="inox_316" {% if machine.roue_material=='inox_316' %}selected{% endif %}>Stainless 316</option>
           <option value="inox_304" {% if machine.roue_material=='inox_304' %}selected{% endif %}>Stainless 304</option>
           <option value="fonte" {% if machine.roue_material=='fonte' %}selected{% endif %}>Cast iron</option>
           <option value="bronze" {% if machine.roue_material=='bronze' %}selected{% endif %}>Bronze</option>
-          <option value="plastique" {% if machine.roue_material=='plastique' %}selected{% endif %}>Plastic</option>
-          <option value="duplex" {% if machine.roue_material=='duplex' %}selected{% endif %}>Duplex</option>
+          <option value="plastique" {% if machine.roue_material=='plastique' %}selected{% endif %}>Plastic / PVDF</option>
+          <option value="acier_carbone" {% if machine.roue_material=='acier_carbone' %}selected{% endif %}>Carbon steel</option>
+          <option value="aluminium" {% if machine.roue_material=='aluminium' %}selected{% endif %}>Aluminium</option>
+          <option value="autre" {% if machine.roue_material=='autre' %}selected{% endif %}>Other</option>
         </select>
       </div>
       <div class="form-group">
@@ -219,27 +317,27 @@ header{height:48px;border-bottom:1px solid var(--border);display:flex;align-item
       </div>
     </div>
 
-    <div class="section-title">Nominal operating values <span style="font-size:10px;font-weight:400;text-transform:none;"> — used by the model as per-machine baselines</span></div>
+    <div class="section-title" id="nom-title">Nominal operating values <span style="font-size:10px;font-weight:400;text-transform:none;"> — used by the model as per-machine baselines</span></div>
     <div class="form-grid">
       <div class="form-group">
-        <label class="form-label">Nominal flow (m³/h)</label>
-        <input class="form-input" id="f-nominal-flow" type="number" step="0.1" placeholder="e.g. 12.5" value="{{ machine.nominal_flow or '' }}">
+        <label class="form-label" id="lbl-flow">Nominal flow / throughput</label>
+        <input class="form-input" id="f-nominal-flow" type="number" step="0.01" placeholder="e.g. 2.5" value="{{ machine.nominal_flow or '' }}">
       </div>
       <div class="form-group">
-        <label class="form-label">Nominal outlet pressure (bar)</label>
-        <input class="form-input" id="f-nominal-pressure" type="number" step="0.1" placeholder="e.g. 6.0" value="{{ machine.nominal_pressure or '' }}">
+        <label class="form-label" id="lbl-pressure">Nominal outlet pressure</label>
+        <input class="form-input" id="f-nominal-pressure" type="number" step="0.1" placeholder="e.g. 630" value="{{ machine.nominal_pressure or '' }}">
       </div>
       <div class="form-group">
-        <label class="form-label">Rated motor power (kW)</label>
+        <label class="form-label">Rated power (kW)</label>
         <input class="form-input" id="f-power-kw" type="number" step="0.1" placeholder="e.g. 7.5" value="{{ machine.power_kw or '' }}">
       </div>
       <div class="form-group">
         <label class="form-label">Nominal motor current (A)</label>
-        <input class="form-input" id="f-nominal-current" type="number" step="0.1" placeholder="e.g. 15.0" value="{{ machine.nominal_current or '' }}">
+        <input class="form-input" id="f-nominal-current" type="number" step="0.01" placeholder="e.g. 2.5" value="{{ machine.nominal_current or '' }}">
       </div>
       <div class="form-group">
         <label class="form-label">Normal vibration level (mm/s)</label>
-        <input class="form-input" id="f-nominal-vibration" type="number" step="0.01" placeholder="e.g. 0.6" value="{{ machine.nominal_vibration or '' }}">
+        <input class="form-input" id="f-nominal-vibration" type="number" step="0.01" placeholder="e.g. 13.5" value="{{ machine.nominal_vibration or '' }}">
       </div>
     </div>
 
@@ -263,46 +361,194 @@ header{height:48px;border-bottom:1px solid var(--border);display:flex;align-item
 
   <!-- DATA TAB -->
   <div id="tab-data" class="tab-pane">
+
+    <!-- LIVE CONNECTION CARD -->
+    <div class="card" style="margin-bottom:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div>
+          <div style="font-size:14px;font-weight:600;">Live CSV connection</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:2px;">Watch a local file — PILAR reads new rows as your SCADA/PLC appends them</div>
+        </div>
+        <div id="live-status-dot" style="width:10px;height:10px;border-radius:50%;background:var(--border);flex-shrink:0" title="Not connected"></div>
+      </div>
+
+      <div id="live-connect-form">
+        <div style="margin-bottom:10px;">
+          <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px;">File path (absolute path on this machine)</label>
+          <input id="live-path" type="text" placeholder="C:\data\pump_sensor_log.csv"
+            style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;color:var(--text);font-size:12px;font-family:monospace;">
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+          <div style="flex:1">
+            <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px;">Poll interval (seconds)</label>
+            <select id="live-interval" style="background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 10px;color:var(--text);font-size:12px;width:100%">
+              <option value="5">Every 5 seconds</option>
+              <option value="10">Every 10 seconds</option>
+              <option value="30" selected>Every 30 seconds</option>
+              <option value="60">Every minute</option>
+              <option value="300">Every 5 minutes</option>
+            </select>
+          </div>
+          <div style="flex:0 0 auto;padding-top:18px;">
+            <button onclick="liveStart()" style="background:var(--black);color:var(--white);border:none;padding:8px 18px;font-size:13px;font-weight:500;cursor:pointer;">
+              Connect
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div id="live-status-panel" style="display:none;">
+        <div style="background:rgba(5,150,105,.08);border:1px solid rgba(5,150,105,.25);border-radius:var(--r-sm);padding:12px 14px;margin-bottom:10px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+            <div style="width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite"></div>
+            <span style="font-size:12px;font-weight:600;color:var(--green)">Live — reading <span id="live-fname" style="font-family:monospace"></span></span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:12px;">
+            <div><span style="color:var(--text3)">Rows read</span><br><b id="live-rows">0</b></div>
+            <div><span style="color:var(--text3)">Alerts</span><br><b id="live-alerts" style="color:var(--amber)">0</b></div>
+            <div><span style="color:var(--text3)">Last risk</span><br><b id="live-last-risk">—</b></div>
+          </div>
+          <div style="font-size:10px;color:var(--text3);margin-top:6px;" id="live-last-ts"></div>
+        </div>
+        <button onclick="liveStop()" style="background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.2);border-radius:var(--r-sm);padding:7px 16px;font-size:12px;font-weight:600;cursor:pointer;width:100%">
+          Disconnect
+        </button>
+      </div>
+
+      <div style="margin-top:10px;padding:10px 12px;background:var(--bg);border-radius:var(--r-sm);font-size:11px;color:var(--text3);line-height:1.6">
+        <b style="color:var(--text2)">How it works:</b> Your SCADA/PLC/data logger appends rows to the CSV file. PILAR reads each new row, runs prediction, and saves to history automatically. The Monitor tab updates in real time.
+        <br>Column headers are auto-detected — no configuration needed.
+      </div>
+    </div>
+
+    <!-- UPLOAD CARD -->
     <div class="card">
       <div style="font-size:14px;font-weight:600;margin-bottom:8px;">Upload sensor data (CSV)</div>
       <p style="font-size:13px;color:var(--text3);margin-bottom:20px;">Upload a CSV file with sensor readings. Columns are auto-detected. Each row is one reading — all rows will be analysed and saved.</p>
       <div class="upload-area" id="upload-area" onclick="document.getElementById('csv-file').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="handleDrop(event)">
+        <div class="scan-beam"></div>
         <input type="file" id="csv-file" accept=".csv" onchange="handleFileSelect(event)">
         <div class="upload-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:32px;height:32px;color:var(--teal2)"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
         <div class="upload-label" id="upload-label">Drop CSV here or click to browse</div>
-        <div class="upload-hint">vibration · temp_palier · debit · pression_entree/sortie · courant_moteur · temp_moteur · heure_fonctionnement</div>
+        <div class="upload-hint" id="upload-hint">vibration · temp_palier · debit · pression_entree/sortie · courant_moteur · temp_moteur · heure_fonctionnement</div>
+        <div class="scan-counter" id="scan-counter">analysing...</div>
       </div>
       <div id="upload-result" class="result-box"></div>
-    </div>
-  </div>
+    </div><!-- /upload card -->
+  </div><!-- /tab-data -->
 
   <!-- MONITOR TAB -->
-  <div id="tab-monitor" class="tab-pane">
-    <p style="font-size:13px;color:var(--text3);margin-bottom:20px;">Latest analysis for this machine. Updates automatically when new data is uploaded.</p>
-    <div class="monitor-grid">
-      <div class="stat-box">
-        <div class="stat-label">Risk score</div>
-        <div class="stat-val" id="mon-risk" style="color:var(--text3);">—</div>
-        <div class="stat-sub" id="mon-status">No data yet</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-label">RUL estimate</div>
-        <div class="stat-val" id="mon-rul" style="color:var(--text3);">—</div>
-        <div class="stat-sub">hours remaining</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-label">Last seen</div>
-        <div class="stat-val" style="font-size:15px;color:var(--text2);" id="mon-last">—</div>
-        <div class="stat-sub" id="mon-confidence"></div>
-      </div>
+  <div id="tab-monitor" class="tab-pane {% if default_tab=='monitor' %}active{% endif %}">
+    <div id="mon-no-data" style="text-align:center;padding:60px 20px;color:var(--text3);">
+      <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5" style="width:40px;height:40px;margin:0 auto 12px;display:block;opacity:.4"><circle cx="24" cy="24" r="20"/><path d="M24 14v10l6 6"/></svg>
+      <div style="font-size:14px;margin-bottom:6px;">No data yet</div>
+      <div style="font-size:12px;">Upload a CSV file or run a manual analysis to see results here.</div>
     </div>
-    <div id="mon-zones-section" style="display:none;">
-      <div class="section-title">Active failure zones</div>
-      <div class="zones-list" id="mon-zones"></div>
-    </div>
-    <div id="mon-shap-section" style="display:none;margin-top:20px;">
-      <div class="section-title">Top contributing factors (SHAP)</div>
-      <div class="zones-list" id="mon-shap"></div>
+    <div id="mon-data" style="display:none;">
+
+      <!-- NO-BASELINE NOTICE (shown until machine has a computed baseline) -->
+      <div id="mon-no-baseline-notice" style="display:none;background:rgba(217,119,6,.08);border:1px solid rgba(217,119,6,.3);border-radius:var(--r);padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--amber);line-height:1.5">
+        <strong>Staging based on model risk only</strong> — no sensor baseline yet.<br>
+        Once this machine accumulates ~20 normal readings, PILAR will compute a per-sensor baseline
+        and switch to physics-based staging (deviation from normal), which is more reliable and works for any machine type.
+      </div>
+
+      <!-- HEALTH STAGE BANNER -->
+      <div id="mon-stage-banner" style="border-radius:var(--r);padding:18px 20px;margin-bottom:16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+        <div style="flex:0 0 auto">
+          <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;opacity:.7;margin-bottom:4px">Health stage</div>
+          <div style="font-size:26px;font-weight:800;letter-spacing:-.02em" id="mon-stage-label">—</div>
+        </div>
+        <div style="flex:1;min-width:160px">
+          <!-- 4-stage progress bar -->
+          <div style="display:flex;gap:3px;margin-bottom:6px">
+            <div class="stage-pip" id="pip-0" style="flex:1;height:6px;border-radius:3px;background:var(--border)"></div>
+            <div class="stage-pip" id="pip-1" style="flex:1;height:6px;border-radius:3px;background:var(--border)"></div>
+            <div class="stage-pip" id="pip-2" style="flex:1;height:6px;border-radius:3px;background:var(--border)"></div>
+            <div class="stage-pip" id="pip-3" style="flex:1;height:6px;border-radius:3px;background:var(--border)"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text3)">
+            <span>Healthy</span><span>Watch</span><span>Alert</span><span>Critical</span>
+          </div>
+        </div>
+        <div style="flex:0 0 auto;text-align:right">
+          <div id="mon-trend-tag" style="font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;display:inline-block;margin-bottom:4px"></div>
+          <div style="font-size:11px;color:var(--text3)" id="mon-tte"></div>
+        </div>
+      </div>
+
+      <!-- RISK TREND CHART -->
+      <div id="mon-chart-wrap" style="display:none;margin-bottom:16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;">
+        <div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:10px">Risk trend</div>
+        <svg id="mon-chart" width="100%" height="72" style="display:block;overflow:visible"></svg>
+      </div>
+
+      <!-- LIFECYCLE TIMELINE -->
+      <div id="lifecycle-section" style="display:none;margin-bottom:16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 20px;">
+        <div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:14px">Life cycle</div>
+        <div style="position:relative;padding:0 0 24px;">
+          <!-- Track -->
+          <div style="height:3px;background:var(--border);border-radius:2px;position:relative;margin:18px 0 0;">
+            <div id="lc-fill" style="height:100%;background:var(--black);transition:width .6s ease;width:0%"></div>
+          </div>
+          <!-- Events layer -->
+          <div id="lc-events" style="position:absolute;left:0;right:0;top:0;height:48px;pointer-events:none;"></div>
+          <!-- Labels row -->
+          <div id="lc-labels" style="display:flex;justify-content:space-between;margin-top:8px;font-size:10px;color:var(--text3);">
+            <span id="lc-start">—</span>
+            <span id="lc-age" style="color:var(--text2);font-weight:600;"></span>
+            <span id="lc-end">Today</span>
+          </div>
+        </div>
+        <div id="lc-legend" style="display:flex;gap:14px;flex-wrap:wrap;margin-top:4px;font-size:10px;color:var(--text3);">
+          <span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;border-radius:50%;background:var(--red);display:inline-block"></span>Anomaly</span>
+          <span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;border-radius:50%;background:var(--teal);display:inline-block"></span>Note / maintenance</span>
+        </div>
+      </div>
+
+      <!-- STATS ROW -->
+      <div class="mon-stats-grid" style="margin-bottom:16px">
+        <div class="stat-box">
+          <div class="stat-label">Last risk</div>
+          <div class="stat-val" id="mon-risk">—</div>
+          <div class="stat-sub">latest reading</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Avg risk</div>
+          <div class="stat-val" id="mon-avg">—</div>
+          <div class="stat-sub">all readings</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Peak risk</div>
+          <div class="stat-val" id="mon-max">—</div>
+          <div class="stat-sub">worst reading</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Readings</div>
+          <div class="stat-val" id="mon-total">—</div>
+          <div class="stat-sub" id="mon-baseline-tag">no baseline</div>
+        </div>
+      </div>
+
+      <!-- LEADING INDICATOR CALLOUT -->
+      <div id="mon-leading-section" style="display:none;margin-bottom:16px;padding:14px 16px;border-radius:var(--r);border:1px solid rgba(217,119,6,.3);background:rgba(217,119,6,.06)">
+        <div style="font-size:10px;font-weight:700;color:var(--amber);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">Primary concern</div>
+        <div id="mon-leading-list"></div>
+      </div>
+
+      <!-- SENSOR FINGERPRINT -->
+      <div id="mon-sensors-section" style="display:none;margin-bottom:16px;">
+        <div class="section-title" style="margin-bottom:10px">Sensor deviation from baseline</div>
+        <div id="mon-sensors-list"></div>
+        <div style="font-size:10px;color:var(--text3);margin-top:8px">σ = standard deviations from normal baseline. Values beyond ±2σ are outside typical operating range.</div>
+      </div>
+
+      <!-- ZONE FREQUENCY (fallback when no baseline) -->
+      <div id="mon-zones-section" style="display:none;">
+        <div class="section-title">Most frequent failure zones</div>
+        <div class="zones-list" id="mon-zones"></div>
+      </div>
+
     </div>
   </div>
 
@@ -322,19 +568,30 @@ header{height:48px;border-bottom:1px solid var(--border);display:flex;align-item
 
   <!-- HISTORY TAB -->
   <div id="tab-history" class="tab-pane">
-    <p style="font-size:13px;color:var(--text3);margin-bottom:16px;">All analyses recorded for this machine.</p>
+    <div id="hist-summary-row" class="hist-summary" style="display:none;">
+      <div class="hist-stat"><div class="hist-stat-val" id="hist-total">—</div><div class="hist-stat-lbl">Total readings</div></div>
+      <div class="hist-stat"><div class="hist-stat-val" id="hist-avg">—</div><div class="hist-stat-lbl">Avg risk</div></div>
+      <div class="hist-stat"><div class="hist-stat-val" id="hist-max">—</div><div class="hist-stat-lbl">Peak risk</div></div>
+      <div class="hist-stat"><div class="hist-stat-val" id="hist-anom">—</div><div class="hist-stat-lbl">Anomaly rate</div></div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:8px;">
+      <button id="hist-sort-btn" onclick="toggleHistSort()" style="background:var(--surface);border:1px solid var(--border);color:var(--text2);font-size:11px;padding:5px 12px;border-radius:20px;cursor:pointer;">
+        Newest first ↓
+      </button>
+    </div>
     <div style="overflow-x:auto;">
       <table class="history-table">
         <thead>
           <tr>
-            <th>Date</th><th>Risk</th><th>Status</th><th>Zones</th><th>Confidence</th>
+            <th>Date</th><th>Risk</th><th>Status</th><th>Zones</th>
           </tr>
         </thead>
         <tbody id="history-body">
-          <tr><td colspan="5" style="text-align:center;color:var(--text3);padding:32px;">Loading…</td></tr>
+          <tr><td colspan="4" style="text-align:center;color:var(--text3);padding:32px;">Loading…</td></tr>
         </tbody>
       </table>
     </div>
+    <div id="hist-footer" style="display:none;padding:12px 0;font-size:12px;color:var(--text3);text-align:center;"></div>
   </div>
 </div>
 </div>
@@ -345,7 +602,7 @@ header{height:48px;border-bottom:1px solid var(--border);display:flex;align-item
 <script>
 const MID = {{ machine.id }};
 const MACHINE = {{ machine_json | safe }};
-let activeTab = 'info';
+let activeTab = '{{ default_tab }}';
 
 function switchTab(name) {
   document.querySelectorAll('.tab').forEach((t,i) => {
@@ -368,6 +625,68 @@ function toast(msg, ok) {
   setTimeout(() => t.classList.remove('show'), 3000);
 }
 
+// ── Asset-type config for Info tab ───────────────────────────────────────────
+var _INFO_CFG = {
+  pump:       { title:'Pump specs', subtypes:[['centrifuge','Centrifugal'],['pompe_a_vis','Screw / Vis'],['engrenage','Gear pump'],['palettes','Vane pump'],['piston','Piston / Reciprocating'],['peristaltique','Peristaltic'],['autre','Other']], medium:'Working fluid', material:'Impeller material', flow:'Nominal flow rate', pressure:'Nominal outlet pressure' },
+  compressor: { title:'Compressor specs', subtypes:[['comp_reciprocating','Reciprocating / Piston'],['comp_screw','Rotary screw'],['comp_centrifugal','Centrifugal'],['comp_scroll','Scroll'],['comp_vane','Vane'],['autre','Other']], medium:'Working gas / medium', material:'Cylinder / valve material', flow:'Nominal discharge flow', pressure:'Nominal discharge pressure' },
+  fan:        { title:'Fan / Blower specs', subtypes:[['fan_axial','Axial'],['fan_centrifugal','Centrifugal'],['fan_mixed','Mixed flow'],['fan_cross','Cross-flow'],['autre','Other']], medium:'Conveyed medium', material:'Blade material', flow:'Nominal air / gas flow', pressure:'Nominal static pressure' },
+  turbine:    { title:'Turbine specs', subtypes:[['turb_steam','Steam turbine'],['turb_gas','Gas turbine'],['turb_hydro','Hydraulic turbine'],['turb_wind','Wind turbine'],['autre','Other']], medium:'Working fluid', material:'Blade material', flow:'Nominal mass flow', pressure:'Inlet pressure' },
+  agitator:   { title:'Agitator / Mixer specs', subtypes:[['agit_propeller','Propeller'],['agit_turbine','Turbine / Rushton'],['agit_anchor','Anchor'],['agit_ribbon','Ribbon'],['agit_paddle','Paddle'],['autre','Other']], medium:'Process fluid / product', material:'Impeller material', flow:'Nominal mixing speed (rpm)', pressure:'Vessel operating pressure' },
+  motor:      { title:'Motor specs', subtypes:[['motor_ac_induction','AC Induction'],['motor_ac_sync','AC Synchronous'],['motor_dc','DC motor'],['motor_servo','Servo'],['motor_stepper','Stepper'],['autre','Other']], medium:'Cooling medium', material:'Frame / winding material', flow:'Nominal speed (rpm)', pressure:'Rated voltage (V)' },
+  conveyor:   { title:'Conveyor specs', subtypes:[['conv_belt','Belt conveyor'],['conv_chain','Chain / Drag'],['conv_screw','Screw conveyor'],['conv_bucket','Bucket elevator'],['conv_pneumatic','Pneumatic'],['autre','Other']], medium:'Conveyed material', material:'Belt / chain material', flow:'Nominal belt speed (m/s)', pressure:'Max load capacity (kg/m)' },
+  gearbox:    { title:'Gearbox specs', subtypes:[['gear_helical','Helical'],['gear_bevel','Bevel'],['gear_worm','Worm'],['gear_planetary','Planetary'],['gear_spur','Spur'],['autre','Other']], medium:'Lubrication oil', material:'Gear material', flow:'Input speed (rpm)', pressure:'Output torque (Nm)' },
+  other:      { title:'Machine specs', subtypes:[['autre','Other / Custom']], medium:'Working medium', material:'Key component material', flow:'Nominal throughput', pressure:'Nominal operating pressure' },
+};
+
+function onAssetTypeInfo(at) {
+  var cfg = _INFO_CFG[at] || _INFO_CFG.other;
+  // Section title
+  var st = document.getElementById('specs-title');
+  if (st) st.firstChild.textContent = cfg.title + ' ';
+  // Subtype select
+  var sel = document.getElementById('f-pump-type');
+  var cur = sel.value;
+  sel.innerHTML = cfg.subtypes.map(function(s){ return '<option value="'+s[0]+'"'+(s[0]===cur?' selected':'')+'>'+s[1]+'</option>'; }).join('');
+  // Dynamic labels
+  var lbls = { 'lbl-subtype':'Subtype', 'lbl-medium':cfg.medium, 'lbl-material':cfg.material, 'lbl-flow':cfg.flow, 'lbl-pressure':cfg.pressure };
+  Object.keys(lbls).forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=lbls[id]; });
+  // Hide medium/material for motor (not applicable)
+  var hideMedium = (at==='motor');
+  var gm = document.getElementById('grp-medium');
+  var gmat = document.getElementById('grp-material');
+  if (gm) gm.style.display = hideMedium ? 'none' : '';
+  // Show model notice
+  _updateModelNotice(at);
+}
+
+function _updateModelNotice(at) {
+  var notice = document.getElementById('model-bias-notice');
+  if (!notice) return;
+  if (at && at !== 'pump') {
+    notice.style.display = 'block';
+  } else {
+    notice.style.display = 'none';
+  }
+}
+
+// Run on page load with current asset type
+(function(){
+  var sel = document.getElementById('f-asset-type');
+  if (sel) {
+    var at = sel.value || 'pump';
+    onAssetTypeInfo(at);
+    // Restore saved subtype value
+    var savedSubtype = '{{ machine.pump_type or "" }}';
+    var stSel = document.getElementById('f-pump-type');
+    if (stSel && savedSubtype) {
+      // Try to select the saved value; if not found, add it as first option
+      var found = false;
+      for (var i=0; i<stSel.options.length; i++) { if (stSel.options[i].value===savedSubtype){ stSel.selectedIndex=i; found=true; break; } }
+      if (!found && savedSubtype) { var opt=document.createElement('option'); opt.value=savedSubtype; opt.text=savedSubtype; stSel.insertBefore(opt, stSel.firstChild); stSel.selectedIndex=0; }
+    }
+  }
+})();
+
 function saveInfo() {
   const payload = {
     name: document.getElementById('f-name').value.trim(),
@@ -375,6 +694,7 @@ function saveInfo() {
     location: document.getElementById('f-location').value.trim(),
     install_date: document.getElementById('f-install').value || null,
     description: document.getElementById('f-desc').value.trim(),
+    asset_type: document.getElementById('f-asset-type').value || 'pump',
     pump_type: document.getElementById('f-pump-type').value,
     fluid_type: document.getElementById('f-fluid-type').value,
     roue_material: document.getElementById('f-roue-mat').value,
@@ -404,23 +724,57 @@ function handleDrop(e) {
   const file = e.dataTransfer.files[0];
   if (file) uploadCSV(file);
 }
+var _scanTimer = null;
+function _startScanAnimation(filename) {
+  const area = document.getElementById('upload-area');
+  const lbl  = document.getElementById('upload-label');
+  const hint = document.getElementById('upload-hint');
+  const ctr  = document.getElementById('scan-counter');
+  area.classList.add('analysing');
+  lbl.textContent = filename;
+  hint.style.opacity = '0';
+  var n = 0;
+  ctr.textContent = 'analysing row 1…';
+  _scanTimer = setInterval(function() {
+    n += Math.floor(Math.random() * 4) + 1;
+    ctr.textContent = 'analysing row ' + n + '…';
+  }, 120);
+}
+function _stopScanAnimation(totalRows) {
+  if (_scanTimer) { clearInterval(_scanTimer); _scanTimer = null; }
+  const area = document.getElementById('upload-area');
+  const hint = document.getElementById('upload-hint');
+  const ctr  = document.getElementById('scan-counter');
+  area.classList.remove('analysing');
+  hint.style.opacity = '';
+  if (totalRows != null) ctr.textContent = totalRows + ' rows processed';
+  // fade counter out after a moment
+  setTimeout(function(){ ctr.style.opacity = '0'; setTimeout(function(){ ctr.style.opacity = ''; ctr.textContent = ''; }, 400); }, 2000);
+}
+
 function uploadCSV(file) {
-  document.getElementById('upload-label').textContent = 'Uploading ' + file.name + '…';
+  _startScanAnimation(file.name);
   const fd = new FormData();
   fd.append('file', file);
   fetch('/api/machines/' + MID + '/analyze-csv', {method:'POST', body:fd})
     .then(r => r.json()).then(d => {
+      _stopScanAnimation(d.ok ? d.total : null);
       const box = document.getElementById('upload-result');
       box.style.display = 'block';
       if (d.ok) {
         box.style.borderColor = 'rgba(48,209,88,.3)';
-        box.innerHTML = '<span style="color:var(--green);font-weight:700;">✓ Done</span> &nbsp;'
+        box.innerHTML = '<span style="color:var(--green);font-weight:700;">Saved</span> &nbsp;'
           + d.total + ' rows analysed &nbsp;·&nbsp; '
           + '<span style="color:var(--amber);">' + d.failures + ' anomalies</span> &nbsp;·&nbsp; '
           + 'Avg risk: <b>' + d.avg_risk + '%</b> &nbsp;·&nbsp; Max risk: <b>' + d.max_risk + '%</b>';
         document.getElementById('upload-label').textContent = file.name + ' — done';
         if (d.saved_file) MACHINE.saved_file = d.saved_file;
-        toast('Analysis complete', true);
+        toast('Analysis complete — ' + d.total.toLocaleString() + ' rows', true);
+        // Auto-refresh monitor and history tabs with new data
+        loadMonitor();
+        loadHistory();
+        // Switch to monitor tab to show results
+        setTimeout(() => switchTab('monitor'), 600);
       } else {
         box.style.borderColor = 'rgba(255,69,58,.3)';
         box.innerHTML = '<span style="color:var(--red);">Error: ' + (d.error || 'Unknown') + '</span>';
@@ -428,31 +782,329 @@ function uploadCSV(file) {
         toast(d.error || 'Upload failed', false);
       }
     }).catch(() => {
+      _stopScanAnimation(null);
       toast('Network error', false);
       document.getElementById('upload-label').textContent = 'Drop CSV here or click to browse';
     });
 }
 
-function loadMonitor() {
-  fetch('/api/machine_monitor/' + MID)
-    .then(r => r.json()).then(d => {
-      if (!d.has_data) return;
-      const risk = d.risk;
-      const el = document.getElementById('mon-risk');
-      el.textContent = risk.toFixed(1) + '%';
-      el.style.color = risk >= 75 ? 'var(--red)' : risk >= 45 ? 'var(--amber)' : 'var(--green)';
-      document.getElementById('mon-status').textContent = d.prediction ? 'Anomaly detected' : 'Normal';
-      const pill = document.getElementById('status-pill');
-      pill.className = 'status-pill ' + (d.prediction ? (risk >= 75 ? 'status-crit' : 'status-warn') : 'status-ok');
-      pill.textContent = d.prediction ? (risk >= 75 ? 'Critical' : 'Warning') : 'Healthy';
-      if (d.timestamp) document.getElementById('mon-last').textContent = new Date(d.timestamp).toLocaleString();
-      if (d.zones && d.zones.length) {
-        document.getElementById('mon-zones-section').style.display = 'block';
-        document.getElementById('mon-zones').innerHTML = d.zones.map(z =>
-          '<div class="zone-row"><span class="zone-name">' + z.nom + '</span><div class="zone-bar-wrap"><div class="zone-bar-fill" style="width:' + z.proba + '%"></div></div><span class="zone-pct">' + z.proba + '%</span></div>'
-        ).join('');
+function _riskCol(r) { return r >= 75 ? 'var(--red)' : r >= 50 ? '#8B4500' : r >= 30 ? 'var(--amber)' : 'var(--green)'; }
+function _riskLabel(r, pred) {
+  if (pred === 1) return r >= 75 ? 'Critical' : 'Warning';
+  return r < 30 ? 'Healthy' : 'Attention';
+}
+function _riskPillClass(r, pred) {
+  if (pred === 1) return r >= 75 ? 'status-crit' : 'status-warn';
+  return r < 30 ? 'status-ok' : 'status-warn';
+}
+
+// ── Risk trend chart ─────────────────────────────────────────────────────────
+function renderRiskChart(series) {
+  var svg = document.getElementById('mon-chart');
+  if (!svg || !series || series.length < 2) return;
+  document.getElementById('mon-chart-wrap').style.display = 'block';
+
+  var W = svg.parentElement.clientWidth - 32 || 400;
+  var H = 72;
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+
+  // Threshold line at 30%
+  var threshold = (MACHINE && MACHINE.threshold) || 30;
+
+  function px(i) { return (i / (series.length - 1)) * W; }
+  function py(r) { return H - (r / 100) * H; }
+
+  // Build gradient stops based on risk values
+  var pts = series.map(function(p, i) { return px(i) + ',' + py(p.r); }).join(' ');
+
+  // Color segments: green < 20, amber 20-threshold, red > threshold
+  var segs = '';
+  for (var i = 0; i < series.length - 1; i++) {
+    var r = (series[i].r + series[i+1].r) / 2;
+    var col = r > threshold ? '#ef4444' : r > 20 ? '#f59e0b' : '#10b981';
+    segs += '<line x1="' + px(i) + '" y1="' + py(series[i].r) + '" x2="' + px(i+1) + '" y2="' + py(series[i+1].r) + '" stroke="' + col + '" stroke-width="2" stroke-linecap="round"/>';
+  }
+
+  // Threshold dashed line
+  var ty = py(threshold);
+  var threshLine = '<line x1="0" y1="' + ty + '" x2="' + W + '" y2="' + ty + '" stroke="rgba(239,68,68,.3)" stroke-width="1" stroke-dasharray="4,4"/>';
+
+  // Area fill under the line (subtle)
+  var area = '<polygon points="0,' + H + ' ' + pts + ' ' + W + ',' + H + '" fill="rgba(100,116,139,.05)"/>';
+
+  // Last value dot
+  var lastI = series.length - 1;
+  var lastR = series[lastI].r;
+  var dotCol = lastR > threshold ? '#ef4444' : lastR > 20 ? '#f59e0b' : '#10b981';
+  var dot = '<circle cx="' + px(lastI) + '" cy="' + py(lastR) + '" r="3" fill="' + dotCol + '"/>';
+
+  svg.innerHTML = area + threshLine + '<polyline points="' + pts + '" fill="none" stroke="transparent" stroke-width="0"/>' + segs + dot;
+}
+
+var _STAGE_CFG = [
+  { label:'Healthy',  bg:'rgba(22,101,52,.06)',   border:'rgba(22,101,52,.25)',  col:'var(--green)', pip:'var(--green)' },
+  { label:'Watch',    bg:'rgba(146,64,14,.07)',   border:'rgba(146,64,14,.25)', col:'var(--amber)', pip:'var(--amber)' },
+  { label:'Alert',    bg:'rgba(139,69,0,.08)',    border:'rgba(139,69,0,.32)', col:'#8B4500',      pip:'#8B4500' },
+  { label:'Critical', bg:'rgba(185,28,28,.07)',   border:'rgba(185,28,28,.30)', col:'var(--red)',   pip:'var(--red)' },
+];
+
+function _buildLifecycle(health, histAnalyses, notes) {
+  var section = document.getElementById('lifecycle-section');
+  if (!section) return;
+
+  var installIso = MACHINE.install_date;
+  var now = Date.now();
+  var start = installIso ? new Date(installIso).getTime() : null;
+
+  // Fall back to first analysis date if no install date
+  if (!start && histAnalyses && histAnalyses.length) {
+    var sorted = histAnalyses.slice().sort(function(a,b){return new Date(a.timestamp)-new Date(b.timestamp);});
+    start = new Date(sorted[0].timestamp).getTime();
+  }
+  if (!start) { section.style.display='none'; return; }
+
+  section.style.display = 'block';
+  var spanMs = now - start;
+  if (spanMs <= 0) { section.style.display='none'; return; }
+
+  // Age label
+  var ageDays = Math.floor(spanMs / 86400000);
+  var ageStr = ageDays < 30 ? ageDays + 'd' : ageDays < 365 ? Math.floor(ageDays/30) + 'mo' : (ageDays/365).toFixed(1) + 'yr';
+  document.getElementById('lc-start').textContent = new Date(start).toLocaleDateString(undefined,{month:'short',year:'numeric'});
+  document.getElementById('lc-age').textContent = ageStr + ' old';
+
+  // Fill bar to today (always 100% since "today" is right edge)
+  document.getElementById('lc-fill').style.width = '100%';
+
+  // Build events
+  var events = [];
+  // Anomaly peaks from history
+  if (histAnalyses) {
+    histAnalyses.forEach(function(a) {
+      if (a.prediction || a.risk >= 50) {
+        var t = new Date(a.timestamp).getTime();
+        var pct = Math.min(Math.max((t - start) / spanMs * 100, 0), 100);
+        events.push({ pct: pct, type: 'anomaly', label: Math.round(a.risk)+'%', ts: t });
       }
-    }).catch(() => {});
+    });
+    // Deduplicate close events (within 2%)
+    events = events.filter(function(e, i) {
+      return !events.slice(0, i).some(function(prev) { return Math.abs(prev.pct - e.pct) < 2; });
+    });
+  }
+  // Notes as maintenance markers
+  if (notes) {
+    notes.forEach(function(n) {
+      var t = new Date(n.created_at).getTime();
+      var pct = Math.min(Math.max((t - start) / spanMs * 100, 0), 100);
+      events.push({ pct: pct, type: 'note', label: '', ts: t });
+    });
+  }
+
+  var eventsEl = document.getElementById('lc-events');
+  eventsEl.innerHTML = events.map(function(e) {
+    var col = e.type === 'anomaly' ? 'var(--red)' : 'var(--teal)';
+    var size = e.type === 'anomaly' ? '8px' : '7px';
+    var tooltip = e.type === 'anomaly' ? 'Risk ' + e.label + ' · ' + new Date(e.ts).toLocaleDateString() : new Date(e.ts).toLocaleDateString();
+    return '<div title="'+tooltip+'" style="position:absolute;left:calc('+e.pct+'% - 4px);top:12px;width:'+size+';height:'+size+';border-radius:50%;background:'+col+';pointer-events:auto;cursor:default;box-shadow:0 0 0 2px rgba(250,246,239,.9);"></div>';
+  }).join('');
+}
+
+function _updatePortrait(stage, risk) {
+  var body   = document.getElementById('pt-body');
+  var hub    = document.getElementById('pt-hub');
+  var dot    = document.getElementById('pt-dot');
+  var aura   = document.getElementById('portrait-aura');
+  var imp    = document.getElementById('pt-impeller');
+  if (!body) return;
+
+  // Stage-driven palette (warm: parchment theme)
+  var palettes = [
+    // 0 Healthy
+    { bodyStroke:'#3C3830', hubStroke:'#3C3830', dot:'#2A5440',
+      aura:'radial-gradient(circle,rgba(22,101,52,.10) 0%,transparent 70%)',
+      blades:'#3C3830', spinDur:'5s', dotAnim:'portrait-pulse-ok 3.5s ease-in-out infinite' },
+    // 1 Watch
+    { bodyStroke:'#7A5A14', hubStroke:'#7A5A14', dot:'#7A5A14',
+      aura:'radial-gradient(circle,rgba(146,64,14,.12) 0%,transparent 70%)',
+      blades:'#7A5A14', spinDur:'3s', dotAnim:'portrait-pulse-crit 2.2s ease-in-out infinite' },
+    // 2 Alert
+    { bodyStroke:'#8B4500', hubStroke:'#8B4500', dot:'#8B4500',
+      aura:'radial-gradient(circle,rgba(139,69,0,.18) 0%,transparent 65%)',
+      blades:'#8B4500', spinDur:'2s', dotAnim:'portrait-pulse-crit 1.5s ease-in-out infinite' },
+    // 3 Critical
+    { bodyStroke:'#7A1F1F', hubStroke:'#7A1F1F', dot:'#7A1F1F',
+      aura:'radial-gradient(circle,rgba(185,28,28,.15) 0%,transparent 60%)',
+      blades:'#7A1F1F', spinDur:'1.2s', dotAnim:'portrait-pulse-crit 0.9s ease-in-out infinite' },
+  ];
+  var p = palettes[stage] || palettes[0];
+
+  body.setAttribute('stroke', p.bodyStroke);
+  hub.setAttribute('stroke', p.hubStroke);
+  dot.setAttribute('fill', p.dot);
+  dot.style.animation = p.dotAnim;
+  aura.style.background = p.aura;
+
+  // Blade color
+  var paths = imp ? imp.querySelectorAll('path') : [];
+  paths.forEach(function(el) { el.setAttribute('stroke', p.blades); });
+
+  // Spin speed
+  var style = document.getElementById('portrait-spin-style');
+  if (!style) { style = document.createElement('style'); style.id='portrait-spin-style'; document.head.appendChild(style); }
+  style.textContent = '@keyframes impeller-spin{to{transform:rotate(360deg)}}'
+    + '#pt-impeller{animation-duration:' + p.spinDur + '!important}';
+}
+
+function loadMonitor() {
+  // Call endpoints in parallel
+  Promise.all([
+    fetch('/api/machine_monitor/' + MID).then(r => r.json()),
+    fetch('/api/machines/' + MID + '/health').then(r => r.json()),
+    fetch('/api/machine_history/' + MID + '?limit=200&order=asc').then(r => r.json()).catch(()=>({analyses:[]})),
+    fetch('/api/machines/' + MID + '/notes').then(r => r.json()).catch(()=>[]),
+  ]).then(function([mon, health, hist, notes]) {
+    if (!mon.has_data && health.total === 0) {
+      document.getElementById('mon-no-data').style.display = 'block';
+      document.getElementById('mon-data').style.display = 'none';
+      return;
+    }
+    document.getElementById('mon-no-data').style.display = 'none';
+    document.getElementById('mon-data').style.display = 'block';
+    document.getElementById('mon-no-baseline-notice').style.display = health.has_baseline ? 'none' : 'block';
+
+    // ── Risk trend chart ──────────────────────────────────────────────────
+    renderRiskChart(health.risk_series || []);
+
+    // ── Stage banner ──────────────────────────────────────────────────────
+    var stage = health.stage || 0;
+    var cfg = _STAGE_CFG[stage];
+    var banner = document.getElementById('mon-stage-banner');
+    banner.style.background = cfg.bg;
+    banner.style.border = '1px solid ' + cfg.border;
+    document.getElementById('mon-stage-label').textContent = cfg.label;
+    document.getElementById('mon-stage-label').style.color = cfg.col;
+
+    // Stage pips
+    for (var i = 0; i < 4; i++) {
+      var pip = document.getElementById('pip-' + i);
+      pip.style.background = i <= stage ? _STAGE_CFG[i].pip : 'var(--border)';
+    }
+
+    // ── Machine portrait ──────────────────────────────────────────────────
+    _updatePortrait(stage, health.last_risk || 0);
+
+    // ── Lifecycle timeline ────────────────────────────────────────────────
+    _buildLifecycle(health, hist.analyses || [], notes || []);
+
+    // Trend tag
+    var trendTag = document.getElementById('mon-trend-tag');
+    var tMap = { degrading: ['↑ Degrading', 'rgba(220,38,38,.12)', 'var(--red)'],
+                 improving: ['↓ Improving', 'rgba(5,150,105,.12)', 'var(--green)'],
+                 stable:    ['→ Stable',    'rgba(100,116,139,.12)', 'var(--text3)'] };
+    var tm = tMap[health.trend] || tMap.stable;
+    trendTag.textContent = tm[0];
+    trendTag.style.background = tm[1];
+    trendTag.style.color = tm[2];
+
+    // Time-to-threshold
+    var tteEl = document.getElementById('mon-tte');
+    if (health.days_to_threshold !== null && health.days_to_threshold !== undefined) {
+      var d2t = health.days_to_threshold;
+      tteEl.textContent = d2t <= 3 ? '⚠ Threshold in ~' + d2t + 'd'
+                        : 'Threshold in ~' + d2t + ' days';
+      tteEl.style.color = d2t <= 7 ? 'var(--red)' : d2t <= 30 ? 'var(--amber)' : 'var(--text3)';
+    } else if (!health.has_baseline) {
+      tteEl.textContent = 'collect readings to establish baseline';
+      tteEl.style.color = 'var(--text3)';
+    } else {
+      tteEl.textContent = stage <= 1 ? 'Within normal range' : 'Threshold exceeded';
+      tteEl.style.color = 'var(--text3)';
+    }
+
+    // ── Stats row ─────────────────────────────────────────────────────────
+    document.getElementById('mon-risk').textContent = (health.last_risk || 0).toFixed(1) + '%';
+    document.getElementById('mon-risk').style.color = cfg.col;
+    document.getElementById('mon-avg').textContent  = (health.avg_risk || 0).toFixed(1) + '%';
+    document.getElementById('mon-avg').style.color  = _riskCol(health.avg_risk || 0);
+    document.getElementById('mon-max').textContent  = (health.max_risk || 0).toFixed(1) + '%';
+    document.getElementById('mon-max').style.color  = _riskCol(health.max_risk || 0);
+    document.getElementById('mon-total').textContent = (health.total || 0).toLocaleString();
+    // Show staging method: physics (Z-score) when baseline exists, risk-only otherwise
+    var bTag = document.getElementById('mon-baseline-tag');
+    if (health.has_baseline && health.max_z !== null && health.max_z !== undefined) {
+      bTag.textContent = 'physics-based · max ' + health.max_z.toFixed(1) + 'σ';
+      bTag.style.color = health.max_z >= 2 ? 'var(--red)' : health.max_z >= 1 ? 'var(--amber)' : 'var(--teal)';
+    } else if (health.has_baseline) {
+      bTag.textContent = 'baseline computed';
+      bTag.style.color = 'var(--teal)';
+    } else {
+      bTag.textContent = 'no baseline · risk-only mode';
+      bTag.style.color = 'var(--text3)';
+    }
+
+    // ── Leading indicators ────────────────────────────────────────────────
+    var leading = health.leading || [];
+    if (leading.length) {
+      document.getElementById('mon-leading-section').style.display = 'block';
+      document.getElementById('mon-leading-list').innerHTML = leading.map(function(li) {
+        var sev = li.severity === 'high' ? 'var(--red)' : li.severity === 'medium' ? 'var(--amber)' : '#ef6c00';
+        var arrow = li.trend === 'up' ? ' ↑' : li.trend === 'down' ? ' ↓' : '';
+        return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12px">'
+          + '<span style="font-weight:700;color:' + sev + ';min-width:110px">' + li.label + arrow + '</span>'
+          + '<span style="color:var(--text2)">' + li.message + '</span>'
+          + '</div>';
+      }).join('');
+    } else {
+      document.getElementById('mon-leading-section').style.display = 'none';
+    }
+
+    // ── Sensor fingerprint ────────────────────────────────────────────────
+    var sensors = health.sensors || [];
+    if (sensors.length && health.has_baseline) {
+      document.getElementById('mon-sensors-section').style.display = 'block';
+      document.getElementById('mon-sensors-list').innerHTML = sensors.map(function(s) {
+        var z = s.z_score;
+        var zAbs = Math.abs(z || 0);
+        // Bar: 0–3σ mapped to 0–100% width; capped at 3σ
+        var barW = Math.min(zAbs / 3 * 100, 100).toFixed(1);
+        var barCol = zAbs > 2.5 ? 'var(--red)' : zAbs > 1.5 ? 'var(--amber)' : zAbs > 1 ? '#ef6c00' : 'var(--green)';
+        var trendArrow = s.trend === 'up' ? ' ↑' : s.trend === 'down' ? ' ↓' : '';
+        var zText = z !== null ? (z > 0 ? '+' : '') + z.toFixed(1) + 'σ' : '—';
+        var curText = s.current !== null ? s.current.toFixed(2) + ' ' + (s.unit || '') : '—';
+        var blText = s.baseline_mean !== null ? s.baseline_mean.toFixed(2) + (s.baseline_std ? ' ±' + s.baseline_std.toFixed(2) : '') : '—';
+        return '<div style="display:grid;grid-template-columns:120px 1fr 70px 60px;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)">'
+          + '<span style="font-size:11.5px;font-weight:600;color:var(--text2)">' + s.label + trendArrow + '</span>'
+          + '<div style="background:var(--border);border-radius:3px;height:6px;overflow:hidden">'
+          +   '<div style="height:100%;width:' + barW + '%;background:' + barCol + ';border-radius:3px;transition:width .3s"></div>'
+          + '</div>'
+          + '<span style="font-size:11px;color:' + barCol + ';font-weight:700;text-align:right">' + zText + '</span>'
+          + '<span style="font-size:10px;color:var(--text3);text-align:right" title="baseline: ' + blText + '">' + curText + '</span>'
+          + '</div>';
+      }).join('');
+    } else {
+      document.getElementById('mon-sensors-section').style.display = 'none';
+      // Fallback: show zones from monitor endpoint
+      var s2 = mon.summary || {};
+      var topZ = s2.top_zones || [];
+      if (topZ.length) {
+        document.getElementById('mon-zones-section').style.display = 'block';
+        document.getElementById('mon-zones').innerHTML = topZ.map(function(z) {
+          var barCol = z.pct > 60 ? 'var(--red)' : z.pct > 30 ? 'var(--amber)' : 'var(--text3)';
+          return '<div class="zone-row"><span class="zone-name">' + z.nom + '</span>'
+            + '<div class="zone-bar-wrap"><div class="zone-bar-fill" style="width:' + z.pct + '%;background:' + barCol + '"></div></div>'
+            + '<span class="zone-pct">' + z.pct + '%</span></div>';
+        }).join('');
+      }
+    }
+
+    // Update header pill
+    var pill = document.getElementById('status-pill');
+    if (pill) {
+      pill.className = 'status-pill ' + _riskPillClass(health.last_risk || 0, stage >= 2 ? 1 : 0);
+      pill.textContent = cfg.label;
+    }
+  }).catch(function() {});
 }
 
 function loadNotes() {
@@ -466,7 +1118,7 @@ function loadNotes() {
             <span class="note-author">${n.user_email || 'Team'}</span>
             <div style="display:flex;align-items:center;gap:8px;">
               <span class="note-time">${new Date(n.created_at).toLocaleString()}</span>
-              <button class="note-del" onclick="deleteNote(${n.id})" title="Delete">✕</button>
+              <button class="note-del" onclick="deleteNote(${n.id})" title="Delete">&times;</button>
             </div>
           </div>
           <div class="note-content">${n.content.replace(/</g,'&lt;')}</div>
@@ -493,26 +1145,82 @@ function deleteNote(nid) {
     });
 }
 
+var _histSortDesc = true;  // newest first by default
+
+function toggleHistSort() {
+  _histSortDesc = !_histSortDesc;
+  document.getElementById('hist-sort-btn').textContent = _histSortDesc ? 'Newest first ↓' : 'Oldest first ↑';
+  loadHistory();
+}
+
+function _fmtDate(isoStr) {
+  var d = new Date(isoStr);
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var dd = d.getDate();
+  var mon = months[d.getMonth()];
+  var hh = String(d.getHours()).padStart(2,'0');
+  var mm = String(d.getMinutes()).padStart(2,'0');
+  return dd + ' ' + mon + ' ' + hh + ':' + mm;
+}
+
 function loadHistory() {
-  fetch('/api/machine_history/' + MID + '?limit=50')
+  var order = _histSortDesc ? 'desc' : 'asc';
+  fetch('/api/machine_history/' + MID + '?limit=100&order=' + order)
     .then(r => r.json()).then(d => {
       const tbody = document.getElementById('history-body');
       const analyses = d.analyses || [];
-      if (!analyses.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:32px;">No analyses yet for this machine.</td></tr>'; return; }
+      const summary = d.summary || {};
+      if (!analyses.length) {
+        document.getElementById('hist-summary-row').style.display = 'none';
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:32px;">No analyses yet for this machine.</td></tr>';
+        return;
+      }
+      // Summary row
+      const sr = document.getElementById('hist-summary-row');
+      sr.style.display = 'grid';
+      document.getElementById('hist-total').textContent = (summary.total || 0).toLocaleString();
+      document.getElementById('hist-total').style.color = 'var(--teal2)';
+      const avgEl = document.getElementById('hist-avg');
+      avgEl.textContent = (summary.avg_risk || 0).toFixed(1) + '%';
+      avgEl.style.color = _riskCol(summary.avg_risk || 0);
+      const maxEl = document.getElementById('hist-max');
+      maxEl.textContent = (summary.max_risk || 0).toFixed(1) + '%';
+      maxEl.style.color = _riskCol(summary.max_risk || 0);
+      const anomEl = document.getElementById('hist-anom');
+      anomEl.textContent = (summary.anomaly_rate || 0).toFixed(1) + '%';
+      anomEl.style.color = summary.anomaly_rate > 20 ? 'var(--red)' : summary.anomaly_rate > 5 ? 'var(--amber)' : 'var(--green)';
+      // Table rows
       tbody.innerHTML = analyses.map(a => {
-        const riskCol = a.risk >= 75 ? 'var(--red)' : a.risk >= 45 ? 'var(--amber)' : 'var(--green)';
+        const riskCol = _riskCol(a.risk);
+        const risk = Math.round(a.risk);
         const status = a.prediction ? '<span style="color:var(--red);font-weight:600;">Anomaly</span>' : '<span style="color:var(--green);">Normal</span>';
+        const zoneText = a.zones && a.zones !== '—' ? '<span style="color:var(--amber);font-size:12px;">' + a.zones + '</span>' : '<span style="color:var(--border2)">—</span>';
         return `<tr>
-          <td>${new Date(a.timestamp).toLocaleString()}</td>
-          <td><span style="font-weight:700;color:${riskCol}">${a.risk}%</span></td>
+          <td style="color:var(--text2);font-size:12px;">${_fmtDate(a.timestamp)}</td>
+          <td><span style="font-weight:700;color:${riskCol}">${risk}%</span></td>
           <td>${status}</td>
-          <td style="color:var(--amber);font-size:12px;">${a.zones || '—'}</td>
-          <td>${a.confidence !== undefined ? a.confidence + '%' : '—'}</td>
+          <td>${zoneText}</td>
         </tr>`;
       }).join('');
+      // Footer
+      if (summary.total > (summary.shown || analyses.length)) {
+        const footer = document.getElementById('hist-footer');
+        footer.style.display = 'block';
+        footer.textContent = 'Showing ' + analyses.length + ' of ' + summary.total.toLocaleString() + ' total readings';
+      }
     }).catch(() => {
-      document.getElementById('history-body').innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text3);">Could not load history.</td></tr>';
+      document.getElementById('history-body').innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text3);">Could not load history.</td></tr>';
     });
+}
+
+function _timeAgo(isoStr) {
+  const diff = Date.now() - new Date(isoStr).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return 'just now';
+  if (m < 60) return m + 'm ago';
+  const h = Math.floor(m / 60);
+  if (h < 24) return h + 'h ago';
+  return Math.floor(h / 24) + 'd ago';
 }
 
 function hydrateSavedFile() {
@@ -525,21 +1233,106 @@ function hydrateSavedFile() {
   fetch('/api/machine_monitor/' + MID).then(r => r.json()).then(d => {
     box.style.display = 'block';
     box.style.borderColor = 'rgba(48,209,88,.3)';
-    const risk = (d && d.has_data && typeof d.risk === 'number') ? d.risk.toFixed(1) : '—';
-    box.innerHTML = '<span style="color:var(--green);font-weight:700;">✓ Saved</span> &nbsp;'
-      + sf.row_count + ' rows &nbsp;·&nbsp; '
-      + 'Last risk: <b>' + risk + '%</b> &nbsp;·&nbsp; '
-      + '<span style="color:var(--text3)">' + new Date(sf.created_at).toLocaleString() + '</span>';
+    if (d && d.has_data && d.summary) {
+      const s = d.summary;
+      const avgCol = _riskCol(s.avg_risk);
+      const maxCol = _riskCol(s.max_risk);
+      box.innerHTML =
+        '<span style="color:var(--green);font-weight:700;">Saved</span> &nbsp;'
+        + (sf.row_count||0).toLocaleString() + ' rows analysed &nbsp;·&nbsp; '
+        + '<span style="color:var(--amber);">' + (s.anomaly_count||0) + ' anomalies</span> &nbsp;·&nbsp; '
+        + 'Avg risk: <b style="color:' + avgCol + '">' + s.avg_risk + '%</b> &nbsp;·&nbsp; '
+        + 'Max risk: <b style="color:' + maxCol + '">' + s.max_risk + '%</b>'
+        + '<div style="font-size:11px;color:var(--text3);margin-top:6px;">'
+        + sf.filename + ' · uploaded ' + _timeAgo(sf.created_at)
+        + '</div>';
+    } else {
+      box.innerHTML =
+        '<span style="color:var(--green);font-weight:700;">Saved</span> &nbsp;'
+        + (sf.row_count||0).toLocaleString() + ' rows &nbsp;·&nbsp; '
+        + '<span style="color:var(--text3);">' + sf.filename + ' · ' + _timeAgo(sf.created_at) + '</span>';
+    }
   }).catch(() => {
     box.style.display = 'block';
     box.style.borderColor = 'rgba(48,209,88,.3)';
-    box.innerHTML = '<span style="color:var(--green);font-weight:700;">✓ Saved</span> &nbsp;'
-      + sf.filename + ' &nbsp;·&nbsp; ' + sf.row_count + ' rows';
+    box.innerHTML = '<span style="color:var(--green);font-weight:700;">Saved</span> &nbsp;'
+      + sf.filename + ' &nbsp;·&nbsp; ' + (sf.row_count||0).toLocaleString() + ' rows';
   });
 }
 
-// Auto-load monitor on page open
-loadMonitor();
+// ── Live connection ───────────────────────────────────────────────────────────
+var _livePoller = null;
+
+function liveStart() {
+  var path = document.getElementById('live-path').value.trim();
+  var interval = parseInt(document.getElementById('live-interval').value);
+  if (!path) { toast('Enter a file path', false); return; }
+  fetch('/api/machines/' + MID + '/live/start', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({file_path: path, interval: interval})
+  }).then(r => r.json()).then(d => {
+    if (d.error) { toast(d.error, false); return; }
+    _liveSetRunning(true, d.file);
+    _livePoller = setInterval(_livePoll, Math.max(interval * 1000, 3000));
+    _livePoll();
+    toast('Live connection started', true);
+  }).catch(() => toast('Could not connect', false));
+}
+
+function liveStop() {
+  fetch('/api/machines/' + MID + '/live/stop', {method:'POST'})
+    .then(() => {
+      _liveSetRunning(false);
+      if (_livePoller) { clearInterval(_livePoller); _livePoller = null; }
+      toast('Disconnected', true);
+    });
+}
+
+function _liveSetRunning(running, fname) {
+  document.getElementById('live-connect-form').style.display = running ? 'none' : 'block';
+  document.getElementById('live-status-panel').style.display = running ? 'block' : 'none';
+  var dot = document.getElementById('live-status-dot');
+  dot.style.background = running ? 'var(--green)' : 'var(--border)';
+  dot.title = running ? 'Live' : 'Not connected';
+  if (fname) document.getElementById('live-fname').textContent = fname;
+}
+
+function _livePoll() {
+  fetch('/api/machines/' + MID + '/live/status')
+    .then(r => r.json()).then(d => {
+      if (!d.running) { _liveSetRunning(false); if (_livePoller) { clearInterval(_livePoller); _livePoller = null; } return; }
+      _liveSetRunning(true, d.file);
+      document.getElementById('live-rows').textContent = (d.rows || 0).toLocaleString();
+      var al = document.getElementById('live-alerts');
+      al.textContent = d.alerts || 0;
+      al.style.color = d.alerts > 0 ? 'var(--red)' : 'var(--text2)';
+      if (d.last_risk !== null && d.last_risk !== undefined) {
+        var lr = document.getElementById('live-last-risk');
+        lr.textContent = Math.round(d.last_risk) + '%';
+        lr.style.color = _riskCol(d.last_risk);
+      }
+      if (d.last_ts) {
+        document.getElementById('live-last-ts').textContent = 'Last reading: ' + _fmtDate(d.last_ts);
+      }
+      // Refresh monitor if visible
+      if (activeTab === 'monitor') loadMonitor();
+    }).catch(() => {});
+}
+
+// Check on load if already running (e.g. page refresh)
+fetch('/api/machines/' + MID + '/live/status')
+  .then(r => r.json()).then(d => {
+    if (d.running) {
+      _liveSetRunning(true, d.file);
+      _livePoller = setInterval(_livePoll, 5000);
+    }
+  }).catch(() => {});
+
+// Auto-load correct tab on page open
+if (activeTab === 'monitor') loadMonitor();
+else if (activeTab === 'history') loadHistory();
+else if (activeTab === 'notes') loadNotes();
 setInterval(loadMonitor, 30000);
 hydrateSavedFile();
 applyLang();

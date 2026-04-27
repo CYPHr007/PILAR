@@ -68,10 +68,17 @@ agents_dir = BASE / "agents"
 if agents_dir.exists():
     datas.append((str(agents_dir), "agents"))
 
-# Modelfiles (Ollama few-shot definitions)
+# Modelfiles (kept for legacy reference — no longer used at runtime)
 modelfiles_dir = BASE / "modelfiles"
 if modelfiles_dir.exists():
     datas.append((str(modelfiles_dir), "modelfiles"))
+
+# llama-cpp-python: bundle the native DLL alongside the package
+try:
+    from PyInstaller.utils.hooks import collect_dynamic_libs
+    datas += collect_dynamic_libs('llama_cpp')
+except Exception:
+    pass
 
 # ── Hidden imports ────────────────────────────────────────────────────────────
 # Flask and its ecosystem are not always auto-detected
@@ -147,13 +154,13 @@ hidden_imports = [
     "agents.diagnostic_agent",
     "agents.maintenance_agent",
     "agents.alert_agent",
+    "agents.llm_engine",
     "requests",
-    "autogen_agentchat",
-    "autogen_agentchat.agents",
-    "autogen_agentchat.teams",
-    "autogen_agentchat.conditions",
-    "autogen_ext",
-    "autogen_ext.models.openai",
+    # llama-cpp-python (Qwen3 4B local inference)
+    "llama_cpp",
+    "llama_cpp.llama",
+    "llama_cpp.llama_chat_format",
+    "llama_cpp.llama_tokenizer",
 ]
 
 # ── Main launcher analysis ─────────────────────────────────────────────────────
@@ -169,7 +176,8 @@ launcher_a = Analysis(
     excludes=["matplotlib", "cv2", "PyQt5", "wx",
               "torch", "torchvision", "torchaudio",
               "numba", "llvmlite",
-              "IPython", "ipykernel", "jupyter"],
+              "IPython", "ipykernel", "jupyter",
+              "autogen_agentchat", "autogen_ext"],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=block_cipher,

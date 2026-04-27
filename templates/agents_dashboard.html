@@ -266,7 +266,7 @@ async function loadConversations() {
     const ts      = (c.ts||'').replace('T',' ').slice(0,16);
     const steps   = Array.isArray(c.steps) ? c.steps : [];
     const src     = c.source || 'rule_based';
-    const srcIcon = src.includes('ollama') ? '🤖 AutoGen + Ollama' : '⚙️ Regles metier';
+    const srcIcon = src.includes('ollama') ? 'AutoGen + Ollama' : 'Regles metier';
 
     return `
     <div class="conv-card">

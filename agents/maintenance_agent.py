@@ -2,28 +2,18 @@
 """
 PILAR MaintenanceAgent
 ----------------------
-Generates a maintenance plan based on diagnosis + machine history.
-Uses Ollama locally if available.
+Generates a 5-step maintenance plan based on the diagnosis + machine data.
+Uses Qwen3 4B locally. Falls back to rule-based plans when model unavailable.
 """
 
 import time
-import requests
-from agents.config import llm_config, ZONE_LABELS, SLA
-LLM_CONFIG = llm_config("maintenance")
+from agents.config import ZONE_LABELS, SLA
 from agents import sla_tracker
-
-OLLAMA_URL = LLM_CONFIG["config_list"][0]["base_url"].replace("/v1", "")
-
-
-def _ollama_available() -> bool:
-    try:
-        r = requests.get(f"{OLLAMA_URL}/api/tags", timeout=3)
-        return r.status_code == 200
-    except Exception:
-        return False
+from agents import llm_engine
 
 
-# Rule-based maintenance plans per zone
+# ── Rule-based fallback data ───────────────────────────────────────────────────
+
 ZONE_PLANS = {
     "CAV": [
         "Verifier et nettoyer le filtre d'aspiration",
@@ -62,161 +52,133 @@ ZONE_PLANS = {
     ],
 }
 
-URGENCY_DELAY = {
+_ZONE_PARTS = {
+    "CAV": ["Filtre aspiration", "Joint torique"],
+    "ROL": ["Roulement SKF/FAG", "Graisse haute temperature", "Joint d'etancheite"],
+    "ETN": ["Joint mecanique", "Garniture presse-etoupe", "O-rings"],
+    "IMP": ["Impulseur de rechange", "Anneau d'usure", "Vis inox"],
+    "MOT": ["Condensateur", "Ventilateur moteur", "Bornier de connexion"],
+}
+
+_ZONE_DURATION = {
+    "CAV": "1-2 heures",
+    "ROL": "2-4 heures",
+    "ETN": "3-6 heures",
+    "IMP": "4-8 heures (demontage complet)",
+    "MOT": "2-4 heures",
+}
+
+_URGENCY_DELAY = {
     "critical": "Intervention immediate (<4h)",
     "warning":  "Intervention sous 48h",
     "low":      "Planifier a la prochaine maintenance preventive",
 }
 
 
-def _rule_based_plan(data: dict, diagnosis: str) -> dict:
-    """Fallback maintenance plan."""
+def _rule_based_plan(data: dict) -> dict:
     zone    = data.get("zone", "")
     risk    = data.get("risk_score", 0)
-    rul     = data.get("rul", "N/A")
-    steps   = ZONE_PLANS.get(zone, ["Inspection generale recommandee"])
+    urgency = "critical" if risk >= 75 else ("warning" if risk >= 50 else "low")
+    return {
+        "urgency":            urgency,
+        "delay":              _URGENCY_DELAY[urgency],
+        "rul_hours":          data.get("rul", "N/A"),
+        "steps":              ZONE_PLANS.get(zone, ["Inspection generale recommandee"]),
+        "parts_needed":       _ZONE_PARTS.get(zone, ["Pieces selon inspection"]),
+        "estimated_duration": _ZONE_DURATION.get(zone, "A evaluer sur site"),
+        "source":             "rule_based",
+    }
+
+
+# ── LLM plan ──────────────────────────────────────────────────────────────────
+
+_SYSTEM = (
+    "Tu es un planificateur de maintenance industrielle expert, spécialisé dans les machines industrielles de tout type. "
+    "A partir d'un diagnostic et de donnees machine, tu generes un plan d'intervention precis. "
+    "Reponds UNIQUEMENT dans ce format, sans markdown :\n"
+    "URGENCE: Immediate / 48h / Planifiee\n"
+    "DUREE: ...\n"
+    "PIECES: piece1, piece2, piece3\n"
+    "1. etape\n2. etape\n3. etape\n4. etape\n5. etape"
+)
+
+
+def _parse_llm_plan(raw: str, data: dict) -> dict:
+    """Parse structured LLM output into a plan dict."""
+    lines   = raw.splitlines()
+    steps   = []
+    parts   = []
+    delay   = _URGENCY_DELAY["warning"]
+    dur     = "A evaluer"
+    risk    = data.get("risk_score", 0)
     urgency = "critical" if risk >= 75 else ("warning" if risk >= 50 else "low")
 
+    for line in lines:
+        l = line.strip()
+        if l.upper().startswith("URGENCE:"):
+            val = l.split(":", 1)[1].strip().lower()
+            if "immed" in val:
+                delay = _URGENCY_DELAY["critical"]
+            elif "48" in val:
+                delay = _URGENCY_DELAY["warning"]
+            else:
+                delay = _URGENCY_DELAY["low"]
+        elif l.upper().startswith("DUREE:"):
+            dur = l.split(":", 1)[1].strip()
+        elif l.upper().startswith("PIECES:"):
+            parts = [p.strip() for p in l.split(":", 1)[1].split(",") if p.strip()]
+        elif l and l[0].isdigit() and len(l) > 2 and l[1] in ".):":
+            body = l[2:].strip()
+            if body:
+                steps.append(body)
+
+    if not steps:
+        steps = ZONE_PLANS.get(data.get("zone", ""), ["Inspection generale"])
+
     return {
-        "urgency": urgency,
-        "delay": URGENCY_DELAY[urgency],
-        "rul_hours": rul,
-        "steps": steps,
-        "parts_needed": _estimate_parts(zone),
-        "estimated_duration": _estimate_duration(zone),
-        "source": "rule_based",
+        "urgency":            urgency,
+        "delay":              delay,
+        "rul_hours":          data.get("rul", "N/A"),
+        "steps":              steps[:5],
+        "parts_needed":       parts or _ZONE_PARTS.get(data.get("zone", ""), []),
+        "estimated_duration": dur,
+        "source":             "qwen3",
     }
 
 
-def _estimate_parts(zone: str) -> list:
-    parts = {
-        "CAV": ["Filtre aspiration", "Joint torique"],
-        "ROL": ["Roulement SKF / FAG", "Graisse haute temperature", "Joint d'etancheite"],
-        "ETN": ["Joint mecanique", "Garniture presse-etoupe", "O-rings"],
-        "IMP": ["Impulseur de rechange", "Anneau d'usure", "Vis inox"],
-        "MOT": ["Condensateur", "Ventilateur moteur", "Bornier de connexion"],
-    }
-    return parts.get(zone, ["Pieces generiques selon inspection"])
-
-
-def _estimate_duration(zone: str) -> str:
-    durations = {
-        "CAV": "1-2 heures",
-        "ROL": "2-4 heures",
-        "ETN": "3-6 heures",
-        "IMP": "4-8 heures (demontage complet)",
-        "MOT": "2-4 heures",
-    }
-    return durations.get(zone, "A evaluer sur site")
-
-
-def _llm_plan(data: dict, diagnosis: str, history_summary: str = "") -> dict:
-    """Generate maintenance plan via Ollama."""
+def _llm_plan(data: dict, diagnosis: str, history_summary: str = "") -> dict | None:
     zone_fr = ZONE_LABELS.get(data.get("zone", ""), data.get("zone", ""))
-    model   = LLM_CONFIG["config_list"][0]["model"]
-    risk    = data.get("risk_score", 0)
-    rul     = data.get("rul", "N/A")
-    hf      = data.get("heure_fonctionnement", 0)
 
-    prompt = f"""Tu es un planificateur de maintenance industrielle.
+    user = (
+        f"Diagnostic : {diagnosis}\n"
+        f"Zone de defaillance : {zone_fr}\n"
+        f"Score de risque : {data.get('risk_score', 0):.0f}%\n"
+        f"RUL estime : {data.get('rul', 'N/A')} heures\n"
+        f"Heures de fonctionnement : {data.get('heure_fonctionnement', 0):.0f}h"
+        + (f"\nHistorique : {history_summary}" if history_summary else "")
+    )
 
-Diagnostic recu : {diagnosis}
-Zone de defaillance : {zone_fr}
-Score de risque : {risk:.0f}%
-RUL estime : {rul} heures restantes
-Heures de fonctionnement : {hf:.0f}h
-{f"Historique : {history_summary}" if history_summary else ""}
+    raw = llm_engine.query(_SYSTEM, user, max_tokens=400, temperature=0.2)
+    if raw is None:
+        return None
+    return _parse_llm_plan(raw, data)
 
-Genere un plan de maintenance en 5 etapes ordonnees.
-Indique :
-- Urgence (Immediate / 48h / Planifie)
-- Duree estimee
-- Pieces necessaires (3 max)
-- Les 5 etapes d'intervention
 
-Format :
-URGENCE: ...
-DUREE: ...
-PIECES: ...
-ETAPES:
-1. ...
-2. ...
-3. ...
-4. ...
-5. ...
-
-Sois precis et concis. Pas de markdown."""
-
-    try:
-        r = requests.post(
-            f"{OLLAMA_URL}/api/generate",
-            json={"model": model, "prompt": prompt, "stream": False},
-            timeout=SLA["agent_response_seconds"]
-        )
-        r.raise_for_status()
-        raw = r.json().get("response", "").strip()
-
-        # Parse the structured response
-        lines  = raw.split("\n")
-        steps  = []
-        parts  = []
-        delay  = "48h"
-        dur    = "A evaluer"
-
-        for line in lines:
-            l = line.strip()
-            if l.startswith("URGENCE:"):
-                val = l.split(":", 1)[1].strip().lower()
-                if "immed" in val:
-                    delay = URGENCY_DELAY["critical"]
-                elif "48" in val:
-                    delay = URGENCY_DELAY["warning"]
-                else:
-                    delay = URGENCY_DELAY["low"]
-            elif l.startswith("DUREE:"):
-                dur = l.split(":", 1)[1].strip()
-            elif l.startswith("PIECES:"):
-                parts = [p.strip() for p in l.split(":", 1)[1].split(",")]
-            elif l and l[0].isdigit() and "." in l[:3]:
-                steps.append(l.split(".", 1)[1].strip())
-
-        if not steps:
-            steps = _rule_based_plan(data, diagnosis)["steps"]
-
-        urgency = "critical" if risk >= 75 else ("warning" if risk >= 50 else "low")
-        return {
-            "urgency": urgency,
-            "delay": delay,
-            "rul_hours": rul,
-            "steps": steps[:5],
-            "parts_needed": parts or _estimate_parts(data.get("zone", "")),
-            "estimated_duration": dur,
-            "source": "ollama",
-            "raw_llm": raw,
-        }
-
-    except Exception as e:
-        result = _rule_based_plan(data, diagnosis)
-        result["llm_error"] = str(e)
-        return result
-
+# ── Public API ─────────────────────────────────────────────────────────────────
 
 def plan(data: dict, diagnosis: str, history_summary: str = "") -> dict:
     """
-    Generate a maintenance plan.
-
-    Returns dict with keys:
-        urgency, delay, rul_hours, steps, parts_needed,
-        estimated_duration, source, elapsed_ms
+    Generate a maintenance plan. Returns dict with keys:
+    urgency, delay, rul_hours, steps, parts_needed, estimated_duration,
+    source, elapsed_ms
     """
     t0 = time.perf_counter()
 
-    if _ollama_available():
-        result = _llm_plan(data, diagnosis, history_summary)
-    else:
-        result = _rule_based_plan(data, diagnosis)
+    result = _llm_plan(data, diagnosis, history_summary)
+    if result is None:
+        result = _rule_based_plan(data)
 
-    elapsed_ms = (time.perf_counter() - t0) * 1000
+    elapsed_ms        = (time.perf_counter() - t0) * 1000
     result["elapsed_ms"] = round(elapsed_ms)
 
     sla_tracker.record(
@@ -224,7 +186,7 @@ def plan(data: dict, diagnosis: str, history_summary: str = "") -> dict:
         metric="response_ms",
         value=elapsed_ms,
         threshold=SLA["agent_response_seconds"] * 1000,
-        detail=f"source={result.get('source')} zone={data.get('zone')}"
+        detail=f"source={result.get('source')} zone={data.get('zone')}",
     )
 
     return result

@@ -464,12 +464,20 @@ MACHINE_PROFILES = {
 
 # ── FAILURE SIGNATURES ────────────────────────────────────────────────────────
 # For each zone, defines how sensor values deviate from normal.
-# Applied multiplicatively (mul) and additively (add) on top of the normal value.
-# These are intentionally generic so they apply across all machine types.
+# `severity` ranges from 0.0 (barely detectable) to 1.0 (full-blown).
+# Three tiers:
+#   EARLY      severity 0.05–0.30  subtle drift, human might miss it
+#   DEVELOPING severity 0.30–0.65  clear trend, warrants inspection
+#   SEVERE     severity 0.65–1.00  obvious failure, urgent action
 
-def apply_failure_signature(row, zone, profile_key):
+def _lerp(lo, hi, t):
+    """Linear interpolation between lo and hi by t in [0,1]."""
+    return lo + (hi - lo) * t
+
+def apply_failure_signature(row, zone, profile_key, severity=None):
     """
     Perturb a normal operating point to produce a failure signature.
+    severity: 0.0 (barely detectable) to 1.0 (full-blown). If None, random 0.05–1.0.
     Returns a modified copy of `row` (dict of feature values).
     """
     r = dict(row)
@@ -482,312 +490,446 @@ def apply_failure_signature(row, zone, profile_key):
     tm  = r['temp_moteur']
     hf  = r['heure_fonctionnement']
 
-    # ── severity scalar: more hours = worse failure (logarithmic aging)
-    # normalised so that 10 000 h gives severity ~1.0, 50 000 h gives ~1.7
-    age_factor = 1.0 + 0.35 * np.log1p(hf / 8000)
+    if severity is None:
+        severity = np.random.uniform(0.05, 1.0)
+    s = float(np.clip(severity, 0.0, 1.0))
+
+    # ── age factor: more hours = slightly worse at same severity
+    age_factor = 1.0 + 0.15 * np.log1p(hf / 10000) * s
+
+    # ── sensor noise: real sensors jitter ±2-5%
+    jitter = lambda: np.random.uniform(0.97, 1.03)
 
     if zone == 'CAV':
         # Cavitation / surge / inlet starvation
-        # Flow drops sharply, inlet pressure collapses, vibration spikes
-        r['vibration']        = np.clip(vib * np.random.uniform(2.0, 5.5) * age_factor,
-                                         vib * 1.5, vib * 12)
-        r['debit']            = np.clip(q   * np.random.uniform(0.2, 0.6), q * 0.05, q * 0.70)
-        r['pression_entree']  = np.clip(pe  * np.random.uniform(0.1, 0.45), 0.01, pe * 0.60)
-        r['pression_sortie']  = np.clip(ps  * np.random.uniform(0.4, 0.80), 0.05, ps * 0.90)
-        r['courant_moteur']   = np.clip(I   * np.random.uniform(0.9, 1.25), I * 0.7, I * 1.5)
-        r['temp_palier']      = np.clip(tp  + np.random.uniform(3, 18) * age_factor, tp, tp + 40)
+        vib_mul   = _lerp(1.15, 5.5, s)
+        flow_mul  = _lerp(0.85, 0.25, s)
+        pe_mul    = _lerp(0.80, 0.15, s)
+        ps_mul    = _lerp(0.92, 0.45, s)
+        I_mul     = _lerp(1.0,  1.25, s * 0.5)
+        tp_add    = _lerp(1, 22, s) * age_factor
+        r['vibration']        = vib * vib_mul * age_factor * jitter()
+        r['debit']            = max(q * 0.05, q * flow_mul * jitter())
+        r['pression_entree']  = max(0.01, pe * pe_mul * jitter())
+        r['pression_sortie']  = max(0.05, ps * ps_mul * jitter())
+        r['courant_moteur']   = I * I_mul * jitter()
+        r['temp_palier']      = tp + tp_add * jitter()
 
     elif zone == 'ROL':
         # Bearing wear — vibration and bearing temp rise progressively
-        sev = np.random.uniform(1.8, 6.0) * age_factor
-        r['vibration']        = np.clip(vib * sev, vib * 1.4, vib * 15)
-        r['temp_palier']      = np.clip(tp  + np.random.uniform(20, 70) * age_factor, tp + 10, tp + 120)
-        r['courant_moteur']   = np.clip(I   * np.random.uniform(1.05, 1.35), I, I * 1.8)
-        r['temp_moteur']      = np.clip(tm  + np.random.uniform(5, 30) * age_factor, tm, tm + 60)
+        vib_mul   = _lerp(1.15, 6.0, s) * age_factor
+        tp_add    = _lerp(5, 70, s) * age_factor
+        I_mul     = _lerp(1.01, 1.35, s)
+        tm_add    = _lerp(2, 30, s) * age_factor
+        r['vibration']        = vib * vib_mul * jitter()
+        r['temp_palier']      = tp + tp_add * jitter()
+        r['courant_moteur']   = I * I_mul * jitter()
+        r['temp_moteur']      = tm + tm_add * jitter()
 
     elif zone == 'ETN':
-        # Seal / gasket failure — pressure drop across machine, flow leaks
-        leak = np.random.uniform(0.15, 0.55)
-        r['pression_sortie']  = np.clip(ps  * (1 - leak), 0.05, ps * 0.90)
-        r['debit']            = np.clip(q   * np.random.uniform(0.5, 0.85), q * 0.2, q * 0.95)
-        r['pression_entree']  = np.clip(pe  * np.random.uniform(0.6, 0.95), 0.01, pe * 0.98)
-        r['vibration']        = np.clip(vib * np.random.uniform(1.2, 2.5), vib * 1.0, vib * 5)
-        r['temp_palier']      = np.clip(tp  + np.random.uniform(2, 15), tp, tp + 30)
+        # Seal / gasket failure — pressure drop, flow leak
+        leak      = _lerp(0.03, 0.55, s)
+        flow_mul  = _lerp(0.95, 0.50, s)
+        pe_mul    = _lerp(0.97, 0.60, s)
+        vib_mul   = _lerp(1.05, 2.5, s)
+        tp_add    = _lerp(1, 18, s)
+        r['pression_sortie']  = max(0.05, ps * (1 - leak) * jitter())
+        r['debit']            = max(q * 0.1, q * flow_mul * jitter())
+        r['pression_entree']  = max(0.01, pe * pe_mul * jitter())
+        r['vibration']        = vib * vib_mul * jitter()
+        r['temp_palier']      = tp + tp_add * jitter()
 
     elif zone == 'IMP':
-        # Impeller / blade / rotor element wear — hydraulic efficiency drops
-        wear = np.random.uniform(0.20, 0.55) * age_factor
-        r['debit']            = np.clip(q   * (1 - wear * 0.6), q * 0.2, q * 0.92)
-        r['pression_sortie']  = np.clip(ps  * (1 - wear * 0.5), 0.05, ps * 0.95)
-        r['courant_moteur']   = np.clip(I   * np.random.uniform(1.10, 1.50), I * 0.9, I * 2.2)
-        r['temp_moteur']      = np.clip(tm  + np.random.uniform(8, 40) * age_factor, tm, tm + 70)
-        r['vibration']        = np.clip(vib * np.random.uniform(1.3, 3.5), vib * 1.1, vib * 8)
+        # Impeller / blade / rotor element wear
+        wear      = _lerp(0.04, 0.55, s) * age_factor
+        I_mul     = _lerp(1.03, 1.50, s)
+        tm_add    = _lerp(3, 40, s) * age_factor
+        vib_mul   = _lerp(1.08, 3.5, s)
+        r['debit']            = max(q * 0.1, q * (1 - wear * 0.6) * jitter())
+        r['pression_sortie']  = max(0.05, ps * (1 - wear * 0.5) * jitter())
+        r['courant_moteur']   = I * I_mul * jitter()
+        r['temp_moteur']      = tm + tm_add * jitter()
+        r['vibration']        = vib * vib_mul * jitter()
 
     elif zone == 'MOT':
-        # Motor fault — winding temperature high, current anomaly
-        r['courant_moteur']   = np.clip(I * np.random.choice([
-                                    np.random.uniform(1.5, 3.5),   # overcurrent
-                                    np.random.uniform(0.2, 0.6),   # phase loss (low current)
-                                ]), 0.5, I * 5)
-        r['temp_moteur']      = np.clip(tm  + np.random.uniform(30, 90) * age_factor, tm + 15, tm + 150)
-        r['temp_palier']      = np.clip(tp  + np.random.uniform(5, 30) * age_factor, tp, tp + 55)
-        r['vibration']        = np.clip(vib * np.random.uniform(1.2, 2.8), vib, vib * 6)
+        # Motor fault — winding temperature, current anomaly
+        if np.random.random() < 0.7:  # overcurrent (70%)
+            I_mul = _lerp(1.08, 3.5, s)
+        else:  # phase loss / undercurrent (30%)
+            I_mul = _lerp(0.88, 0.25, s)
+        tm_add    = _lerp(5, 90, s) * age_factor
+        tp_add    = _lerp(2, 30, s) * age_factor
+        vib_mul   = _lerp(1.05, 2.8, s)
+        r['courant_moteur']   = max(0.5, I * I_mul * jitter())
+        r['temp_moteur']      = tm + tm_add * jitter()
+        r['temp_palier']      = tp + tp_add * jitter()
+        r['vibration']        = vib * vib_mul * jitter()
 
     return r
 
 
-# ── GENERATE DATASET ─────────────────────────────────────────────────────────
+def generate_degradation_sequence(norm_cfg, zone, profile_key, n_steps=None):
+    """
+    Generate a progressive degradation sequence: a chain of readings
+    showing gradual worsening from normal to severe failure.
+    Returns list of (row_dict, severity) tuples.
+    """
+    if n_steps is None:
+        n_steps = np.random.randint(4, 12)
+    # Start from a single normal operating point
+    base = {f: float(np.clip(np.random.normal(mu, sig), lo, hi))
+            for f, (mu, sig, lo, hi) in norm_cfg.items()}
+    # Severity progresses from barely-detectable to severe
+    sev_start = np.random.uniform(0.05, 0.20)
+    sev_end   = np.random.uniform(0.60, 1.00)
+    sequence = []
+    for i in range(n_steps):
+        t = i / max(n_steps - 1, 1)
+        sev = sev_start + (sev_end - sev_start) * t
+        # Each step starts from the same base but with increasing severity
+        row = apply_failure_signature(base, zone, profile_key, severity=sev)
+        sequence.append((row, sev))
+    return sequence
 
-print("=" * 70)
-print("PILAR — Universal Machine Training (20 profiles)")
-print("=" * 70)
 
-all_rows = []
-total_normal = 0
-total_failure = 0
+if __name__ == "__main__":
+    # ── GENERATE DATASET ─────────────────────────────────────────────────────────
 
-for profile_key, profile in MACHINE_PROFILES.items():
-    n_norm  = profile['n_normal']
-    n_fail  = max(int(n_norm * 0.08), 300)   # ~8 % failure ratio per profile
-    norm_cfg = profile['normal']
-    weights  = np.array(profile['zone_weights'])
-    weights  /= weights.sum()
+    print("=" * 70)
+    print("PILAR — Universal Machine Training (23 profiles, 3-tier severity)")
+    print("=" * 70)
 
-    # ── Normal samples ──
-    for _ in range(n_norm):
-        row = {f: float(np.clip(np.random.normal(mu, sig), lo, hi))
-               for f, (mu, sig, lo, hi) in norm_cfg.items()}
-        row['failure'] = 0
-        for z in ZONES:
-            row[z] = 0
-        all_rows.append(row)
+    all_rows = []
+    total_normal = 0
+    total_failure = 0
 
-    # ── Failure samples ──
-    zone_counts = np.round(weights * n_fail).astype(int)
-    zone_counts[-1] += n_fail - zone_counts.sum()   # fix rounding
+    # Severity distribution for failure samples:
+    #   40% early (0.05–0.30)   — subtle, easy to miss
+    #   35% developing (0.30–0.65) — clear trend
+    #   25% severe (0.65–1.00)  — obvious
+    SEVERITY_TIERS = [
+        (0.40, 0.05, 0.30),   # (fraction, sev_lo, sev_hi)
+        (0.35, 0.30, 0.65),
+        (0.25, 0.65, 1.00),
+    ]
 
-    for zone_idx, zone in enumerate(ZONES):
-        for _ in range(zone_counts[zone_idx]):
-            # Start from a random normal point for this profile
-            base = {f: float(np.clip(np.random.normal(mu, sig), lo, hi))
-                    for f, (mu, sig, lo, hi) in norm_cfg.items()}
-            row = apply_failure_signature(base, zone, profile_key)
-            row['failure'] = 1
+    def _sample_severity():
+        """Sample a severity value from the 3-tier distribution."""
+        r = np.random.random()
+        cum = 0.0
+        for frac, lo, hi in SEVERITY_TIERS:
+            cum += frac
+            if r <= cum:
+                return np.random.uniform(lo, hi)
+        return np.random.uniform(0.65, 1.0)
+
+    def _add_sensor_noise(row, noise_pct=0.02):
+        """Add realistic sensor jitter to a sample (default ±2%)."""
+        for f in FEATURES:
+            if f in row:
+                row[f] *= np.random.uniform(1 - noise_pct, 1 + noise_pct)
+        return row
+
+    for profile_key, profile in MACHINE_PROFILES.items():
+        n_norm  = profile['n_normal']
+        n_fail  = max(int(n_norm * 0.10), 400)   # ~10% failure ratio (was 8%)
+        n_seq   = max(int(n_norm * 0.015), 30)   # degradation sequences
+        norm_cfg = profile['normal']
+        weights  = np.array(profile['zone_weights'])
+        weights  /= weights.sum()
+
+        # ── Normal samples (with sensor jitter) ──
+        for _ in range(n_norm):
+            row = {f: float(np.clip(np.random.normal(mu, sig), lo, hi))
+                   for f, (mu, sig, lo, hi) in norm_cfg.items()}
+            row = _add_sensor_noise(row)
+            row['failure'] = 0
             for z in ZONES:
-                row[z] = 1 if z == zone else 0
-            # Secondary zone contamination (~15% chance of a co-occurring fault)
-            if np.random.random() < 0.15:
-                co = np.random.choice([z for z in ZONES if z != zone])
-                row[co] = 1
+                row[z] = 0
             all_rows.append(row)
 
-    total_normal  += n_norm
-    total_failure += n_fail
-    print(f"  [{profile_key[:35]:35s}]  normal={n_norm:6d}  failure={n_fail:5d}")
+        # ── Failure samples (3-tier severity) ──
+        zone_counts = np.round(weights * n_fail).astype(int)
+        zone_counts[-1] += n_fail - zone_counts.sum()
 
-print(f"\n  Total : {len(all_rows):,} rows  |  normal={total_normal:,}  failure={total_failure:,}")
-print(f"  Failure rate : {total_failure/len(all_rows)*100:.1f}%")
+        for zone_idx, zone in enumerate(ZONES):
+            for _ in range(zone_counts[zone_idx]):
+                base = {f: float(np.clip(np.random.normal(mu, sig), lo, hi))
+                        for f, (mu, sig, lo, hi) in norm_cfg.items()}
+                sev = _sample_severity()
+                row = apply_failure_signature(base, zone, profile_key, severity=sev)
+                row = _add_sensor_noise(row)
+                row['failure'] = 1
+                for z in ZONES:
+                    row[z] = 1 if z == zone else 0
+                # Secondary zone contamination (~15% chance)
+                if np.random.random() < 0.15:
+                    co = np.random.choice([z for z in ZONES if z != zone])
+                    row[co] = 1
+                all_rows.append(row)
 
-# ── BUILD DATAFRAME ───────────────────────────────────────────────────────────
-print("\n[2/7] Building DataFrame and adding physics-derived features...")
+        # ── Degradation sequences (progressive worsening) ──
+        seq_per_zone = np.round(weights * n_seq).astype(int)
+        seq_per_zone[-1] += n_seq - seq_per_zone.sum()
+        for zone_idx, zone in enumerate(ZONES):
+            for _ in range(seq_per_zone[zone_idx]):
+                seq = generate_degradation_sequence(norm_cfg, zone, profile_key)
+                for step_row, step_sev in seq:
+                    step_row = _add_sensor_noise(step_row)
+                    step_row['failure'] = 1
+                    for z in ZONES:
+                        step_row[z] = 1 if z == zone else 0
+                    if np.random.random() < 0.10:
+                        co = np.random.choice([z for z in ZONES if z != zone])
+                        step_row[co] = 1
+                    all_rows.append(step_row)
+                    total_failure += 1
 
-df = pd.DataFrame(all_rows)
+        total_normal  += n_norm
+        total_failure += n_fail
+        print(f"  [{profile_key[:35]:35s}]  normal={n_norm:6d}  failure={n_fail:5d}  seqs={n_seq:3d}")
 
-# ── Optionally merge real-world data ──────────────────────────────────────────
-if EXTRA_CSV and os.path.isfile(EXTRA_CSV):
-    df_real = pd.read_csv(EXTRA_CSV)
-    # Keep only the columns we need
-    keep = FEATURES + ZONES + ['failure']
-    df_real = df_real[[c for c in keep if c in df_real.columns]]
-    # Fill any missing zone columns with 0
-    for col in ZONES + ['failure']:
-        if col not in df_real.columns:
-            df_real[col] = 0
-    df_real = df_real.dropna(subset=FEATURES)
-    print(f"  + Real data from {EXTRA_CSV}: {len(df_real):,} rows "
-          f"({int(df_real['failure'].sum())} faults)")
-    df = pd.concat([df, df_real], ignore_index=True)
-elif EXTRA_CSV:
-    print(f"  [!] --extra-csv file not found: {EXTRA_CSV}")
+    print(f"\n  Total : {len(all_rows):,} rows  |  normal={total_normal:,}  failure={total_failure:,}")
+    print(f"  Failure rate : {total_failure/len(all_rows)*100:.1f}%")
 
-df = df.sample(frac=1, random_state=RANDOM_STATE).reset_index(drop=True)
+    # ── BUILD DATAFRAME ───────────────────────────────────────────────────────────
+    print("\n[2/7] Building DataFrame and adding physics-derived features...")
 
-# Derived features (dimensionless ratios — help the model understand physics)
-df['dp']            = df['pression_sortie'] - df['pression_entree']    # differential pressure
-df['eta_proxy']     = (df['debit'] * df['dp'].clip(0.001)) / (df['courant_moteur'].clip(0.1))  # hydraulic efficiency proxy
-df['thermal_load']  = df['temp_moteur'] - df['temp_palier']            # motor vs bearing delta
-df['wear_index']    = np.log1p(df['heure_fonctionnement'] / 10000)     # log-age
+    df = pd.DataFrame(all_rows)
 
-FEATURES_EXTENDED = FEATURES + ['dp', 'eta_proxy', 'thermal_load', 'wear_index']
+    # ── Optionally merge real-world data ──────────────────────────────────────────
+    if EXTRA_CSV and os.path.isfile(EXTRA_CSV):
+        df_real = pd.read_csv(EXTRA_CSV)
+        # Keep only the columns we need
+        keep = FEATURES + ZONES + ['failure']
+        df_real = df_real[[c for c in keep if c in df_real.columns]]
+        # Fill any missing zone columns with 0
+        for col in ZONES + ['failure']:
+            if col not in df_real.columns:
+                df_real[col] = 0
+        df_real = df_real.dropna(subset=FEATURES)
+        print(f"  + Real data from {EXTRA_CSV}: {len(df_real):,} rows "
+              f"({int(df_real['failure'].sum())} faults)")
+        df = pd.concat([df, df_real], ignore_index=True)
+    elif EXTRA_CSV:
+        print(f"  [!] --extra-csv file not found: {EXTRA_CSV}")
 
-X = df[FEATURES_EXTENDED]
-y = df['failure']
+    df = df.sample(frac=1, random_state=RANDOM_STATE).reset_index(drop=True)
 
-print(f"  Feature set: {FEATURES_EXTENDED}")
+    # Derived features (dimensionless ratios — help the model understand physics)
+    df['dp']            = df['pression_sortie'] - df['pression_entree']    # differential pressure
+    df['eta_proxy']     = (df['debit'] * df['dp'].clip(0.001)) / (df['courant_moteur'].clip(0.1))  # hydraulic efficiency proxy
+    df['thermal_load']  = df['temp_moteur'] - df['temp_palier']            # motor vs bearing delta
+    df['wear_index']    = np.log1p(df['heure_fonctionnement'] / 10000)     # log-age
 
-# ── SPLIT ─────────────────────────────────────────────────────────────────────
-print("\n[3/7] Train/test split (80/20, stratified)...")
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.20, random_state=RANDOM_STATE, stratify=y
-)
+    FEATURES_EXTENDED = FEATURES + ['dp', 'eta_proxy', 'thermal_load', 'wear_index']
 
-# ── SCALE ─────────────────────────────────────────────────────────────────────
-print("[4/7] StandardScaler...")
-scaler = StandardScaler()
-X_train_s = scaler.fit_transform(X_train)
-X_test_s  = scaler.transform(X_test)
+    X = df[FEATURES_EXTENDED]
+    y = df['failure']
 
-# ── SMOTE ─────────────────────────────────────────────────────────────────────
-if HAS_SMOTE:
-    print("[5/7] SMOTE resampling...")
-    sm = SMOTE(random_state=RANDOM_STATE, k_neighbors=5)
-    X_train_bal, y_train_bal = sm.fit_resample(X_train_s, y_train)
-    vc = pd.Series(y_train_bal).value_counts().to_dict()
-    print(f"  After SMOTE: {vc}")
-else:
-    print("[5/7] SMOTE unavailable — using imbalanced data")
-    X_train_bal, y_train_bal = X_train_s, y_train.values
+    print(f"  Feature set: {FEATURES_EXTENDED}")
 
-# ── TRAIN MODELS ──────────────────────────────────────────────────────────────
-print("\n[6/7] Training candidate models...")
-candidates = {}
-
-# Random Forest — fast, robust baseline
-rf = RandomForestClassifier(
-    n_estimators=200, max_depth=12, min_samples_leaf=4,
-    class_weight='balanced', random_state=RANDOM_STATE, n_jobs=-1
-)
-rf.fit(X_train_bal, y_train_bal)
-r = recall_score(y_test, rf.predict(X_test_s))
-f = f1_score(y_test, rf.predict(X_test_s))
-p = precision_score(y_test, rf.predict(X_test_s))
-candidates['RandomForest'] = (rf, r, f, p)
-print(f"  RandomForest      Recall={r*100:.1f}%  Prec={p*100:.1f}%  F1={f*100:.1f}%")
-
-if HAS_XGB:
-    scale_pos = int((y_train_bal == 0).sum() / max((y_train_bal == 1).sum(), 1))
-    xgb = XGBClassifier(
-        n_estimators=400, max_depth=7, learning_rate=0.04,
-        subsample=0.85, colsample_bytree=0.85,
-        scale_pos_weight=max(scale_pos, 1),
-        random_state=RANDOM_STATE, eval_metric='logloss',
-        n_jobs=-1, verbosity=0
+    # ── SPLIT ─────────────────────────────────────────────────────────────────────
+    print("\n[3/7] Train/test split (80/20, stratified)...")
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.20, random_state=RANDOM_STATE, stratify=y
     )
-    xgb.fit(X_train_bal, y_train_bal)
-    r = recall_score(y_test, xgb.predict(X_test_s))
-    f = f1_score(y_test, xgb.predict(X_test_s))
-    p = precision_score(y_test, xgb.predict(X_test_s))
-    candidates['XGBoost'] = (xgb, r, f, p)
-    print(f"  XGBoost           Recall={r*100:.1f}%  Prec={p*100:.1f}%  F1={f*100:.1f}%")
 
-# Select best model: maximise recall (safety-critical) with F1 as tiebreak
-best_name = max(candidates, key=lambda k: (candidates[k][1], candidates[k][2]))
-best_model, best_recall, best_f1, best_prec = candidates[best_name]
-print(f"\n  => Best: {best_name}  Recall={best_recall*100:.1f}%  Prec={best_prec*100:.1f}%  F1={best_f1*100:.1f}%")
-print("\n" + classification_report(y_test, best_model.predict(X_test_s),
-                                    target_names=['Normal', 'Failure']))
+    # ── SCALE ─────────────────────────────────────────────────────────────────────
+    print("[4/7] StandardScaler...")
+    scaler = StandardScaler()
+    X_train_s = scaler.fit_transform(X_train)
+    X_test_s  = scaler.transform(X_test)
 
-# Calibrate probabilities using Platt scaling on the test set.
-# sklearn 1.4+ removed cv='prefit'; we use a LogisticRegression sigmoid on
-# the model's raw scores — same mathematics, no API constraints.
-print("  Calibrating probabilities (Platt scaling on held-out test set)...")
-from sklearn.linear_model import LogisticRegression
-from sklearn.pipeline import Pipeline
-
-from pilar_calibrator import PlattModel as _PlattModel
-_raw_probs = best_model.predict_proba(X_test_s)[:, 1].reshape(-1, 1)
-_platt = LogisticRegression(C=1e5, solver='lbfgs')
-_platt.fit(_raw_probs, y_test)
-cal_model = _PlattModel(best_model, _platt)
-# Verify calibration quality
-_cal_probs = cal_model.predict_proba(X_test_s)[:, 1]
-_cal_preds = (_cal_probs >= 0.5).astype(int)
-print(f"  Calibrated — test mean prob failure={_cal_probs.mean()*100:.1f}% "
-      f"(expected ~{y_test.mean()*100:.1f}%)")
-
-# ── ZONE MODELS ───────────────────────────────────────────────────────────────
-print("\n[7/7] Training zone classifiers (CAV / ROL / ETN / IMP / MOT)...")
-modeles_zones = {}
-
-for zone in ZONES:
-    y_zone = df[zone].values
-    X_z_tr, X_z_te, y_z_tr, y_z_te = train_test_split(
-        X, y_zone, test_size=0.20, random_state=RANDOM_STATE, stratify=y_zone
-    )
-    X_z_tr_s = scaler.transform(X_z_tr)
-    X_z_te_s = scaler.transform(X_z_te)
-
-    if HAS_SMOTE and y_z_tr.sum() >= 10:
-        try:
-            X_z_bal, y_z_bal = SMOTE(random_state=RANDOM_STATE, k_neighbors=5).fit_resample(
-                X_z_tr_s, y_z_tr
-            )
-        except Exception:
-            X_z_bal, y_z_bal = X_z_tr_s, y_z_tr
+    # ── SMOTE ─────────────────────────────────────────────────────────────────────
+    if HAS_SMOTE:
+        print("[5/7] SMOTE resampling...")
+        sm = SMOTE(random_state=RANDOM_STATE, k_neighbors=5)
+        X_train_bal, y_train_bal = sm.fit_resample(X_train_s, y_train)
+        vc = pd.Series(y_train_bal).value_counts().to_dict()
+        print(f"  After SMOTE: {vc}")
     else:
-        X_z_bal, y_z_bal = X_z_tr_s, y_z_tr
+        print("[5/7] SMOTE unavailable — using imbalanced data")
+        X_train_bal, y_train_bal = X_train_s, y_train.values
+
+    # ── TRAIN MODELS ──────────────────────────────────────────────────────────────
+    print("\n[6/8] Training candidate models...")
+    candidates = {}
+
+    # Random Forest — constrained depth to reduce overconfidence
+    rf = RandomForestClassifier(
+        n_estimators=300, max_depth=8, min_samples_leaf=10,
+        min_samples_split=20, class_weight='balanced',
+        random_state=RANDOM_STATE, n_jobs=-1
+    )
+    rf.fit(X_train_bal, y_train_bal)
+    r = recall_score(y_test, rf.predict(X_test_s))
+    f = f1_score(y_test, rf.predict(X_test_s))
+    p = precision_score(y_test, rf.predict(X_test_s))
+    candidates['RandomForest'] = (rf, r, f, p)
+    print(f"  RandomForest      Recall={r*100:.1f}%  Prec={p*100:.1f}%  F1={f*100:.1f}%")
 
     if HAS_XGB:
-        sp = max(1, int((y_z_bal == 0).sum() / max((y_z_bal == 1).sum(), 1)))
-        m_z = XGBClassifier(
-            n_estimators=200, max_depth=6, learning_rate=0.05,
-            scale_pos_weight=sp, subsample=0.85,
+        scale_pos = int((y_train_bal == 0).sum() / max((y_train_bal == 1).sum(), 1))
+        # Reduced complexity: shallower trees, stronger regularisation, more dropout
+        xgb = XGBClassifier(
+            n_estimators=300, max_depth=5, learning_rate=0.05,
+            subsample=0.80, colsample_bytree=0.75,
+            reg_alpha=0.3, reg_lambda=2.0,       # L1 + L2 regularisation
+            min_child_weight=10,                   # prevent overfitting to small groups
+            gamma=0.1,                             # min loss reduction for splits
+            scale_pos_weight=max(scale_pos, 1),
             random_state=RANDOM_STATE, eval_metric='logloss',
             n_jobs=-1, verbosity=0
         )
-    else:
-        m_z = RandomForestClassifier(
-            n_estimators=100, max_depth=10, class_weight='balanced',
-            random_state=RANDOM_STATE, n_jobs=-1
+        xgb.fit(X_train_bal, y_train_bal)
+        r = recall_score(y_test, xgb.predict(X_test_s))
+        f = f1_score(y_test, xgb.predict(X_test_s))
+        p = precision_score(y_test, xgb.predict(X_test_s))
+        candidates['XGBoost'] = (xgb, r, f, p)
+        print(f"  XGBoost           Recall={r*100:.1f}%  Prec={p*100:.1f}%  F1={f*100:.1f}%")
+
+    try:
+        from sklearn.ensemble import GradientBoostingClassifier
+        gb = GradientBoostingClassifier(
+            n_estimators=300, max_depth=5, learning_rate=0.05,
+            subsample=0.80, min_samples_leaf=10,
+            random_state=RANDOM_STATE
         )
+        gb.fit(X_train_bal, y_train_bal)
+        r = recall_score(y_test, gb.predict(X_test_s))
+        f = f1_score(y_test, gb.predict(X_test_s))
+        p = precision_score(y_test, gb.predict(X_test_s))
+        candidates['GradientBoosting'] = (gb, r, f, p)
+        print(f"  GradientBoosting  Recall={r*100:.1f}%  Prec={p*100:.1f}%  F1={f*100:.1f}%")
+    except ImportError:
+        pass
 
-    m_z.fit(X_z_bal, y_z_bal)
-    y_z_pred = m_z.predict(X_z_te_s)
-    r_z = recall_score(y_z_te, y_z_pred, zero_division=0)
-    f_z = f1_score(y_z_te, y_z_pred, zero_division=0)
-    modeles_zones[zone] = m_z
-    print(f"  {zone}  Recall={r_z*100:.1f}%  F1={f_z*100:.1f}%")
+    # Select best model: maximise recall (safety-critical) with F1 as tiebreak
+    best_name = max(candidates, key=lambda k: (candidates[k][1], candidates[k][2]))
+    best_model, best_recall, best_f1, best_prec = candidates[best_name]
+    print(f"\n  => Best: {best_name}  Recall={best_recall*100:.1f}%  Prec={best_prec*100:.1f}%  F1={best_f1*100:.1f}%")
+    print("\n" + classification_report(y_test, best_model.predict(X_test_s),
+                                        target_names=['Normal', 'Failure']))
 
-# ── SAVE ──────────────────────────────────────────────────────────────────────
-print("\nSaving .pkl files...")
+    # ── CALIBRATION (Platt scaling on HELD-OUT calibration set, not test) ────────
+    # Split test set in half: one for calibration, one for final evaluation.
+    # This avoids data leakage — the Platt sigmoid never sees the evaluation data.
+    print("  Calibrating probabilities (Platt scaling on held-out calibration set)...")
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.pipeline import Pipeline
 
-with open("failure_model.pkl", "wb") as f:
-    pickle.dump(cal_model, f)
+    from pilar_calibrator import PlattModel as _PlattModel
+    _cal_split = int(len(X_test_s) * 0.5)
+    X_cal_s, X_eval_s = X_test_s[:_cal_split], X_test_s[_cal_split:]
+    y_cal, y_eval = y_test.values[:_cal_split], y_test.values[_cal_split:]
 
-with open("scaler.pkl", "wb") as f:
-    pickle.dump(scaler, f)
+    _raw_probs_cal = best_model.predict_proba(X_cal_s)[:, 1].reshape(-1, 1)
+    # Lower C for softer sigmoid (reduces overconfidence)
+    _platt = LogisticRegression(C=1.0, solver='lbfgs')
+    _platt.fit(_raw_probs_cal, y_cal)
+    cal_model = _PlattModel(best_model, _platt)
 
-with open("zone_models.pkl", "wb") as f:
-    pickle.dump(modeles_zones, f)
+    # Verify on the held-out eval portion (no data leakage)
+    _eval_probs = cal_model.predict_proba(X_eval_s)[:, 1]
+    _eval_preds = (_eval_probs >= 0.5).astype(int)
+    _eval_recall = recall_score(y_eval, _eval_preds)
+    _eval_prec   = precision_score(y_eval, _eval_preds)
+    _eval_f1     = f1_score(y_eval, _eval_preds)
+    _extreme     = ((_eval_probs < 0.01) | (_eval_probs > 0.99)).sum()
+    print(f"  Calibrated — eval mean prob={_eval_probs.mean()*100:.1f}% "
+          f"(expected ~{y_eval.mean()*100:.1f}%)")
+    print(f"  Eval set:   Recall={_eval_recall*100:.1f}%  Prec={_eval_prec*100:.1f}%  "
+          f"F1={_eval_f1*100:.1f}%")
+    print(f"  Extreme probs (<1% or >99%): {_extreme}/{len(_eval_probs)} "
+          f"({_extreme/len(_eval_probs)*100:.1f}%)")
 
-meta = {
-    "model_name":    best_name + "_calibrated",
-    "recall":        round(best_recall * 100, 1),
-    "precision":     round(best_prec   * 100, 1),
-    "f1":            round(best_f1     * 100, 1),
-    "n_train":       int(len(X_train_bal)),
-    "n_total":       len(df),
-    "n_failures":    int(y.sum()),
-    "failure_rate":  round(float(y.mean()) * 100, 1),
-    "source":        "universal_synthetic_23_machine_profiles",
-    "profiles":      list(MACHINE_PROFILES.keys()),
-    "features":      FEATURES_EXTENDED,
-    "zones":         ZONES,
-    "trained_at":    datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
-    "feature_ranges": {
-        feat: [round(float(X[feat].min()), 4), round(float(X[feat].max()), 4)]
-        for feat in FEATURES_EXTENDED
+    # ── ZONE MODELS ───────────────────────────────────────────────────────────────
+    print("\n[7/7] Training zone classifiers (CAV / ROL / ETN / IMP / MOT)...")
+    modeles_zones = {}
+
+    for zone in ZONES:
+        y_zone = df[zone].values
+        X_z_tr, X_z_te, y_z_tr, y_z_te = train_test_split(
+            X, y_zone, test_size=0.20, random_state=RANDOM_STATE, stratify=y_zone
+        )
+        X_z_tr_s = scaler.transform(X_z_tr)
+        X_z_te_s = scaler.transform(X_z_te)
+
+        if HAS_SMOTE and y_z_tr.sum() >= 10:
+            try:
+                X_z_bal, y_z_bal = SMOTE(random_state=RANDOM_STATE, k_neighbors=5).fit_resample(
+                    X_z_tr_s, y_z_tr
+                )
+            except Exception:
+                X_z_bal, y_z_bal = X_z_tr_s, y_z_tr
+        else:
+            X_z_bal, y_z_bal = X_z_tr_s, y_z_tr
+
+        if HAS_XGB:
+            sp = max(1, int((y_z_bal == 0).sum() / max((y_z_bal == 1).sum(), 1)))
+            m_z = XGBClassifier(
+                n_estimators=200, max_depth=4, learning_rate=0.05,
+                scale_pos_weight=sp, subsample=0.80,
+                reg_alpha=0.3, reg_lambda=2.0,
+                min_child_weight=10, gamma=0.1,
+                random_state=RANDOM_STATE, eval_metric='logloss',
+                n_jobs=-1, verbosity=0
+            )
+        else:
+            m_z = RandomForestClassifier(
+                n_estimators=100, max_depth=6, class_weight='balanced',
+                min_samples_leaf=10, min_samples_split=20,
+                random_state=RANDOM_STATE, n_jobs=-1
+            )
+
+        m_z.fit(X_z_bal, y_z_bal)
+        y_z_pred = m_z.predict(X_z_te_s)
+        r_z = recall_score(y_z_te, y_z_pred, zero_division=0)
+        f_z = f1_score(y_z_te, y_z_pred, zero_division=0)
+        modeles_zones[zone] = m_z
+        print(f"  {zone}  Recall={r_z*100:.1f}%  F1={f_z*100:.1f}%")
+
+    # ── SAVE ──────────────────────────────────────────────────────────────────────
+    print("\nSaving .pkl files...")
+
+    with open("failure_model.pkl", "wb") as f:
+        pickle.dump(cal_model, f)
+
+    with open("scaler.pkl", "wb") as f:
+        pickle.dump(scaler, f)
+
+    with open("zone_models.pkl", "wb") as f:
+        pickle.dump(modeles_zones, f)
+
+    meta = {
+        "model_name":    best_name + "_calibrated",
+        "recall":        round(_eval_recall * 100, 1),
+        "precision":     round(_eval_prec   * 100, 1),
+        "f1":            round(_eval_f1     * 100, 1),
+        "n_train":       int(len(X_train_bal)),
+        "n_total":       len(df),
+        "n_failures":    int(y.sum()),
+        "failure_rate":  round(float(y.mean()) * 100, 1),
+        "source":        "universal_synthetic_23_machine_profiles",
+        "profiles":      list(MACHINE_PROFILES.keys()),
+        "features":      FEATURES_EXTENDED,
+        "zones":         ZONES,
+        "trained_at":    datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
+        "feature_ranges": {
+            feat: [round(float(X[feat].min()), 4), round(float(X[feat].max()), 4)]
+            for feat in FEATURES_EXTENDED
+        }
     }
-}
-with open("model_meta.json", "w") as f:
-    json.dump(meta, f, indent=2)
+    with open("model_meta.json", "w") as f:
+        json.dump(meta, f, indent=2)
 
-print("\n  failure_model.pkl  OK")
-print("  scaler.pkl         OK")
-print("  zone_models.pkl    OK")
-print("  model_meta.json    OK")
-print("\n" + "=" * 70)
-print(f"Done — {len(df):,} rows | {best_name} | "
-      f"Recall={best_recall*100:.1f}%  Prec={best_prec*100:.1f}%  F1={best_f1*100:.1f}%")
-print("=" * 70)
-print("Restart app.py to load the new models.")
+    print("\n  failure_model.pkl  OK")
+    print("  scaler.pkl         OK")
+    print("  zone_models.pkl    OK")
+    print("  model_meta.json    OK")
+    print("\n" + "=" * 70)
+    print(f"Done — {len(df):,} rows | {best_name} | "
+          f"Recall={best_recall*100:.1f}%  Prec={best_prec*100:.1f}%  F1={best_f1*100:.1f}%")
+    print("=" * 70)
+    print("Restart app.py to load the new models.")

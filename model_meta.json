@@ -1,38 +1,21 @@
 {
-  "model_name": "XGBoost_calibrated",
-  "recall": 90.3,
-  "precision": 66.9,
-  "f1": 76.9,
-  "n_train": 350400,
-  "n_total": 236520,
-  "n_failures": 17520,
-  "failure_rate": 7.4,
-  "source": "universal_synthetic_23_machine_profiles",
-  "profiles": [
-    "centrifugal_pump_small",
-    "centrifugal_pump_large",
-    "axial_pump",
-    "screw_pump",
-    "gear_pump",
-    "piston_pump",
-    "rotary_compressor",
-    "piston_compressor",
-    "industrial_fan",
-    "exhaust_fan",
-    "hydraulic_power_unit",
-    "steam_turbine_small",
-    "slurry_pump",
-    "submersible_pump",
-    "booster_pump",
-    "cooling_water_pump",
-    "agitator_mixer",
-    "pilar_ventilateur",
-    "pilar_hydraulique",
-    "pilar_agitateur",
-    "gearbox_driven_machine",
-    "pipeline_pump",
-    "fire_pump"
-  ],
+  "model_name": "RandomForest_calibrated",
+  "recall": 99.4,
+  "precision": 98.2,
+  "f1": 98.8,
+  "n_total": 289301,
+  "n_failures": 40484,
+  "failure_rate": 14.0,
+  "source": "kaggle_pump_sensor_real_data",
+  "sensor_mapping": {
+    "vibration": "sensor_06",
+    "temp_palier": "sensor_02",
+    "debit": "sensor_00",
+    "pression_entree": "sensor_01",
+    "pression_sortie": "sensor_04",
+    "courant_moteur": "sensor_18",
+    "temp_moteur": "sensor_10"
+  },
   "features": [
     "vibration",
     "temp_palier",
@@ -54,55 +37,55 @@
     "IMP",
     "MOT"
   ],
-  "trained_at": "2026-04-11T19:23:56",
+  "trained_at": "2026-04-20T18:42:01",
   "feature_ranges": {
     "vibration": [
-      0.1,
-      103.8233
+      0.0145,
+      22.2512
     ],
     "temp_palier": [
-      22.0,
-      209.9735
+      33.1597,
+      60.1136
     ],
     "debit": [
-      0.0757,
-      5942.1959
+      0.0,
+      3.0688
     ],
     "pression_entree": [
-      0.01,
-      60.0
+      0.0,
+      57.2217
     ],
     "pression_sortie": [
-      0.101,
-      400.0
+      2.798,
+      840.1064
     ],
     "courant_moteur": [
-      1.2334,
-      551.202
+      -1.0453,
+      5.8603
     ],
     "temp_moteur": [
-      25.0,
-      245.0699
+      0.0,
+      80.3024
     ],
     "heure_fonctionnement": [
-      0.0,
-      53938.5474
+      -9929.7829,
+      298924.2211
     ],
     "dp": [
-      -58.4876,
-      399.2949
+      -45.7812,
+      792.2682
     ],
     "eta_proxy": [
       0.0,
-      3239.6813
+      15217.3211
     ],
     "thermal_load": [
-      -110.7847,
-      166.1262
+      -53.559,
+      35.3083
     ],
     "wear_index": [
-      0.0,
-      1.8553
+      -4.9587,
+      3.4305
     ]
   }
 }

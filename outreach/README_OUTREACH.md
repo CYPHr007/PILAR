@@ -2,6 +2,8 @@
 
 Tous les messages prêts à envoyer pour trouver de la data réelle et des bêta users.
 
+> Note: PILAR works on any industrial machine. The current outreach kit targets pump-heavy sectors (water, O&G, mining) because that is where the default model is validated. As PILAR expands to new machine types, add sector-specific variants for each.
+
 ---
 
 ## Fichiers

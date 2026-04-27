@@ -2,7 +2,7 @@
 
 ## Connection request (300 chars)
 ```
-Hi [Name], I'm building Pilar — an AI tool for centrifugal pump failure prediction. Your maintenance background looks really relevant. Would you be open to a quick 15-min chat?
+Hi [Name], I'm building Pilar — an AI tool for industrial machine failure prediction. Your maintenance background looks really relevant. Would you be open to a quick 15-min chat?
 ```
 
 ## After connection accepted
@@ -11,7 +11,7 @@ Hi [Name],
 
 Thanks for connecting.
 
-I'm building Pilar — an AI platform that predicts centrifugal pump failures (cavitation, bearing wear, seal failure, motor faults) from 8 standard sensor signals.
+I'm building Pilar — an AI platform that predicts industrial machine failures (bearing wear, seal failure, motor faults, mechanical anomalies) from standard sensor signals. It works on pumps, compressors, fans, conveyors, and more.
 
 I'm running a free beta program for maintenance professionals:
 → Connect your sensor data (CSV upload or API)
@@ -21,7 +21,7 @@ I'm running a free beta program for maintenance professionals:
 
 In return, your feedback helps me improve the AI model.
 
-Do you have any instrumented pumps on your site?
+Do you have any instrumented machines on your site?
 
 Best,
 [Your name]
@@ -33,7 +33,7 @@ Hi [Name],
 
 Quick follow-up — I'll be direct:
 
-I need real industrial pump data to validate my AI model. In exchange, you get a free predictive maintenance tool for 3 months with weekly reports.
+I need real industrial machine sensor data to validate my AI model. In exchange, you get a free predictive maintenance tool for 3 months with weekly reports.
 
 Setup takes 20 minutes. No commitment.
 

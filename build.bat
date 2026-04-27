@@ -12,7 +12,7 @@
 setlocal EnableDelayedExpansion
 
 set APP_NAME=PILAR
-set APP_VERSION=1.3.2
+set APP_VERSION=1.3.3
 set SCRIPT_DIR=%~dp0
 set DIST_DIR=%SCRIPT_DIR%dist
 set INNO_V7_X86=C:\Program Files (x86)\Inno Setup 7\ISCC.exe
@@ -29,29 +29,29 @@ echo.
 
 :: ── 1. Check Python ──────────────────────────────────────────────────────────
 echo [1/4] Checking Python...
-python --version >nul 2>&1
+py -3.14 --version >nul 2>&1
 if errorlevel 1 (
-    echo ERROR: python not found in PATH.
+    echo ERROR: py -3.14 not found. Install Python 3.14 64-bit with numpy/sklearn.
     exit /b 1
 )
-for /f "tokens=*" %%v in ('python --version') do echo   %%v
+for /f "tokens=*" %%v in ('py -3.14 --version') do echo   %%v
 
 :: ── 2. Install/upgrade PyInstaller ───────────────────────────────────────────
 echo.
 echo [2/4] Checking PyInstaller...
-python -m pip install --quiet --upgrade pyinstaller pystray pillow >nul 2>&1
-pyinstaller --version >nul 2>&1
+py -3.14 -m pip install --quiet --upgrade pyinstaller pystray pillow >nul 2>&1
+py -3.14 -m PyInstaller --version >nul 2>&1
 if errorlevel 1 (
-    echo ERROR: pyinstaller not available.
+    echo ERROR: pyinstaller not available under py -3.14.
     exit /b 1
 )
-for /f "tokens=*" %%v in ('pyinstaller --version') do echo   PyInstaller %%v
+for /f "tokens=*" %%v in ('py -3.14 -m PyInstaller --version') do echo   PyInstaller %%v
 
 :: ── 3. PyInstaller build ─────────────────────────────────────────────────────
 echo.
 echo [3/4] Building with PyInstaller...
 cd /d "%SCRIPT_DIR%"
-pyinstaller --clean --noconfirm pilar.spec
+py -3.14 -m PyInstaller --clean --noconfirm pilar.spec
 if errorlevel 1 (
     echo ERROR: PyInstaller build failed.
     exit /b 1

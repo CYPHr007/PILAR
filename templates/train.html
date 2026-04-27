@@ -1,0 +1,491 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#ffffff">
+<title>PILAR — Train Model</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --black:#0a0a0a;--white:#ffffff;
+  --g1:#f4f4f2;--g2:#e8e8e6;--g3:#999;--g4:#666;--g5:#333;
+  --red:#b91c1c;--red-dim:rgba(185,28,28,0.07);
+  --green:#166534;--green-dim:rgba(22,101,52,0.07);
+  --amber:#92400e;--amber-dim:rgba(146,64,14,0.07);
+  --r:0px;--r-sm:0px;--r-xs:0px;
+  --mono:'IBM Plex Mono',monospace;
+  /* backward-compat */
+  --bg:var(--white);--surface:var(--white);--surface2:var(--g1);--surface3:var(--g2);
+  --border:var(--g2);--border2:var(--g2);
+  --teal:var(--black);--teal2:var(--g5);--tl:var(--black);--teal-dim:rgba(0,0,0,0.04);
+  --text:var(--black);--text2:var(--g4);--text3:var(--g3);
+  --shadow:0 1px 3px rgba(0,0,0,0.08);
+}
+html,body{height:100%;overflow:hidden;}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--white);color:var(--black);display:flex;flex-direction:column;}
+nav{height:52px;background:var(--white);border-bottom:1px solid var(--g2);display:flex;align-items:center;gap:14px;padding:0 20px;flex-shrink:0;}
+.nav-logo{font-size:12px;font-weight:700;letter-spacing:4px;color:var(--black);text-transform:uppercase;text-decoration:none;}
+.nav-div{width:1px;height:16px;background:var(--g2);}
+.nav-title{font-size:12px;color:var(--g3);letter-spacing:.5px;}
+.nav-back{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--g4);text-decoration:none;padding:6px 12px;border:1px solid var(--g2);transition:border-color .15s,color .15s;}
+.nav-back:hover{border-color:var(--black);color:var(--black);}
+.content{flex:1;overflow-y:auto;padding:20px;}
+.content::-webkit-scrollbar{width:4px;}
+.content::-webkit-scrollbar-thumb{background:var(--g2);}
+.wrap{max-width:920px;margin:0 auto;display:grid;gap:14px;}
+.card{background:var(--white);border:1px solid var(--g2);padding:18px 20px;}
+.ctitle{font-size:9px;font-weight:300;letter-spacing:.08em;text-transform:uppercase;color:var(--g3);margin-bottom:14px;font-family:var(--mono);}
+/* Model meta */
+.meta-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:1px;background:var(--g2);}
+.mc{background:var(--white);padding:12px 14px;}
+.mv{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;}
+.mv.green{color:var(--green);}
+.mv.teal{color:var(--black);}
+.mv.sm{font-size:13px;padding-top:4px;color:var(--g4);}
+.ml{font-size:9px;font-weight:300;letter-spacing:.08em;text-transform:uppercase;color:var(--g3);margin-top:3px;font-family:var(--mono);}
+.meta-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;}
+.meta-tag{font-size:10px;font-weight:500;padding:3px 9px;letter-spacing:.04em;}
+.meta-tag.green{background:var(--green-dim);color:var(--green);border:1px solid rgba(22,101,52,0.2);}
+.meta-tag.teal{background:var(--g1);color:var(--g5);border:1px solid var(--g2);}
+/* Source selector */
+.source-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--g2);}
+@media(max-width:700px){.source-grid{grid-template-columns:1fr;}}
+.src-opt{position:relative;display:block;cursor:pointer;}
+.src-opt input{position:absolute;opacity:0;pointer-events:none;}
+.src-body{border:none;background:var(--white);padding:14px 16px;transition:background .15s;height:100%;}
+.src-opt:not(.disabled) .src-body:hover{background:var(--g1);}
+.src-opt input:checked ~ .src-body{background:var(--black);}
+.src-name{font-size:13px;font-weight:600;color:var(--black);margin-bottom:3px;}
+.src-opt input:checked ~ .src-body .src-name{color:var(--white);}
+.src-opt input:checked ~ .src-body .src-desc{color:rgba(255,255,255,0.6);}
+.src-opt input:checked ~ .src-body .src-tag{opacity:.7;}
+.src-desc{font-size:11px;color:var(--g3);line-height:1.55;}
+.src-tag{display:inline-block;margin-top:7px;font-size:9px;font-weight:300;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;font-family:var(--mono);}
+.src-tag.recommended{background:var(--green-dim);color:var(--green);border:1px solid rgba(22,101,52,0.2);}
+.src-tag.available{background:var(--g1);color:var(--g5);border:1px solid var(--g2);}
+.src-tag.missing{background:transparent;color:var(--g3);border:1px solid var(--g2);}
+.src-tag.loading{background:var(--amber-dim);color:var(--amber);border:1px solid rgba(146,64,14,0.2);}
+.src-opt.disabled{opacity:.4;pointer-events:none;}
+/* Real data stats */
+.stat-bar{margin-top:10px;padding:10px 12px;background:var(--g1);border:1px solid var(--g2);font-size:11px;color:var(--g3);line-height:1.8;display:none;}
+.stat-bar.show{display:block;}
+.stat-val{color:var(--g4);font-weight:600;}
+/* Options */
+.opt-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;}
+.opt-row+.opt-row{border-top:1px solid var(--g2);}
+.opt-label{font-size:13px;font-weight:600;color:var(--black);}
+.opt-sub{font-size:11px;color:var(--g3);margin-top:2px;}
+.toggle-wrap{position:relative;flex-shrink:0;width:40px;height:22px;margin-left:24px;}
+.toggle-wrap input{opacity:0;position:absolute;}
+.toggle-slider{position:absolute;inset:0;background:var(--g2);border-radius:11px;cursor:pointer;transition:background .2s;}
+.toggle-wrap input:checked + .toggle-slider{background:var(--black);}
+.toggle-slider::after{content:'';position:absolute;left:3px;top:3px;width:16px;height:16px;background:#fff;border-radius:50%;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2);}
+.toggle-wrap input:checked + .toggle-slider::after{left:21px;}
+/* Run */
+.run-wrap{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+.btn-run{padding:13px 28px;background:var(--black);color:#fff;border:none;font-size:14px;font-weight:600;cursor:pointer;transition:opacity .15s;display:flex;align-items:center;gap:8px;}
+.btn-run:hover:not(:disabled){opacity:.8;}
+.btn-run:disabled{background:var(--g2);color:var(--g3);cursor:not-allowed;}
+.run-status{font-size:11px;color:var(--g3);display:none;align-items:center;gap:6px;}
+.run-status.show{display:flex;}
+.spin{display:inline-block;width:12px;height:12px;border:2px solid var(--g2);border-top-color:var(--black);border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.warn-box{padding:10px 14px;background:var(--amber-dim);border:1px solid rgba(146,64,14,0.2);font-size:12px;color:var(--amber);display:none;}
+.warn-box.show{display:block;}
+/* Terminal */
+.term-wrap{background:var(--g1);border:1px solid var(--g2);overflow:hidden;}
+.term-hdr{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:var(--g2);border-bottom:1px solid var(--g2);}
+.term-dots{display:flex;gap:5px;}
+.term-dots span{width:9px;height:9px;border-radius:50%;}
+.term-title{font-size:9px;color:var(--g3);letter-spacing:.06em;text-transform:uppercase;font-family:var(--mono);font-weight:300;}
+.term-out{font-family:var(--mono);font-size:11px;line-height:1.7;padding:12px 14px;min-height:200px;max-height:400px;overflow-y:auto;color:var(--g4);white-space:pre-wrap;word-break:break-all;}
+.term-out::-webkit-scrollbar{width:4px;}
+.term-out::-webkit-scrollbar-thumb{background:var(--g2);}
+.log-ok{color:var(--green);}
+.log-err{color:var(--red);}
+.log-warn{color:var(--amber);}
+.log-head{color:var(--black);font-weight:600;}
+/* Results */
+.results-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--g2);margin-top:14px;}
+.rc{background:var(--white);padding:16px;}
+.rc.ok-b{background:var(--green-dim);}
+.rc.warn-b{background:var(--amber-dim);}
+.rc-val{font-size:32px;font-weight:700;font-variant-numeric:tabular-nums;}
+.rc.ok-b .rc-val{color:var(--green);}
+.rc.warn-b .rc-val{color:var(--amber);}
+.rc-lbl{font-size:9px;font-weight:300;letter-spacing:.08em;text-transform:uppercase;color:var(--g3);margin-top:4px;font-family:var(--mono);}
+.badge-ok{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:var(--green-dim);border:1px solid rgba(22,101,52,0.2);font-size:12px;font-weight:700;color:var(--green);}
+.badge-err{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:var(--red-dim);border:1px solid rgba(185,28,28,0.2);font-size:12px;font-weight:700;color:var(--red);}
+.result-sub{margin-top:10px;font-size:11px;color:var(--g3);line-height:1.7;}
+</style>
+</head>
+<body>
+<nav>
+  <a href="/machines" class="nav-logo">PILAR</a>
+  <div class="nav-div"></div>
+  <span class="nav-title">Train Model</span>
+  <a href="/machines" class="nav-back">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+    Back to Dashboard
+  </a>
+</nav>
+
+<div class="content">
+<div class="wrap">
+
+  <!-- Current model -->
+  <div class="card" id="metaCard">
+    <div class="ctitle">Current model</div>
+    {% if model_meta %}
+    <div class="meta-row">
+      <span class="meta-tag teal">{{ model_meta.get('model_name','Unknown') }}</span>
+      <span class="meta-tag green">{{ model_meta.get('source','—') }}</span>
+      <span style="font-size:11px;color:var(--text3)">{{ '{:,}'.format(model_meta.get('n_total',0)|int) }} samples &nbsp;·&nbsp; trained {{ model_meta.get('trained_at','—')[:10] }}</span>
+    </div>
+    <div class="meta-grid">
+      <div class="mc"><div class="mv green">{{ model_meta.get('f1','—') }}%</div><div class="ml">F1 Score</div></div>
+      <div class="mc"><div class="mv green">{{ model_meta.get('recall','—') }}%</div><div class="ml">Recall</div></div>
+      <div class="mc"><div class="mv teal">{{ model_meta.get('precision','—') }}%</div><div class="ml">Precision</div></div>
+      <div class="mc"><div class="mv sm">{{ model_meta.get('failure_rate','—') }}%</div><div class="ml">Failure rate</div></div>
+    </div>
+    {% else %}
+    <div style="color:var(--text3);font-size:12px;padding:6px 0">No model metadata found. Run a first training to generate models.</div>
+    {% endif %}
+  </div>
+
+  <!-- Data source -->
+  <div class="card">
+    <div class="ctitle">Training data source</div>
+    <div class="source-grid">
+
+      <!-- Real machine data (primary) -->
+      <label class="src-opt" id="srcRealLabel">
+        <input type="radio" name="source" value="real" id="srcReal">
+        <div class="src-body">
+          <div class="src-name">Real machine data</div>
+          <div class="src-desc">Data collected from your machines in the field. Every analysis you run is stored — export, clean and retrain on your actual conditions.</div>
+          <span class="src-tag loading" id="realTag">Loading…</span>
+          <div class="stat-bar" id="realStats"></div>
+        </div>
+      </label>
+
+      <!-- Kaggle benchmark -->
+      <label class="src-opt {% if not kaggle_csv_exists %}disabled{% endif %}">
+        <input type="radio" name="source" value="kaggle" {% if kaggle_csv_exists and not True %}checked{% endif %} {% if not kaggle_csv_exists %}disabled{% endif %}>
+        <div class="src-body">
+          <div class="src-name">Kaggle benchmark</div>
+          <div class="src-desc">220K rows of real pump sensor data. 7 mapped sensors. Current production model source. Use to reset to a known-good baseline.</div>
+          {% if kaggle_csv_exists %}
+          <span class="src-tag available">Available — 220K rows</span>
+          {% else %}
+          <span class="src-tag missing">File not found</span>
+          {% endif %}
+        </div>
+      </label>
+
+      <!-- Synthetic -->
+      <label class="src-opt {% if not universal_exists %}disabled{% endif %}">
+        <input type="radio" name="source" value="synthetic" {% if not universal_exists %}disabled{% endif %}>
+        <div class="src-body">
+          <div class="src-name">Synthetic — 23 profiles</div>
+          <div class="src-desc">Generated pump failure profiles. RF + XGBoost + GradientBoosting ensemble with SMOTE + Platt calibration. Useful for initial setup or testing.</div>
+          {% if universal_exists %}
+          <span class="src-tag available">Available</span>
+          {% else %}
+          <span class="src-tag missing">Script not found</span>
+          {% endif %}
+        </div>
+      </label>
+
+    </div>
+  </div>
+
+  <!-- Options (shown only for kaggle/synthetic) -->
+  <div class="card" id="optionsCard">
+    <div class="ctitle">Options</div>
+    <div class="opt-row">
+      <div>
+        <div class="opt-label">Keep existing zone models</div>
+        <div class="opt-sub">Do not retrain zone_models.pkl (CAV, ROL, ETN, IMP, MOT). Recommended for Kaggle — it has no zone labels.</div>
+      </div>
+      <label class="toggle-wrap">
+        <input type="checkbox" id="keepZones" checked>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+  </div>
+
+  <!-- Launch -->
+  <div class="card">
+    <div class="ctitle">Launch</div>
+    <div class="warn-box" id="warnBox"></div>
+    <div class="run-wrap" style="margin-top:4px">
+      <button class="btn-run" id="runBtn" onclick="startTraining()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Start training
+      </button>
+      <div class="run-status" id="runStatus">
+        <span class="spin"></span>
+        Training in progress…
+      </div>
+    </div>
+  </div>
+
+  <!-- Log output -->
+  <div class="card" id="logCard" style="display:none">
+    <div class="ctitle" style="margin-bottom:10px">Output log</div>
+    <div class="term-wrap">
+      <div class="term-hdr">
+        <div class="term-dots">
+          <span style="background:#ff5f57"></span>
+          <span style="background:#ffbd2e"></span>
+          <span style="background:#28c840"></span>
+        </div>
+        <span class="term-title">stdout / stderr</span>
+      </div>
+      <div class="term-out" id="logOut"></div>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div class="card" id="resultsCard" style="display:none">
+    <div class="ctitle">Results</div>
+    <div id="resultsBadge"></div>
+    <div class="results-grid" id="resultsGrid"></div>
+    <div class="result-sub" id="resultsSub"></div>
+  </div>
+
+</div>
+</div>
+
+<script>
+var _sse = null;
+var _training = false;
+
+// ── Load real data stats on page load ────────────────────────────────────────
+(function loadRealStats() {
+  fetch('/train/data-stats')
+  .then(function(r){ return r.json(); })
+  .then(function(d) {
+    var tag  = document.getElementById('realTag');
+    var bar  = document.getElementById('realStats');
+    var lbl  = document.getElementById('srcRealLabel');
+
+    if (d.error) {
+      tag.textContent = 'Error loading stats';
+      tag.className   = 'src-tag missing';
+      return;
+    }
+
+    if (d.total === 0) {
+      tag.textContent = 'No data yet';
+      tag.className   = 'src-tag missing';
+      lbl.classList.add('disabled');
+      document.getElementById('srcReal').disabled = true;
+      return;
+    }
+
+    if (!d.ready) {
+      tag.textContent = d.total + ' rows (need ' + d.min_required + '+)';
+      tag.className   = 'src-tag loading';
+      lbl.classList.add('disabled');
+      document.getElementById('srcReal').disabled = true;
+    } else {
+      tag.textContent = d.total + ' rows — ready';
+      tag.className   = 'src-tag recommended';
+      // Auto-select real data as default when available
+      document.getElementById('srcReal').checked = true;
+      onSourceChange();
+    }
+
+    bar.innerHTML =
+      '<span class="stat-val">' + d.total + '</span> analyses &nbsp;·&nbsp; ' +
+      '<span class="stat-val">' + d.failures + '</span> failures (' + d.failure_rate + '%) &nbsp;·&nbsp; ' +
+      '<span class="stat-val">' + d.normal + '</span> normal<br>' +
+      '<span class="stat-val">' + d.machines + '</span> machine(s)' +
+      (d.first_date ? ' &nbsp;·&nbsp; ' + d.first_date + ' → ' + d.last_date : '') +
+      (d.labeled ? ' &nbsp;·&nbsp; <span class="stat-val">' + d.labeled + '</span> operator-confirmed labels' : '') +
+      (d.collected_files.length ? '<br>Last export: ' + d.collected_files[0] : '');
+    bar.classList.add('show');
+  })
+  .catch(function() {
+    document.getElementById('realTag').textContent = 'Offline';
+    document.getElementById('realTag').className   = 'src-tag missing';
+  });
+})();
+
+// ── Source change → show/hide options card ───────────────────────────────────
+function onSourceChange() {
+  var src = getSource();
+  var optCard = document.getElementById('optionsCard');
+  // Keep-zones only applies to kaggle/synthetic
+  optCard.style.display = (src === 'real') ? 'none' : 'block';
+}
+document.querySelectorAll('input[name=source]').forEach(function(r) {
+  r.addEventListener('change', onSourceChange);
+});
+onSourceChange();
+
+function getSource() {
+  var el = document.querySelector('input[name=source]:checked');
+  return el ? el.value : null;
+}
+
+// ── Start training ────────────────────────────────────────────────────────────
+function startTraining() {
+  var source = getSource();
+  if (!source) { showWarn('Please select a data source.'); return; }
+
+  hideWarn();
+  _training = true;
+  document.getElementById('runBtn').disabled = true;
+  document.getElementById('runStatus').classList.add('show');
+  document.getElementById('logCard').style.display = 'block';
+  document.getElementById('resultsCard').style.display = 'none';
+  document.getElementById('logOut').innerHTML = '';
+
+  var keepZones = document.getElementById('keepZones').checked;
+
+  fetch('/train/run', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({source: source, keep_zones: keepZones})
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d) {
+    if (d.error) { appendLog('ERROR: ' + d.error, 'err'); resetUI(); return; }
+    openStream();
+  })
+  .catch(function(e) { appendLog('Network error: ' + e, 'err'); resetUI(); });
+}
+
+function openStream() {
+  if (_sse) { _sse.close(); }
+  _sse = new EventSource('/train/stream');
+  _sse.onmessage = function(e) {
+    var data;
+    try { data = JSON.parse(e.data); } catch(ex) { return; }
+    if (data.line !== undefined) { appendLog(data.line); }
+    if (data.done) {
+      _sse.close(); _sse = null;
+      resetUI();
+      if (data.rc === 0) { loadResults(true); }
+      else { showResults(false, 'Training failed (exit code ' + data.rc + ')'); }
+    }
+  };
+  _sse.onerror = function() {
+    appendLog('[SSE connection lost]', 'warn');
+    if (_sse) { _sse.close(); _sse = null; }
+    resetUI();
+  };
+}
+
+function appendLog(line, cls) {
+  var el = document.getElementById('logOut');
+  var span = document.createElement('span');
+  if (cls) {
+    span.className = 'log-' + cls;
+  } else if (/^={3,}|\[1\/|\[2\/|\[3\/|\[4\/|\[5\/|\[6\/|\[7\/|\[8\//.test(line)) {
+    span.className = 'log-head';
+  } else if (/error|fail|traceback|exception/i.test(line) && !/zero_division/.test(line)) {
+    span.className = 'log-err';
+  } else if (/warning|warn/i.test(line)) {
+    span.className = 'log-warn';
+  } else if (/done|ok\b|saved|loaded|reloaded|\bOK\b/i.test(line)) {
+    span.className = 'log-ok';
+  }
+  span.textContent = line + '\n';
+  el.appendChild(span);
+  el.scrollTop = el.scrollHeight;
+}
+
+function resetUI() {
+  _training = false;
+  document.getElementById('runBtn').disabled = false;
+  document.getElementById('runStatus').classList.remove('show');
+}
+
+function showWarn(msg) {
+  var el = document.getElementById('warnBox');
+  el.textContent = msg;
+  el.classList.add('show');
+}
+function hideWarn() {
+  document.getElementById('warnBox').classList.remove('show');
+}
+
+function loadResults(success) {
+  fetch('/train/status')
+  .then(function(r){ return r.json(); })
+  .then(function(d) { showResults(success, null, d.meta); })
+  .catch(function() { showResults(success, null, null); });
+}
+
+function showResults(ok, errMsg, meta) {
+  document.getElementById('resultsCard').style.display = 'block';
+  var badge = document.getElementById('resultsBadge');
+  if (!ok) {
+    badge.innerHTML = '<div class="badge-err"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>' + (errMsg||'Training failed') + '</div>';
+    return;
+  }
+  badge.innerHTML = '<div class="badge-ok"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Training complete — models reloaded, no restart needed</div>';
+
+  if (!meta) return;
+  var f1  = meta.f1   != null ? meta.f1   : '—';
+  var rec = meta.recall    != null ? meta.recall    : '—';
+  var pre = meta.precision != null ? meta.precision : '—';
+  var cls = function(v) { return parseFloat(v) >= 95 ? 'ok-b' : 'warn-b'; };
+
+  document.getElementById('resultsGrid').innerHTML =
+    '<div class="rc ' + (f1!=='—'?cls(f1):'') + '"><div class="rc-val">' + f1 + (f1!=='—'?'%':'') + '</div><div class="rc-lbl">F1 Score</div></div>' +
+    '<div class="rc ' + (rec!=='—'?cls(rec):'') + '"><div class="rc-val">' + rec + (rec!=='—'?'%':'') + '</div><div class="rc-lbl">Recall</div></div>' +
+    '<div class="rc ' + (pre!=='—'?cls(pre):'') + '"><div class="rc-val">' + pre + (pre!=='—'?'%':'') + '</div><div class="rc-lbl">Precision</div></div>';
+
+  var n   = meta.n_total || meta.n_train || '—';
+  var src = meta.source || '—';
+  var at  = (meta.trained_at||'—').slice(0,16).replace('T',' ');
+  document.getElementById('resultsSub').textContent =
+    (typeof n === 'number' ? n.toLocaleString() : n) + ' samples · ' + src + ' · ' + at;
+
+  // Refresh meta card
+  refreshMetaCard(meta);
+}
+
+function refreshMetaCard(meta) {
+  var card = document.getElementById('metaCard');
+  if (!card || !meta || !meta.model_name) return;
+  var f1  = meta.f1||'—', rec=meta.recall||'—', pre=meta.precision||'—';
+  var fr  = meta.failure_rate||'—';
+  var n   = (meta.n_total||meta.n_train||0);
+  var at  = (meta.trained_at||'—').slice(0,10);
+  card.innerHTML =
+    '<div class="ctitle">Current model</div>' +
+    '<div class="meta-row">' +
+      '<span class="meta-tag teal">' + (meta.model_name||'Unknown') + '</span>' +
+      '<span class="meta-tag green">' + (meta.source||'—') + '</span>' +
+      '<span style="font-size:11px;color:var(--text3)">' + Number(n).toLocaleString() + ' samples &nbsp;·&nbsp; trained ' + at + '</span>' +
+    '</div>' +
+    '<div class="meta-grid">' +
+      '<div class="mc"><div class="mv green">' + f1 + '%</div><div class="ml">F1 Score</div></div>' +
+      '<div class="mc"><div class="mv green">' + rec + '%</div><div class="ml">Recall</div></div>' +
+      '<div class="mc"><div class="mv teal">' + pre + '%</div><div class="ml">Precision</div></div>' +
+      '<div class="mc"><div class="mv sm">' + fr + '%</div><div class="ml">Failure rate</div></div>' +
+    '</div>';
+}
+
+// Auto-resume if training is already in progress
+(function() {
+  fetch('/train/status').then(function(r){ return r.json(); }).then(function(d) {
+    if (d.in_progress) {
+      _training = true;
+      document.getElementById('runBtn').disabled = true;
+      document.getElementById('runStatus').classList.add('show');
+      document.getElementById('logCard').style.display = 'block';
+      openStream();
+    }
+  }).catch(function(){});
+})();
+</script>
+</body>
+</html>

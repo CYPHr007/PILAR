@@ -433,10 +433,10 @@ def action_quit(icon, item):
     global _window
     print("[PILAR] Quit requested — stopping all background monitors")
     try:
-        import app as _et
-        for m in list(_et._bg_monitors.values()):
+        import pilar_monitor
+        for m in list(pilar_monitor.active_monitors.values()):
             m['stop'].set()
-        _et._bg_monitors.clear()
+        pilar_monitor.active_monitors.clear()
     except Exception:
         pass
     if _window is not None:
@@ -465,9 +465,37 @@ def action_reset_agents(icon, item):
             0, f"Erreur : {e}", "PILAR — Agents IA", 0x10)
 
 
+def action_demo(icon, item):
+    """Open PILAR in demo mode (auto-login as demo@pilar.app)."""
+    global _window
+    demo_url = f"http://{APP_HOST}:{APP_PORT}/demo-login"
+    if _window is not None:
+        try:
+            _window.load_url(demo_url)
+            _window.show()
+            _window.restore()
+        except Exception:
+            pass
+
+
+def action_train(icon, item):
+    """Open the ML training panel."""
+    global _window
+    train_url = f"http://{APP_HOST}:{APP_PORT}/train"
+    if _window is not None:
+        try:
+            _window.load_url(train_url)
+            _window.show()
+            _window.restore()
+        except Exception:
+            pass
+
+
 def _build_menu():
     return pystray.Menu(
         pystray.MenuItem("Ouvrir PILAR", action_open, default=True),
+        pystray.MenuItem("Mode démo (maintenance teams)", action_demo),
+        pystray.MenuItem("Entraîner le modèle ML…", action_train),
         pystray.Menu.SEPARATOR,
         pystray.MenuItem("Rechercher les mises à jour…", action_check_update),
         pystray.MenuItem("Réinitialiser les agents IA…", action_reset_agents),
@@ -539,7 +567,8 @@ def main():
                     _tray_icon.notify(msg, title)
                 except Exception:
                     pass
-        _et._notify_callback = _on_alert
+        import pilar_monitor
+        pilar_monitor.notify_callback = _on_alert
         print("[PILAR] Notification callback wired")
     except Exception as e:
         print(f"[PILAR] Could not wire notify callback: {e}")
@@ -564,8 +593,8 @@ def main():
         if _tray_icon:
             try:
                 # Check if any background monitor is active
-                import app as _et2
-                active = len([m for m in _et2._bg_monitors.values() if not m['stop'].is_set()])
+                import pilar_monitor as _pm2
+                active = len([m for m in _pm2.active_monitors.values() if not m['stop'].is_set()])
                 if active:
                     _tray_icon.notify(
                         f"PILAR surveille {active} fichier(s) en arrière-plan",

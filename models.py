@@ -74,6 +74,18 @@ class Analysis(db.Model):
     confidence   = db.Column(db.Integer, default=100)
     machine_id   = db.Column(db.String(100))
     feedback     = db.Column(db.String(10))  # 'tp'=confirmed failure, 'fp'=false positive
+    uploaded_at  = db.Column(db.DateTime, nullable=True)  # set when sent to PILAR server
+
+
+class UserDataConsent(db.Model):
+    """Records a user's opt-in consent to share anonymised sensor data with Team PILAR."""
+    __tablename__ = 'user_data_consent'
+    id               = db.Column(db.Integer, primary_key=True)
+    user_id          = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, unique=True)
+    consented_at     = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    consent_version  = db.Column(db.String(20), default='v1.0')
+    enabled          = db.Column(db.Boolean, default=True)
+    withdrawn_at     = db.Column(db.DateTime, nullable=True)
 
 
 class SavedFile(db.Model):
@@ -110,9 +122,21 @@ class DiscoveredParam(db.Model):
     user_id      = db.Column(db.Integer, nullable=True)
 
 
+class MachineGroup(db.Model):
+    """A named folder for organising machines in the sidebar tree."""
+    __tablename__ = 'machine_group'
+    id         = db.Column(db.Integer, primary_key=True)
+    user_id    = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    name       = db.Column(db.String(100), nullable=False)
+    color      = db.Column(db.String(20), default='teal')   # teal|green|amber|red|purple
+    sort_order = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+
 class Machine(db.Model):
     id               = db.Column(db.Integer, primary_key=True)
     user_id          = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    group_id         = db.Column(db.Integer, db.ForeignKey('machine_group.id'), nullable=True)
     name             = db.Column(db.String(200), nullable=False)
     description      = db.Column(db.String(500))
     machine_type     = db.Column(db.String(10), default='M')

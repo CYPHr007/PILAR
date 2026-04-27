@@ -97,7 +97,13 @@ from models import (
     Team, TeamMember, User, BannedEmail, Settings, Analysis, SavedFile,
     TeamMessage, DiscoveredParam, Machine, MachineNote, AlertLog,
     MachineRequest, MachineBaseline, MachineModel, MaintenanceEvent,
-    SyncQueue, LocalChatMessage,
+    SyncQueue, LocalChatMessage, UserDataConsent, MachineGroup,
+)
+from pilar_upload import (
+    upload_pending as _pilar_upload_pending,
+    upload_async as _pilar_upload_async,
+    get_status as _pilar_upload_status,
+    get_install_id as _pilar_get_install_id,
 )
 
 # ── CSRF Protection ──────────────────────────────────────────────────────────
@@ -114,7 +120,6 @@ _CSRF_PROTECTED_ROUTES = {
     '/admin/set_plan', '/admin/set_quota',
     '/admin/toggle_admin', '/admin/toggle_ban', '/admin/delete_user',
     '/admin/block_email', '/admin/retrain',
-    '/team/create', '/team/invite', '/team/kick', '/team/transfer', '/team/leave',
 }
 
 @app.before_request
@@ -216,6 +221,12 @@ with app.app_context():
             "ALTER TABLE machine ADD COLUMN environment VARCHAR(50)",
             "ALTER TABLE machine ADD COLUMN criticality VARCHAR(20) DEFAULT 'medium'",
             "ALTER TABLE machine ADD COLUMN last_maintenance DATETIME",
+            "ALTER TABLE analysis ADD COLUMN uploaded_at DATETIME",
+            "CREATE TABLE IF NOT EXISTS user_data_consent (id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL UNIQUE, consented_at DATETIME, consent_version VARCHAR(20) DEFAULT 'v1.0', enabled INTEGER DEFAULT 1, withdrawn_at DATETIME)",
+            "CREATE TABLE IF NOT EXISTS machine_group (id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL, name VARCHAR(100) NOT NULL, color VARCHAR(20) DEFAULT 'teal', sort_order INTEGER DEFAULT 0, created_at DATETIME)",
+            "ALTER TABLE machine ADD COLUMN group_id INTEGER REFERENCES machine_group(id)",
+            "UPDATE team_member SET role='owner' WHERE role='leader'",
+            "UPDATE team_member SET role='viewer' WHERE role='member'",
         ]
     else:
         _migrations = [
@@ -254,6 +265,12 @@ with app.app_context():
             "ALTER TABLE machine ADD COLUMN IF NOT EXISTS environment VARCHAR(50)",
             "ALTER TABLE machine ADD COLUMN IF NOT EXISTS criticality VARCHAR(20) DEFAULT 'medium'",
             "ALTER TABLE machine ADD COLUMN IF NOT EXISTS last_maintenance TIMESTAMP",
+            "ALTER TABLE analysis ADD COLUMN IF NOT EXISTS uploaded_at TIMESTAMP",
+            "CREATE TABLE IF NOT EXISTS user_data_consent (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL UNIQUE, consented_at TIMESTAMP, consent_version VARCHAR(20) DEFAULT 'v1.0', enabled BOOLEAN DEFAULT TRUE, withdrawn_at TIMESTAMP)",
+            "CREATE TABLE IF NOT EXISTS machine_group (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, name VARCHAR(100) NOT NULL, color VARCHAR(20) DEFAULT 'teal', sort_order INTEGER DEFAULT 0, created_at TIMESTAMP)",
+            "ALTER TABLE machine ADD COLUMN IF NOT EXISTS group_id INTEGER REFERENCES machine_group(id)",
+            "UPDATE team_member SET role='owner' WHERE role='leader'",
+            "UPDATE team_member SET role='viewer' WHERE role='member'",
         ]
     for sql in _migrations:
         try:
@@ -336,15 +353,15 @@ def _seed_demo_account():
     # ── Machines ──────────────────────────────────────────────────────────────
     machines_def = [
         dict(name='Pompe Principale',    pump_type='centrifuge', fluid_type='eau',   roue_material='inox_316',
-             nominal_flow=45.0, nominal_pressure=6.5, nominal_current=18.0, nominal_vibration=2.5,
+             nominal_flow=2.5, nominal_pressure=630.0, nominal_current=2.5, nominal_vibration=13.5,
              power_kw=15.0, threshold=DEFAULT_THRESHOLD,
              description='Pompe centrifuge principale — circuit eau froide'),
         dict(name='Compresseur A',        pump_type='centrifuge', fluid_type='huile', roue_material='acier_carbone',
-             nominal_flow=30.0, nominal_pressure=8.0, nominal_current=22.0, nominal_vibration=3.0,
+             nominal_flow=2.0, nominal_pressure=600.0, nominal_current=2.8, nominal_vibration=14.0,
              power_kw=22.0, threshold=50.0,
              description='Compresseur hydraulique circuit huile'),
         dict(name='Pompe de Transfert',   pump_type='centrifuge', fluid_type='acide', roue_material='inox_316l',
-             nominal_flow=20.0, nominal_pressure=4.0, nominal_current=12.0, nominal_vibration=1.8,
+             nominal_flow=1.8, nominal_pressure=580.0, nominal_current=2.3, nominal_vibration=12.0,
              power_kw=7.5, threshold=40.0,
              description='Pompe transfert acide chlorhydrique dilué'),
     ]
@@ -486,7 +503,8 @@ def get_setting(key, default="", uid=None):
         uid = uid or current_uid()
         s = Settings.query.filter_by(key=key, user_id=uid).first()
         return s.value if s else default
-    except: return default
+    except Exception:
+        return default
 
 def set_setting(key, value, uid=None):
     try:
@@ -557,27 +575,33 @@ _SIDEBAR = """
 <aside class="sidebar" id="desktopSidebar">
   <div class="sidebar-logo">
     <div class="logo-mark">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+      <!-- Bar mark: three vertical bars of varying height -->
+      <div style="display:flex;gap:2px;align-items:flex-end;">
+        <div style="width:4px;height:13px;background:currentColor;"></div>
+        <div style="width:4px;height:18px;background:currentColor;"></div>
+        <div style="width:4px;height:10px;background:currentColor;"></div>
+      </div>
     </div>
     <div>
       <div class="logo-text">PILAR</div>
-      <div class="logo-sub" data-i18n="app_subtitle">Maintenance Prédictive</div>
+      <div class="logo-sub">Predictive Maintenance</div>
     </div>
   </div>
   <nav class="sidebar-nav">
-    <div class="sidebar-section" data-i18n="nav_section_fleet">Machines</div>
+    <div class="sidebar-section" data-i18n="nav_section_machines">Machines</div>
     <a href="/machines" class="ni {fl}">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-      <span class="ni-label" data-i18n="nav_machines">Machines</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
+      <span class="ni-label" data-i18n="nav_machines">Fleet</span>
     </a>
-    <div class="sidebar-section" data-i18n="nav_section_user">Utilisateur</div>
+    <div id="sidebarDeskTree" style="padding:0 0 4px 0"></div>
+    <div class="sidebar-section" data-i18n="nav_section_user">User</div>
     <a href="/account" class="ni {a}">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z"/></svg>
-      <span class="ni-label" data-i18n="nav_account">Compte</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span class="ni-label" data-i18n="nav_account">Team</span>
     </a>
     <a href="/settings" class="ni {s}">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-      <span class="ni-label" data-i18n="nav_settings">Réglages</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      <span class="ni-label" data-i18n="nav_settings">Settings</span>
     </a>
   </nav>
   <div class="sidebar-footer">
@@ -589,18 +613,18 @@ _SIDEBAR = """
   </div>
 </aside>
 <!-- Fleet drawer -->
-<div id="fleetDrawer" style="display:none;position:fixed;top:0;right:0;bottom:0;width:420px;max-width:100vw;background:var(--surface);border-left:1px solid var(--border);z-index:200;overflow-y:auto;padding:20px;box-shadow:-4px 0 24px rgba(0,0,0,0.4)">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+<div id="fleetDrawer" style="display:none;position:fixed;top:0;right:0;bottom:0;width:400px;max-width:100vw;background:var(--surface,#fff);border-left:1px solid var(--border,#e8e8e6);z-index:200;overflow-y:auto;padding:20px;">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border,#e8e8e6)">
     <div>
-      <div style="font-size:11px;letter-spacing:3px;color:var(--teal);text-transform:uppercase;font-weight:700">Fleet</div>
-      <div style="font-size:18px;font-weight:700;color:var(--text);margin-top:2px">Your Machines</div>
+      <div style="font-family:var(--mono,'IBM Plex Mono',monospace);font-size:9px;font-weight:300;letter-spacing:.14em;color:var(--g3,#999);text-transform:uppercase">Fleet</div>
+      <div style="font-size:16px;font-weight:600;color:var(--text,#0a0a0a);margin-top:3px">Your Machines</div>
     </div>
-    <button onclick="closeFleet()" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:8px;font-size:18px;line-height:1">✕</button>
+    <button onclick="closeFleet()" style="background:none;border:1px solid var(--border,#e8e8e6);color:var(--text3,#999);cursor:pointer;padding:6px 10px;font-size:14px;line-height:1">✕</button>
   </div>
-  <div id="fleetContent"><div style="text-align:center;padding:40px;color:var(--text3)">Loading...</div></div>
-  <a href="/dashboard" style="display:block;margin-top:16px;padding:12px;border:1px solid var(--border);border-radius:8px;color:var(--text3);text-decoration:none;text-align:center;font-size:11px;letter-spacing:1px">Full fleet page →</a>
+  <div id="fleetContent"><div style="text-align:center;padding:40px;color:var(--g3,#999)">Loading...</div></div>
+  <a href="/dashboard" style="display:block;margin-top:16px;padding:12px;border:1px solid var(--border,#e8e8e6);color:var(--g4,#666);text-decoration:none;text-align:center;font-family:var(--mono,'IBM Plex Mono',monospace);font-size:10px;font-weight:300;letter-spacing:.1em">Full fleet page →</a>
 </div>
-<div id="fleetOverlay" onclick="closeFleet()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:199"></div>
+<div id="fleetOverlay" onclick="closeFleet()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.3);z-index:199"></div>
 <script>
 (function(){{
   var lbl=document.getElementById('_langLbl');
@@ -635,13 +659,13 @@ function openFleet(){{
   fetch('/api/fleet_summary').then(r=>r.json()).then(d=>{{
     var html='';
     if(!d.machines||d.machines.length===0){{
-      html='<div style="text-align:center;padding:40px;color:var(--text3)"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:12px;display:block;margin-left:auto;margin-right:auto"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg><div>No machines yet</div><a href="/dashboard" style="display:inline-block;margin-top:12px;padding:8px 16px;background:var(--teal);color:#fff;border-radius:6px;text-decoration:none;font-size:11px;font-weight:700">Add Machine</a></div>';
+      html='<div style="text-align:center;padding:40px;color:var(--g3,#999)"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:12px;display:block;margin-left:auto;margin-right:auto"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg><div>No machines yet</div><a href="/dashboard" style="display:inline-block;margin-top:12px;padding:8px 16px;background:#0a0a0a;color:#fff;text-decoration:none;font-size:11px;font-weight:500;letter-spacing:.04em">Add Machine</a></div>';
     }}else{{
       d.machines.forEach(function(m){{
         var risk=m.last_risk!=null?m.last_risk:'—';
         var cls=m.last_risk==null?'':'risk>=50'?'alert':m.last_risk>=22?'amber':'ok';
         var rc=m.last_risk==null?'var(--text3)':m.last_risk>=50?'var(--red)':m.last_risk>=22?'var(--amber)':'var(--green)';
-        html+='<a href="/machine/'+m.id+'" style="display:block;padding:14px;background:var(--bg);border:1px solid var(--border);border-radius:10px;text-decoration:none;margin-bottom:10px;transition:border-color .15s">';
+        html+='<a href="/machine/'+m.id+'" style="display:block;padding:14px;background:var(--g1,#f4f4f2);border:1px solid var(--border,#e8e8e6);text-decoration:none;margin-bottom:8px;transition:border-color .15s">';
         html+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">';
         html+='<div style="font-size:13px;font-weight:600;color:var(--text)">'+m.name+'</div>';
         html+='<div style="font-size:20px;font-weight:800;color:'+rc+'">'+risk+(risk!=='—'?'%':'')+'</div></div>';
@@ -662,9 +686,9 @@ function closeFleet(){{
 
 _BOTTOM_NAV = """<!-- Bottom nav (mobile fallback) -->
 <nav class="bottom-nav">
-<a href="/machines" class="ni {fl}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span data-i18n="nav_machines">Machines</span></a>
-<a href="/account" class="ni {a}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z"/></svg><span data-i18n="nav_account">Account</span></a>
-<a href="/settings" class="ni {s}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg><span data-i18n="nav_settings">Settings</span></a>
+<a href="/machines" class="ni {fl}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg><span data-i18n="nav_machines">Fleet</span></a>
+<a href="/account" class="ni {a}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span data-i18n="nav_account">Team</span></a>
+<a href="/settings" class="ni {s}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg><span data-i18n="nav_settings">Settings</span></a>
 </nav>"""
 
 def nav(active):
@@ -686,6 +710,217 @@ def nav(active):
                 '</a>'
             )
             sidebar = sidebar.replace('</nav>', _admin_link + '</nav>', 1)
+    return sidebar + _BOTTOM_NAV.format(**keys)
+
+
+# Asset type SVG icons (compact, inline)
+_ASSET_ICONS_SVG = {
+    'pump':       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M2 12h4M18 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>',
+    'compressor': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M8 6V4M16 6V4M8 18v2M16 18v2M12 10v4M10 12h4"/></svg>',
+    'fan':        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><circle cx="12" cy="12" r="2"/><path d="M12 2C12 2 8 6 8 10c0 2 1.5 3 4 2M12 22c0 0 4-4 4-8 0-2-1.5-3-4-2M2 12c0 0 4 4 8 4 2 0 3-1.5 2-4M22 12c0 0-4-4-8-4-2 0-3 1.5-2 4"/></svg>',
+    'turbine':    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4M5.64 5.64l2.83 2.83M15.54 15.54l2.83 2.83M5.64 18.36l2.83-2.83M15.54 8.46l2.83-2.83"/></svg>',
+    'agitator':   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M12 2v20M8 6l4-4 4 4M8 18l4 4 4-4M6 12H2M22 12h-4"/></svg>',
+    'motor':      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><rect x="2" y="8" width="14" height="8" rx="1.5"/><circle cx="19" cy="12" r="3"/><path d="M16 12h2"/></svg>',
+    'conveyor':   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M2 17h20M5 17a3 3 0 100-6 3 3 0 000 6zM19 17a3 3 0 100-6 3 3 0 000 6z"/><path d="M8 11h8"/></svg>',
+    'gearbox':    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>',
+    'other':      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>',
+}
+
+_ASSET_TYPE_LABELS = {
+    'pump': 'Pumps', 'compressor': 'Compressors', 'fan': 'Fans',
+    'turbine': 'Turbines', 'agitator': 'Agitators', 'motor': 'Motors',
+    'conveyor': 'Conveyors', 'gearbox': 'Gearboxes', 'other': 'Other',
+}
+
+def nav_machine(active_mid, uid):
+    """Sidebar for machine_space: machines grouped by asset type, group state persisted in localStorage."""
+    # Fetch all user machines ordered by name
+    machines = Machine.query.filter_by(user_id=uid).order_by(Machine.name).all()
+
+    # Fetch last risk per machine (one query per machine — acceptable for typical fleet sizes)
+    machine_risks = {}
+    for machine in machines:
+        last_a = (Analysis.query.filter_by(machine_id=machine.name)
+                  .order_by(Analysis.timestamp.desc()).first())
+        if last_a and last_a.risk is not None:
+            machine_risks[machine.id] = round(last_a.risk, 1)
+
+    # Group machines by asset_type, preserving a stable order
+    _type_order = ['pump','compressor','fan','turbine','agitator','motor','conveyor','gearbox','other']
+    groups = {}  # asset_type -> list of machines
+    for machine in machines:
+        at = machine.asset_type or 'pump'
+        if at not in groups:
+            groups[at] = []
+        groups[at].append(machine)
+    # Sort groups by _type_order, unknown types go at the end
+    sorted_types = sorted(groups.keys(), key=lambda t: _type_order.index(t) if t in _type_order else 99)
+
+    # Active machine's asset type — always starts expanded
+    active_at = None
+    for machine in machines:
+        if machine.id == active_mid:
+            active_at = machine.asset_type or 'pump'
+            break
+
+    # Build group HTML + collect JS data for localStorage persistence
+    groups_html = ''
+    for at in sorted_types:
+        group_machines = groups[at]
+        label = _ASSET_TYPE_LABELS.get(at, at.title())
+        icon_svg = _ASSET_ICONS_SVG.get(at, _ASSET_ICONS_SVG['other'])
+        group_id = f'msgrp_{at}'
+        is_active_group = (at == active_at)
+
+        # Machine links within this group
+        links_html = ''
+        for machine in group_machines:
+            is_active = machine.id == active_mid
+            risk = machine_risks.get(machine.id)
+            if risk is None:
+                dot_color = 'var(--border)'
+                dot_title = 'No data'
+            elif risk >= 50:
+                dot_color = 'var(--red)'
+                dot_title = f'{risk}% — Critical'
+            elif risk >= 22:
+                dot_color = 'var(--amber)'
+                dot_title = f'{risk}% — Warning'
+            else:
+                dot_color = 'var(--green)'
+                dot_title = f'{risk}% — OK'
+            display_name = machine.name[:20] + ('…' if len(machine.name) > 20 else '')
+            active_bg = 'background:rgba(20,184,166,0.13);color:var(--teal);' if is_active else ''
+            active_fw = '600' if is_active else '400'
+            links_html += (
+                f'<a href="/machine/{machine.id}" style="display:flex;align-items:center;gap:7px;'
+                f'padding:5px 10px 5px 28px;border-radius:5px;text-decoration:none;'
+                f'color:var(--text2);font-size:11.5px;font-weight:{active_fw};{active_bg}'
+                f'transition:background .12s;margin:1px 4px;overflow:hidden">'
+                f'<span style="width:5px;height:5px;border-radius:50%;background:{dot_color};'
+                f'flex-shrink:0;display:inline-block" title="{dot_title}"></span>'
+                f'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">{display_name}</span>'
+                f'<canvas id="spk_{machine.id}" width="36" height="14" style="flex-shrink:0;opacity:.7"></canvas>'
+                f'</a>'
+            )
+
+        count = len(group_machines)
+        groups_html += (
+            f'<div class="ms-grp" data-grp="{at}" style="margin-bottom:2px">'
+            # Group header — clickable to toggle
+            f'<div class="ms-grp-hdr" onclick="_msToggle(\'{at}\')" style="display:flex;align-items:center;'
+            f'gap:6px;padding:5px 8px 5px 10px;border-radius:5px;cursor:pointer;'
+            f'color:var(--text3);font-size:10.5px;font-weight:600;text-transform:uppercase;'
+            f'letter-spacing:.06em;transition:color .12s;user-select:none">'
+            f'<span style="opacity:.6;flex-shrink:0">{icon_svg}</span>'
+            f'<span style="flex:1">{label}</span>'
+            f'<span style="font-size:9px;opacity:.5">{count}</span>'
+            f'<span class="ms-chev" id="mschev_{at}" style="font-size:9px;opacity:.5;'
+            f'transition:transform .15s;transform:{"rotate(90deg)" if is_active_group else "rotate(0deg)"}">›</span>'
+            f'</div>'
+            # Group body — collapsed by default unless active group
+            f'<div id="{group_id}" style="overflow:hidden;max-height:{"400px" if is_active_group else "0"};'
+            f'transition:max-height .2s ease">'
+            f'{links_html}'
+            f'</div>'
+            f'</div>'
+        )
+
+    if not groups_html:
+        groups_html = '<div style="padding:8px 16px;font-size:11px;color:var(--text3)">No machines yet</div>'
+
+    # Collect all machine IDs for sparkline batch request
+    all_mids = [str(m.id) for m in machines]
+
+    # JS for toggle + localStorage persistence + sparklines (injected once into the sidebar)
+    js_block = (
+        '<script>'
+        # ── Sparkline renderer ────────────────────────────────────────────
+        '(function(){'
+        '  var ids=' + repr(all_mids).replace("'", '"') + ';'
+        '  if(!ids.length)return;'
+        '  fetch("/api/machines/sparklines?ids="+ids.join(","))'
+        '  .then(function(r){return r.json();})'
+        '  .then(function(data){'
+        '    Object.keys(data).forEach(function(mid){'
+        '      var risks=data[mid];'
+        '      if(!risks||risks.length<2)return;'
+        '      var c=document.getElementById("spk_"+mid);'
+        '      if(!c)return;'
+        '      var ctx=c.getContext("2d");'
+        '      var W=c.width,H=c.height;'
+        '      var mn=Math.min.apply(null,risks),mx=Math.max.apply(null,risks);'
+        '      var rng=mx-mn||1;'
+        '      var last=risks[risks.length-1];'
+        '      var col=last>50?"#ef4444":last>20?"#f59e0b":"#10b981";'
+        '      ctx.clearRect(0,0,W,H);'
+        '      ctx.beginPath();'
+        '      risks.forEach(function(r,i){'
+        '        var x=(i/(risks.length-1))*W;'
+        '        var y=H-(((r-mn)/rng)*(H-2)+1);'
+        '        i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);'
+        '      });'
+        '      ctx.strokeStyle=col;ctx.lineWidth=1.5;ctx.stroke();'
+        '    });'
+        '  }).catch(function(){});'
+        '})();'
+        # ── Toggle ────────────────────────────────────────────────────────
+        'function _msToggle(at){'
+        '  var el=document.getElementById("msgrp_"+at);'
+        '  var chev=document.getElementById("mschev_"+at);'
+        '  if(!el)return;'
+        '  var open=el.style.maxHeight==="0px"||el.style.maxHeight===""||el.style.maxHeight==="0";'
+        '  el.style.maxHeight=open?"400px":"0";'
+        '  if(chev)chev.style.transform=open?"rotate(90deg)":"rotate(0deg)";'
+        '  try{'
+        '    var s=JSON.parse(localStorage.getItem("pilar_msgrp")||"{}");'
+        '    s[at]=open;localStorage.setItem("pilar_msgrp",JSON.stringify(s));'
+        '  }catch(e){}'
+        '}'
+        '(function(){'
+        '  try{'
+        '    var s=JSON.parse(localStorage.getItem("pilar_msgrp")||"{}");'
+        f'   var activeAt="{active_at or ""}";'
+        '    Object.keys(s).forEach(function(at){'
+        '      if(at===activeAt)return;'  # active group is already open from server render
+        '      var el=document.getElementById("msgrp_"+at);'
+        '      var chev=document.getElementById("mschev_"+at);'
+        '      if(!el)return;'
+        '      var open=s[at];'
+        '      el.style.maxHeight=open?"400px":"0";'
+        '      if(chev)chev.style.transform=open?"rotate(90deg)":"rotate(0deg)";'
+        '    });'
+        '  }catch(e){}'
+        '})();'
+        '</script>'
+    )
+
+    # Build full sidebar using the standard _SIDEBAR template
+    keys = {"m":"","tut":"","h":"","fl":"on","a":"","s":"","tw":""}
+    sidebar = _SIDEBAR.format(**keys)
+
+    # Inject grouped machine list into the sidebarDeskTree slot
+    tree_block = f'<div style="padding:2px 0 8px 0">{groups_html}</div>{js_block}'
+    sidebar = sidebar.replace(
+        '<div id="sidebarDeskTree" style="padding:0 0 4px 0"></div>',
+        f'<div id="sidebarDeskTree" style="padding:0 0 4px 0">{tree_block}</div>',
+        1
+    )
+
+    # Admin link if needed
+    _u = db.session.get(User, uid)
+    if _u and _u.is_admin:
+        _admin_link = (
+            '<div class="sidebar-section">Admin</div>'
+            '<a href="/admin" class="ni" style="color:var(--amber,#d97706)">'
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">'
+            '<path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>'
+            '</svg>'
+            '<span class="ni-label">Admin Panel</span>'
+            '</a>'
+        )
+        sidebar = sidebar.replace('</nav>', _admin_link + '</nav>', 1)
+
     return sidebar + _BOTTOM_NAV.format(**keys)
 
 
@@ -869,7 +1104,7 @@ def _resolve_machine(machine_ref):
         return machine_ref
     try:
         mid = int(machine_ref)
-        m = Machine.query.get(mid)
+        m = db.session.get(Machine, mid)
         if m: return m
     except (TypeError, ValueError):
         pass
@@ -1656,6 +1891,11 @@ def _start_scheduler():
                            id='weekly_auto_retrain', replace_existing=True)
         _scheduler.add_job(_adaptive_sweep, CronTrigger(hour='*/6'),
                            id='adaptive_per_machine_sweep', replace_existing=True)
+        _scheduler.add_job(
+            lambda: _pilar_upload_async(app, db, Analysis, FEATURE_MEDIANS, _APP_DIR, APP_VERSION),
+            CronTrigger(day_of_week='sun', hour=2, minute=0),
+            id='weekly_data_contribution', replace_existing=True,
+        )
         _scheduler.start()
         _scheduler_status.update({
             'enabled': True,
@@ -1663,7 +1903,7 @@ def _start_scheduler():
             'reason': 'leader',
             'lock_kind': _scheduler_lock_kind,
         })
-        logger.info(f"APScheduler started - weekly reports Mon 08:00 UTC | auto-retrain Sun 03:00 UTC ({_scheduler_lock_kind} leader)")
+        logger.info(f"APScheduler started - weekly reports Mon 08:00 UTC | auto-retrain Sun 03:00 UTC | data upload Sun 02:00 UTC ({_scheduler_lock_kind} leader)")
         return _scheduler
     except Exception as _se:
         _scheduler_status.update({
@@ -1685,7 +1925,7 @@ _start_scheduler()
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'GET':
-        if current_uid(): return redirect('/monitor')
+        if current_uid(): return redirect('/machines')
         return render_template('register.html', error=None, pending=False)
     ip = (request.headers.get('X-Forwarded-For','').split(',')[0].strip() if os.environ.get('RAILWAY_ENVIRONMENT') else '') or request.remote_addr or ''
     if _check_rate_limit(ip):
@@ -1725,7 +1965,7 @@ def register():
             return render_template('register.html', error=None, pending=True, resent=False, pending_email=email)
         session['user_id'] = user.id
         session.permanent = True
-        return redirect('/monitor')
+        return redirect('/machines')
     except Exception as e:
         db.session.rollback()
         logger.info(f"auth: Register error: {type(e).__name__}: {e}")
@@ -1760,7 +2000,7 @@ def resend_verification():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'GET':
-        if current_uid(): return redirect('/monitor')
+        if current_uid(): return redirect('/machines')
         return render_template('login.html', error=None)
     ip = (request.headers.get('X-Forwarded-For','').split(',')[0].strip() if os.environ.get('RAILWAY_ENVIRONMENT') else '') or request.remote_addr or ''
     if _check_rate_limit(ip):
@@ -1789,7 +2029,7 @@ def login():
         session['user_id'] = user.id
         session.permanent = (request.form.get('remember') == '1')
         logger.info(f"auth: Login OK: {email} IP={ip} remember={session.permanent}")
-        return redirect('/monitor')
+        return redirect('/machines')
     except Exception as e:
         db.session.rollback()
         logger.info(f"auth: Login error: {type(e).__name__}: {e}")
@@ -1804,7 +2044,7 @@ def logout():
 @login_required
 def change_password():
     uid = current_uid()
-    user = User.query.get(uid)
+    user = db.session.get(User, uid)
     if not user:
         return jsonify({'error': 'Not found'}), 404
     data = request.get_json() or {}
@@ -1828,7 +2068,7 @@ def verify_email(token):
     db.session.commit()
     session['user_id'] = user.id
     session.permanent = True
-    return redirect('/monitor')
+    return redirect('/machines')
 
 @app.route('/forgot-password', methods=['GET', 'POST'])
 def forgot_password():
@@ -1853,7 +2093,10 @@ def forgot_password():
 def reset_password(token):
     user = User.query.filter_by(reset_token=token).first()
     now = datetime.now(timezone.utc)
-    if not user or user.reset_token_expires is None or user.reset_token_expires.replace(tzinfo=timezone.utc) < now:
+    _exp = user.reset_token_expires if user else None
+    if _exp is not None and _exp.tzinfo is None:
+        _exp = _exp.replace(tzinfo=timezone.utc)   # SQLite returns naive UTC datetimes
+    if not user or _exp is None or _exp < now:
         return render_template('reset.html', token=token,
             error='Lien invalide ou expiré. Recommencez la procédure.', error_key='reset_err_expired')
     if request.method == 'GET':
@@ -2112,12 +2355,12 @@ def impersonate(uid):
     target = db.session.get(User, uid)
     logger.info(f"admin] IMPERSONATE by {admin_user.email if admin_user else '?'}: target={target.email if target else uid}")
     session['user_id'] = uid
-    return redirect('/monitor')
+    return redirect('/machines')
 
 # ── ROUTES PAGES ──────────────────────────────────────────────────────────────
 @app.route('/')
 def index():
-    return redirect('/monitor')
+    return redirect('/machines')
 
 @app.route('/demo')
 def demo():
@@ -2138,7 +2381,7 @@ def demo_login():
     session['user_id'] = user.id
     session.permanent = True
     logger.info(f"Demo login: uid={user.id}")
-    return redirect('/monitor')
+    return redirect('/machines')
 
 # ── ALERT ACK ─────────────────────────────────────────────────────────────────
 @app.route('/alert/ack/<token>')
@@ -2149,7 +2392,7 @@ def alert_ack(token):
     if not al.acked_at:
         al.acked_at = datetime.now(timezone.utc)
         db.session.commit()
-    return '<html><body style="font-family:-apple-system,\'SF Pro Display\',\'Helvetica Neue\',Arial,sans-serif;background:#07090f;color:#ffffff;display:flex;align-items:center;justify-content:center;min-height:100vh;"><div style="text-align:center"><div style="font-size:15px;letter-spacing:0.04em;color:#0d9488;font-weight:700;margin-bottom:16px;">PILAR</div><h2 style="margin:0 0 12px;font-size:20px;font-weight:700;">Alert Acknowledged</h2><p style="color:rgba(235,235,245,0.6);font-size:14px;">This alert has been recorded. No escalation will be sent.</p><a href="/monitor" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#0d9488;color:#fff;text-decoration:none;border-radius:12px;font-size:15px;font-weight:600;">Go to Dashboard</a></div></body></html>'
+    return '<html><body style="font-family:-apple-system,\'SF Pro Display\',\'Helvetica Neue\',Arial,sans-serif;background:#07090f;color:#ffffff;display:flex;align-items:center;justify-content:center;min-height:100vh;"><div style="text-align:center"><div style="font-size:15px;letter-spacing:0.04em;color:#0d9488;font-weight:700;margin-bottom:16px;">PILAR</div><h2 style="margin:0 0 12px;font-size:20px;font-weight:700;">Alert Acknowledged</h2><p style="color:rgba(235,235,245,0.6);font-size:14px;">This alert has been recorded. No escalation will be sent.</p><a href="/machines" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#0d9488;color:#fff;text-decoration:none;border-radius:12px;font-size:15px;font-weight:600;">Go to Dashboard</a></div></body></html>'
 
 # ── MACHINES CRUD API ─────────────────────────────────────────────────────────
 @app.route('/api/machines', methods=['GET'])
@@ -2200,6 +2443,7 @@ def api_machines_list():
             'nominal_vibration': m.nominal_vibration,
             'alert_email': m.alert_email, 'escalation_email': m.escalation_email,
             'is_active': m.is_active,
+            'group_id': m.group_id,
             'asset_type': m.asset_type or 'pump',
             'brand': m.brand or '',
             'model_name': m.model_name or '',
@@ -2267,6 +2511,10 @@ def api_machines_create():
     if d.get('install_date'):
         try: _install = datetime.strptime(d['install_date'], '%Y-%m-%d').date()
         except (ValueError, TypeError): pass
+    _group_id = None
+    if d.get('group_id'):
+        _g = MachineGroup.query.filter_by(id=int(d['group_id']), user_id=uid).first()
+        if _g: _group_id = _g.id
     m = Machine(user_id=uid, name=name,
         description=(d.get('description') or '')[:500],
         machine_type=d.get('machine_type', 'M'),
@@ -2291,9 +2539,11 @@ def api_machines_create():
         environment=(d.get('environment') or 'general')[:50],
         criticality=(d.get('criticality') or 'medium')[:20],
         last_maintenance=(datetime.strptime(d['last_maintenance'], '%Y-%m-%d') if d.get('last_maintenance') else None),
+        group_id=_group_id,
         is_active=True)
     db.session.add(m)
     db.session.commit()
+    push_desk_sync()
     return jsonify({'ok': True, 'id': m.id, 'name': m.name}), 201
 
 @app.route('/api/machines/<int:mid>', methods=['PUT'])
@@ -2338,7 +2588,15 @@ def api_machines_update(mid):
             m.last_maintenance = datetime.strptime(d['last_maintenance'], '%Y-%m-%d') if d['last_maintenance'] else None
         except (ValueError, TypeError):
             pass
+    if 'group_id' in d:
+        gid = d['group_id']
+        if gid is None:
+            m.group_id = None
+        else:
+            g = MachineGroup.query.filter_by(id=int(gid), user_id=uid).first()
+            if g: m.group_id = g.id
     db.session.commit()
+    push_desk_sync()
     return jsonify({'ok': True})
 
 @app.route('/api/machines/<int:mid>', methods=['DELETE'])
@@ -2348,7 +2606,91 @@ def api_machines_delete(mid):
     m = Machine.query.filter_by(id=mid, user_id=uid).first_or_404()
     db.session.delete(m)
     db.session.commit()
+    push_desk_sync()
     return jsonify({'ok': True})
+
+# ── MACHINE GROUPS API ───────────────────────────────────────────────────────
+@app.route('/api/machine-groups', methods=['GET'])
+@login_required
+def api_machine_groups_list():
+    uid = current_uid()
+    groups = MachineGroup.query.filter_by(user_id=uid).order_by(MachineGroup.sort_order, MachineGroup.name).all()
+    return jsonify([{'id': g.id, 'name': g.name, 'color': g.color, 'sort_order': g.sort_order} for g in groups])
+
+@app.route('/api/machine-groups', methods=['POST'])
+@login_required
+def api_machine_groups_create():
+    uid = current_uid()
+    data = request.get_json(silent=True) or {}
+    name = (data.get('name') or '').strip()[:100]
+    if not name:
+        return jsonify({'error': 'name required'}), 400
+    g = MachineGroup(user_id=uid, name=name, color=data.get('color', 'teal'),
+                     sort_order=data.get('sort_order', 0))
+    db.session.add(g)
+    db.session.commit()
+    push_desk_sync()
+    return jsonify({'id': g.id, 'name': g.name, 'color': g.color})
+
+@app.route('/api/machine-groups/<int:gid>', methods=['PUT'])
+@login_required
+def api_machine_groups_update(gid):
+    uid = current_uid()
+    g = MachineGroup.query.filter_by(id=gid, user_id=uid).first_or_404()
+    data = request.get_json(silent=True) or {}
+    if 'name' in data: g.name = (data['name'] or '').strip()[:100]
+    if 'color' in data: g.color = data['color']
+    if 'sort_order' in data: g.sort_order = int(data['sort_order'])
+    db.session.commit()
+    push_desk_sync()
+    return jsonify({'ok': True})
+
+@app.route('/api/machine-groups/<int:gid>', methods=['DELETE'])
+@login_required
+def api_machine_groups_delete(gid):
+    uid = current_uid()
+    g = MachineGroup.query.filter_by(id=gid, user_id=uid).first_or_404()
+    Machine.query.filter_by(user_id=uid, group_id=gid).update({'group_id': None})
+    db.session.delete(g)
+    db.session.commit()
+    push_desk_sync()
+    return jsonify({'ok': True})
+
+
+@app.route('/api/machines/sidebar', methods=['GET'])
+@login_required
+def api_machines_sidebar():
+    """Lightweight endpoint for the sidebar machine tree. Returns groups + machines with last risk."""
+    uid = current_uid()
+    from sqlalchemy import func as _func
+    machines = Machine.query.filter_by(user_id=uid).order_by(Machine.group_id, Machine.name).all()
+    groups = MachineGroup.query.filter_by(user_id=uid).order_by(MachineGroup.sort_order, MachineGroup.name).all()
+    if machines:
+        machine_names = [m.name for m in machines]
+        subq = (db.session.query(Analysis.machine_id, _func.max(Analysis.timestamp).label('max_ts'))
+                .filter(Analysis.machine_id.in_(machine_names))
+                .group_by(Analysis.machine_id).subquery())
+        latest = (db.session.query(Analysis.machine_id, Analysis.risk, Analysis.prediction)
+                  .join(subq, (Analysis.machine_id == subq.c.machine_id) &
+                               (Analysis.timestamp == subq.c.max_ts))
+                  .all())
+        last_by_name = {r.machine_id: {'risk': r.risk, 'prediction': r.prediction} for r in latest}
+    else:
+        last_by_name = {}
+
+    group_list = [{'id': g.id, 'name': g.name, 'color': g.color} for g in groups]
+    machine_list = []
+    for m in machines:
+        last = last_by_name.get(m.name, {})
+        machine_list.append({
+            'id': m.id, 'name': m.name,
+            'group_id': m.group_id,
+            'is_active': m.is_active,
+            'last_risk': last.get('risk'),
+            'last_prediction': last.get('prediction'),
+        })
+    return jsonify({'groups': group_list, 'machines': machine_list})
+
 
 # ── MACHINE NOTES API ─────────────────────────────────────────────────────────
 @app.route('/api/machines/<int:mid>/notes', methods=['GET'])
@@ -2573,9 +2915,10 @@ def _bg_adaptive_retrain(mid):
 def api_machine_monitor(mid):
     uid = current_uid()
     m = Machine.query.filter_by(id=mid, user_id=uid).first_or_404()
-    last_a = Analysis.query.filter_by(machine_id=mid).order_by(Analysis.timestamp.desc()).first()
-    if not last_a:
+    all_a = Analysis.query.filter_by(machine_id=m.name).order_by(Analysis.timestamp.desc()).all()
+    if not all_a:
         return jsonify({'has_data': False})
+    last_a = all_a[0]
     import json as _json
     zones = []
     try:
@@ -2584,21 +2927,58 @@ def api_machine_monitor(mid):
             zones = [{'nom': z.get('nom', '?'), 'proba': z.get('proba', 0)} for z in zdata]
     except Exception:
         pass
+    # Summary stats across all analyses
+    risks = [a.risk for a in all_a if a.risk is not None]
+    preds = [a.prediction for a in all_a if a.prediction is not None]
+    total = len(all_a)
+    anomaly_count = sum(1 for p in preds if p == 1)
+    avg_risk = round(sum(risks) / len(risks), 1) if risks else 0
+    max_risk = round(max(risks), 1) if risks else 0
+    dist = {'low': 0, 'medium': 0, 'high': 0, 'critical': 0}
+    for r in risks:
+        if r < 30: dist['low'] += 1
+        elif r < 50: dist['medium'] += 1
+        elif r < 75: dist['high'] += 1
+        else: dist['critical'] += 1
+    # Zone frequency across all analyses
+    zone_counts = {}
+    for a in all_a:
+        try:
+            zd = _json.loads(a.zones) if a.zones else []
+            if isinstance(zd, list):
+                for z in zd:
+                    n = z.get('nom', '')
+                    if n: zone_counts[n] = zone_counts.get(n, 0) + 1
+        except Exception:
+            pass
+    top_zones = sorted(zone_counts.items(), key=lambda x: x[1], reverse=True)[:5]
     return jsonify({
         'has_data': True,
         'risk': round(last_a.risk or 0, 1),
         'prediction': last_a.prediction or 0,
         'timestamp': last_a.timestamp.isoformat() if last_a.timestamp else None,
         'zones': zones,
+        'summary': {
+            'total': total,
+            'avg_risk': avg_risk,
+            'max_risk': max_risk,
+            'anomaly_count': anomaly_count,
+            'anomaly_rate': round(anomaly_count / total * 100, 1) if total else 0,
+            'dist': dist,
+            'top_zones': [{'nom': n, 'count': c, 'pct': round(c / total * 100, 1)} for n, c in top_zones],
+        }
     })
 
 @app.route('/api/machine_history/<int:mid>')
 @login_required
 def api_machine_history(mid):
     uid = current_uid()
-    Machine.query.filter_by(id=mid, user_id=uid).first_or_404()
-    limit = min(int(request.args.get('limit', 50)), 200)
-    analyses = Analysis.query.filter_by(machine_id=mid).order_by(Analysis.timestamp.desc()).limit(limit).all()
+    m = Machine.query.filter_by(id=mid, user_id=uid).first_or_404()
+    limit = min(int(request.args.get('limit', 100)), 500)
+    order = request.args.get('order', 'desc')
+    sort_col = Analysis.timestamp.asc() if order == 'asc' else Analysis.timestamp.desc()
+    analyses = Analysis.query.filter_by(machine_id=m.name).order_by(sort_col).limit(limit).all()
+    total_count = Analysis.query.filter_by(machine_id=m.name).count()
     import json as _json
     result = []
     for a in analyses:
@@ -2614,9 +2994,373 @@ def api_machine_history(mid):
             'risk': round(a.risk or 0, 1),
             'prediction': a.prediction or 0,
             'zones': zones_str,
-            'confidence': None,
+            'confidence': a.confidence,
         })
-    return jsonify({'analyses': result})
+    risks = [a.risk for a in analyses if a.risk is not None]
+    anomalies = sum(1 for a in analyses if a.prediction == 1)
+    return jsonify({
+        'analyses': result,
+        'summary': {
+            'total': total_count,
+            'shown': len(result),
+            'avg_risk': round(sum(risks)/len(risks), 1) if risks else 0,
+            'max_risk': round(max(risks), 1) if risks else 0,
+            'anomaly_count': anomalies,
+            'anomaly_rate': round(anomalies / len(result) * 100, 1) if result else 0,
+        }
+    })
+
+@app.route('/api/machines/<int:mid>/live/start', methods=['POST'])
+@login_required
+def api_live_start(mid):
+    """Start watching a local CSV file for this machine and saving new rows to DB."""
+    import json as _json
+    from pilar_monitor import start_monitor, active_monitors
+    uid = current_uid()
+    m = Machine.query.filter_by(id=mid, user_id=uid).first_or_404()
+    data = request.get_json(silent=True) or {}
+    file_path = data.get('file_path', '').strip()
+    interval  = max(2, min(int(data.get('interval', 5)), 300))  # 2–300 s
+
+    if not file_path:
+        return jsonify({'error': 'file_path is required'}), 400
+    if not os.path.isfile(file_path):
+        return jsonify({'error': f'File not found: {file_path}'}), 400
+
+    threshold = float(m.threshold or DEFAULT_THRESHOLD)
+
+    def _save(params, prob, pred, zones, conf):
+        """Persist one live reading to the Analysis table inside app context."""
+        import json as _j
+        with app.app_context():
+            zones_str = _j.dumps([
+                {'nom': z['nom'], 'proba': round(z.get('proba', z.get('probability', 0)) * 100, 1)}
+                for z in zones
+            ]) if zones else '[]'
+            extra = {k: params[k] for k in ('vibration', 'pression_entree', 'courant_moteur')
+                     if params.get(k) is not None}
+            a = Analysis(
+                machine_type = m.asset_type or 'pump',
+                temp_air     = params.get('temp_palier'),
+                temp_process = params.get('temp_moteur'),
+                vitesse      = params.get('debit'),
+                couple       = params.get('pression_sortie'),
+                usure        = params.get('heure_fonctionnement'),
+                risk         = prob, prediction = pred,
+                zones        = zones_str, confidence = conf,
+                user_id      = uid, machine_id = m.name,
+                extra_params = _j.dumps(extra) if extra else None,
+            )
+            db.session.add(a)
+            db.session.commit()
+
+    entry = start_monitor(
+        path       = file_path,
+        interval   = interval,
+        predict_fn = lambda row: predict_risk(row, threshold=threshold),
+        machine_id = m.name,
+        save_fn    = _save,
+    )
+    entry['machine_db_id'] = mid
+    return jsonify({'ok': True, 'file': os.path.basename(file_path), 'interval': interval})
+
+
+@app.route('/api/machines/<int:mid>/live/stop', methods=['POST'])
+@login_required
+def api_live_stop(mid):
+    """Stop the live monitor for this machine."""
+    from pilar_monitor import active_monitors, stop_monitor
+    uid = current_uid()
+    m = Machine.query.filter_by(id=mid, user_id=uid).first_or_404()
+    stopped = False
+    for path, entry in list(active_monitors.items()):
+        if entry.get('machine_db_id') == mid:
+            stop_monitor(path)
+            stopped = True
+    return jsonify({'ok': True, 'stopped': stopped})
+
+
+@app.route('/api/machines/<int:mid>/live/status')
+@login_required
+def api_live_status(mid):
+    """Return live monitor status for this machine."""
+    from pilar_monitor import active_monitors
+    uid = current_uid()
+    Machine.query.filter_by(id=mid, user_id=uid).first_or_404()
+    for path, entry in active_monitors.items():
+        if entry.get('machine_db_id') == mid:
+            return jsonify({
+                'running':   True,
+                'file':      entry.get('fname', ''),
+                'rows':      entry.get('rows', 0),
+                'alerts':    entry.get('alerts', 0),
+                'last_risk': entry.get('last_risk'),
+                'last_ts':   entry.get('last_ts'),
+            })
+    return jsonify({'running': False})
+
+
+@app.route('/api/machines/sparklines')
+@login_required
+def api_machines_sparklines():
+    """Return last 10 risk values for a list of machine IDs (for sidebar sparklines)."""
+    uid = current_uid()
+    ids_str = request.args.get('ids', '')
+    try:
+        mids = [int(x) for x in ids_str.split(',') if x.strip()]
+    except ValueError:
+        return jsonify({})
+    result = {}
+    for mid in mids:
+        m = Machine.query.filter_by(id=mid, user_id=uid).first()
+        if not m:
+            continue
+        rows = (Analysis.query.filter_by(machine_id=m.name)
+                .order_by(Analysis.timestamp.desc()).limit(10).all())
+        risks = [round(r.risk, 1) for r in reversed(rows) if r.risk is not None]
+        result[str(mid)] = risks
+    return jsonify(result)
+
+
+@app.route('/api/machines/<int:mid>/health')
+@login_required
+def api_machine_health(mid):
+    """
+    4-stage health intelligence endpoint.
+    Returns: health stage, per-sensor deviation from baseline, leading indicators,
+    time-to-threshold projection, trend direction.
+    """
+    import json as _json, math as _math
+    uid = current_uid()
+    m = Machine.query.filter_by(id=mid, user_id=uid).first_or_404()
+    threshold = m.threshold or DEFAULT_THRESHOLD
+
+    # ── Fetch last 60 analyses ordered oldest→newest for trend ────────────────
+    analyses = (Analysis.query.filter_by(machine_id=m.name)
+                .order_by(Analysis.timestamp.asc()).limit(60).all())
+    if not analyses:
+        return jsonify({'stage': 0, 'stage_label': 'No data', 'sensors': [],
+                        'leading': [], 'rul_days': None, 'trend': 'stable',
+                        'days_to_threshold': None, 'total': 0})
+
+    # ── Risk series (for trend + time-to-threshold) ───────────────────────────
+    risks = [a.risk for a in analyses if a.risk is not None]
+    avg_risk  = sum(risks) / len(risks) if risks else 0
+    last_risk = risks[-1] if risks else 0
+    max_risk  = max(risks) if risks else 0
+
+    # Linear regression slope over last 20 readings (risk change per reading)
+    window = risks[-20:] if len(risks) >= 20 else risks
+    n = len(window)
+    if n >= 3:
+        xs = list(range(n))
+        x_m = sum(xs) / n
+        y_m = sum(window) / n
+        num = sum((xs[i]-x_m)*(window[i]-y_m) for i in range(n))
+        den = sum((xs[i]-x_m)**2 for i in range(n))
+        slope = num / den if den else 0.0
+    else:
+        slope = 0.0
+
+    if slope > 0.3:   trend = 'degrading'
+    elif slope < -0.3: trend = 'improving'
+    else:              trend = 'stable'
+
+    # Days to threshold (linear projection from current risk + slope)
+    # slope is per-reading; assume ~avg gap between readings in hours
+    days_to_threshold = None
+    if slope > 0 and last_risk < threshold:
+        readings_left = (threshold - last_risk) / slope
+        # Estimate avg reading interval in days
+        if len(analyses) >= 2:
+            total_hours = (analyses[-1].timestamp - analyses[0].timestamp).total_seconds() / 3600
+            avg_interval_hours = total_hours / max(len(analyses) - 1, 1)
+            days_to_threshold = round(readings_left * avg_interval_hours / 24, 1)
+
+    # ── Feature mapping: Analysis columns → canonical PILAR feature names ────
+    _FEAT_COLS = {
+        'temp_palier':          ('temp_air',     'Bearing temp.',  '°C'),
+        'temp_moteur':          ('temp_process',  'Motor temp.',    '°C'),
+        'debit':                ('vitesse',       'Flow rate',      'L/s'),
+        'pression_sortie':      ('couple',        'Outlet pressure','kPa'),
+        'heure_fonctionnement': ('usure',         'Run hours',      'h'),
+    }
+    _EXTRA_FEATS = {
+        'vibration':      ('Vibration',     'mm/s'),
+        'pression_entree':('Inlet pressure','kPa'),
+        'courant_moteur': ('Motor current', 'A'),
+    }
+
+    # ── Load baseline (needed before staging) ────────────────────────────────
+    baseline_rows = MachineBaseline.query.filter_by(machine_id=m.id).all()
+    baseline = {b.feature: b for b in baseline_rows}
+
+    # Get last analysis sensor values
+    last_a = analyses[-1]
+    try:
+        last_extra = _json.loads(last_a.extra_params) if last_a.extra_params else {}
+    except Exception:
+        last_extra = {}
+
+    # ── Quick Z-score pass for all sensors (used in staging) ─────────────────
+    def _quick_z(feat, val):
+        bl = baseline.get(feat)
+        if bl and bl.std and bl.std > 0 and val is not None:
+            return abs((val - bl.mean) / bl.std)
+        return None
+
+    all_z = []
+    for feat, (col, _lbl, _unit) in _FEAT_COLS.items():
+        z = _quick_z(feat, getattr(last_a, col))
+        if z is not None: all_z.append(z)
+    for feat in _EXTRA_FEATS:
+        z = _quick_z(feat, last_extra.get(feat))
+        if z is not None: all_z.append(z)
+    max_z = max(all_z) if all_z else None
+    has_baseline = len(baseline) > 0
+
+    # ── Health stage (physics-first: sensor deviation is primary signal) ─────
+    # 0=Healthy 1=Watch 2=Alert 3=Critical
+    # Sensor Z-scores vs machine's own baseline are more reliable than model
+    # probability alone (the ML model is trained on pumps; Z-scores work for
+    # any machine type).
+    if has_baseline and max_z is not None:
+        if max_z >= 3.0 or last_risk >= threshold:
+            stage = 3; stage_label = 'Critical'
+        elif max_z >= 2.0 or last_risk >= threshold * 0.55 or (last_risk > 20 and trend == 'degrading'):
+            stage = 2; stage_label = 'Alert'
+        elif max_z >= 1.0 or last_risk >= 15:
+            stage = 1; stage_label = 'Watch'
+        else:
+            stage = 0; stage_label = 'Healthy'
+    else:
+        # No baseline yet — risk-only thresholds (less reliable, model-biased)
+        if last_risk >= threshold:
+            stage = 3; stage_label = 'Critical'
+        elif last_risk >= threshold * 0.55 or (last_risk > 20 and trend == 'degrading'):
+            stage = 2; stage_label = 'Alert'
+        elif last_risk >= 15:
+            stage = 1; stage_label = 'Watch'
+        else:
+            stage = 0; stage_label = 'Healthy'
+
+    # Build per-sensor trend: slope of last 15 readings per sensor
+    def _sensor_slope(series):
+        vals = [v for v in series if v is not None]
+        if len(vals) < 3: return 0.0
+        nn = len(vals)
+        xs = list(range(nn)); xm = sum(xs)/nn; ym = sum(vals)/nn
+        num = sum((xs[i]-xm)*(vals[i]-ym) for i in range(nn))
+        den = sum((xs[i]-xm)**2 for i in range(nn))
+        return num/den if den else 0.0
+
+    recent = analyses[-15:]
+    sensor_data = []
+
+    for feat, (col, label, unit) in _FEAT_COLS.items():
+        series = [getattr(a, col) for a in recent]
+        cur = getattr(last_a, col)
+        if cur is None: continue
+        bl = baseline.get(feat)
+        if bl and bl.std and bl.std > 0:
+            z = round((cur - bl.mean) / bl.std, 2)
+            pct_dev = round((cur - bl.mean) / max(abs(bl.mean), 0.001) * 100, 1)
+        elif bl:
+            z = 0.0; pct_dev = 0.0
+        else:
+            z = None; pct_dev = None
+        sl = _sensor_slope(series)
+        if   sl >  0.05: dir_ = 'up'
+        elif sl < -0.05: dir_ = 'down'
+        else:            dir_ = 'stable'
+        sensor_data.append({
+            'feature': feat, 'label': label, 'unit': unit,
+            'current': round(cur, 3),
+            'baseline_mean': round(bl.mean, 3) if bl else None,
+            'baseline_std': round(bl.std, 3) if bl and bl.std else None,
+            'z_score': z,
+            'pct_deviation': pct_dev,
+            'trend': dir_,
+            'slope': round(sl, 4),
+        })
+
+    for feat, (label, unit) in _EXTRA_FEATS.items():
+        series = []
+        for a in recent:
+            try: ep = _json.loads(a.extra_params) if a.extra_params else {}
+            except Exception: ep = {}
+            series.append(ep.get(feat))
+        cur = last_extra.get(feat)
+        if cur is None: continue
+        bl = baseline.get(feat)
+        if bl and bl.std and bl.std > 0:
+            z = round((cur - bl.mean) / bl.std, 2)
+            pct_dev = round((cur - bl.mean) / max(abs(bl.mean), 0.001) * 100, 1)
+        elif bl:
+            z = 0.0; pct_dev = 0.0
+        else:
+            z = None; pct_dev = None
+        sl = _sensor_slope(series)
+        if   sl >  0.02: dir_ = 'up'
+        elif sl < -0.02: dir_ = 'down'
+        else:            dir_ = 'stable'
+        sensor_data.append({
+            'feature': feat, 'label': label, 'unit': unit,
+            'current': round(cur, 3),
+            'baseline_mean': round(bl.mean, 3) if bl else None,
+            'baseline_std': round(bl.std, 3) if bl and bl.std else None,
+            'z_score': z,
+            'pct_deviation': pct_dev,
+            'trend': dir_,
+            'slope': round(sl, 4),
+        })
+
+    # Sort by |z_score| descending — worst deviators first
+    sensor_data.sort(key=lambda s: abs(s['z_score'] or 0), reverse=True)
+
+    # Leading indicators: sensors that are both high-z AND trending up (degrading direction)
+    leading = []
+    for s in sensor_data:
+        if s['z_score'] is not None and abs(s['z_score']) > 1.0:
+            severity = 'high' if abs(s['z_score']) > 2.5 else 'medium' if abs(s['z_score']) > 1.5 else 'low'
+            leading.append({
+                'label': s['label'],
+                'feature': s['feature'],
+                'z_score': s['z_score'],
+                'trend': s['trend'],
+                'severity': severity,
+                'message': (
+                    f"{s['label']} is {abs(s['z_score']):.1f}σ {'above' if s['z_score']>0 else 'below'} normal"
+                    + (f", trending {'up' if s['trend']=='up' else 'down'}" if s['trend'] != 'stable' else '')
+                )
+            })
+        if len(leading) >= 3:
+            break
+
+    # Risk series for chart (timestamp + risk, oldest first)
+    risk_series = [
+        {'t': a.timestamp.isoformat() + 'Z', 'r': round(a.risk, 1)}
+        for a in analyses if a.risk is not None
+    ]
+
+    return jsonify({
+        'stage': stage,
+        'stage_label': stage_label,
+        'last_risk': round(last_risk, 1),
+        'avg_risk': round(avg_risk, 1),
+        'max_risk': round(max_risk, 1),
+        'trend': trend,
+        'slope': round(slope, 3),
+        'days_to_threshold': days_to_threshold,
+        'threshold': threshold,
+        'max_z': round(max_z, 2) if max_z is not None else None,
+        'sensors': sensor_data,
+        'leading': leading,
+        'total': len(analyses),
+        'has_baseline': has_baseline,
+        'risk_series': risk_series,
+    })
+
 
 # ── MACHINE SPACE PAGE ────────────────────────────────────────────────────────
 @app.route('/machine/<int:mid>')
@@ -2640,8 +3384,13 @@ def machine_space(mid):
         'alert_email': m.alert_email or '', 'escalation_email': m.escalation_email or '',
         'saved_file': ({'id': sf.id, 'filename': sf.filename, 'row_count': sf.row_count,
                         'created_at': sf.created_at.isoformat() + 'Z'} if sf else None),
+        'threshold': m.threshold or DEFAULT_THRESHOLD,
     })
-    return render_template('machine_space.html', machine=m, machine_json=machine_json, sidebar_html=nav("fl"))
+    # Default to monitor tab if machine has data, otherwise info tab
+    has_data = Analysis.query.filter_by(machine_id=m.name).first() is not None
+    default_tab = 'monitor' if has_data else 'info'
+    return render_template('machine_space.html', machine=m, machine_json=machine_json,
+                           sidebar_html=nav_machine(m.id, uid), default_tab=default_tab)
 
 @app.route('/dashboard')
 @app.route('/machines')
@@ -2658,7 +3407,7 @@ def api_fleet_summary():
     machines = Machine.query.filter_by(user_id=uid, is_active=True).order_by(Machine.name).all()
     result = []
     for m in machines:
-        last_a = Analysis.query.filter_by(machine_id=m.id).order_by(Analysis.timestamp.desc()).first()
+        last_a = Analysis.query.filter_by(machine_id=m.name).order_by(Analysis.timestamp.desc()).first()
         result.append({
             'id': m.id,
             'name': m.name,
@@ -2711,7 +3460,21 @@ def api_machine_analyze_csv(mid):
     if not col_map:
         return jsonify({'error': 'No recognizable columns found. Expected pump fields: vibration, temp_palier, debit, pression_entree/sortie, courant_moteur, temp_moteur, heure_fonctionnement.'}), 400
     threshold = float(m.threshold) if m.threshold else DEFAULT_THRESHOLD
+
+    # Detect timestamp column (any column with 'time', 'date', 'ts' in its name)
+    ts_col = None
+    for c in df.columns:
+        if any(k in c.lower() for k in ['timestamp','datetime','date','time','ts']):
+            ts_col = c
+            break
+
+    # Delete previous analyses for this machine so re-upload replaces cleanly
+    Analysis.query.filter_by(machine_id=m.name, user_id=uid).delete()
+    db.session.flush()
+
     results = []
+    import json as _json2
+    from dateutil import parser as _dateparser
     for _, row in df.iterrows():
         try:
             params = {}
@@ -2720,15 +3483,32 @@ def api_machine_analyze_csv(mid):
                 params[field] = float(v) if pd.notna(v) else None
             if not params:
                 continue
+
+            # Parse timestamp from CSV row if available
+            row_ts = None
+            if ts_col and pd.notna(row.get(ts_col, None)):
+                try:
+                    row_ts = _dateparser.parse(str(row[ts_col]))
+                    if row_ts.tzinfo is None:
+                        from datetime import timezone as _tz
+                        row_ts = row_ts.replace(tzinfo=_tz.utc)
+                except Exception:
+                    row_ts = None
+
             probabilite, prediction, zones_risque, confidence, _ = predict_risk(dict(params), threshold=threshold)
-            zones_str = ', '.join([z['nom'] for z in zones_risque]) if zones_risque else ''
+            zones_str = _json2.dumps([{'nom': z['nom'], 'proba': round(z.get('proba', z.get('probability', 0)) * 100, 1)} for z in zones_risque]) if zones_risque else '[]'
+            # Store extra sensors in extra_params JSON
+            extra = {k: params[k] for k in ('vibration','pression_entree','courant_moteur') if params.get(k) is not None}
             a = Analysis(
-                machine_type='pump',
+                machine_type=m.asset_type or 'pump',
                 temp_air=params.get('temp_palier'), temp_process=params.get('temp_moteur'),
                 vitesse=params.get('debit'), couple=params.get('pression_sortie'),
                 usure=params.get('heure_fonctionnement'),
                 risk=probabilite, prediction=prediction, zones=zones_str,
-                confidence=confidence, user_id=uid, machine_id=m.name)
+                confidence=confidence, user_id=uid, machine_id=m.name,
+                extra_params=_json2.dumps(extra) if extra else None)
+            if row_ts:
+                a.timestamp = row_ts
             db.session.add(a)
             results.append({'risk': probabilite, 'prediction': prediction})
         except Exception:
@@ -2915,7 +3695,7 @@ def api_machine_request():
 @app.route('/onboarding')
 @login_required
 def onboarding():
-    return redirect('/monitor')
+    return redirect('/machines')
 
 @app.route('/onboarding/analyse', methods=['POST'])
 @login_required
@@ -2960,7 +3740,7 @@ def onboarding_skip():
     if user:
         user.onboarded = True
         db.session.commit()
-    return redirect('/monitor')
+    return redirect('/machines')
 
 @app.route('/monitor')
 def monitor():
@@ -2979,7 +3759,7 @@ def account():
     members = []
     my_role = None
     if user and user.team_id:
-        team = Team.query.get(user.team_id)
+        team = db.session.get(Team, user.team_id)
         if team:
             my_mbr = TeamMember.query.filter_by(team_id=team.id, user_id=uid).first()
             if my_mbr and not my_mbr.is_kicked:
@@ -3043,7 +3823,7 @@ h2{font-size:22px;font-weight:700;letter-spacing:-0.03em;margin-bottom:10px}
 </ul>
 <a href="https://github.com/CYPHR007/PILAR/issues" class="btn">&#128231; Contact us to get access</a>
 <hr class="divider">
-<a href="/monitor" class="btn-ghost">Back to Monitor</a>
+<a href="/machines" class="btn-ghost">Go to Fleet</a>
 </div>
 </body></html>"""
     return html
@@ -4099,7 +4879,29 @@ def api_whatif():
         logger.info(f"api_whatif] ERROR: {type(e).__name__}: {e}")
         return jsonify({'error': 'Erreur serveur'}), 500
 
-# ── TEAM ROUTES ───────────────────────────────────────────────────────────────
+# ── DESK (TEAM) ROUTES ────────────────────────────────────────────────────────
+# Roles: owner > admin > machine_manager / data_analyst / member_manager > viewer
+# Everyone joins as viewer by default.
+
+DESK_ROLES = ['owner', 'admin', 'machine_manager', 'data_analyst', 'member_manager', 'viewer']
+_ROLE_RANK  = {r: i for i, r in enumerate(DESK_ROLES)}  # lower index = more powerful
+
+def _desk_rank(role):
+    return _ROLE_RANK.get(role, 99)
+
+def _desk_can(my_role, permission):
+    """Return True if my_role grants the requested permission."""
+    r = _desk_rank(my_role)
+    if permission == 'invite':       return r <= _desk_rank('member_manager')
+    if permission == 'set_role':     return r <= _desk_rank('admin')
+    if permission == 'kick':         return r <= _desk_rank('member_manager')
+    if permission == 'manage_machines': return r <= _desk_rank('machine_manager')
+    if permission == 'upload_data':  return r <= _desk_rank('data_analyst')
+    if permission == 'transfer_ownership': return my_role == 'owner'
+    if permission == 'delete_desk':  return my_role == 'owner'
+    return False
+
+
 @app.route('/team/create', methods=['POST'])
 @login_required
 def team_create():
@@ -4108,59 +4910,99 @@ def team_create():
     if not user:
         return jsonify({'error': 'Not authenticated'}), 401
     if user.team_id:
-        return jsonify({'error': 'Already in a team'}), 400
-    name = (request.json or {}).get('name', 'My Team').strip() or 'My Team'
+        return jsonify({'error': 'Already in a Desk'}), 400
+    name = (request.json or {}).get('name', 'My Desk').strip() or 'My Desk'
     team = Team(name=name)
     db.session.add(team)
     db.session.commit()
-    db.session.add(TeamMember(team_id=team.id, user_id=uid, role='leader'))
+    db.session.add(TeamMember(team_id=team.id, user_id=uid, role='owner'))
     user.team_id = team.id
     db.session.commit()
     return jsonify({'ok': True, 'team_id': team.id})
+
 
 @app.route('/team/invite', methods=['POST'])
 @login_required
 def team_invite():
     uid = current_uid()
     user = db.session.get(User, uid)
-    if not user.team_id:
-        return jsonify({'error': 'Not in a team'}), 400
-    my_mbr = TeamMember.query.filter_by(team_id=user.team_id, user_id=uid).first()
-    if not my_mbr or my_mbr.role != 'leader':
-        return jsonify({'error': 'Leader access required'}), 403
+    if not user or not user.team_id:
+        return jsonify({'error': 'Not in a Desk'}), 400
+    my_mbr = TeamMember.query.filter_by(team_id=user.team_id, user_id=uid, is_kicked=False).first()
+    if not my_mbr or not _desk_can(my_mbr.role, 'invite'):
+        return jsonify({'error': 'Permission denied'}), 403
     email = (request.json or {}).get('email', '').strip().lower()
+    if not email:
+        return jsonify({'error': 'Email required'}), 400
     target = User.query.filter_by(email=email).first()
     if not target:
-        return jsonify({'error': 'Utilisateur introuvable'}), 404
+        return jsonify({'error': 'User not found'}), 404
+    if target.id == uid:
+        return jsonify({'error': 'Cannot invite yourself'}), 400
     existing = TeamMember.query.filter_by(team_id=user.team_id, user_id=target.id).first()
     if existing:
         if existing.is_kicked:
             existing.is_kicked = False
-            existing.role = 'member'
+            existing.role = 'viewer'
             target.team_id = user.team_id
             db.session.commit()
             return jsonify({'ok': True})
-        return jsonify({'error': 'Déjà membre de l\'équipe'}), 409
-    db.session.add(TeamMember(team_id=user.team_id, user_id=target.id, role='member'))
+        return jsonify({'error': 'Already a member'}), 409
+    db.session.add(TeamMember(team_id=user.team_id, user_id=target.id, role='viewer'))
     target.team_id = user.team_id
     db.session.commit()
     return jsonify({'ok': True})
+
+
+@app.route('/team/set-role/<int:target_uid>', methods=['POST'])
+@login_required
+def team_set_role(target_uid):
+    """Assign a role to a Desk member."""
+    uid = current_uid()
+    user = db.session.get(User, uid)
+    if not user or not user.team_id:
+        return jsonify({'error': 'Not in a Desk'}), 400
+    my_mbr = TeamMember.query.filter_by(team_id=user.team_id, user_id=uid, is_kicked=False).first()
+    if not my_mbr or not _desk_can(my_mbr.role, 'set_role'):
+        return jsonify({'error': 'Permission denied'}), 403
+    new_role = (request.json or {}).get('role', '').strip()
+    if new_role not in DESK_ROLES:
+        return jsonify({'error': f'Invalid role. Choose: {", ".join(DESK_ROLES)}'}), 400
+    # Cannot assign a role equal to or higher than your own (except owner can assign any)
+    if my_mbr.role != 'owner' and _desk_rank(new_role) <= _desk_rank(my_mbr.role):
+        return jsonify({'error': 'Cannot assign a role equal to or above your own'}), 403
+    # Cannot change an owner's role unless you are the owner
+    t_mbr = TeamMember.query.filter_by(team_id=user.team_id, user_id=target_uid, is_kicked=False).first()
+    if not t_mbr:
+        return jsonify({'error': 'Member not found'}), 404
+    if t_mbr.role == 'owner' and my_mbr.role != 'owner':
+        return jsonify({'error': 'Cannot change the owner\'s role'}), 403
+    if new_role == 'owner':
+        # Transfer ownership: demote current owner to admin
+        my_mbr.role = 'admin'
+    t_mbr.role = new_role
+    db.session.commit()
+    return jsonify({'ok': True, 'role': new_role})
+
 
 @app.route('/team/kick/<int:target_uid>', methods=['POST'])
 @login_required
 def team_kick(target_uid):
     uid = current_uid()
     user = db.session.get(User, uid)
-    if not user.team_id:
-        return jsonify({'error': 'Not in a team'}), 400
-    my_mbr = TeamMember.query.filter_by(team_id=user.team_id, user_id=uid).first()
-    if not my_mbr or my_mbr.role != 'leader':
-        return jsonify({'error': 'Leader access required'}), 403
+    if not user or not user.team_id:
+        return jsonify({'error': 'Not in a Desk'}), 400
+    my_mbr = TeamMember.query.filter_by(team_id=user.team_id, user_id=uid, is_kicked=False).first()
+    if not my_mbr or not _desk_can(my_mbr.role, 'kick'):
+        return jsonify({'error': 'Permission denied'}), 403
     t_mbr = TeamMember.query.filter_by(team_id=user.team_id, user_id=target_uid).first()
     if not t_mbr:
         return jsonify({'error': 'Member not found'}), 404
-    if t_mbr.role == 'leader':
-        return jsonify({'error': 'Cannot kick a leader'}), 400
+    if t_mbr.role == 'owner':
+        return jsonify({'error': 'Cannot remove the owner'}), 400
+    # member_manager can only remove viewers
+    if my_mbr.role == 'member_manager' and _desk_rank(t_mbr.role) < _desk_rank('viewer'):
+        return jsonify({'error': 'Insufficient permissions to remove this member'}), 403
     t_mbr.is_kicked = True
     target = db.session.get(User, target_uid)
     if target:
@@ -4168,41 +5010,347 @@ def team_kick(target_uid):
     db.session.commit()
     return jsonify({'ok': True})
 
+
+# Keep /team/transfer for backwards compat — redirects to set-role
 @app.route('/team/transfer/<int:target_uid>', methods=['POST'])
 @login_required
 def team_transfer(target_uid):
     uid = current_uid()
     user = db.session.get(User, uid)
-    if not user.team_id:
-        return jsonify({'error': 'Not in a team'}), 400
-    my_mbr = TeamMember.query.filter_by(team_id=user.team_id, user_id=uid).first()
-    if not my_mbr or my_mbr.role != 'leader':
-        return jsonify({'error': 'Leader access required'}), 403
-    t_mbr = TeamMember.query.filter_by(team_id=user.team_id, user_id=target_uid).first()
-    if not t_mbr or t_mbr.is_kicked:
+    if not user or not user.team_id:
+        return jsonify({'error': 'Not in a Desk'}), 400
+    my_mbr = TeamMember.query.filter_by(team_id=user.team_id, user_id=uid, is_kicked=False).first()
+    if not my_mbr or my_mbr.role not in ('owner', 'admin'):
+        return jsonify({'error': 'Permission denied'}), 403
+    t_mbr = TeamMember.query.filter_by(team_id=user.team_id, user_id=target_uid, is_kicked=False).first()
+    if not t_mbr:
         return jsonify({'error': 'Member not found'}), 404
-    if t_mbr.role == 'leader':
-        return jsonify({'error': 'Already a leader'}), 400
-    leaders_count = TeamMember.query.filter_by(team_id=user.team_id, role='leader', is_kicked=False).count()
-    if leaders_count >= 2:
-        my_mbr.role = 'member'
-    t_mbr.role = 'leader'
+    t_mbr.role = 'admin'
     db.session.commit()
     return jsonify({'ok': True})
+
 
 @app.route('/team/leave', methods=['POST'])
 @login_required
 def team_leave():
     uid = current_uid()
     user = db.session.get(User, uid)
-    if not user.team_id:
-        return jsonify({'error': 'Not in a team'}), 400
+    if not user or not user.team_id:
+        return jsonify({'error': 'Not in a Desk'}), 400
     mbr = TeamMember.query.filter_by(team_id=user.team_id, user_id=uid).first()
+    if mbr and mbr.role == 'owner':
+        # Must transfer ownership first
+        other_active = TeamMember.query.filter(
+            TeamMember.team_id == user.team_id,
+            TeamMember.user_id != uid,
+            TeamMember.is_kicked == False
+        ).count()
+        if other_active > 0:
+            return jsonify({'error': 'Transfer ownership before leaving'}), 400
     if mbr:
         db.session.delete(mbr)
     user.team_id = None
     db.session.commit()
     return jsonify({'ok': True})
+
+# ── DESK REAL-TIME SYNC CLIENT ────────────────────────────────────────────────
+_DESK_SYNC_URL = os.environ.get('PILAR_SYNC_URL', 'https://pilar-site.up.railway.app')
+_DESK_SYNC_MASTER_KEY = os.environ.get('PILAR_SYNC_MASTER_KEY', 'pilar-sync-v1')
+_DESK_CRED_FILE = os.path.join(_APP_DIR, 'pilar_desk_sync.json')
+_desk_sync_lock = threading.Lock()
+_desk_sync_last_ts = {'ts': ''}      # last known snapshot updated_at
+_desk_sync_enabled = {'v': False}    # toggled after credentials loaded
+
+
+def _load_desk_creds():
+    """Load desk_uuid + desk_secret from local file. Returns dict or None."""
+    try:
+        with open(_DESK_CRED_FILE) as f:
+            d = json.loads(f.read())
+        if d.get('desk_uuid') and d.get('desk_secret'):
+            return d
+    except Exception:
+        pass
+    return None
+
+
+def _save_desk_creds(desk_uuid, desk_secret, desk_name='Desk'):
+    try:
+        with open(_DESK_CRED_FILE, 'w') as f:
+            f.write(json.dumps({'desk_uuid': desk_uuid, 'desk_secret': desk_secret,
+                                'desk_name': desk_name}))
+    except Exception as e:
+        logger.warning(f'[DeskSync] Could not save credentials: {e}')
+
+
+def _desk_sync_headers():
+    creds = _load_desk_creds()
+    if not creds:
+        return None
+    return {
+        'X-Desk-UUID': creds['desk_uuid'],
+        'X-Desk-Secret': creds['desk_secret'],
+        'Content-Type': 'application/json',
+    }
+
+
+def _build_snapshot():
+    """Build the full machine+group+member snapshot for this installation."""
+    # Always called from background threads — session is unavailable, query DB directly
+    uid = None
+    if not uid:
+        u = User.query.filter(User.team_id.isnot(None)).first()
+        uid = u.id if u else None
+    if not uid:
+        uid_list = [u.id for u in User.query.limit(10).all()]
+    else:
+        uid_list = [uid]
+
+    machines_out = []
+    groups_out = []
+    members_out = []
+
+    for u_id in uid_list:
+        for m in Machine.query.filter_by(user_id=u_id).all():
+            machines_out.append({
+                'name': m.name, 'description': m.description or '',
+                'pump_type': m.pump_type or 'centrifuge', 'fluid_type': m.fluid_type or 'eau',
+                'location': m.location or '', 'threshold': m.threshold,
+                'is_active': m.is_active, 'asset_type': m.asset_type or 'pump',
+                'group_name': None,  # resolved below
+            })
+        for g in MachineGroup.query.filter_by(user_id=u_id).all():
+            # Resolve group name for machines
+            for mo in machines_out:
+                m_obj = Machine.query.filter_by(user_id=u_id, name=mo['name']).first()
+                if m_obj and m_obj.group_id == g.id:
+                    mo['group_name'] = g.name
+            groups_out.append({'name': g.name, 'color': g.color})
+
+    # Members (email + role, no passwords)
+    u0 = User.query.filter(User.id.in_(uid_list)).first()
+    if u0 and u0.team_id:
+        for mbr in TeamMember.query.filter_by(team_id=u0.team_id, is_kicked=False).all():
+            mu = db.session.get(User, mbr.user_id)
+            if mu:
+                members_out.append({'email': mu.email, 'role': mbr.role})
+
+    return {'machines': machines_out, 'groups': groups_out, 'members': members_out,
+            'pushed_at': datetime.now(timezone.utc).isoformat()}
+
+
+def push_desk_sync():
+    """Push current machine/group snapshot to the sync server. Fire-and-forget safe."""
+    if not _desk_sync_enabled['v']:
+        return
+    def _do():
+        with app.app_context():
+            try:
+                headers = _desk_sync_headers()
+                if not headers:
+                    return
+                snapshot = _build_snapshot()
+                payload = json.dumps({'snapshot': snapshot}).encode()
+                req = urllib.request.Request(
+                    f'{_DESK_SYNC_URL}/sync/push',
+                    data=payload, headers=headers, method='POST'
+                )
+                with urllib.request.urlopen(req, timeout=8) as r:
+                    result = json.loads(r.read())
+                logger.debug(f'[DeskSync] push ok: {result.get("updated_at")}')
+            except Exception as e:
+                logger.debug(f'[DeskSync] push failed: {e}')
+    threading.Thread(target=_do, daemon=True, name='desk-sync-push').start()
+
+
+def _apply_snapshot(snapshot):
+    """Apply an incoming snapshot — add machines/groups that don't exist locally."""
+    if not snapshot:
+        return
+    with app.app_context():
+        # Pick user to attach new machines to (first non-demo user)
+        user = User.query.filter(User.team_id.isnot(None)).first()
+        if not user:
+            user = User.query.first()
+        if not user:
+            return
+
+        # Sync groups first
+        existing_groups = {g.name: g for g in MachineGroup.query.filter_by(user_id=user.id).all()}
+        for gdata in snapshot.get('groups', []):
+            gname = (gdata.get('name') or '').strip()
+            if gname and gname not in existing_groups:
+                ng = MachineGroup(user_id=user.id, name=gname, color=gdata.get('color', 'teal'))
+                db.session.add(ng)
+        db.session.flush()
+
+        # Re-fetch after flush
+        existing_groups = {g.name: g for g in MachineGroup.query.filter_by(user_id=user.id).all()}
+        existing_machines = {m.name: m for m in Machine.query.filter_by(user_id=user.id).all()}
+
+        for mdata in snapshot.get('machines', []):
+            mname = (mdata.get('name') or '').strip()
+            if not mname:
+                continue
+            if mname in existing_machines:
+                # Update metadata but don't overwrite local analysis data
+                m = existing_machines[mname]
+                m.location    = mdata.get('location') or m.location
+                m.pump_type   = mdata.get('pump_type') or m.pump_type
+                m.fluid_type  = mdata.get('fluid_type') or m.fluid_type
+                m.threshold   = mdata.get('threshold') or m.threshold
+                m.is_active   = mdata.get('is_active', True)
+            else:
+                # New machine from another team member
+                gname = mdata.get('group_name')
+                gid = existing_groups[gname].id if gname and gname in existing_groups else None
+                nm = Machine(
+                    user_id=user.id, name=mname,
+                    description=mdata.get('description', ''),
+                    pump_type=mdata.get('pump_type', 'centrifuge'),
+                    fluid_type=mdata.get('fluid_type', 'eau'),
+                    location=mdata.get('location', ''),
+                    threshold=mdata.get('threshold', 60.0),
+                    is_active=mdata.get('is_active', True),
+                    asset_type=mdata.get('asset_type', 'pump'),
+                    group_id=gid,
+                )
+                db.session.add(nm)
+
+        db.session.commit()
+        logger.info(f'[DeskSync] applied snapshot: {len(snapshot.get("machines",[]))} machines')
+
+
+def _poll_desk_sync():
+    """Background thread: poll /sync/pull every 5s, apply incoming changes."""
+    import time as _t
+    while True:
+        _t.sleep(5)
+        if not _desk_sync_enabled['v']:
+            continue
+        try:
+            headers = _desk_sync_headers()
+            if not headers:
+                continue
+            since = _desk_sync_last_ts['ts']
+            url = f'{_DESK_SYNC_URL}/sync/pull'
+            if since:
+                url += f'?since={_quote(since)}'
+            req = urllib.request.Request(url, headers=headers)
+            with urllib.request.urlopen(req, timeout=8) as r:
+                result = json.loads(r.read())
+            if result.get('changed') and result.get('snapshot'):
+                _desk_sync_last_ts['ts'] = result.get('updated_at', '')
+                _apply_snapshot(result['snapshot'])
+        except Exception:
+            pass  # silent — sync is best-effort
+
+
+def _quote(s):
+    import urllib.parse
+    return urllib.parse.quote(s, safe='')
+
+
+# Desk sync API routes (called from account.html)
+@app.route('/api/desk/register', methods=['POST'])
+@login_required
+def api_desk_register():
+    """Register this Desk with the sync server. Called once at desk creation."""
+    uid = current_uid()
+    user = db.session.get(User, uid)
+    if not user or not user.team_id:
+        return jsonify({'error': 'Not in a Desk'}), 400
+    team = db.session.get(Team, user.team_id)
+    try:
+        payload = json.dumps({'master_key': _DESK_SYNC_MASTER_KEY,
+                              'name': team.name if team else 'Desk'}).encode()
+        req = urllib.request.Request(f'{_DESK_SYNC_URL}/sync/desk/register',
+                                     data=payload,
+                                     headers={'Content-Type': 'application/json'}, method='POST')
+        with urllib.request.urlopen(req, timeout=10) as r:
+            result = json.loads(r.read())
+        if result.get('ok'):
+            _save_desk_creds(result['desk_uuid'], result['desk_secret'],
+                             team.name if team else 'Desk')
+            _desk_sync_enabled['v'] = True
+            push_desk_sync()
+            return jsonify({'ok': True, 'desk_uuid': result['desk_uuid']})
+        return jsonify({'error': result.get('error', 'Server error')}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/desk/join-code', methods=['POST'])
+@login_required
+def api_desk_join_code():
+    """Generate a join code for teammates to use."""
+    headers = _desk_sync_headers()
+    if not headers:
+        return jsonify({'error': 'Sync not configured — register first'}), 400
+    try:
+        req = urllib.request.Request(f'{_DESK_SYNC_URL}/sync/desk/join-code',
+                                     data=b'{}', headers=headers, method='POST')
+        with urllib.request.urlopen(req, timeout=10) as r:
+            result = json.loads(r.read())
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/desk/join', methods=['POST'])
+@login_required
+def api_desk_join():
+    """Join a Desk using an 8-char code shared by the owner."""
+    uid = current_uid()
+    user = db.session.get(User, uid)
+    code = ((request.json or {}).get('code') or '').strip().upper()
+    if not code:
+        return jsonify({'error': 'code required'}), 400
+    try:
+        payload = json.dumps({'master_key': _DESK_SYNC_MASTER_KEY, 'code': code}).encode()
+        req = urllib.request.Request(f'{_DESK_SYNC_URL}/sync/desk/join',
+                                     data=payload,
+                                     headers={'Content-Type': 'application/json'}, method='POST')
+        with urllib.request.urlopen(req, timeout=10) as r:
+            result = json.loads(r.read())
+        if not result.get('ok'):
+            return jsonify({'error': result.get('error', 'Invalid code')}), 400
+        _save_desk_creds(result['desk_uuid'], result['desk_secret'], result.get('desk_name', 'Desk'))
+        _desk_sync_enabled['v'] = True
+        # Apply initial snapshot
+        if result.get('snapshot'):
+            _apply_snapshot(result['snapshot'])
+        return jsonify({'ok': True, 'desk_name': result.get('desk_name')})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/desk/sync-status', methods=['GET'])
+@login_required
+def api_desk_sync_status():
+    creds = _load_desk_creds()
+    return jsonify({
+        'enabled': _desk_sync_enabled['v'],
+        'configured': creds is not None,
+        'desk_name': creds.get('desk_name') if creds else None,
+        'desk_uuid_short': creds['desk_uuid'][:8] if creds else None,
+        'last_snapshot_ts': _desk_sync_last_ts['ts'] or None,
+    })
+
+
+# Start the sync poll thread and activate if credentials exist
+def _init_desk_sync():
+    creds = _load_desk_creds()
+    if creds:
+        _desk_sync_enabled['v'] = True
+        logger.info(f'[DeskSync] credentials found — sync active (desk {creds["desk_uuid"][:8]}…)')
+    threading.Thread(target=_poll_desk_sync, daemon=True, name='desk-sync-poll').start()
+
+
+_init_desk_sync()
+
+# ── END DESK REAL-TIME SYNC CLIENT ────────────────────────────────────────────
+
 
 # ── TEAM CHAT ─────────────────────────────────────────────────────────────────
 @app.route('/team/messages')
@@ -4291,7 +5439,7 @@ def internal_error(e):
     tb = traceback.format_exc()
     logger.info(f"500 ERROR:\n{tb}")
     try: db.session.rollback()
-    except: pass
+    except Exception: pass
     wants_json = request.headers.get('Accept','').find('application/json') >= 0 \
                  or request.headers.get('Content-Type','').find('application/json') >= 0
     if wants_json:
@@ -4311,7 +5459,7 @@ def unhandled(e):
     import traceback
     logger.info(f"Unhandled exception: {type(e).__name__}: {e}\n{traceback.format_exc()}")
     try: db.session.rollback()
-    except: pass
+    except Exception: pass
     return internal_error(e)
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -4736,7 +5884,310 @@ def sync_status_route():
     })
 
 
+# ── ML TRAINING PANEL ─────────────────────────────────────────────────────────
+import json as _json_tr
+
+_tr_lock  = threading.Lock()  # held while training subprocess runs
+_tr_lines = []                # accumulated stdout/stderr lines
+_tr_done  = False             # True once subprocess exits
+_tr_rc    = None              # return code of last training run
+
+
+@app.route('/train')
+@login_required
+def train_page():
+    import json as _jtr
+    kaggle_csv = os.path.join(_APP_DIR, 'data', 'pilar_kaggle_dataset.csv')
+    meta = {}
+    meta_path = os.path.join(_APP_DIR, 'model_meta.json')
+    if os.path.exists(meta_path):
+        try:
+            with open(meta_path) as _f:
+                meta = _jtr.load(_f)
+        except Exception:
+            pass
+    return render_template('train.html',
+        kaggle_csv_exists=os.path.exists(kaggle_csv),
+        universal_exists=os.path.exists(os.path.join(_APP_DIR, 'train_universal.py')),
+        kaggle_exists=os.path.exists(os.path.join(_APP_DIR, 'train_kaggle.py')),
+        model_meta=meta)
+
+
+@app.route('/train/run', methods=['POST'])
+@login_required
+def train_run():
+    global _tr_lines, _tr_done, _tr_rc
+    data = request.json or {}
+    source     = data.get('source', 'kaggle')
+    keep_zones = bool(data.get('keep_zones', False))
+
+    if not _tr_lock.acquire(blocking=False):
+        return jsonify({'error': 'Training already in progress'}), 409
+
+    _tr_lines = []
+    _tr_done  = False
+    _tr_rc    = None
+
+    try:
+        python_exe = sys.executable
+        if source == 'real':
+            # ── Export Analysis rows → persistent CSV, then retrain_real.py ──
+            import csv as _csv_tr, json as _js_tr
+            retrain_script = os.path.join(_APP_DIR, 'retrain_real.py')
+            if not os.path.exists(retrain_script):
+                _tr_lock.release()
+                return jsonify({'error': 'retrain_real.py not found'}), 404
+            with app.app_context():
+                analyses = Analysis.query.order_by(Analysis.timestamp.asc()).all()
+            if len(analyses) < 50:
+                _tr_lock.release()
+                return jsonify({'error': f'Not enough data — {len(analyses)} rows (minimum 50 required)'}), 400
+            rows = []
+            for a in analyses:
+                ep = {}
+                try: ep = _js_tr.loads(a.extra_params) if a.extra_params else {}
+                except Exception: pass
+                rows.append({
+                    'vibration':            ep.get('vibration',        FEATURE_MEDIANS.get('vibration', 0.6)),
+                    'temp_palier':          a.temp_air          if a.temp_air          is not None else FEATURE_MEDIANS.get('temp_palier', 45.0),
+                    'debit':                a.vitesse           if a.vitesse           is not None else FEATURE_MEDIANS.get('debit', 0.4),
+                    'pression_entree':      ep.get('pression_entree',  FEATURE_MEDIANS.get('pression_entree', 1.5)),
+                    'pression_sortie':      a.couple            if a.couple            is not None else FEATURE_MEDIANS.get('pression_sortie', 108.0),
+                    'courant_moteur':       ep.get('courant_moteur',   FEATURE_MEDIANS.get('courant_moteur', 4.7)),
+                    'temp_moteur':          a.temp_process      if a.temp_process      is not None else FEATURE_MEDIANS.get('temp_moteur', 50.0),
+                    'heure_fonctionnement': a.usure             if a.usure             is not None else FEATURE_MEDIANS.get('heure_fonctionnement', 1100.0),
+                    # Ground truth: prefer operator feedback (tp/fn=real failure, fp=false alarm), else model prediction
+                    'etat_pompe_code': (1 if a.feedback in ('tp', 'fn') else
+                                        0 if a.feedback == 'fp' else
+                                        int(a.prediction or 0)),
+                })
+            # Save to data/ directory for auditability
+            data_dir = os.path.join(_APP_DIR, 'data')
+            os.makedirs(data_dir, exist_ok=True)
+            from datetime import datetime as _dt
+            ts = _dt.now().strftime('%Y%m%d_%H%M%S')
+            csv_path = os.path.join(data_dir, f'collected_{ts}.csv')
+            with open(csv_path, 'w', newline='', encoding='utf-8') as _cf:
+                writer = _csv_tr.DictWriter(_cf, fieldnames=list(rows[0].keys()))
+                writer.writeheader()
+                writer.writerows(rows)
+            n_fail = sum(1 for r in rows if r['etat_pompe_code'] == 1)
+            _tr_lines.append(f'[PILAR] Exported {len(rows)} rows to {csv_path}')
+            _tr_lines.append(f'[PILAR] Labels: {len(rows) - n_fail} normal / {n_fail} failure')
+            cmd = [python_exe, retrain_script, csv_path]
+
+        elif source == 'kaggle':
+            script = os.path.join(_APP_DIR, 'train_kaggle.py')
+            cmd = [python_exe, script]
+            if keep_zones:
+                cmd.append('--keep-zones')
+        elif source == 'synthetic':
+            script = os.path.join(_APP_DIR, 'train_universal.py')
+            cmd = [python_exe, script]
+            if keep_zones:
+                cmd.append('--keep-zones')
+        else:
+            _tr_lock.release()
+            return jsonify({'error': 'Unknown source'}), 400
+
+        if not os.path.exists(cmd[1]):
+            _tr_lock.release()
+            return jsonify({'error': f'Script not found: {os.path.basename(cmd[1])}'}), 404
+
+        proc = subprocess.Popen(
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            text=True, cwd=_APP_DIR, bufsize=1
+        )
+
+        def _collect(p):
+            global _tr_done, _tr_rc
+            try:
+                for line in p.stdout:
+                    _tr_lines.append(line.rstrip())
+                p.wait()
+                _tr_rc = p.returncode
+                if _tr_rc == 0:
+                    try:
+                        pilar_ml.init_models(_APP_DIR)
+                        _tr_lines.append('[PILAR] Models reloaded into memory.')
+                    except Exception as _re:
+                        _tr_lines.append(f'[PILAR] Model reload error: {_re}')
+            finally:
+                _tr_done = True
+                try:
+                    _tr_lock.release()
+                except Exception:
+                    pass
+
+        threading.Thread(target=_collect, args=(proc,), daemon=True, name='train-collector').start()
+        return jsonify({'ok': True})
+
+    except Exception as e:
+        try:
+            _tr_lock.release()
+        except Exception:
+            pass
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/train/stream')
+@login_required
+def train_stream():
+    from flask import Response as _Resp
+    def _generate():
+        sent = 0
+        while True:
+            lines = _tr_lines
+            while sent < len(lines):
+                yield f"data: {_json_tr.dumps({'line': lines[sent]})}\n\n"
+                sent += 1
+            if _tr_done and sent >= len(_tr_lines):
+                yield f"data: {_json_tr.dumps({'done': True, 'rc': _tr_rc})}\n\n"
+                break
+            time.sleep(0.12)
+    return _Resp(
+        _generate(),
+        content_type='text/event-stream',
+        headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no', 'Connection': 'keep-alive'}
+    )
+
+
+@app.route('/train/status')
+@login_required
+def train_status_route():
+    import json as _jtr2
+    in_prog = not _tr_lock.acquire(blocking=False)
+    if not in_prog:
+        _tr_lock.release()
+    meta = {}
+    meta_path = os.path.join(_APP_DIR, 'model_meta.json')
+    if os.path.exists(meta_path):
+        try:
+            with open(meta_path) as _f:
+                meta = _jtr2.load(_f)
+        except Exception:
+            pass
+    return jsonify({
+        'in_progress': in_prog,
+        'done': _tr_done,
+        'rc': _tr_rc,
+        'lines': len(_tr_lines),
+        'meta': meta,
+    })
+
+
+@app.route('/train/data-stats')
+@login_required
+def train_data_stats():
+    """Return stats about real machine data available for training."""
+    try:
+        total = Analysis.query.count()
+        failures = Analysis.query.filter(Analysis.prediction == 1).count()
+        # Date range
+        first = Analysis.query.order_by(Analysis.timestamp.asc()).first()
+        last  = Analysis.query.order_by(Analysis.timestamp.desc()).first()
+        # Distinct machines
+        machines = db.session.query(Analysis.machine_id).distinct().count()
+        # Feedback-labeled rows (higher quality ground truth)
+        labeled = Analysis.query.filter(Analysis.feedback.isnot(None)).count()
+        # Previously exported CSV files
+        data_dir = os.path.join(_APP_DIR, 'data')
+        collected = sorted(
+            [f for f in os.listdir(data_dir) if f.startswith('collected_') and f.endswith('.csv')]
+            if os.path.isdir(data_dir) else [],
+            reverse=True
+        )
+        return jsonify({
+            'total': total,
+            'failures': failures,
+            'normal': total - failures,
+            'failure_rate': round(failures / total * 100, 1) if total else 0,
+            'machines': machines,
+            'labeled': labeled,
+            'first_date': first.timestamp.date().isoformat() if first and first.timestamp else None,
+            'last_date':  last.timestamp.date().isoformat()  if last  and last.timestamp  else None,
+            'collected_files': collected[:5],
+            'ready': total >= 50,
+            'min_required': 50,
+        })
+    except Exception as e:
+        return jsonify({'error': str(e), 'total': 0, 'ready': False}), 500
+
+
 # ── END STEP 3 ────────────────────────────────────────────────────────────────
+
+
+# ── DATA CONTRIBUTION (consent + upload) ──────────────────────────────────────
+
+@app.route('/api/consent', methods=['POST'])
+def api_consent():
+    """Record or update data-contribution consent for the current user."""
+    uid = session.get('user_id')
+    if not uid:
+        return jsonify({'error': 'not_authenticated'}), 401
+    data = request.get_json(silent=True) or {}
+    enabled = bool(data.get('enabled', True))
+
+    rec = UserDataConsent.query.filter_by(user_id=uid).first()
+    now = datetime.now(timezone.utc)
+    if rec is None:
+        rec = UserDataConsent(
+            user_id=uid,
+            consented_at=now,
+            consent_version='v1.0',
+            enabled=enabled,
+            withdrawn_at=None,
+        )
+        db.session.add(rec)
+    else:
+        rec.enabled = enabled
+        if not enabled:
+            rec.withdrawn_at = now
+        else:
+            rec.withdrawn_at = None
+            rec.consent_version = 'v1.0'
+    db.session.commit()
+    logger.info(f'Consent updated for user {uid}: enabled={enabled}')
+    return jsonify({'ok': True, 'enabled': enabled})
+
+
+@app.route('/api/consent/status', methods=['GET'])
+def api_consent_status():
+    """Return the current user's consent status."""
+    uid = session.get('user_id')
+    if not uid:
+        return jsonify({'error': 'not_authenticated'}), 401
+    rec = UserDataConsent.query.filter_by(user_id=uid).first()
+    if rec is None:
+        return jsonify({'has_consent': False, 'enabled': False, 'consented_at': None,
+                        'consent_version': None})
+    return jsonify({
+        'has_consent': True,
+        'enabled': rec.enabled and rec.withdrawn_at is None,
+        'consented_at': rec.consented_at.isoformat() if rec.consented_at else None,
+        'consent_version': rec.consent_version,
+    })
+
+
+@app.route('/api/data/upload-now', methods=['POST'])
+def api_data_upload_now():
+    """Trigger an immediate data contribution upload (for the settings page)."""
+    uid = session.get('user_id')
+    if not uid:
+        return jsonify({'error': 'not_authenticated'}), 401
+    _pilar_upload_async(app, db, Analysis, FEATURE_MEDIANS, _APP_DIR, APP_VERSION)
+    return jsonify({'ok': True, 'message': 'Upload started in background'})
+
+
+@app.route('/api/data/upload-status', methods=['GET'])
+def api_data_upload_status():
+    """Return the last upload status."""
+    if not session.get('user_id'):
+        return jsonify({'error': 'not_authenticated'}), 401
+    return jsonify(_pilar_upload_status())
+
+
+# ── END DATA CONTRIBUTION ──────────────────────────────────────────────────────
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))

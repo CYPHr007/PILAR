@@ -1,4 +1,4 @@
-# PILAR — Predictive Maintenance for Industrial Pumps
+# PILAR — Predictive Maintenance for Industrial Machines
 # Author  : CYPHR007
 # License : MIT — see LICENSE
 # Source  : https://github.com/CYPHR007/PILAR
@@ -11,14 +11,15 @@ through 7 000 lines of app code. Grouped by concern.
 """
 
 # ── APP ───────────────────────────────────────────────────────────────────────
-APP_VERSION  = '1.3.2'
-SESSION_DAYS = 3650      # session cookie lifetime (10 years — accounts persist indefinitely)
+APP_VERSION  = '1.3.3'
+SESSION_DAYS = 30        # session cookie lifetime (30 days — reasonable for industrial use)
+MAX_UPLOAD_MB = 16       # max file upload size in megabytes
 
 # ── SECURITY / RATE LIMITING ──────────────────────────────────────────────────
 RATE_WINDOW = 900    # seconds — sliding window for failed login attempts
 RATE_MAX    = 10     # max failed logins allowed per window before IP block
 
-# ── ML — PUMP SENSOR FEATURES ─────────────────────────────────────────────────
+# ── ML — SENSOR FEATURES (default profile: hydraulic/pump — retrain for any machine) ──────────
 FAILURE_ZONES = {
     'CAV': 'Cavitation',
     'ROL': 'Bearing Failure',
@@ -36,29 +37,33 @@ COLONNES = [
 # Medians from UCI hydraulic test rig + 3-phase motor formula (400 V / 0.92 / 0.85).
 # Used to impute missing sensor values during partial analyses.
 FEATURE_MEDIANS = {
-    'vibration':            8.974,
-    'temp_palier':          44.837,
-    'debit':                0.395,
-    'pression_entree':      1.987,
-    'pression_sortie':      107.73,
-    'courant_moteur':       8.639,
-    'temp_moteur':          68.117,
-    'heure_fonctionnement': 1103.0,
+    'vibration':            13.628,
+    'temp_palier':          51.649,
+    'debit':                2.456,
+    'pression_entree':      48.134,
+    'pression_sortie':      632.639,
+    'courant_moteur':       2.534,
+    'temp_moteur':          44.291,
+    'heure_fonctionnement': 110159.5,
 }
 
 CORE_FEATURES   = list(FEATURE_MEDIANS.keys())
 OPTIONAL_FIELDS = ['temperature_ambiante', 'niveau_huile', 'tension_reseau']
 
+# ── ML — PREDICTION THRESHOLDS ───────────────────────────────────────────────
+DEFAULT_THRESHOLD       = 30    # failure probability % to trigger alert (lower = more sensitive = fewer missed failures)
+ZONE_ALERT_THRESHOLD    = 30    # minimum zone probability % to include in results
+
 # Physical validation bounds (min, max) — API rejects values outside these ranges.
 SENSOR_BOUNDS = {
-    'vibration':            (0,      50),
-    'temp_palier':          (0,     200),
-    'debit':                (0,     500),
-    'pression_entree':      (0,      50),
-    'pression_sortie':      (0,     500),
-    'courant_moteur':       (0,     200),
-    'temp_moteur':          (0,     250),
-    'heure_fonctionnement': (0,  200000),
+    'vibration':            (0,      25),
+    'temp_palier':          (0,      60),
+    'debit':                (0,       3),
+    'pression_entree':      (0,      63),
+    'pression_sortie':      (0,     880),
+    'courant_moteur':       (0,       6),
+    'temp_moteur':          (0,      84),
+    'heure_fonctionnement': (0,  250000),
 }
 
 # ── DOMAIN CORRECTIONS ────────────────────────────────────────────────────────
@@ -92,20 +97,39 @@ FLUID_ZONE_SENSITIVITY = {
     'autre': {},
 }
 
-# Pump types not in training data — predictions are indicative only.
+# Machine sub-types outside the hydraulic training distribution — predictions are indicative only.
 NON_CENTRIFUGE_TYPES = {
     'pompe_a_vis', 'pompe_a_engrenage', 'pompe_a_palettes',
     'pompe_a_piston', 'peristaltique',
 }
 
 # ── RUL MODEL ─────────────────────────────────────────────────────────────────
-# Converts NASA C-MAPSS degradation cycles to pump hours.
-# Scale = pump MTBF (5 000 h) / C-MAPSS max cycles (361).
+# Converts NASA C-MAPSS degradation cycles to machine operating hours.
+# Scale = machine MTBF (5 000 h) / C-MAPSS max cycles (361).
 RUL_SCALE_FACTOR = 5000.0 / 361.0   # ~13.85 h/cycle
 
 # ── AUTO-RETRAIN ──────────────────────────────────────────────────────────────
 RETRAIN_TRIGGER = 5000  # fire auto-retrain after this many new analyses (high: avoid corrupting universal model)
 MIN_TRAIN_ROWS  = 50    # minimum DB rows required to attempt a retrain
+
+# ── ISOLATION FOREST ─────────────────────────────────────────────────────
+ISO_CONTAMINATION       = 0.1    # expected anomaly fraction
+ISO_MIN_NORMAL_SAMPLES  = 30     # minimum normal samples before first training
+ISO_RETRAIN_INTERVAL    = 50     # retrain every N new normal samples
+ISO_MAX_SAMPLES         = 500    # keep last N samples for training
+
+# ── MOT THRESHOLD RULE (fallback when no trained MOT model) ─────────────
+MOT_CURRENT_WARN_PCT  = 1.2     # warn at 120% of nominal current
+MOT_CURRENT_CRIT_PCT  = 1.5     # critical at 150% of nominal current
+MOT_TEMP_WARN         = 85.0    # motor temp warning threshold (C)
+MOT_TEMP_RANGE        = 35.0    # temp range for 0-100% scoring above warn
+MOT_DEFAULT_NOMINAL_A = 2.5     # default nominal current if machine has none
+
+# ── BATCH API ────────────────────────────────────────────────────────────
+BATCH_MAX_READINGS = 100  # max readings per batch API call
+
+# ── ESCALATION ───────────────────────────────────────────────────────────
+ESCALATION_DELAY_MIN = 30  # minutes before escalation if alert not acked
 
 # ── AI CHAT ───────────────────────────────────────────────────────────────────
 CLAUDE_MODEL      = 'claude-haiku-4-5-20251001'
@@ -116,8 +140,8 @@ CHAT_DAILY_LIMIT  = 100   # max chat messages per user per day
 # Sources: UCI hydraulic, NLN-EMP 4TU, ESPset, Sulzer/Xylem/KSB cases,
 #          Cutsforth methodology, Chen et al. PMC review.
 DOMAIN_KB = (
-    "=== PUMP DOMAIN KNOWLEDGE BASE ===\n"
-    "SIGNAL -> FAULT MAPPING (centrifugal pumps):\n"
+    "=== MACHINE DOMAIN KNOWLEDGE BASE ===\n"
+    "SIGNAL -> FAULT MAPPING (default profile: hydraulic/pump — applies broadly to rotating and industrial machines):\n"
     "- Vibration up + flow down          -> Cavitation (CAV): check NPSH, inlet filter, speed\n"
     "- Vibration up + bearing temp up    -> Bearing wear (ROL): lubrication, alignment, BEP margin\n"
     "- Outlet pressure down for flow     -> Seal leakage (ETN) or impeller wear (IMP)\n"

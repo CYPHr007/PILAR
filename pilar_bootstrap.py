@@ -1,52 +1,35 @@
 # -*- coding: utf-8 -*-
 """
-PILAR Bootstrap — Auto-setup for Ollama + AutoGen agents
-=========================================================
-Runs once on first launch. Auto-detects Ollama, pulls the base model,
-and creates pilar-diag / pilar-maintenance / pilar-alert from the
-bundled Modelfiles. Shows a native Windows dialog if Ollama is missing.
+PILAR Bootstrap — Auto-setup for Qwen3 4B AI agents
+====================================================
+Runs once on first launch. Downloads the Qwen3-4B-Q4_K_M.gguf model file
+(~2.6 GB) from HuggingFace to %LOCALAPPDATA%/PILAR/models/.
 
-No user action needed beyond installing Ollama itself.
+No separate app to install (no Ollama). The model runs directly via
+llama-cpp-python, which is bundled with PILAR.
+
+PILAR works immediately with rule-based agents while the download is in
+progress. Once the download completes, Qwen3 activates automatically.
 """
 
 import os
 import sys
-import json
 import time
-import ctypes
 import threading
-import webbrowser
-import subprocess
 import urllib.request
 from pathlib import Path
-from typing import Optional
 
-OLLAMA_URL          = "http://localhost:11434"
-OLLAMA_DOWNLOAD_URL = "https://ollama.com/download/windows"
-BASE_MODEL          = "llama3.2"
-REQUIRED_MODELS     = ["pilar-diag", "pilar-maintenance", "pilar-alert"]
-MARKER_FILENAME     = "pilar_agents_ready.marker"
-DECLINED_FILENAME   = "pilar_ollama_declined.marker"
+from agents.llm_engine import MODEL_FILENAME, MODEL_DIR, MODEL_URL
+
+MARKER_FILENAME  = "pilar_agents_ready.marker"
+DECLINED_FILENAME = "pilar_agents_declined.marker"
+MODEL_SIZE_BYTES  = 2_600_000_000   # ~2.6 GB — used for progress estimation
 
 
-# ── Paths ────────────────────────────────────────────────────────────────────
-def _base_dir() -> Path:
-    if getattr(sys, "frozen", False):
-        return Path(sys.executable).parent.resolve()
-    return Path(__file__).parent.resolve()
-
-
-def _modelfiles_dir() -> Path:
-    base = _base_dir()
-    # PyInstaller COLLECT puts bundled data under _internal/
-    for c in (base / "modelfiles", base / "_internal" / "modelfiles"):
-        if c.exists():
-            return c
-    return base / "modelfiles"
-
+# ── Paths ─────────────────────────────────────────────────────────────────────
 
 def _state_dir() -> Path:
-    root = Path(os.environ.get("LOCALAPPDATA", _base_dir())) / "PILAR"
+    root = Path(os.environ.get("LOCALAPPDATA", Path.home())) / "PILAR"
     try:
         root.mkdir(parents=True, exist_ok=True)
     except Exception:
@@ -55,7 +38,6 @@ def _state_dir() -> Path:
 
 
 def _marker_path() -> Path:
-    """Writable marker file (local appdata, not install dir)."""
     return _state_dir() / MARKER_FILENAME
 
 
@@ -71,114 +53,96 @@ def reset_bootstrap() -> None:
                 p.unlink()
         except Exception:
             pass
-
-
-# ── Ollama detection ─────────────────────────────────────────────────────────
-def _ollama_running() -> bool:
+    # Also remove the model file so it re-downloads
+    model = MODEL_DIR / MODEL_FILENAME
     try:
-        req = urllib.request.Request(f"{OLLAMA_URL}/api/tags")
-        with urllib.request.urlopen(req, timeout=2) as resp:
-            return resp.status == 200
+        if model.exists():
+            model.unlink()
     except Exception:
-        return False
+        pass
 
 
-def _ollama_binary() -> Optional[Path]:
-    candidates = [
-        Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "Ollama" / "ollama.exe",
-        Path(os.environ.get("PROGRAMFILES", "C:\\Program Files")) / "Ollama" / "ollama.exe",
-        Path(os.environ.get("ProgramFiles(x86)", "C:\\Program Files (x86)")) / "Ollama" / "ollama.exe",
-    ]
-    for c in candidates:
-        if c.exists():
-            return c
-    return None
+# ── Download ──────────────────────────────────────────────────────────────────
 
-
-def _start_ollama_server() -> bool:
-    binary = _ollama_binary()
-    if not binary:
-        return False
+def _download_model(notify=None) -> bool:
+    """
+    Download Qwen3-4B-Q4_K_M.gguf from HuggingFace.
+    Shows progress via notify callback. Returns True on success.
+    Supports resume: skips bytes already downloaded.
+    """
     try:
-        CREATE_NO_WINDOW = 0x08000000
-        subprocess.Popen(
-            [str(binary), "serve"],
-            creationflags=CREATE_NO_WINDOW,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            close_fds=True,
-        )
+        MODEL_DIR.mkdir(parents=True, exist_ok=True)
     except Exception as e:
-        print(f"[bootstrap] could not spawn ollama serve: {e}")
+        print(f"[bootstrap] cannot create model dir: {e}")
         return False
-    for _ in range(30):
-        if _ollama_running():
-            return True
-        time.sleep(1)
-    return False
 
+    dest        = MODEL_DIR / MODEL_FILENAME
+    tmp         = MODEL_DIR / (MODEL_FILENAME + ".part")  # noqa: W605
+    resume_byte = tmp.stat().st_size if tmp.exists() else 0
 
-def _available_models() -> set:
-    try:
-        req = urllib.request.Request(f"{OLLAMA_URL}/api/tags")
-        with urllib.request.urlopen(req, timeout=5) as resp:
-            data = json.loads(resp.read())
-        return {m["name"].split(":")[0] for m in data.get("models", [])}
-    except Exception:
-        return set()
-
-
-def _pull_base_model(notify=None) -> bool:
     if notify:
-        notify("PILAR", f"Telechargement de {BASE_MODEL} (~2 GB, une seule fois)...")
+        notify("PILAR", "Telechargement du modele IA Qwen3 4B (~2.6 GB)...")
+
+    print(f"[bootstrap] downloading {MODEL_FILENAME} → {dest}")
+
     try:
-        body = json.dumps({"name": BASE_MODEL, "stream": False}).encode()
-        req = urllib.request.Request(
-            f"{OLLAMA_URL}/api/pull",
-            data=body,
-            headers={"Content-Type": "application/json"},
-        )
-        with urllib.request.urlopen(req, timeout=3600) as resp:
-            resp.read()
+        req = urllib.request.Request(MODEL_URL)
+        if resume_byte:
+            req.add_header("Range", f"bytes={resume_byte}-")
+            print(f"[bootstrap] resuming from byte {resume_byte:,}")
+
+        with urllib.request.urlopen(req, timeout=3600) as resp, \
+             open(tmp, "ab" if resume_byte else "wb") as f:
+
+            total    = int(resp.headers.get("Content-Length", MODEL_SIZE_BYTES))
+            received = resume_byte
+            last_pct = -1
+
+            while True:
+                chunk = resp.read(1 << 17)   # 128 KB chunks
+                if not chunk:
+                    break
+                f.write(chunk)
+                received += len(chunk)
+                pct = int(received * 100 / (total + resume_byte))
+                if pct != last_pct and pct % 10 == 0:
+                    last_pct = pct
+                    msg = f"Modele IA : {pct}% ({received // (1024*1024)} MB)"
+                    print(f"[bootstrap] {msg}")
+                    if notify:
+                        notify("PILAR", msg)
+
+        # Rename .part → final
+        tmp.rename(dest)
+        print(f"[bootstrap] download complete: {dest}")
+        return True
+
     except Exception as e:
-        print(f"[bootstrap] pull {BASE_MODEL} failed: {e}")
+        print(f"[bootstrap] download error: {e}")
+        if notify:
+            notify("PILAR", f"Echec du telechargement du modele IA: {e}")
         return False
-    return BASE_MODEL in _available_models()
 
 
-def _create_model(name: str, modelfile: Path) -> bool:
+# ── UI dialog ─────────────────────────────────────────────────────────────────
+
+def _dialog_confirm_download() -> bool:
+    """Native Windows yes/no dialog. Returns True if user confirms."""
     try:
-        content = modelfile.read_text(encoding="utf-8")
-        body = json.dumps({"name": name, "modelfile": content, "stream": False}).encode()
-        req = urllib.request.Request(
-            f"{OLLAMA_URL}/api/create",
-            data=body,
-            headers={"Content-Type": "application/json"},
-        )
-        with urllib.request.urlopen(req, timeout=600) as resp:
-            resp.read()
-    except Exception as e:
-        print(f"[bootstrap] create {name} failed: {e}")
-        return False
-    return name in _available_models()
-
-
-# ── UI ───────────────────────────────────────────────────────────────────────
-def _dialog_install_ollama() -> bool:
-    """Blocking yes/no dialog. Returns True if user wants to install Ollama."""
-    try:
+        import ctypes
         MB_YESNO, MB_ICONINFO, IDYES = 0x04, 0x40, 6
         msg = (
-            "PILAR peut utiliser des agents IA locaux pour generer "
-            "des diagnostics et plans de maintenance.\n\n"
-            "Pour activer ces agents, installez Ollama (gratuit, hors ligne) :\n"
-            "   https://ollama.com/download/windows\n\n"
-            "Ouvrir la page de telechargement maintenant ?\n\n"
-            "(PILAR fonctionne parfaitement sans Ollama — il utilisera "
+            "PILAR peut activer des agents IA locaux (Qwen3 4B) pour "
+            "generer des diagnostics et plans de maintenance intelligents.\n\n"
+            "Cela necessite le telechargement unique du modele (~2.6 Go).\n"
+            "Le modele est stocke sur votre machine et ne necessite "
+            "aucune connexion apres le telechargement.\n\n"
+            "Telecharger le modele maintenant ?\n\n"
+            "(PILAR fonctionne parfaitement sans ce modele — il utilisera "
             "des regles expertes pour l'analyse.)"
         )
         result = ctypes.windll.user32.MessageBoxW(
-            0, msg, "PILAR — Activer les agents IA",
+            0, msg, "PILAR — Activer les agents IA Qwen3",
             MB_YESNO | MB_ICONINFO,
         )
         return result == IDYES
@@ -186,98 +150,83 @@ def _dialog_install_ollama() -> bool:
         return False
 
 
-# ── Main bootstrap ───────────────────────────────────────────────────────────
+# ── Main bootstrap ────────────────────────────────────────────────────────────
+
 def bootstrap(notify=None) -> None:
     """
-    Run once on first launch. Safe to call repeatedly: skips if marker exists.
-    `notify(title, msg)` — optional callback for tray notifications.
+    Run once on first launch. Safe to call repeatedly — skips if marker exists.
+    notify(title, msg) — optional tray notification callback.
     """
     marker   = _marker_path()
     declined = _declined_path()
-    if marker.exists():
+    dest     = MODEL_DIR / MODEL_FILENAME
+
+    # Already set up
+    if marker.exists() and dest.exists():
         return
 
-    print("[bootstrap] PILAR AI agents setup starting")
-
-    # 1) Ensure Ollama is up
-    if not _ollama_running():
-        if _ollama_binary():
-            if notify:
-                notify("PILAR", "Demarrage d'Ollama...")
-            _start_ollama_server()
-
-    if not _ollama_running():
-        # Ollama not installed. Respect prior decline: don't re-prompt.
-        if declined.exists():
-            print("[bootstrap] ollama not running, user previously declined — skipping")
-            return
-        if _dialog_install_ollama():
-            try:
-                webbrowser.open(OLLAMA_DOWNLOAD_URL)
-            except Exception:
-                pass
-            # Not yet ready; retry on next launch after user installs.
-            return
-        # User clicked No — remember that choice.
-        try:
-            declined.write_text("declined\n", encoding="utf-8")
-        except Exception:
-            pass
-        return
-
-    # Ollama is up now — if user had previously declined, clear the flag.
-    if declined.exists():
-        try:
-            declined.unlink()
-        except Exception:
-            pass
-
-    # 2) Pull base llama3.2 if missing
-    available = _available_models()
-    if BASE_MODEL not in available:
-        if not _pull_base_model(notify=notify):
-            print(f"[bootstrap] could not pull {BASE_MODEL} — aborting")
-            return
-
-    # 3) Create pilar-* models from bundled modelfiles
-    mfiles_dir = _modelfiles_dir()
-    if not mfiles_dir.exists():
-        msg = f"Fichiers modeles introuvables: {mfiles_dir}"
-        print(f"[bootstrap] {msg}")
-        if notify:
-            notify("PILAR", f"Agents IA indisponibles — {msg}")
-        return
-
-    available = _available_models()
-    ok_count = 0
-    for name in REQUIRED_MODELS:
-        if name in available:
-            ok_count += 1
-            continue
-        mfile = mfiles_dir / (name.replace("-", "_") + ".modelfile")
-        if not mfile.exists():
-            print(f"[bootstrap] missing: {mfile}")
-            continue
-        if notify:
-            notify("PILAR", f"Creation de l'agent {name}...")
-        if _create_model(name, mfile):
-            ok_count += 1
-
-    # 4) Mark done if all required models exist
-    if ok_count == len(REQUIRED_MODELS):
+    # Model already there but marker missing (e.g. after reset) — just mark done
+    if dest.exists():
         try:
             marker.write_text("ok\n", encoding="utf-8")
         except Exception:
             pass
         if notify:
-            notify("PILAR", "Agents IA actives — diagnostics intelligents disponibles.")
-        print("[bootstrap] done — all agents ready")
-    else:
-        print(f"[bootstrap] incomplete: {ok_count}/{len(REQUIRED_MODELS)} models ready")
+            notify("PILAR", "Agents IA Qwen3 deja disponibles.")
+        _preload_model(notify)
+        return
+
+    print("[bootstrap] PILAR AI agent setup starting")
+
+    # User previously declined — don't prompt again
+    if declined.exists():
+        print("[bootstrap] user previously declined model download — skipping")
+        return
+
+    # Ask user
+    if not _dialog_confirm_download():
+        try:
+            declined.write_text("declined\n", encoding="utf-8")
+        except Exception:
+            pass
+        print("[bootstrap] user declined model download")
+        return
+
+    # Download
+    success = _download_model(notify=notify)
+    if not success:
+        return
+
+    # Mark done
+    try:
+        marker.write_text("ok\n", encoding="utf-8")
+    except Exception:
+        pass
+
+    if notify:
+        notify("PILAR", "Agents IA Qwen3 actives — diagnostics intelligents disponibles.")
+    print("[bootstrap] done — Qwen3 4B ready")
+
+    # Warm the model in background so first real request is instant
+    _preload_model(notify)
+
+
+def _preload_model(notify=None) -> None:
+    """Load model into memory in background after download completes."""
+    def _do():
+        try:
+            from agents.llm_engine import preload
+            ok = preload()
+            if ok and notify:
+                notify("PILAR", "Modele IA charge en memoire — pret.")
+        except Exception as e:
+            print(f"[bootstrap] preload error: {e}")
+
+    threading.Thread(target=_do, daemon=True, name="pilar-preload").start()
 
 
 def bootstrap_async(notify=None) -> None:
-    """Non-blocking launch."""
+    """Non-blocking launch — runs bootstrap in a daemon thread."""
     threading.Thread(
         target=bootstrap,
         kwargs={"notify": notify},
