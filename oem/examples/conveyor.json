@@ -1,0 +1,28 @@
+{
+  "machine_type":  "belt_conveyor",
+  "machine_name":  "Industrial Belt Conveyor",
+  "manufacturer":  "",
+  "model_ref":     "",
+
+  "sensors": {
+    "vibration":            {"unit": "mm/s", "nominal": 2.1,  "min": 0.0, "max": 30.0},
+    "temp_palier":          {"unit": "°C",   "nominal": 38.0, "min": 5.0, "max": 100.0},
+    "courant_moteur":       {"unit": "A",    "nominal": 12.0, "min": 0.0, "max": 40.0},
+    "temp_moteur":          {"unit": "°C",   "nominal": 70.0, "min": 10,  "max": 160.0},
+    "heure_fonctionnement": {"unit": "h",    "nominal": 0,    "min": 0,   "max": 100000}
+  },
+
+  "failure_zones": {
+    "CAV": {"enabled": false},
+    "ROL": {"enabled": true, "label": "Roller Bearing Failure"},
+    "ETN": {"enabled": true, "label": "Belt / Pulley Seal Wear"},
+    "IMP": {"enabled": false},
+    "MOT": {"enabled": true, "label": "Drive Motor Fault"}
+  },
+
+  "thresholds": {
+    "risk_alert":        50,
+    "zone_alert":        40,
+    "nominal_current_A": 12.0
+  }
+}

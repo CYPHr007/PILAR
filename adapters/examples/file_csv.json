@@ -1,0 +1,17 @@
+{
+  "adapter":    "file",
+  "machine_id": "CONVEYOR-02",
+  "interval":   5,
+  "path":       "/var/pilar/sensors/sensor_log.csv",
+  "format":     "csv",
+  "column_map": {
+    "Vibration_mms":  "vibration",
+    "BearingTemp_C":  "temp_palier",
+    "FlowRate":       "debit",
+    "InletPressure":  "pression_entree",
+    "OutletPressure": "pression_sortie",
+    "MotorAmps":      "courant_moteur",
+    "MotorTemp_C":    "temp_moteur",
+    "RunHours":       "heure_fonctionnement"
+  }
+}

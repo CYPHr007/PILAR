@@ -1,0 +1,21 @@
+{
+  "adapter":    "modbus",
+  "machine_id": "PUMP-01",
+  "interval":   5,
+  "connection": {
+    "type":    "tcp",
+    "host":    "192.168.1.10",
+    "port":    502,
+    "unit_id": 1
+  },
+  "registers": {
+    "vibration":            {"address": 100, "type": "holding", "scale": 0.01},
+    "temp_palier":          {"address": 101, "type": "holding", "scale": 0.1},
+    "debit":                {"address": 102, "type": "holding", "scale": 0.001},
+    "pression_entree":      {"address": 103, "type": "holding", "scale": 0.01},
+    "pression_sortie":      {"address": 104, "type": "holding", "scale": 0.01},
+    "courant_moteur":       {"address": 105, "type": "holding", "scale": 0.01},
+    "temp_moteur":          {"address": 106, "type": "holding", "scale": 0.1},
+    "heure_fonctionnement": {"address": 107, "type": "holding", "scale": 1}
+  }
+}

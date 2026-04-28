@@ -1,0 +1,31 @@
+{
+  "machine_type":  "centrifugal_pump",
+  "machine_name":  "Industrial Centrifugal Pump",
+  "manufacturer":  "",
+  "model_ref":     "",
+
+  "sensors": {
+    "vibration":            {"unit": "mm/s", "nominal": 0.6,  "min": 0.0,  "max": 25.0},
+    "temp_palier":          {"unit": "°C",   "nominal": 44.8, "min": 0.0,  "max": 90.0},
+    "debit":                {"unit": "m3/h", "nominal": 0.4,  "min": 0.0,  "max": 3.0},
+    "pression_entree":      {"unit": "bar",  "nominal": 2.0,  "min": 0.0,  "max": 63.0},
+    "pression_sortie":      {"unit": "bar",  "nominal": 107.7,"min": 0.0,  "max": 880.0},
+    "courant_moteur":       {"unit": "A",    "nominal": 4.6,  "min": 0.0,  "max": 6.0},
+    "temp_moteur":          {"unit": "°C",   "nominal": 58.0, "min": 0.0,  "max": 84.0},
+    "heure_fonctionnement": {"unit": "h",    "nominal": 0,    "min": 0,    "max": 250000}
+  },
+
+  "failure_zones": {
+    "CAV": {"enabled": true, "label": "Cavitation"},
+    "ROL": {"enabled": true, "label": "Bearing Failure"},
+    "ETN": {"enabled": true, "label": "Seal Failure"},
+    "IMP": {"enabled": true, "label": "Impeller Wear"},
+    "MOT": {"enabled": true, "label": "Motor Fault"}
+  },
+
+  "thresholds": {
+    "risk_alert":        30,
+    "zone_alert":        30,
+    "nominal_current_A": 4.6
+  }
+}

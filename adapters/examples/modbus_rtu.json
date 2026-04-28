@@ -1,0 +1,20 @@
+{
+  "adapter":    "modbus",
+  "machine_id": "COMPRESSOR-01",
+  "interval":   10,
+  "connection": {
+    "type":     "rtu",
+    "port":     "/dev/ttyUSB0",
+    "baudrate": 9600,
+    "stopbits": 1,
+    "bytesize": 8,
+    "parity":   "N",
+    "unit_id":  1
+  },
+  "registers": {
+    "vibration":      {"address": 40001, "type": "holding", "scale": 0.01},
+    "temp_palier":    {"address": 40002, "type": "holding", "scale": 0.1},
+    "courant_moteur": {"address": 40003, "type": "holding", "scale": 0.01},
+    "temp_moteur":    {"address": 40004, "type": "holding", "scale": 0.1}
+  }
+}

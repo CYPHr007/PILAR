@@ -1,0 +1,47 @@
+{
+  "adapter":    "gpio",
+  "machine_id": "PUMP-FLOOR-1",
+  "interval":   2,
+  "adc": {
+    "chip":       "MCP3008",
+    "spi_bus":    0,
+    "spi_device": 0,
+    "vref":       3.3
+  },
+  "channels": {
+    "vibration": {
+      "channel":  0,
+      "type":     "voltage",
+      "v_min":    0.0,
+      "v_max":    3.3,
+      "val_min":  0.0,
+      "val_max":  50.0
+    },
+    "temp_palier": {
+      "channel":   1,
+      "type":      "current_loop",
+      "shunt_ohm": 165,
+      "ma_min":    4,
+      "ma_max":    20,
+      "val_min":   0.0,
+      "val_max":   150.0
+    },
+    "courant_moteur": {
+      "channel":  2,
+      "type":     "voltage",
+      "v_min":    0.0,
+      "v_max":    3.3,
+      "val_min":  0.0,
+      "val_max":  10.0
+    },
+    "temp_moteur": {
+      "channel":   3,
+      "type":      "current_loop",
+      "shunt_ohm": 165,
+      "ma_min":    4,
+      "ma_max":    20,
+      "val_min":   0.0,
+      "val_max":   200.0
+    }
+  }
+}

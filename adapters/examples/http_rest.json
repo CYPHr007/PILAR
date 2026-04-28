@@ -1,0 +1,19 @@
+{
+  "adapter":    "http",
+  "machine_id": "ROBOT-ARM-04",
+  "interval":   10,
+  "url":        "http://robot-controller.local/api/sensors",
+  "method":     "GET",
+  "headers":    {"Authorization": "Bearer YOUR_TOKEN_HERE"},
+  "timeout":    5,
+  "field_map": {
+    "motion.vibration":       "vibration",
+    "thermal.bearing":        "temp_palier",
+    "hydraulic.flow":         "debit",
+    "hydraulic.inlet_bar":    "pression_entree",
+    "hydraulic.outlet_bar":   "pression_sortie",
+    "drive.current_rms":      "courant_moteur",
+    "thermal.motor":          "temp_moteur",
+    "system.run_hours":       "heure_fonctionnement"
+  }
+}

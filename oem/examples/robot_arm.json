@@ -1,0 +1,28 @@
+{
+  "machine_type":  "industrial_robot_arm",
+  "machine_name":  "6-Axis Industrial Robot Arm",
+  "manufacturer":  "ACME Robotics",
+  "model_ref":     "AR-2000",
+
+  "sensors": {
+    "vibration":            {"unit": "mm/s", "nominal": 1.2,  "min": 0.0,  "max": 20.0},
+    "temp_palier":          {"unit": "°C",   "nominal": 42.0, "min": 10.0, "max": 120.0},
+    "courant_moteur":       {"unit": "A",    "nominal": 8.5,  "min": 0.0,  "max": 25.0},
+    "temp_moteur":          {"unit": "°C",   "nominal": 65.0, "min": 10.0, "max": 150.0},
+    "heure_fonctionnement": {"unit": "h",    "nominal": 0,    "min": 0,    "max": 80000}
+  },
+
+  "failure_zones": {
+    "CAV": {"enabled": false},
+    "ROL": {"enabled": true, "label": "Joint Bearing Failure"},
+    "ETN": {"enabled": true, "label": "Seal / Gearbox Leak"},
+    "IMP": {"enabled": false},
+    "MOT": {"enabled": true, "label": "Servo Motor Fault"}
+  },
+
+  "thresholds": {
+    "risk_alert":        45,
+    "zone_alert":        35,
+    "nominal_current_A": 8.5
+  }
+}
