@@ -51,10 +51,15 @@ for name in JSON_FILES:
     if p.exists():
         datas.append((str(p), "."))
 
-# Static assets (templates, CSS, JS, icons)
+# Static assets (CSS, JS, icons)
 static_dir = BASE / "static"
 if static_dir.exists():
     datas.append((str(static_dir), "static"))
+
+# Jinja2 templates — required for render_template() calls
+templates_dir = BASE / "templates"
+if templates_dir.exists():
+    datas.append((str(templates_dir), "templates"))
 
 # Config
 # NOTE: pilar_calibrator and pilar_bootstrap are real Python modules
@@ -189,43 +194,30 @@ pyz = PYZ(launcher_a.pure, launcher_a.zipped_data, cipher=block_cipher)
 exe = EXE(
     pyz,
     launcher_a.scripts,
+    launcher_a.binaries,
+    launcher_a.zipfiles,
+    launcher_a.datas,
     [],
-    exclude_binaries=True,
+    exclude_binaries=False,
     name="PILAR",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
-    console=False,   # No console window on Windows (desktop app)
+    upx_exclude=[
+        "vcruntime140.dll", "vcruntime140_1.dll",
+        "msvcp140.dll", "msvcp140_1.dll", "msvcp140_2.dll",
+        "concrt140.dll", "python3*.dll", "xgboost.dll",
+        "api-ms-win-*.dll",
+    ],
+    runtime_tmpdir=None,
+    console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    # Windows icon
     icon=str(BASE / "pilar.ico") if (BASE / "pilar.ico").exists()
          else (str(BASE / "pilar.png") if (BASE / "pilar.png").exists() else None),
 )
 
-coll = COLLECT(
-    exe,
-    launcher_a.binaries,
-    launcher_a.zipfiles,
-    launcher_a.datas,
-    strip=False,
-    upx=True,
-    # UPX corrupts several MSVC and xgboost DLLs — exclude them.
-    upx_exclude=[
-        "vcruntime140.dll",
-        "vcruntime140_1.dll",
-        "msvcp140.dll",
-        "msvcp140_1.dll",
-        "msvcp140_2.dll",
-        "concrt140.dll",
-        "python3*.dll",
-        "xgboost.dll",
-        "api-ms-win-*.dll",
-        "ucrtbase.dll",
-    ],
-    name="pilar",
-)

@@ -1930,15 +1930,15 @@ def register():
     ip = (request.headers.get('X-Forwarded-For','').split(',')[0].strip() if os.environ.get('RAILWAY_ENVIRONMENT') else '') or request.remote_addr or ''
     if _check_rate_limit(ip):
         logger.info(f"auth: Rate limit register IP={ip}")
-        return render_template('register.html', error='Trop de tentatives. Réessayez dans 15 minutes.', pending=False)
+        return render_template('register.html', error='Too many attempts. Try again in 15 minutes.', pending=False)
     try:
         email = (request.form.get('email') or '').strip().lower()
         password = request.form.get('password', '')
         password2 = request.form.get('password2', '')
         if not email or not password:
-            return render_template('register.html', error='Email et mot de passe requis', pending=False)
+            return render_template('register.html', error='Email and password required', pending=False)
         if len(password) < 8:
-            return render_template('register.html', error='Mot de passe trop court (8 caractères minimum)', pending=False)
+            return render_template('register.html', error='Password too short (8 characters minimum)', pending=False)
         if password != password2:
             return render_template('register.html', error='Les mots de passe ne correspondent pas', pending=False)
         if BannedEmail.query.filter_by(email=email).first():
@@ -2005,27 +2005,27 @@ def login():
     ip = (request.headers.get('X-Forwarded-For','').split(',')[0].strip() if os.environ.get('RAILWAY_ENVIRONMENT') else '') or request.remote_addr or ''
     if _check_rate_limit(ip):
         logger.info(f"auth: Rate limit login IP={ip}")
-        return render_template('login.html', error='Trop de tentatives. Réessayez dans 15 minutes.')
+        return render_template('login.html', error='Too many attempts. Try again in 15 minutes.')
     try:
         email = (request.form.get('email') or '').strip().lower()
         password = request.form.get('password', '')
         if not email or not password:
-            return render_template('login.html', error='Email et mot de passe requis')
+            return render_template('login.html', error='Email and password required')
         user = User.query.filter_by(email=email).first()
         if not user or not check_password_hash(user.password_hash, password):
             _record_failed_login(ip)
             logger.info(f"auth: Failed login: {email} IP={ip}")
-            return render_template('login.html', error='Email ou mot de passe incorrect')
+            return render_template('login.html', error='Incorrect email or password')
         if user.is_banned:
             logger.info(f"auth: Banned login attempt: {email} IP={ip}")
-            return render_template('login.html', error='Ce compte a été suspendu. Contactez le support.')
+            return render_template('login.html', error='This account has been suspended. Contact support.')
         if not user.email_verified:
             # If GMAIL is not configured, no verification email was ever sent — auto-verify
             if not GMAIL:
                 user.email_verified = True
                 db.session.commit()
             else:
-                return render_template('login.html', error='Confirmez votre email avant de vous connecter. Vérifiez vos spams.')
+                return render_template('login.html', error='Please confirm your email before signing in. Check your spam folder.')
         session['user_id'] = user.id
         session.permanent = (request.form.get('remember') == '1')
         logger.info(f"auth: Login OK: {email} IP={ip} remember={session.permanent}")
@@ -5454,9 +5454,9 @@ def internal_error(e):
 .msg{{color:#94a3b8;font-size:13px;margin:12px 0 24px;line-height:1.7;}}
 a{{padding:10px 22px;background:#0d9488;color:#fff;border-radius:6px;text-decoration:none;font-size:14px;font-weight:500;transition:opacity .15s;display:inline-block;}}
 a:hover{{opacity:.85;}}</style></head>
-<body><div class="c"><div class="logo">PILAR</div><h2 style="margin:0 0 8px;font-size:18px;font-weight:600;color:#e2e8f0;">Erreur serveur</h2>
-<p class="msg">Une erreur inattendue s'est produite.<br>Elle a été enregistrée dans les logs.</p>
-<a href="/">Retour</a></div></body></html>""", 500
+<body><div class="c"><div class="logo">PILAR</div><h2 style="margin:0 0 8px;font-size:18px;font-weight:600;color:#e2e8f0;">Server error</h2>
+<p class="msg">An unexpected error occurred.<br>It has been recorded in the logs.</p>
+<a href="/">Back</a></div></body></html>""", 500
 
 @app.errorhandler(Exception)
 def unhandled(e):
