@@ -2388,11 +2388,11 @@ def demo_login():
 def alert_ack(token):
     al = AlertLog.query.filter_by(ack_token=token).first()
     if not al:
-        return '<html><body style="font-family:-apple-system,\'SF Pro Display\',\'Helvetica Neue\',Arial,sans-serif;background:#07090f;color:#ffffff;display:flex;align-items:center;justify-content:center;min-height:100vh;"><div style="text-align:center"><div style="font-size:15px;letter-spacing:0.04em;color:#0d9488;font-weight:700;margin-bottom:16px;">PILAR</div><p style="color:rgba(235,235,245,0.6)">Alert not found or already processed.</p></div></body></html>', 404
+        return '<html><head><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&display=swap" rel="stylesheet"></head><body style="font-family:\'DM Sans\',system-ui,sans-serif;background:#08090c;color:#e2e8f0;display:flex;align-items:center;justify-content:center;min-height:100vh;"><div style="text-align:center;padding:40px"><div style="font-size:13px;letter-spacing:.1em;color:#0d9488;font-weight:600;margin-bottom:16px;font-family:Georgia,serif;">PILAR</div><p style="color:#94a3b8;font-size:14px;">Alert not found or already processed.</p></div></body></html>', 404
     if not al.acked_at:
         al.acked_at = datetime.now(timezone.utc)
         db.session.commit()
-    return '<html><body style="font-family:-apple-system,\'SF Pro Display\',\'Helvetica Neue\',Arial,sans-serif;background:#07090f;color:#ffffff;display:flex;align-items:center;justify-content:center;min-height:100vh;"><div style="text-align:center"><div style="font-size:15px;letter-spacing:0.04em;color:#0d9488;font-weight:700;margin-bottom:16px;">PILAR</div><h2 style="margin:0 0 12px;font-size:20px;font-weight:700;">Alert Acknowledged</h2><p style="color:rgba(235,235,245,0.6);font-size:14px;">This alert has been recorded. No escalation will be sent.</p><a href="/machines" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#0d9488;color:#fff;text-decoration:none;border-radius:12px;font-size:15px;font-weight:600;">Go to Dashboard</a></div></body></html>'
+    return '<html><head><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"></head><body style="font-family:\'DM Sans\',system-ui,sans-serif;background:#08090c;color:#e2e8f0;display:flex;align-items:center;justify-content:center;min-height:100vh;"><div style="text-align:center;padding:40px"><div style="font-size:13px;letter-spacing:.1em;color:#0d9488;font-weight:600;margin-bottom:20px;font-family:Georgia,serif;">PILAR</div><h2 style="margin:0 0 12px;font-size:22px;font-weight:600;color:#e2e8f0;">Alert Acknowledged</h2><p style="color:#94a3b8;font-size:14px;line-height:1.7;margin-bottom:24px;">This alert has been recorded. No escalation will be sent.</p><a href="/machines" style="display:inline-block;padding:12px 24px;background:#0d9488;color:#fff;text-decoration:none;border-radius:6px;font-size:14px;font-weight:500;">Go to Dashboard</a></div></body></html>'
 
 # ── MACHINES CRUD API ─────────────────────────────────────────────────────────
 @app.route('/api/machines', methods=['GET'])
@@ -3787,21 +3787,23 @@ def _paid_required():
 
 @app.route('/upgrade')
 def upgrade():
-    html = """<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+    html = """<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#08090c">
 <title>Get Access — Pilar</title>
-<style>:root{--bg:#07090f;--surface:#0e1118;--border:#1e2433;--border2:#252d3d;--teal:#0d9488;--teal2:#14b8a6;--teal-dim:rgba(13,148,136,0.08);--text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;--green:#059669;--r:12px}
-*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:40px 32px;max-width:440px;width:100%}
-h2{font-size:22px;font-weight:700;letter-spacing:-0.03em;margin-bottom:10px}
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<style>:root{--bg:#08090c;--surface:#0f1117;--border:#1c2130;--border2:#252d3d;--accent:#0d9488;--accent2:#14b8a6;--accent-dim:rgba(13,148,136,0.10);--text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;--green:#34d399;--r:6px}
+*{box-sizing:border-box;margin:0;padding:0}body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:40px 32px;max-width:440px;width:100%;box-shadow:0 0 40px rgba(13,148,136,0.06),0 8px 32px rgba(0,0,0,0.4)}
+h2{font-family:'DM Serif Display',Georgia,serif;font-size:22px;font-weight:400;letter-spacing:-0.01em;margin-bottom:10px}
 .sub{font-size:13px;color:var(--text2);line-height:1.8;margin-bottom:28px}
 .features{list-style:none;margin-bottom:28px;text-align:left}
 .features li{font-size:13px;color:var(--text2);padding:7px 0;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
 .features li:last-child{border:none}
 .features li::before{content:'\2713';color:var(--green);font-weight:700;flex-shrink:0}
-.badge{display:inline-block;padding:4px 12px;background:var(--teal-dim);border:1px solid rgba(13,148,136,.25);border-radius:20px;font-size:11px;font-weight:600;letter-spacing:0;color:var(--teal2);margin-bottom:20px}
-.btn{display:block;width:100%;padding:15px;background:var(--teal);color:#fff;border:none;border-radius:var(--r);font-size:15px;font-weight:600;letter-spacing:0;text-transform:none;cursor:pointer;text-decoration:none;margin-bottom:10px;transition:opacity .15s}
-.btn:hover{opacity:.9}
-.btn-ghost{display:block;width:100%;padding:12px;background:transparent;border:1px solid var(--border2);color:var(--text3);border-radius:var(--r);font-size:13px;cursor:pointer;text-decoration:none}
+.badge{display:inline-block;padding:4px 12px;background:var(--accent-dim);border:1px solid rgba(13,148,136,.25);border-radius:20px;font-size:11px;font-weight:500;color:var(--accent2);margin-bottom:20px}
+.btn{display:block;width:100%;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:var(--r);font-size:14px;font-weight:500;cursor:pointer;text-decoration:none;margin-bottom:10px;transition:opacity .15s,box-shadow .2s}
+.btn:hover{opacity:.9;box-shadow:0 0 20px rgba(13,148,136,0.3)}
+.btn-ghost{display:block;width:100%;padding:12px;background:transparent;border:1px solid var(--border2);color:var(--text3);border-radius:var(--r);font-size:13px;cursor:pointer;text-decoration:none;transition:border-color .15s,color .15s}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
 .divider{border:none;border-top:1px solid var(--border);margin:24px 0}
 </style></head><body>
 <div class="card">
@@ -5444,11 +5446,15 @@ def internal_error(e):
                  or request.headers.get('Content-Type','').find('application/json') >= 0
     if wants_json:
         return jsonify({'error': 'Internal server error'}), 500
-    return f"""<!DOCTYPE html><html><head><meta charset="UTF-8">
-<style>body{{font-family:'Inter','Segoe UI',system-ui,Arial,sans-serif;background:#07090f;color:#ffffff;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;}}
-.c{{max-width:420px;text-align:center;padding:40px;}}.logo{{font-size:15px;letter-spacing:0.04em;color:#0d9488;font-weight:700;}}.msg{{color:rgba(235,235,245,0.6);font-size:13px;margin:16px 0 24px;line-height:1.7;}}
-a{{padding:12px 24px;background:#0d9488;color:#fff;border-radius:12px;text-decoration:none;font-size:15px;font-weight:600;}}</style></head>
-<body><div class="c"><div class="logo">PILAR</div><h2 style="margin:20px 0 8px;font-size:18px;font-weight:700;">Erreur serveur</h2>
+    return f"""<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="theme-color" content="#08090c">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>body{{font-family:'DM Sans',system-ui,sans-serif;background:#08090c;color:#e2e8f0;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;}}
+.c{{max-width:420px;text-align:center;padding:40px;background:#0f1117;border:1px solid #1c2130;border-radius:8px;box-shadow:0 8px 32px rgba(0,0,0,0.4);}}
+.logo{{font-size:13px;letter-spacing:.1em;color:#0d9488;font-weight:600;font-family:Georgia,serif;margin-bottom:20px;}}
+.msg{{color:#94a3b8;font-size:13px;margin:12px 0 24px;line-height:1.7;}}
+a{{padding:10px 22px;background:#0d9488;color:#fff;border-radius:6px;text-decoration:none;font-size:14px;font-weight:500;transition:opacity .15s;display:inline-block;}}
+a:hover{{opacity:.85;}}</style></head>
+<body><div class="c"><div class="logo">PILAR</div><h2 style="margin:0 0 8px;font-size:18px;font-weight:600;color:#e2e8f0;">Erreur serveur</h2>
 <p class="msg">Une erreur inattendue s'est produite.<br>Elle a été enregistrée dans les logs.</p>
 <a href="/">Retour</a></div></body></html>""", 500
 
