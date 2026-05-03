@@ -1037,7 +1037,9 @@ select.form-input option{background:var(--surface);color:var(--text);}
 .desk-color-swatch:hover{transform:scale(1.2)}
 .desk-color-swatch.selected{border-color:rgba(255,255,255,.85);transform:scale(1.15)}
 /* Machine group in fleet — Windows Explorer folder style */
-.mg-section{margin-bottom:0;border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:10px}
+.mg-section{margin-bottom:0;border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:10px;transition:border-color .1s,background .1s}
+.mg-section.mg-drop-over{border-color:rgba(122,92,30,.6);background:rgba(122,92,30,.06);outline:2px dashed rgba(122,92,30,.35);outline-offset:-2px}
+.machine-card.card-dragging{opacity:.35;cursor:grabbing}
 .mg-header{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface);cursor:pointer;user-select:none;transition:background .12s}
 .mg-header:hover{background:var(--surface2)}
 .mg-folder-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -1841,6 +1843,53 @@ function sbDragEnd(e) {
   document.querySelectorAll('.sb-dragging').forEach(function(el){ el.classList.remove('sb-dragging'); });
   document.querySelectorAll('.sb-drop-over').forEach(function(el){ el.classList.remove('sb-drop-over'); });
 }
+// ── Fleet grid card drag & drop (drag cards between group sections) ──────────
+function cardDragStart(e, mid) {
+  _sbDragging = mid;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', String(mid));
+  setTimeout(function(){ var el=e.currentTarget; if(el)el.classList.add('card-dragging'); }, 0);
+}
+function cardDragEnd(e) {
+  _sbDragging = null;
+  document.querySelectorAll('.card-dragging').forEach(function(el){ el.classList.remove('card-dragging'); });
+  document.querySelectorAll('.mg-drop-over').forEach(function(el){ el.classList.remove('mg-drop-over'); });
+}
+function mgZoneOver(e, gid) {
+  if (_sbDragging === null) return;
+  e.preventDefault(); e.stopPropagation();
+  e.dataTransfer.dropEffect = 'move';
+  var id = gid ? 'desk-group-'+gid : 'desk-group-ug';
+  var el = document.getElementById(id);
+  if (el) el.classList.add('mg-drop-over');
+}
+function mgZoneLeave(e, elId) {
+  if (e.relatedTarget && e.currentTarget.contains(e.relatedTarget)) return;
+  var el = document.getElementById(elId);
+  if (el) el.classList.remove('mg-drop-over');
+}
+async function mgZoneDrop(e, gid) {
+  e.preventDefault(); e.stopPropagation();
+  document.querySelectorAll('.mg-drop-over').forEach(function(el){ el.classList.remove('mg-drop-over'); });
+  var mid = _sbDragging;
+  _sbDragging = null;
+  if (mid === null) return;
+  var m = _machines.find(function(x){ return x.id === mid; });
+  if (!m || m.group_id === gid) return;
+  // Optimistic update
+  m.group_id = gid;
+  if (gid && _sbOpen[gid] === false) _sbOpen[gid] = true;
+  renderSidebarDesks();
+  renderFleet();
+  // Persist
+  try {
+    await fetch('/api/machines/'+mid, {
+      method: 'PUT',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({group_id: gid})
+    });
+  } catch(ex) { loadFleet(); }
+}
 function sbZoneOver(e, gid) {
   if (_sbDragging === null) return;
   e.preventDefault(); e.stopPropagation();
@@ -1955,7 +2004,10 @@ function renderFleet() {
     var col = _DESK_COLORS[desk.color] || '#7A5C1E';
     var alertCnt = deskMachines.filter(function(m){return m.last_prediction===1;}).length;
     var initial = (desk.name.trim()[0]||'G').toUpperCase();
-    html += '<div class="mg-section" id="desk-group-'+desk.id+'">'
+    html += '<div class="mg-section" id="desk-group-'+desk.id+'"'
+      +' ondragover="mgZoneOver(event,'+desk.id+')"'
+      +' ondrop="mgZoneDrop(event,'+desk.id+')"'
+      +' ondragleave="mgZoneLeave(event,\'desk-group-'+desk.id+'\')">'
       // Folder header row
       +'<div class="mg-header" onclick="toggleMgSection(this)">'
       +'<div class="mg-folder-icon" style="background:'+col+'1a;border:1px solid '+col+'44">'
@@ -1988,7 +2040,10 @@ function renderFleet() {
   // Ungrouped machines
   if (ungrouped.length) {
     if (_desks.length) {
-      html += '<div class="mg-section">'
+      html += '<div class="mg-section" id="desk-group-ug"'
+        +' ondragover="mgZoneOver(event,null)"'
+        +' ondrop="mgZoneDrop(event,null)"'
+        +' ondragleave="mgZoneLeave(event,\'desk-group-ug\')">'
         +'<div class="mg-header" onclick="toggleMgSection(this)">'
         +'<div class="mg-folder-icon" style="background:rgba(100,100,100,.1);border:1px solid var(--border)">'
           +'<svg viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="1.5" style="width:16px;height:16px"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>'
@@ -2084,7 +2139,9 @@ function renderMachineCard(m) {
     infoLine = '<div style="font-size:11px;color:var(--text3);margin-bottom:4px">'+assetIcon+assetLbl+(subtypeTxt?' · '+subtypeTxt:'')+(mediumTxt?' · '+mediumTxt:'')+' · '+badge+'</div>';
   }
 
-  return '<div class="machine-card'+auraClass+'" id="card-'+m.id+'">'
+  return '<div class="machine-card'+auraClass+'" id="card-'+m.id+'" draggable="true"'
+    +' ondragstart="cardDragStart(event,'+m.id+')"'
+    +' ondragend="cardDragEnd(event)">'
     +'<a href="/machine/'+m.id+'" style="display:block;padding:0;text-decoration:none">'
     +'<div class="card-top">'
     +'<div class="card-name-row">'
