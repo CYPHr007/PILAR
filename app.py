@@ -97,7 +97,7 @@ from models import (
     Team, TeamMember, User, BannedEmail, Settings, Analysis, SavedFile,
     TeamMessage, DiscoveredParam, Machine, MachineNote, AlertLog,
     MachineRequest, MachineBaseline, MachineModel, MaintenanceEvent,
-    SyncQueue, LocalChatMessage, UserDataConsent, MachineGroup,
+    SyncQueue, LocalChatMessage, UserDataConsent, MachineGroup, DeskInviteLink,
 )
 from pilar_upload import (
     upload_pending as _pilar_upload_pending,
@@ -1964,6 +1964,16 @@ def register():
             return render_template('register.html', error=None, pending=True, resent=False, pending_email=email)
         session['user_id'] = user.id
         session.permanent = True
+        # Apply pending desk invite if user came via /join-desk/<token>
+        _desk_token = session.pop('desk_invite_token', None)
+        if _desk_token:
+            _inv = DeskInviteLink.query.filter_by(token=_desk_token).first()
+            if _inv and _inv.use_count < _inv.max_uses:
+                db.session.add(TeamMember(team_id=_inv.team_id, user_id=user.id, role=_inv.role))
+                user.team_id = _inv.team_id
+                _inv.use_count += 1
+                db.session.commit()
+                return redirect('/account?joined=1')
         return redirect('/machines')
     except Exception as e:
         db.session.rollback()
@@ -4937,7 +4947,7 @@ def team_invite():
         return jsonify({'error': 'Email required'}), 400
     target = User.query.filter_by(email=email).first()
     if not target:
-        return jsonify({'error': 'User not found'}), 404
+        return jsonify({'error': 'no_account', 'message': 'No account found for this email. Generate an invite link and send it — they will join automatically after registering.'}), 404
     if target.id == uid:
         return jsonify({'error': 'Cannot invite yourself'}), 400
     existing = TeamMember.query.filter_by(team_id=user.team_id, user_id=target.id).first()
@@ -4953,6 +4963,57 @@ def team_invite():
     target.team_id = user.team_id
     db.session.commit()
     return jsonify({'ok': True})
+
+
+@app.route('/team/invite-link', methods=['POST'])
+@login_required
+def team_invite_link():
+    """Generate a shareable join link for the current Desk."""
+    import secrets as _sec
+    uid = current_uid()
+    user = db.session.get(User, uid)
+    if not user or not user.team_id:
+        return jsonify({'error': 'Not in a Desk'}), 400
+    my_mbr = TeamMember.query.filter_by(team_id=user.team_id, user_id=uid, is_kicked=False).first()
+    if not my_mbr or not _desk_can(my_mbr.role, 'invite'):
+        return jsonify({'error': 'Permission denied'}), 403
+    token = _sec.token_urlsafe(20)
+    link = DeskInviteLink(token=token, team_id=user.team_id, created_by=uid, role='viewer', max_uses=50)
+    db.session.add(link)
+    db.session.commit()
+    base = request.host_url.rstrip('/')
+    return jsonify({'ok': True, 'link': f'{base}/join-desk/{token}'})
+
+
+@app.route('/join-desk/<token>', methods=['GET'])
+def join_desk(token):
+    """Click invite link → join desk if logged in, else redirect to login with token saved."""
+    inv = DeskInviteLink.query.filter_by(token=token).first()
+    if not inv or inv.use_count >= inv.max_uses:
+        return '<h2 style="font-family:sans-serif;padding:40px;color:#111">Invite link expired or invalid.</h2>', 404
+    uid = session.get('user_id')
+    if not uid:
+        session['desk_invite_token'] = token
+        return redirect('/login?next=/join-desk/' + token)
+    user = db.session.get(User, uid)
+    if not user:
+        return redirect('/login')
+    if user.team_id == inv.team_id:
+        return redirect('/account?already=1')
+    # Leave existing team first
+    if user.team_id:
+        TeamMember.query.filter_by(team_id=user.team_id, user_id=uid).delete()
+    existing = TeamMember.query.filter_by(team_id=inv.team_id, user_id=uid).first()
+    if existing:
+        existing.is_kicked = False
+        existing.role = inv.role
+    else:
+        db.session.add(TeamMember(team_id=inv.team_id, user_id=uid, role=inv.role))
+    user.team_id = inv.team_id
+    inv.use_count += 1
+    db.session.commit()
+    session.pop('desk_invite_token', None)
+    return redirect('/account?joined=1')
 
 
 @app.route('/team/set-role/<int:target_uid>', methods=['POST'])

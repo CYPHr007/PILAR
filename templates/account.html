@@ -719,12 +719,19 @@ function closeFleet(){
   {% if my_role in ['owner','admin','member_manager'] %}
   <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
     <div class="ctitle">Add Member</div>
+    <!-- Option 1: by email (must already have account) -->
     <div style="display:flex;gap:8px">
       <input class="fi" id="inv_email" placeholder="colleague@company.com" type="email" style="flex:1;min-width:0">
-      <button onclick="invite()" style="padding:10px 16px;background:var(--teal);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0">Invite</button>
+      <button onclick="invite()" style="padding:10px 16px;background:var(--teal);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0">Add</button>
     </div>
     <div id="inv_msg" style="font-size:11px;margin-top:6px;display:none"></div>
-    <div style="font-size:10px;color:var(--text3);margin-top:6px">New members join as <strong>Viewer</strong> (read-only). You can change their role after they join.</div>
+    <!-- Option 2: shareable invite link -->
+    <div style="margin-top:10px;display:flex;gap:8px;align-items:center">
+      <input id="inv_link" readonly placeholder="Click Generate to create a link…" style="flex:1;min-width:0;font-size:10px;padding:8px 10px;background:var(--bg);border:1px solid var(--border2);border-radius:6px;color:var(--text2);cursor:pointer" onclick="this.select()">
+      <button onclick="genLink()" style="padding:10px 14px;background:var(--surface2);border:1px solid var(--border2);color:var(--text);border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;white-space:nowrap">Generate link</button>
+      <button id="copy_link_btn" onclick="copyLink()" style="display:none;padding:10px 12px;background:var(--surface2);border:1px solid var(--border2);color:var(--teal);border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0">Copy</button>
+    </div>
+    <div style="font-size:10px;color:var(--text3);margin-top:6px">Share the link with your colleague — they register with it and join as <strong>Viewer</strong> automatically.</div>
   </div>
   {% endif %}
 
@@ -817,8 +824,32 @@ async function invite(){
   const msg=document.getElementById('inv_msg');
   const r=await fetch('/team/invite',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});
   const d=await r.json();
-  if(d.ok){msg.style.color='var(--green)';msg.textContent='Invited — they joined as Viewer.';msg.style.display='block';setTimeout(()=>location.reload(),1400);}
-  else{msg.style.color='var(--red)';msg.textContent=d.error||'Error';msg.style.display='block';}
+  if(d.ok){msg.style.color='var(--green)';msg.textContent='Added — they joined as Viewer.';msg.style.display='block';setTimeout(()=>location.reload(),1400);}
+  else if(d.error==='no_account'){
+    msg.style.color='var(--amber,#f59e0b)';
+    msg.textContent='No account yet. Generate a link below and send it — they will join automatically after registering.';
+    msg.style.display='block';
+    document.getElementById('inv_email').value='';
+  }
+  else{msg.style.color='var(--red)';msg.textContent=d.message||d.error||'Error';msg.style.display='block';}
+}
+async function genLink(){
+  const r=await fetch('/team/invite-link',{method:'POST'});
+  const d=await r.json();
+  if(d.link){
+    const inp=document.getElementById('inv_link');
+    inp.value=d.link;
+    document.getElementById('copy_link_btn').style.display='';
+  }
+}
+function copyLink(){
+  const v=document.getElementById('inv_link').value;
+  if(!v)return;
+  navigator.clipboard.writeText(v).then(()=>{
+    const btn=document.getElementById('copy_link_btn');
+    btn.textContent='Copied!';
+    setTimeout(()=>{btn.textContent='Copy';},2000);
+  });
 }
 async function kick(uid,btn){
   if(!confirm('Remove this member from the Desk?'))return;

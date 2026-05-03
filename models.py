@@ -247,6 +247,19 @@ class SyncQueue(db.Model):
         return self.synced_at is not None
 
 
+class DeskInviteLink(db.Model):
+    """One-time or multi-use invite link to join a Desk."""
+    __tablename__ = 'desk_invite_link'
+    id         = db.Column(db.Integer, primary_key=True)
+    token      = db.Column(db.String(32), unique=True, nullable=False)
+    team_id    = db.Column(db.Integer, nullable=False)
+    created_by = db.Column(db.Integer, nullable=False)   # user_id of owner
+    role       = db.Column(db.String(20), default='viewer')
+    max_uses   = db.Column(db.Integer, default=10)
+    use_count  = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+
 class LocalChatMessage(db.Model):
     """Local storage for chat messages (online: pulled from sync server; offline: created locally)."""
     __tablename__ = "local_chat_message"
