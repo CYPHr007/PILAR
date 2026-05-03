@@ -20,7 +20,7 @@ Zones de panne:
   IMP — Impeller Wear
   MOT — Motor Fault
 
-Exécutez ce script sur votre PC local pour générer modele_pannes.pkl, scaler.pkl, modeles_zones.pkl
+Exécutez ce script sur votre PC local pour générer failure_model.pkl, scaler.pkl, zone_models.pkl
 """
 
 import numpy as np
@@ -237,13 +237,13 @@ for zone in ZONES:
 # ── 8. SAUVEGARDE ─────────────────────────────────────────────────────────────
 print("\n[8/8] Sauvegarde des fichiers .pkl...")
 
-with open("modele_pannes.pkl", "wb") as f:
+with open("failure_model.pkl", "wb") as f:
     pickle.dump(model, f)
 
 with open("scaler.pkl", "wb") as f:
     pickle.dump(scaler, f)
 
-with open("modeles_zones.pkl", "wb") as f:
+with open("zone_models.pkl", "wb") as f:
     pickle.dump(modeles_zones, f)
 
 # Mise à jour model_meta.json
@@ -271,9 +271,9 @@ meta = {
 with open("model_meta.json", "w") as f:
     json.dump(meta, f, indent=2)
 
-print("\n   modele_pannes.pkl   OK")
+print("\n   failure_model.pkl   OK")
 print("   scaler.pkl          OK")
-print("   modeles_zones.pkl   OK")
+print("   zone_models.pkl   OK")
 print("   model_meta.json     OK")
 print("\n" + "=" * 65)
 print(f"Terminé — Recall {recall*100:.1f}% | Precision {precision*100:.1f}% | F1 {f1*100:.1f}%")

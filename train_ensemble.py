@@ -160,15 +160,15 @@ for zone in ZONES:
 # ── 9. SAUVEGARDER ───────────────────────────────────────────
 print("\n[9/9] Sauvegarde...")
 
-with open("modele_pannes.pkl", "wb") as f:
+with open("failure_model.pkl", "wb") as f:
     pickle.dump(best_model, f)
 
 with open("scaler.pkl", "wb") as f:
     pickle.dump(scaler, f)
 
-with open("modeles_zones.pkl", "wb") as f:
+with open("zone_models.pkl", "wb") as f:
     pickle.dump(modeles_zones, f)
 
-print("     modele_pannes.pkl  OK")
+print("     failure_model.pkl  OK")
 print("     scaler.pkl         OK")
-print("     modeles_zones.pkl  OK")
+print("     zone_models.pkl  OK")

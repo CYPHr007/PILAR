@@ -99,31 +99,31 @@ def _start_focus_listener():
 
 # ── Icone tray ─────────────────────────────────────────────────────────────────
 def _make_icon(size: int = 64) -> Image.Image:
+    """Two-bar PILAR logo mark on dark background."""
     img  = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
-    draw.ellipse([2, 2, size - 2, size - 2], fill=(14, 17, 24, 255))
-    pad = size // 6
-    draw.ellipse([pad, pad, size - pad, size - pad], fill=(13, 148, 136, 255))
-    draw.ellipse(
-        [pad + 2, pad + 2, size - pad - 2, size - pad - 2],
-        outline=(20, 184, 166, 180), width=2,
+    # Dark rounded-square background
+    r = size // 8
+    draw.rounded_rectangle([0, 0, size - 1, size - 1], radius=r, fill=(14, 17, 24, 255))
+    # Two vertical bars: white + gray, centered
+    bar_w   = max(5, size // 10)
+    bar_h   = size // 2
+    gap     = max(3, size // 16)
+    total_w = bar_w * 2 + gap
+    x0 = (size - total_w) // 2
+    y0 = (size - bar_h) // 2
+    # Bar 1 — white
+    draw.rounded_rectangle(
+        [x0, y0, x0 + bar_w - 1, y0 + bar_h - 1],
+        radius=max(1, bar_w // 4),
+        fill=(226, 232, 240, 255),
     )
-    try:
-        from PIL import ImageFont
-        font_size = size // 3
-        try:
-            font = ImageFont.truetype("arial.ttf", font_size)
-        except Exception:
-            font = ImageFont.load_default()
-        bbox = draw.textbbox((0, 0), "P", font=font)
-        tw = bbox[2] - bbox[0]
-        th = bbox[3] - bbox[1]
-        draw.text(
-            ((size - tw) // 2, (size - th) // 2 - 1),
-            "P", fill=(255, 255, 255, 255), font=font,
-        )
-    except Exception:
-        pass
+    # Bar 2 — gray
+    draw.rounded_rectangle(
+        [x0 + bar_w + gap, y0, x0 + bar_w + gap + bar_w - 1, y0 + bar_h - 1],
+        radius=max(1, bar_w // 4),
+        fill=(100, 116, 139, 255),
+    )
     return img
 
 

@@ -172,13 +172,13 @@ for zone, label in ZONE_NAMES.items():
 # ── SAUVEGARDE ────────────────────────────────────────────────
 print("\nSauvegarde...")
 
-with open("modele_pannes.pkl", "wb") as f:
+with open("failure_model.pkl", "wb") as f:
     pickle.dump(best_model, f)
 with open("scaler.pkl", "wb") as f:
     pickle.dump(scaler, f)
-with open("modeles_zones.pkl", "wb") as f:
+with open("zone_models.pkl", "wb") as f:
     pickle.dump(modeles_zones, f)
 
-print(f"     modele_pannes.pkl  OK  ({best_name}, Recall {best_recall*100:.1f}%)")
+print(f"     failure_model.pkl  OK  ({best_name}, Recall {best_recall*100:.1f}%)")
 print(f"     scaler.pkl         OK")
-print(f"     modeles_zones.pkl  OK  ({len(modeles_zones)} zones)")
+print(f"     zone_models.pkl  OK  ({len(modeles_zones)} zones)")

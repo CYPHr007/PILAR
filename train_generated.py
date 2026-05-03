@@ -216,15 +216,15 @@ for zone in ZONES:
 # ── SAUVEGARDE ────────────────────────────────────────────────
 print("\nSauvegarde des fichiers .pkl...")
 
-with open("modele_pannes.pkl", "wb") as f:
+with open("failure_model.pkl", "wb") as f:
     pickle.dump(best_model, f)
 with open("scaler.pkl", "wb") as f:
     pickle.dump(scaler, f)
-with open("modeles_zones.pkl", "wb") as f:
+with open("zone_models.pkl", "wb") as f:
     pickle.dump(modeles_zones, f)
 
-print("OK modele_pannes.pkl")
+print("OK failure_model.pkl")
 print("OK scaler.pkl")
-print("OK modeles_zones.pkl")
+print("OK zone_models.pkl")
 print(f"\nModele : {best_name} | Recall : {best_recall*100:.1f}% | F1 : {best_f1*100:.1f}%")
-print("Lancez 'python etape7.py' pour utiliser les nouveaux modeles.")
+print("Lancez 'python app.py' pour utiliser les nouveaux modeles.")

@@ -61,12 +61,28 @@ templates_dir = BASE / "templates"
 if templates_dir.exists():
     datas.append((str(templates_dir), "templates"))
 
-# Config
-# NOTE: pilar_calibrator and pilar_bootstrap are real Python modules
-# (see hiddenimports below). Do NOT bundle them as data files — that
-# causes two copies and breaks isinstance() checks across modules.
-datas.append((str(BASE / "config.py"), "."))
-datas.append((str(BASE / "app.py"),    "."))
+# Core Python source modules — bundled as data files so they're importable
+# alongside app.py in the extraction directory at runtime.
+# NOTE: pilar_calibrator and pilar_bootstrap stay in hiddenimports only
+# (compiled into the archive) — they use isinstance() checks that break
+# when two copies of the same module coexist.
+_PY_MODULES = [
+    "config.py",
+    "app.py",
+    "extensions.py",
+    "models.py",
+    "pilar_ml.py",
+    "pilar_logging.py",
+    "pilar_validators.py",
+    "pilar_email.py",
+    "pilar_monitor.py",
+    "pilar_upload.py",
+    "pilar_scheduler.py",
+]
+for _m in _PY_MODULES:
+    _p = BASE / _m
+    if _p.exists():
+        datas.append((str(_p), "."))
 
 # Agents package
 agents_dir = BASE / "agents"
@@ -149,6 +165,21 @@ hidden_imports = [
     "urllib.request",
     "urllib.error",
     "threading",
+    # CSRF / Login
+    "flask_wtf",
+    "flask_wtf.csrf",
+    "flask_login",
+    # PILAR source modules (also bundled as data — hidden import ensures
+    # the compiled bytecode version is available as fallback)
+    "extensions",
+    "models",
+    "pilar_ml",
+    "pilar_logging",
+    "pilar_validators",
+    "pilar_email",
+    "pilar_monitor",
+    "pilar_upload",
+    "pilar_scheduler",
     # Agents + Ollama
     "pilar_calibrator",
     "pilar_bootstrap",
@@ -191,25 +222,29 @@ launcher_a = Analysis(
 
 pyz = PYZ(launcher_a.pure, launcher_a.zipped_data, cipher=block_cipher)
 
+_icon = (str(BASE / "pilar.ico") if (BASE / "pilar.ico").exists()
+         else (str(BASE / "pilar.png") if (BASE / "pilar.png").exists() else None))
+
+_upx_exclude = [
+    "vcruntime140.dll", "vcruntime140_1.dll",
+    "msvcp140.dll", "msvcp140_1.dll", "msvcp140_2.dll",
+    "concrt140.dll", "python3*.dll", "xgboost.dll",
+    "api-ms-win-*.dll",
+]
+
+# Directory build — produces dist/pilar/ with PILAR.exe + _internal/
+# (installer bundles dist/pilar/*, so directory mode is required)
 exe = EXE(
     pyz,
     launcher_a.scripts,
-    launcher_a.binaries,
-    launcher_a.zipfiles,
-    launcher_a.datas,
     [],
-    exclude_binaries=False,
+    exclude_binaries=True,   # binaries go to COLLECT, not embedded in exe
     name="PILAR",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
-    upx_exclude=[
-        "vcruntime140.dll", "vcruntime140_1.dll",
-        "msvcp140.dll", "msvcp140_1.dll", "msvcp140_2.dll",
-        "concrt140.dll", "python3*.dll", "xgboost.dll",
-        "api-ms-win-*.dll",
-    ],
+    upx_exclude=_upx_exclude,
     runtime_tmpdir=None,
     console=False,
     disable_windowed_traceback=False,
@@ -217,7 +252,17 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=str(BASE / "pilar.ico") if (BASE / "pilar.ico").exists()
-         else (str(BASE / "pilar.png") if (BASE / "pilar.png").exists() else None),
+    icon=_icon,
+)
+
+coll = COLLECT(
+    exe,
+    launcher_a.binaries,
+    launcher_a.zipfiles,
+    launcher_a.datas,
+    strip=False,
+    upx=True,
+    upx_exclude=_upx_exclude,
+    name="pilar",           # output directory: dist/pilar/
 )
 

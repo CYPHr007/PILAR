@@ -575,16 +575,15 @@ _SIDEBAR = """
 <aside class="sidebar" id="desktopSidebar">
   <div class="sidebar-logo">
     <div class="logo-mark">
-      <!-- Bar mark: three vertical bars of varying height -->
-      <div style="display:flex;gap:2px;align-items:flex-end;">
-        <div style="width:4px;height:13px;background:currentColor;"></div>
-        <div style="width:4px;height:18px;background:currentColor;"></div>
-        <div style="width:4px;height:10px;background:currentColor;"></div>
+      <!-- Two-bar PILAR mark -->
+      <div style="display:flex;gap:4px;align-items:center;">
+        <div style="width:4px;height:18px;background:var(--text);border-radius:1px;"></div>
+        <div style="width:4px;height:18px;background:var(--text3);border-radius:1px;"></div>
       </div>
     </div>
     <div>
-      <div class="logo-text">PILAR</div>
-      <div class="logo-sub">Predictive Maintenance</div>
+      <div class="logo-text" style="letter-spacing:.12em;font-weight:600;">PILAR</div>
+      <div class="logo-sub">Anticipate · Master · Perform</div>
     </div>
   </div>
   <nav class="sidebar-nav">
@@ -2388,11 +2387,11 @@ def demo_login():
 def alert_ack(token):
     al = AlertLog.query.filter_by(ack_token=token).first()
     if not al:
-        return '<html><head><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&display=swap" rel="stylesheet"></head><body style="font-family:\'DM Sans\',system-ui,sans-serif;background:#08090c;color:#e2e8f0;display:flex;align-items:center;justify-content:center;min-height:100vh;"><div style="text-align:center;padding:40px"><div style="font-size:13px;letter-spacing:.1em;color:#0d9488;font-weight:600;margin-bottom:16px;font-family:Georgia,serif;">PILAR</div><p style="color:#94a3b8;font-size:14px;">Alert not found or already processed.</p></div></body></html>', 404
+        return '<html><head><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"></head><body style="font-family:\'DM Sans\',system-ui,sans-serif;background:#08090c;color:#e2e8f0;display:flex;align-items:center;justify-content:center;min-height:100vh;"><div style="text-align:center;padding:40px"><div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:20px;"><div style="display:flex;gap:4px;align-items:center;"><div style="width:5px;height:22px;background:#e2e8f0;border-radius:1px;"></div><div style="width:5px;height:22px;background:#64748b;border-radius:1px;"></div></div><div style="font-size:15px;font-weight:600;letter-spacing:.14em;color:#e2e8f0;">PILAR</div></div><p style="color:#94a3b8;font-size:14px;">Alert not found or already processed.</p></div></body></html>', 404
     if not al.acked_at:
         al.acked_at = datetime.now(timezone.utc)
         db.session.commit()
-    return '<html><head><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"></head><body style="font-family:\'DM Sans\',system-ui,sans-serif;background:#08090c;color:#e2e8f0;display:flex;align-items:center;justify-content:center;min-height:100vh;"><div style="text-align:center;padding:40px"><div style="font-size:13px;letter-spacing:.1em;color:#0d9488;font-weight:600;margin-bottom:20px;font-family:Georgia,serif;">PILAR</div><h2 style="margin:0 0 12px;font-size:22px;font-weight:600;color:#e2e8f0;">Alert Acknowledged</h2><p style="color:#94a3b8;font-size:14px;line-height:1.7;margin-bottom:24px;">This alert has been recorded. No escalation will be sent.</p><a href="/machines" style="display:inline-block;padding:12px 24px;background:#0d9488;color:#fff;text-decoration:none;border-radius:6px;font-size:14px;font-weight:500;">Go to Dashboard</a></div></body></html>'
+    return '<html><head><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"></head><body style="font-family:\'DM Sans\',system-ui,sans-serif;background:#08090c;color:#e2e8f0;display:flex;align-items:center;justify-content:center;min-height:100vh;"><div style="text-align:center;padding:40px"><div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:24px;"><div style="display:flex;gap:4px;align-items:center;"><div style="width:5px;height:22px;background:#e2e8f0;border-radius:1px;"></div><div style="width:5px;height:22px;background:#64748b;border-radius:1px;"></div></div><div style="font-size:15px;font-weight:600;letter-spacing:.14em;color:#e2e8f0;">PILAR</div></div><h2 style="margin:0 0 12px;font-size:22px;font-weight:600;color:#e2e8f0;">Alert Acknowledged</h2><p style="color:#94a3b8;font-size:14px;line-height:1.7;margin-bottom:24px;">This alert has been recorded. No escalation will be sent.</p><a href="/machines" style="display:inline-block;padding:12px 24px;background:#0d9488;color:#fff;text-decoration:none;border-radius:6px;font-size:14px;font-weight:500;">Go to Dashboard</a></div></body></html>'
 
 # ── MACHINES CRUD API ─────────────────────────────────────────────────────────
 @app.route('/api/machines', methods=['GET'])
@@ -5447,16 +5446,23 @@ def internal_error(e):
     if wants_json:
         return jsonify({'error': 'Internal server error'}), 500
     return f"""<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="theme-color" content="#08090c">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@300&display=swap" rel="stylesheet">
 <style>body{{font-family:'DM Sans',system-ui,sans-serif;background:#08090c;color:#e2e8f0;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;}}
-.c{{max-width:420px;text-align:center;padding:40px;background:#0f1117;border:1px solid #1c2130;border-radius:8px;box-shadow:0 8px 32px rgba(0,0,0,0.4);}}
-.logo{{font-size:13px;letter-spacing:.1em;color:#0d9488;font-weight:600;font-family:Georgia,serif;margin-bottom:20px;}}
-.msg{{color:#94a3b8;font-size:13px;margin:12px 0 24px;line-height:1.7;}}
-a{{padding:10px 22px;background:#0d9488;color:#fff;border-radius:6px;text-decoration:none;font-size:14px;font-weight:500;transition:opacity .15s;display:inline-block;}}
+.c{{max-width:420px;text-align:center;padding:44px 40px;background:#0f1117;border:1px solid #1c2130;border-radius:8px;box-shadow:0 8px 32px rgba(0,0,0,0.4);}}
+.logo{{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:24px;}}
+.logo-bars{{display:flex;gap:4px;align-items:center;}}
+.logo-bar1{{width:5px;height:22px;background:#e2e8f0;border-radius:1px;}}
+.logo-bar2{{width:5px;height:22px;background:#64748b;border-radius:1px;}}
+.logo-word{{font-family:'DM Sans',sans-serif;font-size:16px;font-weight:600;letter-spacing:.14em;color:#e2e8f0;}}
+.logo-sub{{font-family:'JetBrains Mono',monospace;font-size:8px;font-weight:300;letter-spacing:.12em;color:#64748b;text-transform:uppercase;margin-top:2px;}}
+.msg{{color:#94a3b8;font-size:13px;margin:14px 0 28px;line-height:1.7;}}
+a{{padding:10px 24px;background:#0d9488;color:#fff;border-radius:6px;text-decoration:none;font-size:13px;font-weight:500;transition:opacity .15s;display:inline-block;}}
 a:hover{{opacity:.85;}}</style></head>
-<body><div class="c"><div class="logo">PILAR</div><h2 style="margin:0 0 8px;font-size:18px;font-weight:600;color:#e2e8f0;">Server error</h2>
-<p class="msg">An unexpected error occurred.<br>It has been recorded in the logs.</p>
-<a href="/">Back</a></div></body></html>""", 500
+<body><div class="c">
+<div class="logo"><div class="logo-bars"><div class="logo-bar1"></div><div class="logo-bar2"></div></div><div><div class="logo-word">PILAR</div><div class="logo-sub">Anticipate &middot; Master &middot; Perform</div></div></div>
+<h2 style="margin:0 0 6px;font-size:18px;font-weight:600;color:#e2e8f0;">Erreur serveur</h2>
+<p class="msg">Une erreur inattendue s&apos;est produite.<br>Elle a &eacute;t&eacute; enregistr&eacute;e dans les logs.</p>
+<a href="/">Retour</a></div></body></html>""", 500
 
 @app.errorhandler(Exception)
 def unhandled(e):
