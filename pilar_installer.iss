@@ -4,7 +4,7 @@
 ; Requires Inno Setup 6.x or 7.x
 
 #define AppName       "PILAR"
-#define AppVersion    "1.5.0"
+#define AppVersion    "1.5.1"
 #define AppPublisher  "PILAR Predictive Maintenance"
 #define AppURL        "https://github.com/CYPHR007/PILAR"
 #define AppExeName    "PILAR.exe"

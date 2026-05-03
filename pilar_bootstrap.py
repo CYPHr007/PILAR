@@ -127,27 +127,53 @@ def _download_model(notify=None) -> bool:
 # ── UI dialog ─────────────────────────────────────────────────────────────────
 
 def _dialog_confirm_download() -> bool:
-    """Native Windows yes/no dialog. Returns True if user confirms."""
+    """
+    Confirm via tray notification (non-blocking).
+    Returns False — the actual download is triggered by the user
+    through the tray menu item 'Télécharger les modèles IA…'.
+    The notify callback was already called before this to inform the user.
+    """
+    return False
+
+
+def prompt_download_from_tray(notify=None) -> None:
+    """
+    Called when user clicks 'Télécharger les modèles IA…' in the tray menu.
+    Shows a confirmation dialog and starts the download if confirmed.
+    """
     try:
         import ctypes
         MB_YESNO, MB_ICONINFO, IDYES = 0x04, 0x40, 6
         msg = (
-            "PILAR peut activer des agents IA locaux (Qwen3 4B) pour "
+            "PILAR peut activer des agents IA locaux (Qwen3 4B) pour\n"
             "generer des diagnostics et plans de maintenance intelligents.\n\n"
             "Cela necessite le telechargement unique du modele (~2.6 Go).\n"
-            "Le modele est stocke sur votre machine et ne necessite "
+            "Le modele est stocke sur votre machine et ne necessite\n"
             "aucune connexion apres le telechargement.\n\n"
             "Telecharger le modele maintenant ?\n\n"
-            "(PILAR fonctionne parfaitement sans ce modele — il utilisera "
-            "des regles expertes pour l'analyse.)"
+            "(PILAR fonctionne parfaitement sans ce modele.)"
         )
         result = ctypes.windll.user32.MessageBoxW(
-            0, msg, "PILAR — Activer les agents IA Qwen3",
+            0, msg, "PILAR — Agents IA Qwen3",
             MB_YESNO | MB_ICONINFO,
         )
-        return result == IDYES
-    except Exception:
-        return False
+        if result == IDYES:
+            declined = _declined_path()
+            try:
+                declined.unlink(missing_ok=True)
+            except Exception:
+                pass
+            success = _download_model(notify=notify)
+            if success:
+                try:
+                    _marker_path().write_text("ok\n", encoding="utf-8")
+                except Exception:
+                    pass
+                if notify:
+                    notify("PILAR", "Agents IA Qwen3 actives.")
+                _preload_model(notify)
+    except Exception as e:
+        print(f"[bootstrap] prompt_download_from_tray error: {e}")
 
 
 # ── Main bootstrap ────────────────────────────────────────────────────────────
@@ -183,14 +209,15 @@ def bootstrap(notify=None) -> None:
         print("[bootstrap] user previously declined model download — skipping")
         return
 
-    # Ask user
-    if not _dialog_confirm_download():
-        try:
-            declined.write_text("declined\n", encoding="utf-8")
-        except Exception:
-            pass
-        print("[bootstrap] user declined model download")
-        return
+    # Notify via tray (non-blocking) — user can download from tray menu
+    if notify:
+        notify(
+            "PILAR — Agents IA disponibles",
+            "Les agents IA Qwen3 4B sont disponibles. "
+            "Telechargez-les depuis le menu tray pour activer les diagnostics intelligents.",
+        )
+    print("[bootstrap] tray notification sent — user can download from tray menu")
+    return
 
     # Download
     success = _download_model(notify=notify)

@@ -40,9 +40,10 @@ else:
     BASE_DIR = Path(__file__).parent.resolve()
 
 # ── State ──────────────────────────────────────────────────────────────────────
-_flask_started = False
-_window        = None
-_tray_icon     = None
+_flask_started  = False
+_window         = None
+_tray_icon      = None
+_UPDATE_PENDING = {}   # filled by _check_update when a newer version is found
 
 # ── Single-instance lock ───────────────────────────────────────────────────────
 _FOCUS_PORT = 19847   # local-only socket used to signal the running instance
@@ -348,7 +349,19 @@ def _check_update():
 
     if latest > current:
         print(f"[PILAR] Update available: {tag} (zip={is_zip})")
-        _show_update_dialog(tag, url, is_zip)
+        # Non-blocking tray notification — no modal popup on launch
+        if _tray_icon:
+            try:
+                _tray_icon.notify(
+                    f"PILAR {tag} disponible — cliquez sur 'Rechercher les mises à jour…' pour installer.",
+                    "PILAR — Mise à jour disponible",
+                )
+            except Exception:
+                pass
+        # Store for manual check trigger
+        _UPDATE_PENDING['tag'] = tag
+        _UPDATE_PENDING['url'] = url
+        _UPDATE_PENDING['is_zip'] = is_zip
     else:
         print(f"[PILAR] Up to date ({APP_VERSION}).")
 
@@ -400,7 +413,11 @@ def _check_update_manual():
     """Like _check_update() but also shows 'up to date' confirmation."""
     import ctypes
     print(f"[PILAR] Manual update check — version {APP_VERSION}")
-    tag, url, is_zip = _fetch_latest_release()
+    # If we already detected an update at startup, use cached result
+    if _UPDATE_PENDING.get('tag'):
+        tag, url, is_zip = _UPDATE_PENDING['tag'], _UPDATE_PENDING['url'], _UPDATE_PENDING.get('is_zip', False)
+    else:
+        tag, url, is_zip = _fetch_latest_release()
     if not tag or not url:
         ctypes.windll.user32.MessageBoxW(
             0,
@@ -491,12 +508,36 @@ def action_train(icon, item):
             pass
 
 
+def action_download_ai(icon, item):
+    """Trigger AI model download from tray menu (non-blocking)."""
+    def _on_notify(title, msg):
+        if _tray_icon:
+            try:
+                _tray_icon.notify(msg, title)
+            except Exception:
+                pass
+    threading.Thread(
+        target=lambda: _safe_bootstrap_download(_on_notify),
+        daemon=True,
+        name="ai-download",
+    ).start()
+
+
+def _safe_bootstrap_download(notify):
+    try:
+        import pilar_bootstrap
+        pilar_bootstrap.prompt_download_from_tray(notify=notify)
+    except Exception as e:
+        print(f"[PILAR] AI download error: {e}")
+
+
 def _build_menu():
     return pystray.Menu(
         pystray.MenuItem("Ouvrir PILAR", action_open, default=True),
         pystray.MenuItem("Mode démo (maintenance teams)", action_demo),
         pystray.MenuItem("Entraîner le modèle ML…", action_train),
         pystray.Menu.SEPARATOR,
+        pystray.MenuItem("Télécharger les modèles IA…", action_download_ai),
         pystray.MenuItem("Rechercher les mises à jour…", action_check_update),
         pystray.MenuItem("Réinitialiser les agents IA…", action_reset_agents),
         pystray.Menu.SEPARATOR,
