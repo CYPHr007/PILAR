@@ -33,7 +33,8 @@ WizardStyle=classic
 WizardImageFile=wizard_image.bmp
 WizardSmallImageFile=wizard_small.bmp
 WizardImageStretch=no
-WizardImageBackColor=$180e11
+WizardImageBackColor=$0c0908
+ShowLanguageDialog=no
 MinVersion=10.0.17763
 ArchitecturesInstallIn64BitMode=x64compatible
 ; No admin required — installs silently for current user
