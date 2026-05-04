@@ -19,6 +19,12 @@ from pilar_validators import validate_sensor_input, generate_csrf_token, validat
 import pilar_ml
 import pilar_email
 import pilar_monitor
+try:
+    import pilar_csv_adapter as _csv_adapter
+except Exception as _csv_adapter_err:
+    _csv_adapter = None
+    import warnings as _warn_csv
+    _warn_csv.warn(f"pilar_csv_adapter unavailable: {_csv_adapter_err}")
 warnings.filterwarnings("ignore")
 logger = get_logger("pilar")
 
@@ -1921,6 +1927,92 @@ atexit.register(_shutdown_scheduler)
 _start_scheduler()
 
 # ── ROUTES AUTH ───────────────────────────────────────────────────────────────
+_PILAR_WEBSITE = 'https://trypilar.com'
+
+@app.route('/activate', methods=['GET', 'POST'])
+def activate():
+    """First-launch license key activation — fetches account info from trypilar.com."""
+    if current_uid():
+        return redirect('/machines')
+    error = None
+    if request.method == 'POST':
+        key = (request.form.get('license_key') or '').strip().upper()
+        if not key:
+            error = 'License key required'
+        else:
+            try:
+                import urllib.request as _ur, json as _json
+                _payload = _json.dumps({'license_key': key}).encode()
+                _req = _ur.Request(
+                    f'{_PILAR_WEBSITE}/api/validate-license',
+                    data=_payload,
+                    headers={'Content-Type': 'application/json'},
+                    method='POST'
+                )
+                with _ur.urlopen(_req, timeout=10) as _r:
+                    _d = _json.loads(_r.read())
+                if not _d.get('valid'):
+                    error = _d.get('error', 'Invalid license key')
+                else:
+                    _email = (_d.get('email') or '').strip().lower()
+                    _name  = (_d.get('name') or '').strip()
+                    if not _email:
+                        error = 'Invalid response from server'
+                    elif User.query.filter_by(email=_email).first():
+                        # Account already exists — just log in
+                        _u = User.query.filter_by(email=_email).first()
+                        session['user_id'] = _u.id
+                        session.permanent = True
+                        # Store license key for reference
+                        _lk = Settings.query.filter_by(key='license_key', user_id=_u.id).first()
+                        if not _lk:
+                            db.session.add(Settings(key='license_key', value=key, user_id=_u.id))
+                            db.session.commit()
+                        return redirect('/machines')
+                    else:
+                        import secrets as _sec
+                        _api_key = 'pk_' + _sec.token_hex(24)
+                        _rand_pw = generate_password_hash(_sec.token_hex(32))
+                        _u = User(
+                            email=_email,
+                            password_hash=_rand_pw,
+                            email_verified=True,
+                            onboarded=True,
+                            api_key=_api_key,
+                        )
+                        db.session.add(_u)
+                        db.session.commit()
+                        db.session.add(Settings(key='license_key', value=key, user_id=_u.id))
+                        db.session.add(Settings(key='display_name', value=_name, user_id=_u.id))
+                        db.session.commit()
+                        # Apply any pending desk invite
+                        _pending = Settings.query.filter_by(key=f'desk_pending_invite_{_email}', user_id=None).first()
+                        if _pending:
+                            try:
+                                _parts = _pending.value.split(':')
+                                _pt_id = int(_parts[0])
+                                _pr = _parts[1] if len(_parts) > 1 else 'viewer'
+                                _pt = Team.query.get(_pt_id)
+                                if _pt:
+                                    db.session.add(TeamMember(team_id=_pt_id, user_id=_u.id, role=_pr))
+                                    _u.team_id = _pt_id
+                                db.session.delete(_pending)
+                                db.session.commit()
+                            except Exception:
+                                pass
+                        session['user_id'] = _u.id
+                        session.permanent = True
+                        logger.info(f"activate: new account via license key: {_email}")
+                        return redirect('/machines')
+            except Exception as _e:
+                logger.warning(f"activate: license check error: {_e}")
+                error = 'Could not reach trypilar.com — check your internet connection and try again.'
+    # GET or error
+    # On very first launch (no users at all), show activation instead of login
+    is_first_launch = User.query.count() == 0
+    return render_template('activate.html', error=error, is_first_launch=is_first_launch)
+
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'GET':
@@ -1974,6 +2066,22 @@ def register():
                 _inv.use_count += 1
                 db.session.commit()
                 return redirect('/account?joined=1')
+        # Apply pending email invite (stored when invite was sent before account existed)
+        _pkey = f'desk_pending_invite_{email}'
+        _pending_inv = Settings.query.filter_by(key=_pkey, user_id=None).first()
+        if _pending_inv:
+            try:
+                _parts = _pending_inv.value.split(':')
+                _p_team_id = int(_parts[0])
+                _p_role = _parts[1] if len(_parts) > 1 else 'viewer'
+                _p_team = Team.query.get(_p_team_id)
+                if _p_team and not TeamMember.query.filter_by(team_id=_p_team_id, user_id=user.id).first():
+                    db.session.add(TeamMember(team_id=_p_team_id, user_id=user.id, role=_p_role))
+                    user.team_id = _p_team_id
+                db.session.delete(_pending_inv)
+                db.session.commit()
+            except Exception:
+                pass
         return redirect('/machines')
     except Exception as e:
         db.session.rollback()
@@ -2010,6 +2118,9 @@ def resend_verification():
 def login():
     if request.method == 'GET':
         if current_uid(): return redirect('/machines')
+        # First launch — no accounts yet → go straight to activation
+        if User.query.filter(User.email != 'demo@pilar.ai').count() == 0:
+            return redirect('/activate')
         return render_template('login.html', error=None)
     ip = (request.headers.get('X-Forwarded-For','').split(',')[0].strip() if os.environ.get('RAILWAY_ENVIRONMENT') else '') or request.remote_addr or ''
     if _check_rate_limit(ip):
@@ -3109,6 +3220,198 @@ def api_live_status(mid):
     return jsonify({'running': False})
 
 
+# ── Live Dashboard routes ─────────────────────────────────────────────────────
+
+@app.route('/api/pick_file')
+@login_required
+def api_pick_file():
+    """Open OS file picker and return chosen path."""
+    chosen = None
+    # Try pywebview first (desktop mode)
+    try:
+        import webview
+        wins = webview.windows
+        if wins:
+            result = wins[0].create_file_dialog(
+                webview.OPEN_DIALOG,
+                file_types=('CSV Files (*.csv)',)
+            )
+            if result:
+                chosen = result[0] if isinstance(result, (list, tuple)) else result
+    except Exception:
+        pass
+    # Fallback: tkinter
+    if chosen is None:
+        try:
+            import tkinter as _tk
+            from tkinter import filedialog as _fd
+            _root = _tk.Tk()
+            _root.withdraw()
+            _root.wm_attributes('-topmost', 1)
+            chosen = _fd.askopenfilename(
+                filetypes=[('CSV', '*.csv'), ('All files', '*.*')],
+                title='Select sensor CSV file',
+            ) or None
+            _root.destroy()
+        except Exception:
+            pass
+    return jsonify({'path': chosen})
+
+
+@app.route('/api/machines/<int:mid>/live/data')
+@login_required
+def api_live_data(mid):
+    """Return current sensor values, risk, zones and history for the live dashboard."""
+    from pilar_monitor import active_monitors
+    uid = current_uid()
+    Machine.query.filter_by(id=mid, user_id=uid).first_or_404()
+    for path, entry in active_monitors.items():
+        if entry.get('machine_db_id') == mid:
+            zones_raw = []
+            # Attempt to get zone data from last_row if available
+            last_row = entry.get('last_row') or {}
+            last_risk = entry.get('last_risk')
+            if last_row and last_risk is not None:
+                try:
+                    from pilar_ml import predict_risk
+                    _result = predict_risk(last_row)
+                    zones_raw = _result[2] if len(_result) > 2 else []
+                except Exception:
+                    pass
+            return jsonify({
+                'running':  True,
+                'sensors':  last_row,
+                'risk':     last_risk,
+                'zones':    zones_raw,
+                'rows':     entry.get('rows', 0),
+                'alerts':   entry.get('alerts', 0),
+                'last_ts':  entry.get('last_ts'),
+                'history':  entry.get('history', []),
+            })
+    return jsonify({'running': False})
+
+
+@app.route('/api/machines/<int:mid>/live/stream')
+@login_required
+def api_live_stream(mid):
+    """SSE endpoint — push live data when last_ts changes, keepalive every 15s."""
+    import time as _time
+    from pilar_monitor import active_monitors
+
+    uid = current_uid()
+    Machine.query.filter_by(id=mid, user_id=uid).first_or_404()
+
+    def _generate():
+        last_sent_ts = None
+        last_keepalive = _time.time()
+        while True:
+            # Find entry for this machine
+            entry = None
+            for _path, _e in active_monitors.items():
+                if _e.get('machine_db_id') == mid:
+                    entry = _e
+                    break
+
+            now = _time.time()
+
+            if entry is None:
+                yield ': keepalive\n\n'
+                _time.sleep(1)
+                continue
+
+            if not entry.get('stop') or entry['stop'].is_set():
+                # Monitor stopped — send final event
+                yield 'data: {"running":false}\n\n'
+                break
+
+            current_ts = entry.get('last_ts')
+            if current_ts and current_ts != last_sent_ts:
+                last_sent_ts = current_ts
+                last_row = entry.get('last_row') or {}
+                zones_raw = []
+                if last_row:
+                    try:
+                        from pilar_ml import predict_risk
+                        _result = predict_risk(last_row)
+                        zones_raw = _result[2] if len(_result) > 2 else []
+                    except Exception:
+                        pass
+                payload = {
+                    'running': True,
+                    'sensors': last_row,
+                    'risk':    entry.get('last_risk'),
+                    'zones':   zones_raw,
+                    'rows':    entry.get('rows', 0),
+                    'alerts':  entry.get('alerts', 0),
+                    'last_ts': current_ts,
+                    'history': entry.get('history', [])[-10:],  # compact
+                }
+                import json as _sj
+                yield f'data: {_sj.dumps(payload)}\n\n'
+                last_keepalive = now
+            elif now - last_keepalive >= 15:
+                yield ': keepalive\n\n'
+                last_keepalive = now
+
+            _time.sleep(1)
+
+    from flask import Response
+    return Response(
+        _generate(),
+        mimetype='text/event-stream',
+        headers={
+            'Cache-Control': 'no-cache',
+            'X-Accel-Buffering': 'no',
+        }
+    )
+
+
+@app.route('/machine/<int:mid>/live')
+@login_required
+def machine_live_dashboard(mid):
+    """Serve the full-page live dashboard."""
+    import json as _j
+    uid = current_uid()
+    m = Machine.query.filter_by(id=mid, user_id=uid).first_or_404()
+    return render_template(
+        'live_dashboard.html',
+        machine=m,
+        sensor_bounds_json=_j.dumps(SENSOR_BOUNDS),
+    )
+
+
+@app.route('/api/csv_adapt', methods=['POST'])
+@login_required
+def api_csv_adapt():
+    """Run intelligent CSV adapter on a file."""
+    if _csv_adapter is None:
+        return jsonify({'error': 'CSV adapter not available'}), 503
+    data = request.get_json(silent=True) or {}
+    file_path = data.get('file_path', '').strip()
+    if not file_path:
+        return jsonify({'error': 'file_path required'}), 400
+    if not os.path.isfile(file_path):
+        return jsonify({'error': f'File not found: {file_path}'}), 400
+    result = _csv_adapter.analyze_csv(file_path, use_llm=True)
+    return jsonify(result)
+
+
+@app.route('/api/csv_adapt/confirm', methods=['POST'])
+@login_required
+def api_csv_adapt_confirm():
+    """Persist a confirmed CSV column mapping."""
+    if _csv_adapter is None:
+        return jsonify({'error': 'CSV adapter not available'}), 503
+    data = request.get_json(silent=True) or {}
+    sig = data.get('signature', '')
+    mapping = data.get('mapping', {})
+    conversions = data.get('conversions', {})
+    if not sig or not mapping:
+        return jsonify({'error': 'signature and mapping required'}), 400
+    _csv_adapter.confirm_mapping(sig, mapping, conversions)
+    return jsonify({'ok': True})
+
+
 @app.route('/api/machines/sparklines')
 @login_required
 def api_machines_sparklines():
@@ -3759,6 +4062,57 @@ def monitor():
     _last = session.get('last_result')
     _last_json = _json.dumps(_last) if _last else 'null'
     return render_template('dashboard.html', last_result=_last_json)
+
+@app.route('/fleet')
+@login_required
+def fleet_status():
+    """Fleet status page — all machines grouped with live monitoring status."""
+    return render_template('fleet_status.html')
+
+
+@app.route('/api/fleet/status')
+@login_required
+def api_fleet_status():
+    """Return all machines with their group + live monitor status for the fleet page."""
+    from pilar_monitor import active_monitors
+    import json as _j
+    uid = current_uid()
+    machines = Machine.query.filter_by(user_id=uid).order_by(Machine.name).all()
+    groups = MachineGroup.query.filter_by(user_id=uid).order_by(MachineGroup.name).all()
+
+    # Build active monitor lookup by machine db id
+    live_by_mid = {}
+    for path, entry in active_monitors.items():
+        dbid = entry.get('machine_db_id')
+        if dbid is not None:
+            live_by_mid[dbid] = {
+                'running': True,
+                'file': entry.get('fname', ''),
+                'rows': entry.get('rows', 0),
+                'alerts': entry.get('alerts', 0),
+                'last_risk': entry.get('last_risk'),
+                'last_ts': entry.get('last_ts'),
+            }
+
+    out_machines = []
+    for m in machines:
+        last = (Analysis.query.filter_by(machine_id=m.name)
+                .order_by(Analysis.timestamp.desc()).first())
+        live = live_by_mid.get(m.id, {'running': False})
+        out_machines.append({
+            'id': m.id,
+            'name': m.name,
+            'asset_type': m.asset_type or 'pump',
+            'group_id': m.group_id,
+            'last_risk': round(last.risk, 1) if last and last.risk is not None else None,
+            'last_prediction': last.prediction if last else None,
+            'last_ts': last.timestamp.isoformat() + 'Z' if last and last.timestamp else None,
+            'live': live,
+        })
+
+    out_groups = [{'id': g.id, 'name': g.name, 'color': g.color} for g in groups]
+    return jsonify({'machines': out_machines, 'groups': out_groups})
+
 
 @app.route('/account')
 def account():
@@ -4947,7 +5301,14 @@ def team_invite():
         return jsonify({'error': 'Email required'}), 400
     target = User.query.filter_by(email=email).first()
     if not target:
-        return jsonify({'error': 'no_account', 'message': 'No account found for this email. Generate an invite link and send it — they will join automatically after registering.'}), 404
+        # Store a pending invite — applied automatically when this email registers on this installation
+        _pkey = f'desk_pending_invite_{email}'
+        _existing_p = Settings.query.filter_by(key=_pkey, user_id=None).first()
+        if not _existing_p:
+            db.session.add(Settings(key=_pkey, value=f'{user.team_id}:viewer', user_id=None))
+            db.session.commit()
+        return jsonify({'ok': True, 'pending': True,
+                        'message': f'Invite saved for {email}. They will join automatically when they register on this installation. For cross-device collaboration, use the Join Code in the Real-time Sync section.'}), 202
     if target.id == uid:
         return jsonify({'error': 'Cannot invite yourself'}), 400
     existing = TeamMember.query.filter_by(team_id=user.team_id, user_id=target.id).first()
@@ -5116,7 +5477,7 @@ def team_leave():
     return jsonify({'ok': True})
 
 # ── DESK REAL-TIME SYNC CLIENT ────────────────────────────────────────────────
-_DESK_SYNC_URL = os.environ.get('PILAR_SYNC_URL', 'https://pilar-site.up.railway.app')
+_DESK_SYNC_URL = os.environ.get('PILAR_SYNC_URL', 'https://trypilar.com')
 _DESK_SYNC_MASTER_KEY = os.environ.get('PILAR_SYNC_MASTER_KEY', 'pilar-sync-v1')
 _DESK_CRED_FILE = os.path.join(_APP_DIR, 'pilar_desk_sync.json')
 _desk_sync_lock = threading.Lock()

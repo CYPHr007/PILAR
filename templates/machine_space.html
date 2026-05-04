@@ -378,10 +378,10 @@ header{height:48px;border-bottom:1px solid var(--border);display:flex;align-item
       </div>
 
       <div id="live-connect-form">
+        <!-- hidden native file picker -->
+        <input type="file" id="live-file-input" accept=".csv" style="display:none" onchange="handleLiveFileSelect(event)">
         <div style="margin-bottom:10px;">
-          <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px;">File path (absolute path on this machine)</label>
-          <input id="live-path" type="text" placeholder="C:\data\pump_sensor_log.csv"
-            style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;color:var(--text);font-size:12px;font-family:monospace;">
+          <div id="live-path-display" style="display:none;font-size:11px;font-family:monospace;color:var(--text2);background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;word-break:break-all;margin-bottom:8px;"></div>
         </div>
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
           <div style="flex:1">
@@ -395,8 +395,9 @@ header{height:48px;border-bottom:1px solid var(--border);display:flex;align-item
             </select>
           </div>
           <div style="flex:0 0 auto;padding-top:18px;">
-            <button onclick="liveStart()" style="background:var(--black);color:var(--white);border:none;padding:8px 18px;font-size:13px;font-weight:500;cursor:pointer;">
-              Connect
+            <button onclick="document.getElementById('live-file-input').click()" style="background:var(--accent);color:#fff;border:none;border-radius:var(--r-sm);padding:8px 18px;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px;">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" style="width:13px;height:13px;stroke-width:1.8"><path d="M2 12V4a1 1 0 011-1h5l2 2h4a1 1 0 011 1v6a1 1 0 01-1 1H3a1 1 0 01-1-1z"/></svg>
+              Add Live File
             </button>
           </div>
         </div>
@@ -415,9 +416,15 @@ header{height:48px;border-bottom:1px solid var(--border);display:flex;align-item
           </div>
           <div style="font-size:10px;color:var(--text3);margin-top:6px;" id="live-last-ts"></div>
         </div>
-        <button onclick="liveStop()" style="background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.2);border-radius:var(--r-sm);padding:7px 16px;font-size:12px;font-weight:600;cursor:pointer;width:100%">
-          Disconnect
-        </button>
+        <div style="display:flex;gap:8px;margin-top:4px;">
+          <button onclick="liveStop()" style="flex:1;background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.2);border-radius:var(--r-sm);padding:7px 16px;font-size:12px;font-weight:600;cursor:pointer;">
+            Disconnect
+          </button>
+          <button onclick="openLiveDashboard()" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:var(--accent-dim);color:var(--accent);border:1px solid rgba(13,148,136,.25);border-radius:var(--r-sm);padding:7px 16px;font-size:12px;font-weight:600;cursor:pointer;">
+            Live Dashboard
+            <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" style="width:11px;height:11px;stroke-width:2"><path d="M4 2h6v6M10 2L2 10" stroke-linecap="round"/></svg>
+          </button>
+        </div>
       </div>
 
       <div style="margin-top:10px;padding:10px 12px;background:var(--bg);border-radius:var(--r-sm);font-size:11px;color:var(--text3);line-height:1.6">
@@ -1267,11 +1274,47 @@ function hydrateSavedFile() {
 
 // ── Live connection ───────────────────────────────────────────────────────────
 var _livePoller = null;
+var _liveFilePath = null;
 
-function liveStart() {
-  var path = document.getElementById('live-path').value.trim();
+function handleLiveFileSelect(event) {
+  var file = event.target.files[0];
+  if (!file) return;
+  // pywebview exposes full path via file.path — use it if available
+  var path = (file.path && file.path.length > 1) ? file.path : null;
+  event.target.value = ''; // reset so same file can be re-selected
+  if (path) {
+    _setLivePath(path);
+  } else {
+    // In WebView2 desktop, file.path is empty — use the exposed Python API
+    _pickViaDesktopAPI();
+  }
+}
+
+function _setLivePath(path) {
+  _liveFilePath = path;
+  var disp = document.getElementById('live-path-display');
+  disp.textContent = path;
+  disp.style.display = 'block';
+  liveStart(path);
+}
+
+function _pickViaDesktopAPI() {
+  // pywebview.api.pick_file() calls the native Windows dialog from the main thread
+  if (window.pywebview && window.pywebview.api && window.pywebview.api.pick_file) {
+    window.pywebview.api.pick_file().then(function(path) {
+      if (path) _setLivePath(path);
+    }).catch(function() { toast('Could not open file dialog', false); });
+  } else {
+    // Pure browser: re-trigger the file input (path won't have drive letter)
+    toast('Select the file — only filename will be shown in browser mode', true);
+    document.getElementById('live-file-input').click();
+  }
+}
+
+function liveStart(path) {
+  if (!path) path = _liveFilePath;
+  if (!path) { toast('No file selected — click "Add Live File"', false); return; }
   var interval = parseInt(document.getElementById('live-interval').value);
-  if (!path) { toast('Enter a file path', false); return; }
   fetch('/api/machines/' + MID + '/live/start', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
@@ -1341,5 +1384,22 @@ else if (activeTab === 'notes') loadNotes();
 setInterval(loadMonitor, 30000);
 hydrateSavedFile();
 applyLang();
+</script>
+<!-- Live Dashboard overlay (fullscreen, within the app) -->
+<div id="live-dashboard-overlay" style="display:none;position:fixed;inset:0;z-index:9999;background:var(--bg-deep,#0a0a0a);">
+  <iframe id="live-dashboard-iframe" src="" style="width:100%;height:100%;border:none;display:block;"></iframe>
+</div>
+
+<script>
+function openLiveDashboard() {
+  var overlay = document.getElementById('live-dashboard-overlay');
+  var iframe  = document.getElementById('live-dashboard-iframe');
+  iframe.src  = '/machine/{{ machine.id }}/live';
+  overlay.style.display = 'block';
+}
+function closeLiveDashboard() {
+  document.getElementById('live-dashboard-overlay').style.display = 'none';
+  document.getElementById('live-dashboard-iframe').src = '';
+}
 </script>
 </body></html>

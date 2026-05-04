@@ -1,0 +1,207 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#08090c">
+<link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAHxUlEQVR4nO2Za4wT1xXHz713PLbHj8Xe2V17H973C3YXNgQKIWlE2rJSFDWCqlUkmoeafilVUrWVKqVqxIe0EoqqNIqqqEraokStRBIR2kDDpoFNgeUN5rE89gVre9/s+v0az8y9tx9MUSlSpNiTOkj+f7Vn7vndc+45555BnHO4n4VLbUCxKgOUWmWAUqsMcI/+z3m57IF7hBAy/J2fo7IHSq0yQKklGPs6zvnnp1GEkLGnHN3v7bRhHuAcAPhEcGY5EjMJwl2O4AAACIGmUdld0dHcAMZlW8MAGGOE4OP+kXf3Dq5wOChj//UjRwghhOPJ1DNbt3S2+ChlhHyVADjnGKNYMjU1s1Alu37XNCQKEYDPvFc+iwSUagAAQ==">
+<title>PILAR — Activate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=DM+Serif+Display&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(function(r){r.forEach(function(x){x.unregister();});});}</script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#08090c;--surface:#0f1117;--surface2:#131720;
+  --border:#1c2130;--border2:#252d3d;
+  --accent:#0d9488;--accent-dim:rgba(13,148,136,0.12);
+  --text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;
+  --r:6px;--r-sm:4px;
+  --sans:'DM Sans',system-ui,sans-serif;
+  --serif:'DM Serif Display',Georgia,serif;
+  --mono:'JetBrains Mono','IBM Plex Mono',monospace;
+  --red:#f87171;--red-dim:rgba(248,113,113,0.12);
+  --green:#34d399;
+  --amber:#fbbf24;
+}
+html,body{height:100%;overflow:hidden;}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);}
+.auth-layout{position:relative;height:100vh;display:flex;align-items:center;justify-content:center;}
+.canvas-side{position:fixed;inset:0;z-index:0;overflow:hidden;}
+#pillar-canvas{position:absolute;inset:0;display:block;width:100%;height:100%;}
+.sig-chip{position:absolute;font-family:var(--mono);font-size:9px;font-weight:300;
+  letter-spacing:.1em;color:var(--accent);background:rgba(13,148,136,0.08);
+  border:1px solid rgba(13,148,136,0.25);padding:5px 9px;border-radius:var(--r-sm);
+  pointer-events:none;animation:chippulse 5s ease-in-out infinite;}
+.sig-chip::before{content:'';display:inline-block;width:4px;height:4px;
+  background:var(--accent);border-radius:50%;margin-right:6px;vertical-align:middle;}
+.sc-tl{top:64px;left:20px;animation-delay:0s;}
+.sc-bl{bottom:64px;left:20px;animation-delay:2.1s;}
+.sc-tr{top:104px;right:20px;animation-delay:1.0s;}
+.sc-br{bottom:104px;right:20px;animation-delay:3.2s;}
+.sc-bm{bottom:20px;left:50%;transform:translateX(-50%);animation-delay:4.0s;
+  font-family:var(--mono);font-size:9px;letter-spacing:.12em;
+  color:var(--text3);border:none;background:transparent;padding:0;}
+.sc-bm::before{display:none;}
+@keyframes chippulse{0%,100%{opacity:0.4;}50%{opacity:0.85;}}
+.form-side{position:relative;z-index:10;width:440px;min-width:320px;max-height:94vh;overflow-y:auto;
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
+  box-shadow:0 0 40px rgba(13,148,136,0.08),0 8px 32px rgba(0,0,0,0.4);
+  padding:44px 40px 36px;}
+.form-topbar{display:flex;align-items:center;gap:8px;margin-bottom:22px;
+  padding-bottom:18px;border-bottom:1px solid var(--border);}
+.ftb-dot{width:5px;height:5px;background:var(--accent);border-radius:50%;flex-shrink:0;}
+.ftb-txt{font-family:var(--mono);font-size:9px;letter-spacing:.14em;color:var(--text3);text-transform:uppercase;}
+.form-logo{font-family:var(--serif);font-size:26px;font-weight:400;color:var(--text);margin-bottom:4px;letter-spacing:.02em;}
+.form-tagline{font-family:var(--mono);font-size:10px;font-weight:300;color:var(--text3);margin-bottom:28px;letter-spacing:.06em;}
+.flbl{font-family:var(--mono);font-size:10px;font-weight:300;letter-spacing:.10em;color:var(--text3);
+  text-transform:uppercase;margin-bottom:6px;display:block;margin-top:16px;}
+.fi{width:100%;padding:11px 14px;background:var(--surface2);
+  border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text);
+  font-size:14px;font-family:var(--mono);outline:none;letter-spacing:.12em;text-align:center;
+  transition:border-color .2s,box-shadow .2s;}
+.fi:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim);}
+.fi::placeholder{color:var(--text3);letter-spacing:.08em;font-size:12px;text-align:center;}
+.btn-submit{width:100%;padding:13px;background:var(--accent);color:#fff;border:none;
+  font-size:13px;font-weight:500;font-family:var(--sans);border-radius:var(--r);
+  cursor:pointer;margin-top:22px;letter-spacing:.04em;
+  transition:opacity .15s,box-shadow .2s;}
+.btn-submit:hover{opacity:.90;box-shadow:0 0 20px rgba(13,148,136,0.3);}
+.btn-submit:disabled{opacity:.5;cursor:default;}
+.auth-err{padding:10px 14px;background:var(--red-dim);border-left:2px solid var(--red);border-radius:var(--r-sm);
+  font-size:12px;color:var(--red);margin-top:14px;}
+.auth-link{text-align:center;margin-top:16px;font-size:11px;color:var(--text3);}
+.auth-link a{color:var(--accent);text-decoration:none;}
+.auth-link a:hover{text-decoration:underline;}
+.key-hint{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);
+  padding:14px 16px;margin-bottom:20px;}
+.key-hint-row{display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;}
+.key-hint-row:last-child{margin-bottom:0;}
+.key-hint-num{font-family:var(--mono);font-size:9px;font-weight:700;color:var(--accent);
+  background:var(--accent-dim);border:1px solid rgba(13,148,136,0.25);
+  border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.key-hint-txt{font-size:11px;color:var(--text2);line-height:1.55;}
+.key-hint-txt strong{color:var(--text);}
+.key-hint-txt a{color:var(--accent);text-decoration:none;}
+.key-hint-txt a:hover{text-decoration:underline;}
+@media(max-width:640px){
+  .form-side{width:calc(100vw - 28px);min-width:0;padding:32px 22px 28px;}
+  .sig-chip:not(.sc-bm){display:none;}
+}
+</style></head><body>
+<div class="auth-layout">
+  <div class="canvas-side" id="canvas-wrap">
+    <canvas id="pillar-canvas"></canvas>
+    <div class="sig-chip sc-tl">VIB &middot; 0.61 mm/s</div>
+    <div class="sig-chip sc-bl">T.PAL &middot; 44.8 &deg;C</div>
+    <div class="sig-chip sc-tr">P.SORT &middot; 107.7 bar</div>
+    <div class="sig-chip sc-br">DEBIT &middot; 0.395 m&sup3;/h</div>
+    <div class="sig-chip sc-bm">PILAR &nbsp;&bull;&nbsp; MAINTENANCE PR&Eacute;DICTIVE</div>
+  </div>
+  <div class="form-side">
+    <div class="form-topbar">
+      <span class="ftb-dot"></span>
+      <span class="ftb-txt">PILAR &nbsp;&bull;&nbsp; Activation</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:22px;">
+      <div style="display:flex;gap:4px;align-items:center;">
+        <div style="width:5px;height:24px;background:var(--text);border-radius:1px;"></div>
+        <div style="width:5px;height:24px;background:var(--text3);border-radius:1px;"></div>
+      </div>
+      <div>
+        <div style="font-family:var(--sans);font-size:17px;font-weight:600;letter-spacing:.14em;color:var(--text);line-height:1.1;">PILAR</div>
+        <div style="font-family:var(--mono);font-size:8px;font-weight:300;letter-spacing:.12em;color:var(--text3);text-transform:uppercase;margin-top:2px;">Anticipate &middot; Master &middot; Perform</div>
+      </div>
+    </div>
+
+    <div class="form-logo" style="margin-bottom:2px;">Activate</div>
+    <div class="form-tagline">Enter your license key from trypilar.com</div>
+
+    <div class="key-hint">
+      <div class="key-hint-row">
+        <div class="key-hint-num">1</div>
+        <div class="key-hint-txt">Go to <a href="https://trypilar.com/download" target="_blank">trypilar.com/download</a> and sign in to your account.</div>
+      </div>
+      <div class="key-hint-row">
+        <div class="key-hint-num">2</div>
+        <div class="key-hint-txt">Copy your <strong>PILAR-XXXX-XXXX-XXXX</strong> license key from the download page.</div>
+      </div>
+      <div class="key-hint-row">
+        <div class="key-hint-num">3</div>
+        <div class="key-hint-txt">Paste it below — your account will be linked automatically.</div>
+      </div>
+    </div>
+
+    {% if error %}<div class="auth-err">{{ error }}</div>{% endif %}
+
+    <form method="POST" action="/activate" id="act-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label class="flbl" for="lk">License Key</label>
+      <input class="fi" type="text" id="lk" name="license_key"
+        placeholder="PILAR-XXXX-XXXX-XXXX"
+        autocomplete="off" spellcheck="false"
+        oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9\-]/g,'')"
+        maxlength="19" required>
+      <button type="submit" class="btn-submit" id="act-btn">Activate PILAR</button>
+    </form>
+
+    <div class="auth-link" style="margin-top:20px">
+      Already activated? <a href="/login">Sign in</a>
+    </div>
+    {% if not is_first_launch %}
+    <div class="auth-link">
+      No license yet? <a href="/register">Create a local account</a>
+    </div>
+    {% endif %}
+    <div class="auth-link" style="margin-top:12px;font-size:10px;color:var(--text3)">
+      Don't have an account? <a href="https://trypilar.com" target="_blank" style="color:var(--text3);text-decoration:underline">Request access at trypilar.com</a>
+    </div>
+  </div>
+</div>
+<script>
+document.getElementById('act-form').addEventListener('submit', function(){
+  var btn = document.getElementById('act-btn');
+  btn.disabled = true;
+  btn.textContent = 'Verifying…';
+});
+</script>
+<script>
+(function(){
+  'use strict';
+  var wrap=document.getElementById('canvas-wrap');
+  var cvs=document.getElementById('pillar-canvas');
+  if(!wrap||!cvs)return;
+  var ctx=cvs.getContext('2d');
+  var W=0,H=0;
+  function resize(){W=cvs.width=wrap.offsetWidth||window.innerWidth;H=cvs.height=wrap.offsetHeight||window.innerHeight;}
+  var sensors=[
+    {y:0.11,amp:0.042,freq:0.056,noise:0.80,phase:0.0,col:[13,148,136],lw:1.2},
+    {y:0.27,amp:0.021,freq:0.011,noise:0.13,phase:1.9,col:[20,184,166],lw:0.9},
+    {y:0.45,amp:0.029,freq:0.022,noise:0.40,phase:3.3,col:[94,234,212],lw:0.9},
+    {y:0.63,amp:0.032,freq:0.017,noise:0.43,phase:0.8,col:[45,212,191],lw:0.8},
+    {y:0.81,amp:0.018,freq:0.039,noise:0.58,phase:2.5,col:[148,163,184],lw:0.7},
+  ];
+  var NL=2048,noise=new Float32Array(NL);
+  for(var i=0;i<NL;i++)noise[i]=Math.random()*2-1;
+  var scroll=0,lastTs=0;
+  function wave(s){
+    var cy=H*s.y,amp=H*s.amp,r=s.col[0],g=s.col[1],b=s.col[2];
+    ctx.beginPath();ctx.lineWidth=s.lw;
+    ctx.strokeStyle='rgba('+r+','+g+','+b+',0.55)';
+    for(var x=0;x<=W;x+=2){
+      var t=(x+scroll)*s.freq+s.phase,ni=((x+scroll*1.7)|0)&(NL-1);
+      var y=cy+Math.sin(t)*amp+noise[ni]*amp*s.noise;
+      x===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+  }
+  function loop(ts){
+    if(!lastTs){resize();lastTs=ts;}
+    var dt=Math.min((ts-lastTs)/16.67,3.5);lastTs=ts;
+    ctx.fillStyle='#08090c';ctx.fillRect(0,0,W,H);
+    scroll+=0.55*dt;
+    sensors.forEach(function(s){wave(s);});
+    requestAnimationFrame(loop);
+  }
+  window.addEventListener('resize',function(){resize();},{passive:true});
+  setTimeout(function(){requestAnimationFrame(loop);},200);
+})();
+</script>
+</body></html>

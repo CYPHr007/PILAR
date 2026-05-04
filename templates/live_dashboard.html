@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{ machine.name }} — Live — PILAR</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#08090c; --surface:#0f1117; --surface2:#131720; --surface3:#1a1f2e;
+  --border:#1c2130; --border2:#252d3d;
+  --accent:#0d9488; --accent-dim:rgba(13,148,136,0.12);
+  --teal2:#14b8a6;
+  --text:#e2e8f0; --text2:#94a3b8; --text3:#64748b;
+  --r:6px; --r-sm:4px;
+  --sans:'DM Sans',system-ui,sans-serif;
+  --mono:'JetBrains Mono','IBM Plex Mono',monospace;
+  --shadow:0 4px 16px rgba(0,0,0,0.35);
+  --red:#f87171; --red-dim:rgba(248,113,113,0.12);
+  --green:#34d399; --green-dim:rgba(52,211,153,0.10);
+  --amber:#fbbf24; --amber-dim:rgba(251,191,36,0.10);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;font-family:var(--sans);background:var(--bg);color:var(--text);}
+
+/* ── Layout ── */
+.layout{display:flex;flex-direction:column;height:100vh;}
+.topbar{
+  height:52px;background:var(--surface);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:16px;padding:0 20px;flex-shrink:0;
+}
+.topbar-brand{font-family:var(--mono);font-size:11px;font-weight:300;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);}
+.topbar-sep{width:1px;height:18px;background:var(--border2);}
+.topbar-machine{font-size:14px;font-weight:600;letter-spacing:-.01em;}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.topbar-btn{
+  display:inline-flex;align-items:center;gap:5px;padding:5px 12px;
+  font-size:11px;font-weight:500;cursor:pointer;border-radius:var(--r-sm);
+  border:1px solid var(--border2);background:var(--surface2);color:var(--text2);
+  text-decoration:none;transition:background .15s,color .15s;font-family:var(--sans);
+}
+.topbar-btn:hover{background:var(--surface3);color:var(--text);}
+.topbar-btn.active{background:var(--accent-dim);color:var(--accent);border-color:rgba(13,148,136,.3);}
+.topbar-btn svg{width:12px;height:12px;stroke-width:1.8;}
+
+/* Status badge */
+.status-badge{
+  display:inline-flex;align-items:center;gap:6px;padding:3px 10px;
+  border-radius:20px;font-family:var(--mono);font-size:10px;font-weight:400;letter-spacing:.06em;
+}
+.status-live{background:var(--green-dim);color:var(--green);border:1px solid rgba(52,211,153,.2);}
+.status-offline{background:var(--surface2);color:var(--text3);border:1px solid var(--border);}
+.pulse{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* Meta info */
+.topbar-meta{font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:.04em;}
+.topbar-meta span{color:var(--text2);margin-left:4px;}
+
+/* ── Main body ── */
+.body{display:flex;flex:1;overflow:hidden;}
+.left-col{flex:6;padding:16px;overflow-y:auto;border-right:1px solid var(--border);}
+.right-col{flex:4;padding:16px;overflow-y:auto;display:flex;flex-direction:column;gap:16px;}
+
+/* ── Sensor grid ── */
+.sensor-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.sensor-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
+  padding:14px 16px;display:flex;flex-direction:column;gap:8px;
+  transition:border-color .2s;
+}
+.sensor-card:hover{border-color:var(--border2);}
+.sensor-name{font-size:10px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);}
+.sensor-value-row{display:flex;align-items:baseline;gap:6px;}
+.sensor-value{font-size:26px;font-weight:600;font-family:var(--mono);letter-spacing:-.02em;line-height:1;}
+.sensor-unit{font-size:11px;color:var(--text3);font-family:var(--mono);}
+.sensor-badge{
+  display:inline-flex;align-items:center;padding:2px 7px;border-radius:10px;
+  font-size:9px;font-weight:500;font-family:var(--mono);letter-spacing:.06em;
+  margin-left:auto;
+}
+.badge-ok  {background:var(--green-dim);color:var(--green);}
+.badge-warn{background:var(--amber-dim);color:var(--amber);}
+.badge-crit{background:var(--red-dim);color:var(--red);}
+.badge-none{background:var(--surface2);color:var(--text3);}
+.sparkline-wrap{height:40px;width:100%;}
+.sparkline-wrap svg{width:100%;height:40px;display:block;}
+
+/* ── Right column panels ── */
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;}
+.panel-title{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);margin-bottom:12px;}
+
+/* Risk gauge */
+.gauge-wrap{display:flex;flex-direction:column;align-items:center;gap:6px;}
+.gauge-value{font-size:36px;font-weight:700;font-family:var(--mono);letter-spacing:-.03em;}
+.gauge-label{font-size:11px;color:var(--text3);}
+
+/* Zone pills */
+.zones-row{display:flex;flex-wrap:wrap;gap:8px;}
+.zone-pill{
+  padding:4px 12px;border-radius:20px;font-family:var(--mono);font-size:10px;
+  font-weight:500;letter-spacing:.06em;border:1px solid var(--border);
+  background:var(--surface2);color:var(--text3);transition:all .2s;
+}
+.zone-pill.active{background:var(--red-dim);color:var(--red);border-color:rgba(248,113,113,.3);}
+
+/* Alert feed */
+.alert-feed{max-height:200px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;}
+.alert-feed::-webkit-scrollbar{width:3px;}
+.alert-feed::-webkit-scrollbar-thumb{background:var(--border2);}
+.alert-item{
+  display:flex;align-items:center;gap:10px;padding:7px 10px;
+  background:var(--surface2);border-radius:var(--r-sm);
+  border-left:2px solid var(--red);font-size:11px;
+}
+.alert-ts{font-family:var(--mono);font-size:9px;color:var(--text3);white-space:nowrap;}
+.alert-risk{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--red);min-width:34px;}
+.alert-zones{color:var(--text2);flex:1;}
+.alert-empty{text-align:center;padding:20px;color:var(--text3);font-size:12px;}
+
+/* No monitor state */
+.no-monitor{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:60px 20px;text-align:center;color:var(--text3);
+}
+.no-monitor svg{opacity:.3;margin-bottom:12px;}
+.no-monitor h3{font-size:14px;font-weight:500;color:var(--text2);margin-bottom:6px;}
+.no-monitor p{font-size:12px;line-height:1.6;}
+
+/* Scrollbar */
+.left-col::-webkit-scrollbar,.right-col::-webkit-scrollbar{width:3px;}
+.left-col::-webkit-scrollbar-thumb,.right-col::-webkit-scrollbar-thumb{background:var(--border2);}
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ── Top bar ──────────────────────────────────────────────────────────── -->
+  <div class="topbar">
+    <span class="topbar-brand">PILAR</span>
+    <div class="topbar-sep"></div>
+    <span class="topbar-machine">{{ machine.name }}</span>
+    <div id="status-badge" class="status-badge status-offline">
+      <div id="status-dot" style="width:6px;height:6px;border-radius:50%;background:var(--text3)"></div>
+      <span id="status-text">Connecting…</span>
+    </div>
+
+    <div class="topbar-sep"></div>
+    <span class="topbar-meta" id="meta-file">File: <span>—</span></span>
+    <span class="topbar-meta" id="meta-rows">Rows: <span>—</span></span>
+    <span class="topbar-meta" id="meta-alerts">Alerts: <span>0</span></span>
+    <span class="topbar-meta" id="meta-ts">Updated: <span>—</span></span>
+
+    <div class="topbar-right">
+      <button class="topbar-btn" id="freeze-btn" onclick="toggleFreeze()">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor"><rect x="3" y="2" width="10" height="12" rx="1"/><path d="M6 6h4M6 9h4M6 12h2"/></svg>
+        Freeze
+      </button>
+      <button class="topbar-btn" onclick="document.documentElement.requestFullscreen()">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/></svg>
+        Fullscreen
+      </button>
+      <button class="topbar-btn" onclick="exportHistory()">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor"><path d="M3 12h10M8 2v8M5 7l3 3 3-3"/></svg>
+        Export CSV
+      </button>
+      <button class="topbar-btn" onclick="closeDashboard()">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor"><path d="M10 12L6 8l4-4"/></svg>
+        Close
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Body ─────────────────────────────────────────────────────────────── -->
+  <div class="body">
+
+    <!-- Left: sensor cards -->
+    <div class="left-col">
+      <div class="sensor-grid" id="sensor-grid">
+        <!-- 8 cards injected by JS -->
+      </div>
+    </div>
+
+    <!-- Right: gauge + zones + alerts -->
+    <div class="right-col">
+
+      <!-- Risk gauge -->
+      <div class="panel">
+        <div class="panel-title">Failure Risk</div>
+        <div class="gauge-wrap">
+          <svg id="gauge-svg" viewBox="0 0 200 110" style="width:100%;max-width:240px;">
+            <!-- Track -->
+            <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="var(--border2)" stroke-width="14" stroke-linecap="round"/>
+            <!-- Needle arc (will be updated) -->
+            <path id="gauge-arc" d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="var(--green)" stroke-width="14" stroke-linecap="round" stroke-dasharray="251.2" stroke-dashoffset="251.2"/>
+          </svg>
+          <div class="gauge-value" id="gauge-value" style="color:var(--green)">—</div>
+          <div class="gauge-label">Failure Probability</div>
+        </div>
+      </div>
+
+      <!-- Zone indicators -->
+      <div class="panel">
+        <div class="panel-title">Failure Zones</div>
+        <div class="zones-row" id="zones-row">
+          <span class="zone-pill" data-zone="CAV" title="Cavitation">CAV</span>
+          <span class="zone-pill" data-zone="ROL" title="Bearing Failure">ROL</span>
+          <span class="zone-pill" data-zone="ETN" title="Seal Failure">ETN</span>
+          <span class="zone-pill" data-zone="IMP" title="Impeller Wear">IMP</span>
+          <span class="zone-pill" data-zone="MOT" title="Motor Fault">MOT</span>
+        </div>
+      </div>
+
+      <!-- Alert feed -->
+      <div class="panel" style="flex:1;min-height:0;display:flex;flex-direction:column;">
+        <div class="panel-title">Alert Feed</div>
+        <div class="alert-feed" id="alert-feed">
+          <div class="alert-empty">No alerts yet</div>
+        </div>
+      </div>
+
+    </div><!-- /right-col -->
+  </div><!-- /body -->
+</div><!-- /layout -->
+
+<script>
+// ── Config ────────────────────────────────────────────────────────────────────
+const MID = {{ machine.id }};
+const SENSOR_BOUNDS = {{ sensor_bounds_json|safe }};
+
+const SENSOR_META = {
+  vibration:            {label:'Vibration',       unit:'mm/s'},
+  temp_palier:          {label:'Bearing Temp',    unit:'°C'},
+  debit:                {label:'Flow Rate',       unit:'m³/h'},
+  pression_entree:      {label:'Inlet Pressure',  unit:'mbar'},
+  pression_sortie:      {label:'Outlet Pressure', unit:'mbar'},
+  courant_moteur:       {label:'Motor Current',   unit:'A'},
+  temp_moteur:          {label:'Motor Temp',      unit:'°C'},
+  heure_fonctionnement: {label:'Run Hours',       unit:'h'},
+};
+
+const SENSOR_ORDER = [
+  'vibration','temp_palier','debit','pression_entree',
+  'pression_sortie','courant_moteur','temp_moteur','heure_fonctionnement'
+];
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let frozen = false;
+let history = [];
+let alertHistory = [];
+let lastRisk = null;
+let evtSource = null;
+
+// ── Build sensor cards on load ────────────────────────────────────────────────
+function buildCards() {
+  const grid = document.getElementById('sensor-grid');
+  grid.innerHTML = '';
+  for (const key of SENSOR_ORDER) {
+    const m = SENSOR_META[key];
+    const card = document.createElement('div');
+    card.className = 'sensor-card';
+    card.id = 'card-' + key;
+    card.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <span class="sensor-name">${m.label}</span>
+        <span class="sensor-badge badge-none" id="badge-${key}">—</span>
+      </div>
+      <div class="sensor-value-row">
+        <span class="sensor-value" id="val-${key}" style="color:var(--text3)">—</span>
+        <span class="sensor-unit">${m.unit}</span>
+      </div>
+      <div class="sparkline-wrap">
+        <svg id="spark-${key}" viewBox="0 0 200 40" preserveAspectRatio="none">
+          <polyline id="spark-line-${key}" points="" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linejoin="round"/>
+          <line id="spark-thresh-${key}" x1="0" y1="30" x2="200" y2="30" stroke="var(--amber)" stroke-width="1" stroke-dasharray="3,3" opacity="0.5"/>
+        </svg>
+      </div>
+    `;
+    grid.appendChild(card);
+  }
+}
+
+// ── Risk badge helper ─────────────────────────────────────────────────────────
+function sensorBadge(key, value) {
+  if (value === null || value === undefined) return ['badge-none', '—'];
+  const [lo, hi] = SENSOR_BOUNDS[key] || [0, 1];
+  const warn = lo + (hi - lo) * 0.80;
+  const crit = lo + (hi - lo) * 0.95;
+  if (value < lo || value > hi) return ['badge-crit', 'OUT'];
+  if (value >= crit) return ['badge-crit', 'CRIT'];
+  if (value >= warn) return ['badge-warn', 'WARN'];
+  return ['badge-ok', 'OK'];
+}
+
+function riskColor(r) {
+  if (r === null || r === undefined) return 'var(--text3)';
+  if (r < 30) return 'var(--green)';
+  if (r < 60) return 'var(--amber)';
+  return 'var(--red)';
+}
+
+// ── Sparkline ─────────────────────────────────────────────────────────────────
+function updateSparkline(key, histValues) {
+  const line = document.getElementById('spark-line-' + key);
+  const thresh = document.getElementById('spark-thresh-' + key);
+  if (!line) return;
+
+  // Use last 30 values
+  const vals = histValues.slice(-30);
+  if (vals.length < 2) { line.setAttribute('points', ''); return; }
+
+  const [lo, hi] = SENSOR_BOUNDS[key] || [0, 1];
+  const range = hi - lo || 1;
+  const warn = lo + range * 0.80;
+
+  // Normalize to SVG space (200 wide, 40 tall, Y inverted)
+  const pts = vals.map((v, i) => {
+    const x = (i / (vals.length - 1)) * 200;
+    const y = 40 - Math.max(0, Math.min(1, (v - lo) / range)) * 36 - 2;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+  line.setAttribute('points', pts.join(' '));
+
+  // Threshold line
+  const ty = 40 - Math.max(0, Math.min(1, (warn - lo) / range)) * 36 - 2;
+  thresh.setAttribute('y1', ty.toFixed(1));
+  thresh.setAttribute('y2', ty.toFixed(1));
+}
+
+// ── Gauge ─────────────────────────────────────────────────────────────────────
+function updateGauge(risk) {
+  const arc = document.getElementById('gauge-arc');
+  const val = document.getElementById('gauge-value');
+  if (risk === null || risk === undefined) {
+    val.textContent = '—';
+    arc.setAttribute('stroke-dashoffset', '251.2');
+    return;
+  }
+  const pct = Math.max(0, Math.min(100, risk));
+  const totalLen = 251.2;
+  const offset = totalLen - (pct / 100) * totalLen;
+  arc.setAttribute('stroke-dashoffset', offset.toFixed(1));
+  const col = riskColor(pct);
+  arc.setAttribute('stroke', col);
+  val.textContent = Math.round(pct) + '%';
+  val.style.color = col;
+}
+
+// ── Zones ─────────────────────────────────────────────────────────────────────
+function updateZones(zones) {
+  const pills = document.querySelectorAll('.zone-pill');
+  const activeZones = new Set((zones || []).map(z => z.nom));
+  pills.forEach(p => {
+    const z = p.dataset.zone;
+    if (activeZones.has(z)) p.classList.add('active');
+    else p.classList.remove('active');
+  });
+}
+
+// ── Alert feed ────────────────────────────────────────────────────────────────
+function addAlert(risk, zones, ts) {
+  const entry = {risk, zones: (zones || []).map(z => z.nom).join(', ') || 'Anomaly', ts};
+  alertHistory.unshift(entry);
+  if (alertHistory.length > 20) alertHistory.pop();
+  renderAlerts();
+}
+
+function renderAlerts() {
+  const feed = document.getElementById('alert-feed');
+  if (!alertHistory.length) {
+    feed.innerHTML = '<div class="alert-empty">No alerts yet</div>';
+    return;
+  }
+  feed.innerHTML = alertHistory.map(a => `
+    <div class="alert-item">
+      <span class="alert-ts">${fmtTs(a.ts)}</span>
+      <span class="alert-risk">${Math.round(a.risk)}%</span>
+      <span class="alert-zones">${a.zones}</span>
+    </div>
+  `).join('');
+}
+
+// ── Timestamp formatting ──────────────────────────────────────────────────────
+function fmtTs(ts) {
+  if (!ts) return '—';
+  try {
+    const d = new Date(ts);
+    return d.toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  } catch(e) { return ts; }
+}
+
+// ── Dashboard update ──────────────────────────────────────────────────────────
+function updateDashboard(d) {
+  if (frozen) return;
+
+  // Top bar meta
+  if (d.rows !== undefined) {
+    document.querySelector('#meta-rows span').textContent = d.rows.toLocaleString();
+  }
+  if (d.alerts !== undefined) {
+    const el = document.querySelector('#meta-alerts span');
+    el.textContent = d.alerts;
+    el.style.color = d.alerts > 0 ? 'var(--red)' : 'var(--text2)';
+  }
+  if (d.last_ts) {
+    document.querySelector('#meta-ts span').textContent = fmtTs(d.last_ts);
+  }
+
+  // Status badge
+  if (d.running) {
+    const badge = document.getElementById('status-badge');
+    badge.className = 'status-badge status-live';
+    badge.querySelector('#status-dot').className = 'pulse';
+    document.getElementById('status-text').textContent = 'Live';
+  }
+
+  // Merge history
+  if (d.history && d.history.length) {
+    // Append new items not already in history
+    const existingTs = new Set(history.map(h => h.ts));
+    for (const item of d.history) {
+      if (!existingTs.has(item.ts)) history.push(item);
+    }
+    if (history.length > 60) history = history.slice(-60);
+  }
+
+  // Sensor cards
+  const sensors = d.sensors || {};
+  for (const key of SENSOR_ORDER) {
+    const v = sensors[key];
+    const valEl = document.getElementById('val-' + key);
+    const badgeEl = document.getElementById('badge-' + key);
+    if (!valEl) continue;
+    if (v !== null && v !== undefined) {
+      valEl.textContent = key === 'heure_fonctionnement'
+        ? Math.round(v).toLocaleString()
+        : (Number.isInteger(v) ? v : parseFloat(v).toFixed(2));
+      const [cls, label] = sensorBadge(key, v);
+      valEl.style.color = cls === 'badge-crit' ? 'var(--red)'
+                        : cls === 'badge-warn' ? 'var(--amber)'
+                        : 'var(--text)';
+      badgeEl.className = 'sensor-badge ' + cls;
+      badgeEl.textContent = label;
+    }
+    // Sparkline
+    const sparkVals = history.map(h => h.sensors && h.sensors[key]).filter(x => x !== null && x !== undefined);
+    updateSparkline(key, sparkVals);
+  }
+
+  // Gauge
+  lastRisk = d.risk;
+  updateGauge(d.risk);
+
+  // Zones
+  updateZones(d.zones);
+
+  // Alert feed
+  if (d.risk >= 45 && d.zones && d.zones.length) {
+    addAlert(d.risk, d.zones, d.last_ts);
+  }
+}
+
+function setOffline() {
+  const badge = document.getElementById('status-badge');
+  badge.className = 'status-badge status-offline';
+  document.getElementById('status-dot').style.cssText = 'width:6px;height:6px;border-radius:50%;background:var(--text3)';
+  document.getElementById('status-text').textContent = 'Offline';
+}
+
+// ── Freeze ────────────────────────────────────────────────────────────────────
+function toggleFreeze() {
+  frozen = !frozen;
+  const btn = document.getElementById('freeze-btn');
+  btn.classList.toggle('active', frozen);
+  btn.querySelector('svg + *') || (btn.lastChild.textContent = frozen ? 'Unfreeze' : 'Freeze');
+  // Update text node
+  Array.from(btn.childNodes).forEach(n => {
+    if (n.nodeType === 3) n.textContent = frozen ? ' Unfreeze' : ' Freeze';
+  });
+}
+
+// ── Export ────────────────────────────────────────────────────────────────────
+function exportHistory() {
+  if (!history.length) { alert('No history to export yet'); return; }
+  const cols = ['ts', ...SENSOR_ORDER, 'risk'];
+  const lines = [cols.join(',')];
+  for (const h of history) {
+    const row = [h.ts, ...SENSOR_ORDER.map(k => h.sensors && h.sensors[k] !== undefined ? h.sensors[k] : ''), h.risk];
+    lines.push(row.join(','));
+  }
+  const blob = new Blob([lines.join('\n')], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `pilar_live_{{ machine.name }}_${new Date().toISOString().slice(0,16).replace(':','-')}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── Initial data load via REST ────────────────────────────────────────────────
+function loadInitialData() {
+  fetch('/api/machines/' + MID + '/live/data')
+    .then(r => r.json())
+    .then(d => {
+      if (d.running) {
+        updateDashboard(d);
+      } else {
+        setOffline();
+        document.getElementById('status-text').textContent = 'No active monitor';
+      }
+    })
+    .catch(() => setOffline());
+}
+
+// ── SSE connection ────────────────────────────────────────────────────────────
+function connectSSE() {
+  if (evtSource) evtSource.close();
+  evtSource = new EventSource('/api/machines/' + MID + '/live/stream');
+
+  evtSource.onmessage = function(e) {
+    try {
+      const d = JSON.parse(e.data);
+      if (!d.running) { setOffline(); evtSource.close(); return; }
+      updateDashboard(d);
+    } catch(err) {}
+  };
+
+  evtSource.onerror = function() {
+    setOffline();
+    // Reconnect after 5s
+    setTimeout(connectSSE, 5000);
+  };
+}
+
+// ── Close (works both as overlay and standalone tab) ──────────────────────────
+function closeDashboard() {
+  if (window.self !== window.top) {
+    // running inside the overlay iframe
+    try { window.parent.closeLiveDashboard(); return; } catch(e) {}
+  }
+  // standalone tab fallback
+  history.length > 1 ? history.back() : window.location.href = '/machine/{{ machine.id }}';
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+buildCards();
+loadInitialData();
+connectSSE();
+</script>
+</body>
+</html>

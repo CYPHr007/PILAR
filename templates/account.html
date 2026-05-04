@@ -719,19 +719,20 @@ function closeFleet(){
   {% if my_role in ['owner','admin','member_manager'] %}
   <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
     <div class="ctitle">Add Member</div>
-    <!-- Option 1: by email (must already have account) -->
+    <!-- Option 1: by email -->
+    <div style="font-size:10px;color:var(--text3);margin-bottom:6px">Enter their email — if they haven't registered yet the invite is saved and applied when they do.</div>
     <div style="display:flex;gap:8px">
       <input class="fi" id="inv_email" placeholder="colleague@company.com" type="email" style="flex:1;min-width:0">
-      <button onclick="invite()" style="padding:10px 16px;background:var(--teal);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0">Add</button>
+      <button onclick="invite()" style="padding:10px 16px;background:var(--teal);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0">Invite</button>
     </div>
-    <div id="inv_msg" style="font-size:11px;margin-top:6px;display:none"></div>
+    <div id="inv_msg" style="font-size:11px;margin-top:6px;display:none;line-height:1.5"></div>
     <!-- Option 2: shareable invite link -->
     <div style="margin-top:10px;display:flex;gap:8px;align-items:center">
       <input id="inv_link" readonly placeholder="Click Generate to create a link…" style="flex:1;min-width:0;font-size:10px;padding:8px 10px;background:var(--bg);border:1px solid var(--border2);border-radius:6px;color:var(--text2);cursor:pointer" onclick="this.select()">
       <button onclick="genLink()" style="padding:10px 14px;background:var(--surface2);border:1px solid var(--border2);color:var(--text);border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;white-space:nowrap">Generate link</button>
       <button id="copy_link_btn" onclick="copyLink()" style="display:none;padding:10px 12px;background:var(--surface2);border:1px solid var(--border2);color:var(--teal);border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0">Copy</button>
     </div>
-    <div style="font-size:10px;color:var(--text3);margin-top:6px">Share the link with your colleague — they register with it and join as <strong>Viewer</strong> automatically.</div>
+    <div style="font-size:10px;color:var(--text3);margin-top:6px">Share the link — they register with it and join as <strong>Viewer</strong> automatically. Works on the same machine.</div>
   </div>
   {% endif %}
 
@@ -824,10 +825,10 @@ async function invite(){
   const msg=document.getElementById('inv_msg');
   const r=await fetch('/team/invite',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});
   const d=await r.json();
-  if(d.ok){msg.style.color='var(--green)';msg.textContent='Added — they joined as Viewer.';msg.style.display='block';setTimeout(()=>location.reload(),1400);}
-  else if(d.error==='no_account'){
+  if(d.ok && !d.pending){msg.style.color='var(--green)';msg.textContent='Added — they joined as Viewer.';msg.style.display='block';setTimeout(()=>location.reload(),1400);}
+  else if(d.ok && d.pending){
     msg.style.color='var(--amber,#f59e0b)';
-    msg.textContent='No account yet. Generate a link below and send it — they will join automatically after registering.';
+    msg.innerHTML='Invite saved for <strong>'+email+'</strong>. They will join automatically when they register on this installation.<br><span style="font-size:10px;opacity:.8">Cross-device? Use <strong>Get Join Code</strong> below so they can connect from another machine.</span>';
     msg.style.display='block';
     document.getElementById('inv_email').value='';
   }

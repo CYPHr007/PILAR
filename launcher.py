@@ -573,7 +573,10 @@ def main():
 
     # 4. Tray icon en thread detache (pywebview doit etre dans le main thread)
     #    Must be created BEFORE bootstrap so tray notifications work.
-    icon_image = _make_icon(64)
+    try:
+        icon_image = Image.open(BASE_DIR / 'pilar.png').resize((64, 64), Image.LANCZOS).convert('RGBA')
+    except Exception:
+        icon_image = _make_icon(64)
     _tray_icon = pystray.Icon(
         name="pilar",
         icon=icon_image,

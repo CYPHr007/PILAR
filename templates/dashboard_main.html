@@ -524,9 +524,25 @@ document.addEventListener('DOMContentLoaded',function(){applyLang();});
   </div>
   <nav class="sidebar-nav" id="sidebarNav">
     <div class="sidebar-section" data-i18n="nav_section_machines">Machines</div>
+    <!-- Search bar -->
+    <div style="padding:4px 8px 6px;">
+      <div style="position:relative;">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" style="position:absolute;left:7px;top:50%;transform:translateY(-50%);width:11px;height:11px;color:var(--g3);pointer-events:none">
+          <circle cx="6.5" cy="6.5" r="4.5"/><path d="M10.5 10.5l2.5 2.5"/>
+        </svg>
+        <input id="sb-search" type="text" placeholder="Search machines or groups…"
+          oninput="_sbSearchQuery=this.value.trim().toLowerCase();_applySearchFilter()"
+          autocomplete="off"
+          style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:5px 6px 5px 24px;color:var(--text);font-size:11px;outline:none;font-family:var(--mono);">
+      </div>
+    </div>
     <a href="/machines" class="ni on">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
       <span class="ni-label" data-i18n="nav_machines">Fleet</span>
+    </a>
+    <a href="/fleet" class="ni">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M2 12h3M19 12h3M12 2v3M12 19v3"/><circle cx="12" cy="12" r="9"/></svg>
+      <span class="ni-label">Status</span>
     </a>
     <div id="sidebarDeskTree" style="padding:0 0 4px 0"></div>
     <button class="ni" onclick="openGroupWizard()" style="color:var(--teal-light);font-size:11px" title="Create a new group">
@@ -1080,7 +1096,8 @@ select.form-input option{background:var(--surface);color:var(--text);}
 <script>
 var _machines = [];
 var _sbOpen = {};    // zone collapse state: {groupId: true/false}
-var _sbDragging = null; // machine id being dragged
+var _sbDragging = null;    // machine id being dragged
+var _sbSearchQuery = '';   // current sidebar search query
 var _MEDIANS = {vibration:0.61,temp_palier:44.8,debit:0.395,pression_entree:1.987,pression_sortie:107.73,courant_moteur:4.58,temp_moteur:58.0,heure_fonctionnement:1103.0};
 
 // ── HELPERS ─────────────────────────────────────────────────────────────────
@@ -1294,7 +1311,11 @@ function openAdd(groupId) {
   document.getElementById('machine-form').reset();
   document.getElementById('add-group-id').value = groupId || '';
   document.getElementById('f-threshold').value = 30;
-  document.getElementById('modal-submit').textContent = t('fl_save');
+  var submitBtn = document.getElementById('modal-submit');
+  submitBtn.type = 'submit';
+  submitBtn.onclick = null;
+  submitBtn.disabled = false;
+  submitBtn.textContent = t('fl_save');
   document.getElementById('f-file-group').style.display = '';
   document.getElementById('modal-file-name').style.display = 'none';
   document.getElementById('modal-result').style.display = 'none';
@@ -1393,6 +1414,7 @@ async function submitMachine(e) {
       loadFleet(); return;
     }
   }
+  submitBtn.disabled = false;
   closeModal();
   loadFleet();
 }
@@ -1802,6 +1824,7 @@ function renderSidebarDesks() {
     var open = _sbOpen[d.id] !== false; // open by default
     var chRot = open ? '0deg' : '-90deg';
     html += '<div class="sb-zone" id="sbz-'+d.id+'"'
+      +' ondragenter="event.preventDefault();event.stopPropagation()"'
       +' ondragover="sbZoneOver(event,'+d.id+')"'
       +' ondrop="sbZoneDrop(event,'+d.id+')"'
       +' ondragleave="sbZoneLeave(event,\'sbz-'+d.id+'\')">'
@@ -1820,6 +1843,7 @@ function renderSidebarDesks() {
   // Ungrouped machines
   if (stillUngrouped.length) {
     html += '<div class="sb-ungroup" id="sbz-ug"'
+      +' ondragenter="event.preventDefault();event.stopPropagation()"'
       +' ondragover="sbZoneOver(event,null)"'
       +' ondrop="sbZoneDrop(event,null)"'
       +' ondragleave="sbZoneLeave(event,\'sbz-ug\')">'
@@ -1829,6 +1853,63 @@ function renderSidebarDesks() {
   }
 
   tree.innerHTML = html;
+  _applySearchFilter();
+}
+
+function _applySearchFilter() {
+  var q = _sbSearchQuery;
+  var tree = document.getElementById('sidebarDeskTree');
+  if (!tree) return;
+
+  if (!q) {
+    // Restore all elements
+    tree.querySelectorAll('.sb-mac, .sb-zone, .sb-ungroup').forEach(function(el){
+      el.style.display = '';
+    });
+    return;
+  }
+
+  // Build zone-name lookup from rendered DOM
+  var zoneNames = {};
+  tree.querySelectorAll('.sb-zone').forEach(function(zone) {
+    var nameEl = zone.querySelector('.sb-zone-name');
+    zoneNames[zone.id] = nameEl ? nameEl.textContent.toLowerCase() : '';
+  });
+
+  // Show/hide each machine item
+  tree.querySelectorAll('.sb-mac').forEach(function(el) {
+    var macName = ((el.querySelector('.sb-mac-name') || {}).textContent || '').toLowerCase();
+    var zone    = el.closest('.sb-zone');
+    var gName   = zone ? (zoneNames[zone.id] || '') : '';
+    el.style.display = (macName.indexOf(q) >= 0 || gName.indexOf(q) >= 0) ? '' : 'none';
+  });
+
+  // Hide zones with no visible machines
+  tree.querySelectorAll('.sb-zone').forEach(function(zone) {
+    var any = Array.from(zone.querySelectorAll('.sb-mac')).some(function(m){ return m.style.display !== 'none'; });
+    zone.style.display = any ? '' : 'none';
+  });
+
+  // Hide ungrouped section if empty
+  var ug = tree.querySelector('.sb-ungroup');
+  if (ug) {
+    var any = Array.from(ug.querySelectorAll('.sb-mac')).some(function(m){ return m.style.display !== 'none'; });
+    ug.style.display = any ? '' : 'none';
+  }
+
+  // Show "no results" if everything is hidden
+  if (!tree.querySelector('.sb-zone[style=""], .sb-ungroup[style=""], .sb-zone:not([style]), .sb-ungroup:not([style])')) {
+    if (!tree.querySelector('#sb-no-results')) {
+      var msg = document.createElement('div');
+      msg.id = 'sb-no-results';
+      msg.style.cssText = 'padding:10px 14px;font-size:11px;color:var(--g3);';
+      msg.textContent = 'No results';
+      tree.appendChild(msg);
+    }
+  } else {
+    var existing = tree.querySelector('#sb-no-results');
+    if (existing) existing.remove();
+  }
 }
 
 // ── Sidebar drag & drop ─────────────────────────────────────────────────────
@@ -2005,6 +2086,7 @@ function renderFleet() {
     var alertCnt = deskMachines.filter(function(m){return m.last_prediction===1;}).length;
     var initial = (desk.name.trim()[0]||'G').toUpperCase();
     html += '<div class="mg-section" id="desk-group-'+desk.id+'"'
+      +' ondragenter="event.preventDefault();event.stopPropagation()"'
       +' ondragover="mgZoneOver(event,'+desk.id+')"'
       +' ondrop="mgZoneDrop(event,'+desk.id+')"'
       +' ondragleave="mgZoneLeave(event,\'desk-group-'+desk.id+'\')">'
@@ -2041,6 +2123,7 @@ function renderFleet() {
   if (ungrouped.length) {
     if (_desks.length) {
       html += '<div class="mg-section" id="desk-group-ug"'
+        +' ondragenter="event.preventDefault();event.stopPropagation()"'
         +' ondragover="mgZoneOver(event,null)"'
         +' ondrop="mgZoneDrop(event,null)"'
         +' ondragleave="mgZoneLeave(event,\'desk-group-ug\')">'

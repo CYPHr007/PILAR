@@ -178,6 +178,20 @@ def monitor_loop(
                         entry["last_risk"] = round(prob, 1)
                         entry["last_ts"]   = _dt.datetime.utcnow().isoformat() + "Z"
 
+                        # Update last_row and rolling history buffer
+                        _COLONNES_SET = {
+                            "vibration", "temp_palier", "debit",
+                            "pression_entree", "pression_sortie",
+                            "courant_moteur", "temp_moteur", "heure_fonctionnement",
+                        }
+                        entry["last_row"] = {k: v for k, v in row.items() if k in _COLONNES_SET}
+                        _hist_item = {
+                            "ts": entry["last_ts"],
+                            "sensors": entry["last_row"].copy(),
+                            "risk": round(prob, 1),
+                        }
+                        entry["history"] = (entry.get("history", []) + [_hist_item])[-60:]
+
                         # Persist to DB if save_fn provided
                         if save_fn:
                             try:
@@ -238,6 +252,8 @@ def start_monitor(
         "last_risk": None,
         "last_ts": None,
         "machine_db_id": None,
+        "last_row": None,   # dict of sensor values from last parsed row
+        "history": [],      # rolling list of {ts, sensors, risk}, max 60 items
     }
     active_monitors[path] = entry
 
