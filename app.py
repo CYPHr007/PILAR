@@ -5853,10 +5853,11 @@ def manifest():
 def service_worker():
     from flask import Response
     sw = """
-const CACHE = 'nous-v1';
-const URLS = ['/', '/account', '/twin', '/history', '/settings', '/manifest.json'];
+const CACHE = 'nous-v2';
+/* Only cache truly static files — never HTML pages */
+const STATIC = ['/manifest.json', '/favicon.ico'];
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(URLS)).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(STATIC)).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', e => e.waitUntil(
   caches.keys().then(keys => Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k))))
@@ -5864,7 +5865,16 @@ self.addEventListener('activate', e => e.waitUntil(
 ));
 self.addEventListener('fetch', e => {
   if(e.request.method !== 'GET') return;
-  e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+  const url = new URL(e.request.url);
+  /* Always fetch HTML pages fresh from server */
+  if(url.pathname === '/' || !url.pathname.includes('.')) {
+    e.respondWith(fetch(e.request));
+    return;
+  }
+  /* For static assets: cache first */
+  e.respondWith(
+    caches.match(e.request).then(cached => cached || fetch(e.request))
+  );
 });
 """
     resp = Response(sw, mimetype='application/javascript')
