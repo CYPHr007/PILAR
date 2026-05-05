@@ -531,10 +531,26 @@ document.addEventListener('DOMContentLoaded',function(){applyLang();});
   </div>
   <nav class="sidebar-nav" id="sidebarNav">
     <div class="sidebar-section" data-i18n="nav_section_machines">Machines</div>
+    <!-- Search bar -->
+    <div style="padding:4px 8px 6px;">
+      <div style="position:relative;">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" style="position:absolute;left:7px;top:50%;transform:translateY(-50%);width:11px;height:11px;color:var(--g3);pointer-events:none"><circle cx="6.5" cy="6.5" r="4.5"/><path d="M10.5 10.5l2.5 2.5"/></svg>
+        <input id="sb-search" type="text" placeholder="Search machines or groups…" oninput="_sbSearchQuery=this.value.trim().toLowerCase();_applySearchFilter()" autocomplete="off" style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:5px 6px 5px 24px;color:var(--text);font-size:11px;outline:none;font-family:var(--mono);">
+      </div>
+    </div>
     <a href="/machines" class="ni on">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
       <span class="ni-label" data-i18n="nav_machines">Machines</span>
     </a>
+    <a href="/fleet" class="ni">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M2 12h3M19 12h3M12 2v3M12 19v3"/><circle cx="12" cy="12" r="9"/></svg>
+      <span class="ni-label">Status</span>
+    </a>
+    <div id="sidebarDeskTree" style="padding:0 0 4px 0"></div>
+    <button class="ni" onclick="openGroupWizard()" style="color:var(--teal-light);font-size:11px" title="Create a new group">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+      <span class="ni-label">+ New Group</span>
+    </button>
     <div class="sidebar-section" data-i18n="nav_section_user">User</div>
     <a href="/account" class="ni">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
