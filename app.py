@@ -5853,7 +5853,7 @@ def manifest():
 def service_worker():
     from flask import Response
     sw = """
-const CACHE = 'pilar-v3';
+const CACHE = 'nous-v1';
 const URLS = ['/', '/account', '/twin', '/history', '/settings', '/manifest.json'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(URLS)).then(() => self.skipWaiting()));
