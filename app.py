@@ -684,6 +684,25 @@ function closeFleet(){{
   document.getElementById('fleetDrawer').style.display='none';
   document.getElementById('fleetOverlay').style.display='none';
 }}
+/* ── Page transitions ───────────────────────────────────── */
+(function(){{
+  /* Fade-in on page load */
+  var style=document.createElement('style');
+  style.textContent='@keyframes _pgin{{from{{opacity:0;transform:translateY(5px)}}to{{opacity:1;transform:translateY(0)}}}}body{{animation:_pgin 0.18s ease both;}}';
+  document.head.appendChild(style);
+  /* Fade-out on nav click */
+  document.addEventListener('click',function(e){{
+    var a=e.target.closest('a');
+    if(!a)return;
+    var href=a.getAttribute('href');
+    if(!href||href===''||href.startsWith('#')||href.startsWith('javascript')||href.startsWith('http')||a.target==='_blank'||e.ctrlKey||e.metaKey||e.shiftKey)return;
+    e.preventDefault();
+    document.body.style.transition='opacity 0.13s ease,transform 0.13s ease';
+    document.body.style.opacity='0';
+    document.body.style.transform='translateY(-4px)';
+    setTimeout(function(){{window.location.href=href;}},140);
+  }},true);
+}})();
 </script>"""
 
 _BOTTOM_NAV = """<!-- Bottom nav (mobile fallback) -->
