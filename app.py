@@ -593,7 +593,7 @@ _SIDEBAR = """
     <div class="sidebar-section" data-i18n="nav_section_machines">Machines</div>
     <a href="/machines" class="ni {fl}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
-      <span class="ni-label" data-i18n="nav_machines">Fleet</span>
+      <span class="ni-label" data-i18n="nav_machines">Machines</span>
     </a>
     <div id="sidebarDeskTree" style="padding:0 0 4px 0"></div>
     <div class="sidebar-section" data-i18n="nav_section_user">User</div>
