@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{{ machine.name }} — Pilar</title>
+<title>{{ machine.name }} — NOUS</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=DM+Serif+Display&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -165,7 +165,7 @@ header{height:48px;border-bottom:1px solid var(--border);display:flex;align-item
 {{ sidebar_html | safe }}
 <div class="main-content">
 <header>
-  <span class="logo">PILAR</span>
+  <span class="logo">NOUS</span>
   <div class="hd"></div>
   <span class="hsub" style="display:flex;align-items:center;gap:6px;text-transform:none;font-size:12px;letter-spacing:0;">
     <a href="/dashboard" style="color:var(--text3);text-decoration:none">Fleet</a>
@@ -372,7 +372,7 @@ header{height:48px;border-bottom:1px solid var(--border);display:flex;align-item
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
         <div>
           <div style="font-size:14px;font-weight:600;">Live CSV connection</div>
-          <div style="font-size:12px;color:var(--text3);margin-top:2px;">Watch a local file — PILAR reads new rows as your SCADA/PLC appends them</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:2px;">Watch a local file — NOUS reads new rows as your SCADA/PLC appends them</div>
         </div>
         <div id="live-status-dot" style="width:10px;height:10px;border-radius:50%;background:var(--border);flex-shrink:0" title="Not connected"></div>
       </div>
@@ -428,7 +428,7 @@ header{height:48px;border-bottom:1px solid var(--border);display:flex;align-item
       </div>
 
       <div style="margin-top:10px;padding:10px 12px;background:var(--bg);border-radius:var(--r-sm);font-size:11px;color:var(--text3);line-height:1.6">
-        <b style="color:var(--text2)">How it works:</b> Your SCADA/PLC/data logger appends rows to the CSV file. PILAR reads each new row, runs prediction, and saves to history automatically. The Monitor tab updates in real time.
+        <b style="color:var(--text2)">How it works:</b> Your SCADA/PLC/data logger appends rows to the CSV file. NOUS reads each new row, runs prediction, and saves to history automatically. The Monitor tab updates in real time.
         <br>Column headers are auto-detected — no configuration needed.
       </div>
     </div>
@@ -461,7 +461,7 @@ header{height:48px;border-bottom:1px solid var(--border);display:flex;align-item
       <!-- NO-BASELINE NOTICE (shown until machine has a computed baseline) -->
       <div id="mon-no-baseline-notice" style="display:none;background:rgba(217,119,6,.08);border:1px solid rgba(217,119,6,.3);border-radius:var(--r);padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--amber);line-height:1.5">
         <strong>Staging based on model risk only</strong> — no sensor baseline yet.<br>
-        Once this machine accumulates ~20 normal readings, PILAR will compute a per-sensor baseline
+        Once this machine accumulates ~20 normal readings, NOUS will compute a per-sensor baseline
         and switch to physics-based staging (deviation from normal), which is more reliable and works for any machine type.
       </div>
 

@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#08090c">
-<title>PILAR — Agents & SLA</title>
+<title>NOUS — Agents & SLA</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -102,7 +102,7 @@
 <body>
 
 <div class="topbar">
-  <a class="back" href="/">&#8592; PILAR</a>
+  <a class="back" href="/">&#8592; NOUS</a>
   <h1>Agents &amp; SLA Monitor</h1>
   <div style="margin-left:auto;display:flex;align-items:center;gap:16px">
     <div class="ollama-status">
@@ -168,7 +168,7 @@
     <span style="font-size:11px;color:#444">Cliquez sur une carte pour voir le detail</span>
   </div>
   <div class="conv-feed" id="convFeed">
-    <div class="empty">Aucune conversation enregistree. Lancez une analyse dans PILAR.</div>
+    <div class="empty">Aucune conversation enregistree. Lancez une analyse dans NOUS.</div>
   </div>
 
 </div>
@@ -267,7 +267,7 @@ async function loadConversations() {
 
   const feed = document.getElementById('convFeed');
   if (!convs.length) {
-    feed.innerHTML = '<div class="empty">Aucune conversation. Lancez une analyse dans PILAR pour voir les agents en action.</div>';
+    feed.innerHTML = '<div class="empty">Aucune conversation. Lancez une analyse dans NOUS pour voir les agents en action.</div>';
     return;
   }
 
