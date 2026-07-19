@@ -2029,6 +2029,38 @@ def activate():
     return render_template('activate.html', error=error, is_first_launch=is_first_launch)
 
 
+@app.route('/activate/free', methods=['POST'])
+def activate_free():
+    """Free pilot — start the app without a license key.
+
+    One click creates (or resumes) a local pilot account so the installer is
+    usable by every visitor. Disabled on hosted deployments, where normal
+    auth applies."""
+    if os.environ.get('RAILWAY_ENVIRONMENT'):
+        return redirect('/login')
+    if current_uid():
+        return redirect('/machines')
+    _email = 'pilot@local'
+    _u = User.query.filter_by(email=_email).first()
+    if not _u:
+        import secrets as _sec
+        _u = User(
+            email=_email,
+            password_hash=generate_password_hash(_sec.token_hex(32)),
+            email_verified=True,
+            onboarded=True,
+            api_key='pk_' + _sec.token_hex(24),
+        )
+        db.session.add(_u)
+        db.session.commit()
+        db.session.add(Settings(key='display_name', value='Pilot', user_id=_u.id))
+        db.session.commit()
+        logger.info("activate: free pilot account created")
+    session['user_id'] = _u.id
+    session.permanent = True
+    return redirect('/machines')
+
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'GET':
@@ -2134,8 +2166,10 @@ def resend_verification():
 def login():
     if request.method == 'GET':
         if current_uid(): return redirect('/machines')
-        # First launch — no accounts yet → go straight to activation
-        if User.query.filter(User.email != 'demo@pilar.ai').count() == 0:
+        # First launch — no real accounts yet → go straight to the start screen.
+        # The local pilot account doesn't count: if the session expired, the
+        # start screen's one-click resume is the way back in.
+        if User.query.filter(User.email.notin_(['demo@pilar.ai', 'demo@pilar.app', 'pilot@local'])).count() == 0:
             return redirect('/activate')
         return render_template('login.html', error=None)
     ip = (request.headers.get('X-Forwarded-For','').split(',')[0].strip() if os.environ.get('RAILWAY_ENVIRONMENT') else '') or request.remote_addr or ''

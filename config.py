@@ -11,7 +11,7 @@ through 7 000 lines of app code. Grouped by concern.
 """
 
 # ── APP ───────────────────────────────────────────────────────────────────────
-APP_VERSION  = '1.5.1'
+APP_VERSION  = '1.5.2'
 SESSION_DAYS = 30        # session cookie lifetime (30 days — reasonable for industrial use)
 MAX_UPLOAD_MB = 16       # max file upload size in megabytes
 

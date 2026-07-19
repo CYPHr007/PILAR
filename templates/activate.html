@@ -93,12 +93,12 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);}
     <div class="sig-chip sc-bl">T.PAL &middot; 44.8 &deg;C</div>
     <div class="sig-chip sc-tr">P.SORT &middot; 107.7 bar</div>
     <div class="sig-chip sc-br">DEBIT &middot; 0.395 m&sup3;/h</div>
-    <div class="sig-chip sc-bm">NOUS &nbsp;&bull;&nbsp; EARLY PILOT</div>
+    <div class="sig-chip sc-bm">HIYAL &nbsp;&bull;&nbsp; FREE PILOT</div>
   </div>
   <div class="form-side">
     <div class="form-topbar">
       <span class="ftb-dot"></span>
-      <span class="ftb-txt">NOUS &nbsp;&bull;&nbsp; Activation</span>
+      <span class="ftb-txt">HIYAL &nbsp;&bull;&nbsp; Welcome</span>
     </div>
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:22px;">
       <svg width="28" height="28" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -110,52 +110,46 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);}
         <circle cx="30" cy="30" r="5.5" fill="var(--text)"/>
       </svg>
       <div>
-        <div style="font-family:var(--sans);font-size:17px;font-weight:600;letter-spacing:.14em;color:var(--text);line-height:1.1;">NOUS</div>
-        <div style="font-family:var(--mono);font-size:8px;font-weight:300;letter-spacing:.12em;color:var(--text3);text-transform:uppercase;margin-top:2px;">early PILOT &middot; Predictive Maintenance</div>
+        <div style="font-family:var(--sans);font-size:17px;font-weight:600;letter-spacing:.14em;color:var(--text);line-height:1.1;">HIYAL</div>
+        <div style="font-family:var(--mono);font-size:8px;font-weight:300;letter-spacing:.12em;color:var(--text3);text-transform:uppercase;margin-top:2px;">free PILOT &middot; Predictive Maintenance</div>
       </div>
     </div>
 
-    <div class="form-logo" style="margin-bottom:2px;">Activate</div>
-    <div class="form-tagline">Enter your license key from trypilar.com</div>
-
-    <div class="key-hint">
-      <div class="key-hint-row">
-        <div class="key-hint-num">1</div>
-        <div class="key-hint-txt">Go to <a href="https://trypilar.com/download" target="_blank">trypilar.com/download</a> and sign in to your account.</div>
-      </div>
-      <div class="key-hint-row">
-        <div class="key-hint-num">2</div>
-        <div class="key-hint-txt">Copy your <strong>NOUS-XXXX-XXXX-XXXX</strong> license key from the download page.</div>
-      </div>
-      <div class="key-hint-row">
-        <div class="key-hint-num">3</div>
-        <div class="key-hint-txt">Paste it below — your account will be linked automatically.</div>
-      </div>
-    </div>
+    <div class="form-logo" style="margin-bottom:2px;">Start</div>
+    <div class="form-tagline">Free during the pilot &mdash; no account, no key, all features</div>
 
     {% if error %}<div class="auth-err">{{ error }}</div>{% endif %}
+
+    <form method="POST" action="/activate/free" id="free-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn-submit" id="free-btn" style="margin-top:6px;">Start free pilot &rarr;</button>
+    </form>
+    <div class="auth-link" style="margin-top:10px;font-size:10px;">
+      Everything stays on this machine. No data leaves without you.
+    </div>
+
+    <div style="display:flex;align-items:center;gap:10px;margin:22px 0 4px;">
+      <div style="flex:1;height:1px;background:var(--border);"></div>
+      <span style="font-family:var(--mono);font-size:9px;letter-spacing:.12em;color:var(--text3);">EXISTING CLIENT</span>
+      <div style="flex:1;height:1px;background:var(--border);"></div>
+    </div>
 
     <form method="POST" action="/activate" id="act-form">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <label class="flbl" for="lk">License Key</label>
       <input class="fi" type="text" id="lk" name="license_key"
-        placeholder="NOUS-XXXX-XXXX-XXXX"
+        placeholder="HIYAL-XXXX-XXXX-XXXX"
         autocomplete="off" spellcheck="false"
         oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9\-]/g,'')"
-        maxlength="19" required>
-      <button type="submit" class="btn-submit" id="act-btn">Activate NOUS</button>
+        maxlength="21" required>
+      <button type="submit" class="btn-submit" id="act-btn" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text2);">Activate with key</button>
     </form>
-
-    <div class="auth-link" style="margin-top:20px">
-      Already activated? <a href="/login">Sign in</a>
-    </div>
-    {% if not is_first_launch %}
-    <div class="auth-link">
-      No license yet? <a href="/register">Create a local account</a>
-    </div>
-    {% endif %}
     <div class="auth-link" style="margin-top:12px;font-size:10px;color:var(--text3)">
-      Don't have an account? <a href="https://trypilar.com" target="_blank" style="color:var(--text3);text-decoration:underline">Request access at trypilar.com</a>
+      Your key is in your client portal at <a href="https://trypilar.com/download" target="_blank">trypilar.com/download</a>
+    </div>
+
+    <div class="auth-link" style="margin-top:16px">
+      Already have an account here? <a href="/login">Sign in</a>
     </div>
   </div>
 </div>
@@ -164,6 +158,11 @@ document.getElementById('act-form').addEventListener('submit', function(){
   var btn = document.getElementById('act-btn');
   btn.disabled = true;
   btn.textContent = 'Verifying…';
+});
+document.getElementById('free-form').addEventListener('submit', function(){
+  var btn = document.getElementById('free-btn');
+  btn.disabled = true;
+  btn.textContent = 'Starting…';
 });
 </script>
 <script>
